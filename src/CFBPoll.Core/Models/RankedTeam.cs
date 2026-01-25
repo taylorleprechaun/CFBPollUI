@@ -1,0 +1,16 @@
+namespace CFBPoll.Core.Models;
+
+public class RankedTeam
+{
+    public string Conference { get; set; } = string.Empty;
+    public TeamDetails Details { get; set; } = new();
+    public string Division { get; set; } = string.Empty;
+    public string LogoURL { get; set; } = string.Empty;
+    public int Losses { get; set; }
+    public int Rank { get; set; }
+    public double Rating { get; set; }
+    public int SOSRanking { get; set; }
+    public string TeamName { get; set; } = string.Empty;
+    public double WeightedSOS { get; set; }
+    public int Wins { get; set; }
+}

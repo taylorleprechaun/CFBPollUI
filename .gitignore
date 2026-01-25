@@ -1,0 +1,57 @@
+# Secret rating module implementation
+src/CFBPoll.Core/Modules/RatingModule.cs
+
+# Private configuration (contains API key)
+appsettings-private.json
+**/appsettings-private.json
+
+# .NET build outputs
+bin/
+obj/
+**/bin/
+**/obj/
+*.dll
+*.pdb
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio
+.vs/
+
+# Node.js
+node_modules/
+dist/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# Cache
+cache/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test results
+TestResults/
+coverage/
+
+# Claude
+.claude/
