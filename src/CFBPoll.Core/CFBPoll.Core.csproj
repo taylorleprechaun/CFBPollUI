@@ -7,6 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="CFBPoll.Core.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Modules\Archive\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="CollegeFootballData" Version="5.13.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.0" />

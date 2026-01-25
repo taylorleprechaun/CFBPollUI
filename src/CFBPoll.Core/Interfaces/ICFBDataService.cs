@@ -34,4 +34,12 @@ public interface ICFBDataService
     /// </summary>
     /// <returns>Collection of FBS conferences.</returns>
     Task<IEnumerable<Conference>> GetConferencesAsync();
+
+    /// <summary>
+    /// Retrieves advanced game statistics for all teams in a given season.
+    /// </summary>
+    /// <param name="season">The season year.</param>
+    /// <param name="seasonType">Season type: "regular", "postseason", or "both".</param>
+    /// <returns>Collection of advanced game statistics.</returns>
+    Task<IEnumerable<AdvancedGameStats>> GetAdvancedGameStatsAsync(int season, string seasonType);
 }
