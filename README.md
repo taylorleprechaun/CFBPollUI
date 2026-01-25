@@ -165,14 +165,17 @@ npm test
 
 ### Coverage Summary
 
-![Core Coverage](https://img.shields.io/badge/Core_Coverage-67%25-yellow)
-![API Coverage](https://img.shields.io/badge/API_Coverage-67%25-yellow)
-![Web Coverage](https://img.shields.io/badge/Web_Coverage-72%25-yellow)
+![Core Coverage](https://img.shields.io/badge/Core_Coverage-97%25-brightgreen)
+![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
+![Web Coverage](https://img.shields.io/badge/Web_Coverage-97%25-brightgreen)
 
 | Project | Line Coverage | Branch Coverage |
 |---------|---------------|-----------------|
-| CFBPoll.Core | 67% | 48% |
-| CFBPoll.API | 67% | 77% |
-| cfbpoll-web | 72% | 65% |
+| CFBPoll.Core | 97% | 94% |
+| CFBPoll.API | 100% | - |
+| cfbpoll-web | 97% | 93% |
 
-**Why is Core coverage lower?** The `CFBDataService` class (~280 lines) makes HTTP calls to the external College Football Data API. Unit testing this would require mocking the HTTP client, which adds complexity without much value since the logic is primarily data mapping. This code is better suited for integration tests that verify the actual API contract. Excluding this class, the remaining Core code has 95%+ coverage.
+**Excluded from coverage:**
+- `CFBDataService` - Makes HTTP calls to the external College Football Data API. Better suited for integration tests.
+- `RatingModule` - Currently being reimplemented. Tests will be added when the new algorithm is finalized.
+- `Program.cs` - ASP.NET Core startup configuration code.

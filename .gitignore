@@ -13,6 +13,7 @@ obj/
 **/obj/
 *.dll
 *.pdb
+out/
 
 # User-specific files
 *.user

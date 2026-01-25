@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using CFBPoll.API.Extensions;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Modules;
@@ -71,3 +72,6 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+[ExcludeFromCodeCoverage]
+public partial class Program { }

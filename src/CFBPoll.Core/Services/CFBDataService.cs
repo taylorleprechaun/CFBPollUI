@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
 using CollegeFootballData;
@@ -7,6 +8,7 @@ using Microsoft.Kiota.Http.HttpClientLibrary;
 
 namespace CFBPoll.Core.Services;
 
+[ExcludeFromCodeCoverage]
 public class CFBDataService : ICFBDataService
 {
     private readonly ApiClient _client;
@@ -210,6 +212,9 @@ public class CFBDataService : ICFBDataService
             .Where(s => s.GameID.HasValue && !string.IsNullOrEmpty(s.Team))
             .ToDictionary(s => (s.Team!, s.GameID!.Value), s => s);
 
+        var seasonType = includePostseason ? "postseason" : "regular";
+        var seasonStats = await GetSeasonStatsAsync(season, week, seasonType);
+
         foreach (var game in allGames)
         {
             if (!game.GameID.HasValue)
@@ -260,6 +265,10 @@ public class CFBDataService : ICFBDataService
 
             var logoUrl = team.Logos?.FirstOrDefault() ?? string.Empty;
 
+            var teamStats = seasonStats.TryGetValue(teamName, out var stats)
+                ? stats
+                : [];
+
             teamDict[teamName] = new TeamInfo
             {
                 Conference = team.Conference ?? string.Empty,
@@ -268,6 +277,7 @@ public class CFBDataService : ICFBDataService
                 LogoURL = logoUrl,
                 Losses = losses,
                 Name = teamName,
+                TeamStats = teamStats,
                 Wins = wins
             };
         }
@@ -279,6 +289,27 @@ public class CFBDataService : ICFBDataService
             Teams = teamDict,
             Week = week
         };
+    }
+
+    public async Task<IDictionary<string, IEnumerable<TeamStat>>> GetSeasonStatsAsync(int season, int week, string seasonType)
+    {
+        try
+        {
+            var response = await _client.Stats.Season.GetAsync(config =>
+            {
+                config.QueryParameters.Year = season;
+                config.QueryParameters.EndWeek = seasonType.Equals("postseason", _scoic) ? null : week;
+            });
+
+            if (response == null)
+                return new Dictionary<string, IEnumerable<TeamStat>>();
+
+            return MapTeamStats(response);
+        }
+        catch (Exception)
+        {
+            return new Dictionary<string, IEnumerable<TeamStat>>();
+        }
     }
 
     private AdvancedGameStats MapAdvancedGameStats(ApiModels.AdvancedGameStat stat)
@@ -360,6 +391,28 @@ public class CFBDataService : ICFBDataService
             SuccessRate = unit.SuccessRate,
             TotalPPA = null
         };
+    }
+
+    private IDictionary<string, IEnumerable<TeamStat>> MapTeamStats(IEnumerable<ApiModels.TeamStat> stats)
+    {
+        if (stats == null)
+            return new Dictionary<string, IEnumerable<TeamStat>>();
+
+        return stats
+            .Where(s => !string.IsNullOrEmpty(s.Team) && !string.IsNullOrEmpty(s.StatName))
+            .GroupBy(s => s.Team!)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(s => new TeamStat
+                {
+                    StatName = s.StatName!,
+                    StatValue = new StatValue
+                    {
+                        Double = s.StatValue?.Double,
+                        String = s.StatValue?.String
+                    }
+                }),
+                StringComparer.OrdinalIgnoreCase);
     }
 }
 
