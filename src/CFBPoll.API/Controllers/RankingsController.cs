@@ -44,7 +44,7 @@ public class RankingsController : ControllerBase
 
         var seasonData = await _dataService.GetSeasonDataAsync(season, week);
         var ratings = _ratingModule.RateTeams(seasonData);
-        var result = _rankingsModule.GenerateRankings(seasonData, ratings);
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
 
         return Ok(RankingsMapper.ToResponseDTO(result));
     }

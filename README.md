@@ -165,13 +165,13 @@ npm test
 
 ### Coverage Summary
 
-![Core Coverage](https://img.shields.io/badge/Core_Coverage-97%25-brightgreen)
+![Core Coverage](https://img.shields.io/badge/Core_Coverage-96%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
 ![Web Coverage](https://img.shields.io/badge/Web_Coverage-97%25-brightgreen)
 
 | Project | Line Coverage | Branch Coverage |
 |---------|---------------|-----------------|
-| CFBPoll.Core | 97% | 94% |
+| CFBPoll.Core | 96% | 94% |
 | CFBPoll.API | 100% | - |
 | cfbpoll-web | 97% | 93% |
 

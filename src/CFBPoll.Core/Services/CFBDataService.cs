@@ -222,7 +222,12 @@ public class CFBDataService : ICFBDataService
 
             if (advancedStatsLookup.TryGetValue((game.HomeTeam ?? string.Empty, game.GameID.Value), out var homeStats))
             {
-                game.AdvancedStats = homeStats;
+                game.HomeAdvancedStats = homeStats;
+            }
+
+            if (advancedStatsLookup.TryGetValue((game.AwayTeam ?? string.Empty, game.GameID.Value), out var awayStats))
+            {
+                game.AwayAdvancedStats = awayStats;
             }
         }
 
@@ -236,17 +241,6 @@ public class CFBDataService : ICFBDataService
 
             var teamGames = allGames.Where(g =>
                 teamName.Equals(g.HomeTeam, _scoic) || teamName.Equals(g.AwayTeam, _scoic)).ToList();
-
-            foreach (var game in teamGames)
-            {
-                if (!game.GameID.HasValue)
-                    continue;
-
-                if (advancedStatsLookup.TryGetValue((teamName, game.GameID.Value), out var teamAdvancedStats))
-                {
-                    game.AdvancedStats = teamAdvancedStats;
-                }
-            }
 
             var wins = 0;
             var losses = 0;

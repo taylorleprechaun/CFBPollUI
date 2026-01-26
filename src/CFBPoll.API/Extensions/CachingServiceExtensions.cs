@@ -1,5 +1,6 @@
 using CFBPoll.Core.Caching;
 using CFBPoll.Core.Interfaces;
+using CFBPoll.Core.Modules;
 using CFBPoll.Core.Options;
 using CFBPoll.Core.Services;
 
@@ -31,6 +32,23 @@ public static class CachingServiceExtensions
             var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<CachingCFBDataService>>();
 
             return new CachingCFBDataService(innerService, cache, options, logger);
+        });
+
+        return services;
+    }
+
+    public static IServiceCollection AddRankingsModuleWithCaching(this IServiceCollection services)
+    {
+        services.AddSingleton<RankingsModule>();
+
+        services.AddSingleton<IRankingsModule>(sp =>
+        {
+            var innerModule = sp.GetRequiredService<RankingsModule>();
+            var cache = sp.GetRequiredService<IPersistentCache>();
+            var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<CacheOptions>>();
+            var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<CachingRankingsModule>>();
+
+            return new CachingRankingsModule(innerModule, cache, options, logger);
         });
 
         return services;

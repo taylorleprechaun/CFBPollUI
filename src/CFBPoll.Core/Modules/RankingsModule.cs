@@ -7,7 +7,7 @@ public class RankingsModule : IRankingsModule
 {
     private readonly StringComparison _scoic = StringComparison.OrdinalIgnoreCase;
 
-    public RankingsResult GenerateRankings(SeasonData seasonData, IDictionary<string, RatingDetails> ratings)
+    public Task<RankingsResult> GenerateRankingsAsync(SeasonData seasonData, IDictionary<string, RatingDetails> ratings)
     {
         var sortedTeams = ratings
             .OrderByDescending(kvp => kvp.Value.Rating);
@@ -52,12 +52,12 @@ public class RankingsModule : IRankingsModule
             rank++;
         }
 
-        return new RankingsResult
+        return Task.FromResult(new RankingsResult
         {
             Season = seasonData.Season,
             Week = seasonData.Week,
             Rankings = rankedTeams
-        };
+        });
     }
 
     private TeamDetails CalculateTeamDetails(

@@ -6,13 +6,21 @@ namespace CFBPoll.Core.Tests.Models;
 public class GameTests
 {
     [Fact]
-    public void Game_AdvancedStatsPropertyCanBeSetAndRetrieved()
+    public void Game_AdvancedStatsPropertiesCanBeSetAndRetrieved()
     {
-        var advancedStats = new AdvancedGameStats
+        var homeAdvancedStats = new AdvancedGameStats
         {
             GameID = 12345,
             Team = "Texas",
             Opponent = "Oklahoma",
+            Week = 6
+        };
+
+        var awayAdvancedStats = new AdvancedGameStats
+        {
+            GameID = 12345,
+            Team = "Oklahoma",
+            Opponent = "Texas",
             Week = 6
         };
 
@@ -26,10 +34,12 @@ public class GameTests
             Week = 6,
             SeasonType = "regular",
             NeutralSite = true,
-            AdvancedStats = advancedStats
+            HomeAdvancedStats = homeAdvancedStats,
+            AwayAdvancedStats = awayAdvancedStats
         };
 
-        Assert.Same(advancedStats, game.AdvancedStats);
+        Assert.Same(homeAdvancedStats, game.HomeAdvancedStats);
+        Assert.Same(awayAdvancedStats, game.AwayAdvancedStats);
         Assert.Equal(12345, game.GameID);
         Assert.Equal("Texas", game.HomeTeam);
         Assert.Equal("Oklahoma", game.AwayTeam);
@@ -41,10 +51,11 @@ public class GameTests
     }
 
     [Fact]
-    public void Game_AdvancedStatsDefaultsToNull()
+    public void Game_AdvancedStatsDefaultToNull()
     {
         var game = new Game();
 
-        Assert.Null(game.AdvancedStats);
+        Assert.Null(game.HomeAdvancedStats);
+        Assert.Null(game.AwayAdvancedStats);
     }
 }

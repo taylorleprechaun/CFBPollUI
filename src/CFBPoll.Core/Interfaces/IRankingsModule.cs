@@ -13,5 +13,5 @@ public interface IRankingsModule
     /// <param name="seasonData">The season data containing teams and game results.</param>
     /// <param name="ratings">Dictionary mapping team names to their calculated rating details.</param>
     /// <returns>Rankings result containing all ranked teams.</returns>
-    RankingsResult GenerateRankings(SeasonData seasonData, IDictionary<string, RatingDetails> ratings);
+    Task<RankingsResult> GenerateRankingsAsync(SeasonData seasonData, IDictionary<string, RatingDetails> ratings);
 }

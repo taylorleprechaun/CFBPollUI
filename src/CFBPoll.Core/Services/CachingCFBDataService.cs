@@ -135,7 +135,7 @@ public class CachingCFBDataService : ICFBDataService
 
         if (year < currentYear)
         {
-            return DateTime.UtcNow.AddDays(365);
+            return DateTime.MaxValue;
         }
 
         return DateTime.UtcNow.AddHours(_options.CalendarExpirationHours);
@@ -147,7 +147,7 @@ public class CachingCFBDataService : ICFBDataService
 
         if (season < currentYear)
         {
-            return DateTime.UtcNow.AddDays(365);
+            return DateTime.MaxValue;
         }
 
         return DateTime.UtcNow.AddHours(_options.SeasonDataExpirationHours);
