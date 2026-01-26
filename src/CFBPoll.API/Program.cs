@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using CFBPoll.API.Extensions;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Modules;
@@ -38,7 +39,7 @@ try
 
     builder.Services.AddCFBDataServiceWithCaching(builder.Configuration);
     builder.Services.AddSingleton<IRatingModule, RatingModule>();
-    builder.Services.AddSingleton<IRankingsModule, RankingsModule>();
+    builder.Services.AddRankingsModuleWithCaching();
     builder.Services.AddSingleton<ISeasonModule, SeasonModule>();
     builder.Services.AddSingleton<IConferenceModule, ConferenceModule>();
 
@@ -71,3 +72,6 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+[ExcludeFromCodeCoverage]
+public partial class Program { }

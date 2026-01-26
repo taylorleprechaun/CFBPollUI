@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
 using CollegeFootballData;
@@ -7,6 +8,7 @@ using Microsoft.Kiota.Http.HttpClientLibrary;
 
 namespace CFBPoll.Core.Services;
 
+[ExcludeFromCodeCoverage]
 public class CFBDataService : ICFBDataService
 {
     private readonly ApiClient _client;
@@ -22,108 +24,27 @@ public class CFBDataService : ICFBDataService
         _client = new ApiClient(requestAdapter);
     }
 
-    public async Task<SeasonData> GetSeasonDataAsync(int season, int week)
+    public async Task<IEnumerable<AdvancedGameStats>> GetAdvancedGameStatsAsync(int season, string seasonType)
     {
-        var teamsResponse = await _client.Teams.Fbs.GetAsync(config =>
+        try
         {
-            config.QueryParameters.Year = season;
-        });
-
-        var gamesResponse = await _client.Games.GetAsync(config =>
-        {
-            config.QueryParameters.Year = season;
-            config.QueryParameters.SeasonTypeAsSeasonType = ApiModels.SeasonType.Regular;
-        });
-
-        var postseasonGames = await _client.Games.GetAsync(config =>
-        {
-            config.QueryParameters.Year = season;
-            config.QueryParameters.SeasonTypeAsSeasonType = ApiModels.SeasonType.Postseason;
-        });
-
-        var regularGames = (gamesResponse ?? [])
-            .Where(g => g.Week <= week && g.HomePoints.HasValue && g.AwayPoints.HasValue)
-            .Select(g => new Game
+            var response = await _client.Stats.Game.Advanced.GetAsync(config =>
             {
-                Week = g.Week,
-                HomeTeam = g.HomeTeam,
-                AwayTeam = g.AwayTeam,
-                HomePoints = g.HomePoints,
-                AwayPoints = g.AwayPoints,
-                NeutralSite = g.NeutralSite ?? false,
-                SeasonType = "regular"
+                config.QueryParameters.Year = season;
+                config.QueryParameters.SeasonTypeAsSeasonType = seasonType.Equals("regular", _scoic)
+                    ? ApiModels.SeasonType.Regular
+                    : ApiModels.SeasonType.Postseason;
             });
 
-        var maxRegularSeasonWeek = (gamesResponse ?? [])
-            .Where(g => g.Week.HasValue)
-            .Select(g => g.Week!.Value)
-            .DefaultIfEmpty(0)
-            .Max();
+            if (response == null)
+                return [];
 
-        var postGames = week > maxRegularSeasonWeek
-            ? (postseasonGames ?? [])
-                .Where(g => g.HomePoints.HasValue && g.AwayPoints.HasValue)
-                .Select(g => new Game
-                {
-                    Week = g.Week,
-                    HomeTeam = g.HomeTeam,
-                    AwayTeam = g.AwayTeam,
-                    HomePoints = g.HomePoints,
-                    AwayPoints = g.AwayPoints,
-                    NeutralSite = g.NeutralSite ?? false,
-                    SeasonType = "postseason"
-                })
-            : Enumerable.Empty<Game>();
-
-        var allGames = regularGames.Concat(postGames).ToList();
-
-        var teamDict = new Dictionary<string, TeamInfo>();
-
-        foreach (var team in teamsResponse ?? [])
-        {
-            var teamName = team.School;
-            if (string.IsNullOrEmpty(teamName))
-                continue;
-
-            var teamGames = allGames.Where(g =>
-                teamName.Equals(g.HomeTeam, _scoic) || teamName.Equals(g.AwayTeam, _scoic)).ToList();
-
-            var wins = 0;
-            var losses = 0;
-
-            foreach (var game in teamGames)
-            {
-                var isHome = teamName.Equals(game.HomeTeam, _scoic);
-                var teamPoints = isHome ? game.HomePoints : game.AwayPoints;
-                var oppPoints = isHome ? game.AwayPoints : game.HomePoints;
-
-                if (teamPoints > oppPoints)
-                    wins++;
-                else if (oppPoints > teamPoints)
-                    losses++;
-            }
-
-            var logoUrl = team.Logos?.FirstOrDefault() ?? string.Empty;
-
-            teamDict[teamName] = new TeamInfo
-            {
-                Name = teamName,
-                Conference = team.Conference ?? string.Empty,
-                Division = team.Division ?? string.Empty,
-                LogoURL = logoUrl,
-                Wins = wins,
-                Losses = losses,
-                Games = teamGames
-            };
+            return response.Select(MapAdvancedGameStats);
         }
-
-        return new SeasonData
+        catch (Exception)
         {
-            Season = season,
-            Week = week,
-            Teams = teamDict,
-            Games = allGames
-        };
+            return [];
+        }
     }
 
     public async Task<IEnumerable<CalendarWeek>> GetCalendarAsync(int year)
@@ -168,11 +89,9 @@ public class CFBDataService : ICFBDataService
                 (w.SeasonType?.ToString() ?? "").Equals("postseason", _scoic));
 
             var minStart = postseasonWeeks
-                .Select(w => w.StartDate?.DateTime ?? DateTime.MaxValue)
-                .Min();
+                .Min(w => w.StartDate?.DateTime ?? DateTime.MaxValue);
             var maxEnd = postseasonWeeks
-                .Select(w => w.EndDate?.DateTime ?? DateTime.MinValue)
-                .Max();
+                .Max(w => w.EndDate?.DateTime ?? DateTime.MinValue);
 
             weeks.Add(new CalendarWeek
             {
@@ -184,6 +103,24 @@ public class CFBDataService : ICFBDataService
         }
 
         return weeks.OrderBy(w => w.Week);
+    }
+
+    public async Task<IEnumerable<Conference>> GetConferencesAsync()
+    {
+        var conferencesResponse = await _client.Conferences.GetAsync();
+
+        if (conferencesResponse == null)
+            return [];
+
+        return conferencesResponse
+            .Where(c => c.Classification?.ToString().Equals("fbs", _scoic) == true)
+            .Select(c => new Conference
+            {
+                Abbreviation = c.Abbreviation ?? string.Empty,
+                ID = c.Id ?? 0,
+                Name = c.Name ?? string.Empty,
+                ShortName = c.ShortName ?? string.Empty
+            });
     }
 
     public async Task<int> GetMaxSeasonYearAsync()
@@ -206,22 +143,270 @@ public class CFBDataService : ICFBDataService
         return _minimumYear;
     }
 
-    public async Task<IEnumerable<Conference>> GetConferencesAsync()
+    public async Task<SeasonData> GetSeasonDataAsync(int season, int week)
     {
-        var conferencesResponse = await _client.Conferences.GetAsync();
+        var teamsResponse = await _client.Teams.Fbs.GetAsync(config =>
+        {
+            config.QueryParameters.Year = season;
+        });
 
-        if (conferencesResponse == null)
-            return [];
+        var gamesResponse = await _client.Games.GetAsync(config =>
+        {
+            config.QueryParameters.Year = season;
+            config.QueryParameters.SeasonTypeAsSeasonType = ApiModels.SeasonType.Regular;
+        });
 
-        return conferencesResponse
-            .Where(c => c.Classification?.ToString().Equals("fbs", _scoic) == true)
-            .Select(c => new Conference
+        var postseasonGames = await _client.Games.GetAsync(config =>
+        {
+            config.QueryParameters.Year = season;
+            config.QueryParameters.SeasonTypeAsSeasonType = ApiModels.SeasonType.Postseason;
+        });
+
+        var regularGames = (gamesResponse ?? [])
+            .Where(g => g.Week <= week && g.HomePoints.HasValue && g.AwayPoints.HasValue)
+            .Select(g => new Game
             {
-                ID = c.Id ?? 0,
-                Abbreviation = c.Abbreviation ?? string.Empty,
-                Name = c.Name ?? string.Empty,
-                ShortName = c.ShortName ?? string.Empty
+                AwayPoints = g.AwayPoints,
+                AwayTeam = g.AwayTeam,
+                GameID = g.Id,
+                HomePoints = g.HomePoints,
+                HomeTeam = g.HomeTeam,
+                NeutralSite = g.NeutralSite ?? false,
+                SeasonType = "regular",
+                Week = g.Week
             });
+
+        var maxRegularSeasonWeek = (gamesResponse ?? [])
+            .Where(g => g.Week.HasValue)
+            .Select(g => g.Week!.Value)
+            .DefaultIfEmpty(0)
+            .Max();
+
+        var includePostseason = week > maxRegularSeasonWeek;
+
+        var postGames = includePostseason
+            ? (postseasonGames ?? [])
+                .Where(g => g.HomePoints.HasValue && g.AwayPoints.HasValue)
+                .Select(g => new Game
+                {
+                    AwayPoints = g.AwayPoints,
+                    AwayTeam = g.AwayTeam,
+                    GameID = g.Id,
+                    HomePoints = g.HomePoints,
+                    HomeTeam = g.HomeTeam,
+                    NeutralSite = g.NeutralSite ?? false,
+                    SeasonType = "postseason",
+                    Week = g.Week
+                })
+            : Enumerable.Empty<Game>();
+
+        var allGames = regularGames.Concat(postGames).ToList();
+
+        var regularAdvancedStats = await GetAdvancedGameStatsAsync(season, "regular");
+        var postseasonAdvancedStats = includePostseason
+            ? await GetAdvancedGameStatsAsync(season, "postseason")
+            : Enumerable.Empty<AdvancedGameStats>();
+
+        var advancedStatsLookup = regularAdvancedStats
+            .Concat(postseasonAdvancedStats)
+            .Where(s => s.GameID.HasValue && !string.IsNullOrEmpty(s.Team))
+            .ToDictionary(s => (s.Team!, s.GameID!.Value), s => s);
+
+        var seasonType = includePostseason ? "postseason" : "regular";
+        var seasonStats = await GetSeasonStatsAsync(season, week, seasonType);
+
+        foreach (var game in allGames)
+        {
+            if (!game.GameID.HasValue)
+                continue;
+
+            if (advancedStatsLookup.TryGetValue((game.HomeTeam ?? string.Empty, game.GameID.Value), out var homeStats))
+            {
+                game.HomeAdvancedStats = homeStats;
+            }
+
+            if (advancedStatsLookup.TryGetValue((game.AwayTeam ?? string.Empty, game.GameID.Value), out var awayStats))
+            {
+                game.AwayAdvancedStats = awayStats;
+            }
+        }
+
+        var teamDict = new Dictionary<string, TeamInfo>();
+
+        foreach (var team in teamsResponse ?? [])
+        {
+            var teamName = team.School;
+            if (string.IsNullOrEmpty(teamName))
+                continue;
+
+            var teamGames = allGames.Where(g =>
+                teamName.Equals(g.HomeTeam, _scoic) || teamName.Equals(g.AwayTeam, _scoic)).ToList();
+
+            var wins = 0;
+            var losses = 0;
+
+            foreach (var game in teamGames)
+            {
+                var isHome = teamName.Equals(game.HomeTeam, _scoic);
+                var teamPoints = isHome ? game.HomePoints : game.AwayPoints;
+                var oppPoints = isHome ? game.AwayPoints : game.HomePoints;
+
+                if (teamPoints > oppPoints)
+                    wins++;
+                else if (oppPoints > teamPoints)
+                    losses++;
+            }
+
+            var logoUrl = team.Logos?.FirstOrDefault() ?? string.Empty;
+
+            var teamStats = seasonStats.TryGetValue(teamName, out var stats)
+                ? stats
+                : [];
+
+            teamDict[teamName] = new TeamInfo
+            {
+                Conference = team.Conference ?? string.Empty,
+                Division = team.Division ?? string.Empty,
+                Games = teamGames,
+                LogoURL = logoUrl,
+                Losses = losses,
+                Name = teamName,
+                TeamStats = teamStats,
+                Wins = wins
+            };
+        }
+
+        return new SeasonData
+        {
+            Games = allGames,
+            Season = season,
+            Teams = teamDict,
+            Week = week
+        };
+    }
+
+    public async Task<IDictionary<string, IEnumerable<TeamStat>>> GetSeasonStatsAsync(int season, int week, string seasonType)
+    {
+        try
+        {
+            var response = await _client.Stats.Season.GetAsync(config =>
+            {
+                config.QueryParameters.Year = season;
+                config.QueryParameters.EndWeek = seasonType.Equals("postseason", _scoic) ? null : week;
+            });
+
+            if (response == null)
+                return new Dictionary<string, IEnumerable<TeamStat>>();
+
+            return MapTeamStats(response);
+        }
+        catch (Exception)
+        {
+            return new Dictionary<string, IEnumerable<TeamStat>>();
+        }
+    }
+
+    private AdvancedGameStats MapAdvancedGameStats(ApiModels.AdvancedGameStat stat)
+    {
+        return new AdvancedGameStats
+        {
+            Defense = MapAdvancedGameStatsUnit(stat.Defense),
+            GameID = stat.GameId,
+            Offense = MapAdvancedGameStatsUnit(stat.Offense),
+            Opponent = stat.Opponent,
+            Team = stat.Team,
+            Week = stat.Week
+        };
+    }
+
+    private AdvancedGameStatsUnit? MapAdvancedGameStatsUnit(ApiModels.AdvancedGameStat_defense? unit)
+    {
+        if (unit == null)
+            return null;
+
+        return new AdvancedGameStatsUnit
+        {
+            Drives = (int?)unit.Drives,
+            Explosiveness = unit.Explosiveness,
+            LineYards = unit.LineYards,
+            LineYardsTotal = unit.LineYardsTotal,
+            OpenFieldYards = unit.OpenFieldYards,
+            OpenFieldYardsTotal = unit.OpenFieldYardsTotal,
+            PassingDownsExplosiveness = unit.PassingDowns?.Explosiveness,
+            PassingDownsPPA = unit.PassingDowns?.Ppa,
+            PassingDownsSuccessRate = unit.PassingDowns?.SuccessRate,
+            PassingPlays = unit.PassingPlays?.Ppa,
+            PassingPPA = null,
+            Plays = (int?)unit.Plays,
+            PowerSuccess = unit.PowerSuccess,
+            PPA = unit.Ppa,
+            RushingPlays = unit.RushingPlays?.Ppa,
+            RushingPPA = null,
+            SecondLevelYards = unit.SecondLevelYards,
+            SecondLevelYardsTotal = unit.SecondLevelYardsTotal,
+            StandardDownsExplosiveness = unit.StandardDowns?.Explosiveness,
+            StandardDownsPPA = unit.StandardDowns?.Ppa,
+            StandardDownsSuccessRate = unit.StandardDowns?.SuccessRate,
+            StuffRate = unit.StuffRate,
+            SuccessRate = unit.SuccessRate,
+            TotalPPA = null
+        };
+    }
+
+    private AdvancedGameStatsUnit? MapAdvancedGameStatsUnit(ApiModels.AdvancedGameStat_offense? unit)
+    {
+        if (unit == null)
+            return null;
+
+        return new AdvancedGameStatsUnit
+        {
+            Drives = (int?)unit.Drives,
+            Explosiveness = unit.Explosiveness,
+            LineYards = unit.LineYards,
+            LineYardsTotal = unit.LineYardsTotal,
+            OpenFieldYards = unit.OpenFieldYards,
+            OpenFieldYardsTotal = unit.OpenFieldYardsTotal,
+            PassingDownsExplosiveness = unit.PassingDowns?.Explosiveness,
+            PassingDownsPPA = unit.PassingDowns?.Ppa,
+            PassingDownsSuccessRate = unit.PassingDowns?.SuccessRate,
+            PassingPlays = unit.PassingPlays?.Ppa,
+            PassingPPA = null,
+            Plays = (int?)unit.Plays,
+            PowerSuccess = unit.PowerSuccess,
+            PPA = unit.Ppa,
+            RushingPlays = unit.RushingPlays?.Ppa,
+            RushingPPA = null,
+            SecondLevelYards = unit.SecondLevelYards,
+            SecondLevelYardsTotal = unit.SecondLevelYardsTotal,
+            StandardDownsExplosiveness = unit.StandardDowns?.Explosiveness,
+            StandardDownsPPA = unit.StandardDowns?.Ppa,
+            StandardDownsSuccessRate = unit.StandardDowns?.SuccessRate,
+            StuffRate = unit.StuffRate,
+            SuccessRate = unit.SuccessRate,
+            TotalPPA = null
+        };
+    }
+
+    private IDictionary<string, IEnumerable<TeamStat>> MapTeamStats(IEnumerable<ApiModels.TeamStat> stats)
+    {
+        if (stats == null)
+            return new Dictionary<string, IEnumerable<TeamStat>>();
+
+        return stats
+            .Where(s => !string.IsNullOrEmpty(s.Team) && !string.IsNullOrEmpty(s.StatName))
+            .GroupBy(s => s.Team!)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(s => new TeamStat
+                {
+                    StatName = s.StatName!,
+                    StatValue = new StatValue
+                    {
+                        Double = s.StatValue?.Double,
+                        String = s.StatValue?.String
+                    }
+                }),
+                StringComparer.OrdinalIgnoreCase);
     }
 }
 

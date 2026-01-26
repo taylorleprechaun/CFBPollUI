@@ -1,9 +1,5 @@
 # CFB Poll
 
-![Core Coverage](https://img.shields.io/badge/Core_Coverage-73%25-yellow)
-![API Coverage](https://img.shields.io/badge/API_Coverage-25%25-red)
-![Web Coverage](https://img.shields.io/badge/Web_Coverage-72%25-yellow)
-
 A college football ranking system that evaluates FBS teams based on their performance throughout the season. Features a .NET Web API backend and React frontend.
 
 This was created using Claude Code with a lot of guidelines to follow my code style and arch preferences. You could technically call this "vibe-coding", if you were so inclined, but a lot of care was put into making this, even though almost none of the actual code was written by me.
@@ -169,10 +165,17 @@ npm test
 
 ### Coverage Summary
 
+![Core Coverage](https://img.shields.io/badge/Core_Coverage-96%25-brightgreen)
+![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
+![Web Coverage](https://img.shields.io/badge/Web_Coverage-97%25-brightgreen)
+
 | Project | Line Coverage | Branch Coverage |
 |---------|---------------|-----------------|
-| CFBPoll.Core | 73% | 61% |
-| CFBPoll.API | 25% | 6% |
-| cfbpoll-web | 72% | 65% |
+| CFBPoll.Core | 96% | 94% |
+| CFBPoll.API | 100% | - |
+| cfbpoll-web | 97% | 93% |
 
-Coverage is lower for CFBPoll.API due to middleware and DI extension classes that are difficult to unit test.
+**Excluded from coverage:**
+- `CFBDataService` - Makes HTTP calls to the external College Football Data API. Better suited for integration tests.
+- `RatingModule` - Currently being reimplemented. Tests will be added when the new algorithm is finalized.
+- `Program.cs` - ASP.NET Core startup configuration code.

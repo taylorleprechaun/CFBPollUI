@@ -278,4 +278,40 @@ public class FilePersistentCacheTests : IDisposable
         public List<string> Items { get; set; } = new();
         public TestCacheData? Nested { get; set; }
     }
+
+    [Fact]
+    public async Task GetAsync_ReturnsNullWhenJsonIsCorrupted()
+    {
+        var filePath = Path.Combine(_testCacheDirectory, "corrupted_key.json");
+        await File.WriteAllTextAsync(filePath, "{ invalid json }");
+
+        var result = await _cache.GetAsync<TestCacheData>("corrupted_key");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task CleanupExpiredAsync_HandlesCorruptedFiles()
+    {
+        var validData = new TestCacheData { Name = "Valid", Value = 1 };
+        await _cache.SetAsync("valid-key", validData, DateTime.UtcNow.AddHours(1));
+
+        var corruptedFilePath = Path.Combine(_testCacheDirectory, "corrupted.json");
+        await File.WriteAllTextAsync(corruptedFilePath, "{ not valid json }");
+
+        var removedCount = await _cache.CleanupExpiredAsync();
+
+        Assert.Equal(0, removedCount);
+    }
+
+    [Fact]
+    public async Task CleanupExpiredAsync_HandlesFilesWithoutExpiresAt()
+    {
+        var filePath = Path.Combine(_testCacheDirectory, "no_expires.json");
+        await File.WriteAllTextAsync(filePath, "{ \"Data\": { \"Name\": \"Test\" } }");
+
+        var removedCount = await _cache.CleanupExpiredAsync();
+
+        Assert.Equal(0, removedCount);
+    }
 }

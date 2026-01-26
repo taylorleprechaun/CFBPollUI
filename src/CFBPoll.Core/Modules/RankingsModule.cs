@@ -7,11 +7,10 @@ public class RankingsModule : IRankingsModule
 {
     private readonly StringComparison _scoic = StringComparison.OrdinalIgnoreCase;
 
-    public RankingsResult GenerateRankings(SeasonData seasonData, IDictionary<string, RatingDetails> ratings)
+    public Task<RankingsResult> GenerateRankingsAsync(SeasonData seasonData, IDictionary<string, RatingDetails> ratings)
     {
         var sortedTeams = ratings
-            .OrderByDescending(kvp => kvp.Value.RatingComponents.Values.Sum())
-            .ToList();
+            .OrderByDescending(kvp => kvp.Value.Rating);
 
         var sosRankings = ratings
             .OrderByDescending(kvp => kvp.Value.WeightedStrengthOfSchedule)
@@ -43,22 +42,22 @@ public class RankingsModule : IRankingsModule
                 LogoURL = teamInfo?.LogoURL ?? string.Empty,
                 Losses = ratingDetails.Losses,
                 Rank = rank,
-                Rating = Math.Round(ratingDetails.RatingComponents.Values.Sum(), 2),
+                Rating = Math.Round(ratingDetails.Rating, 4),
                 SOSRanking = sosRankings.TryGetValue(teamName, out var sosRank) ? sosRank : 0,
                 TeamName = teamName,
-                WeightedSOS = Math.Round(ratingDetails.WeightedStrengthOfSchedule, 3),
+                WeightedSOS = Math.Round(ratingDetails.WeightedStrengthOfSchedule, 4),
                 Wins = ratingDetails.Wins
             });
 
             rank++;
         }
 
-        return new RankingsResult
+        return Task.FromResult(new RankingsResult
         {
             Season = seasonData.Season,
             Week = seasonData.Week,
             Rankings = rankedTeams
-        };
+        });
     }
 
     private TeamDetails CalculateTeamDetails(

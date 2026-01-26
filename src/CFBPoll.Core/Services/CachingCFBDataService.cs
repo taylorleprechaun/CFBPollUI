@@ -67,6 +67,27 @@ public class CachingCFBDataService : ICFBDataService
         return year;
     }
 
+    public async Task<IEnumerable<AdvancedGameStats>> GetAdvancedGameStatsAsync(int season, string seasonType)
+    {
+        var cacheKey = $"advancedGameStats_{season}_{seasonType}";
+
+        var cached = await _cache.GetAsync<List<AdvancedGameStats>>(cacheKey);
+        if (cached != null)
+        {
+            _logger.LogDebug("Cache hit for advanced game stats {Season} {SeasonType}", season, seasonType);
+            return cached;
+        }
+
+        _logger.LogDebug("Cache miss for advanced game stats {Season} {SeasonType}, fetching from API", season, seasonType);
+        var data = await _innerService.GetAdvancedGameStatsAsync(season, seasonType);
+        var dataList = data.ToList();
+
+        var expiresAt = CalculateSeasonDataExpiration(season);
+        await _cache.SetAsync(cacheKey, dataList, expiresAt);
+
+        return dataList;
+    }
+
     public async Task<IEnumerable<Conference>> GetConferencesAsync()
     {
         const string cacheKey = "conferences";
@@ -114,7 +135,7 @@ public class CachingCFBDataService : ICFBDataService
 
         if (year < currentYear)
         {
-            return DateTime.UtcNow.AddDays(365);
+            return DateTime.MaxValue;
         }
 
         return DateTime.UtcNow.AddHours(_options.CalendarExpirationHours);
@@ -126,13 +147,13 @@ public class CachingCFBDataService : ICFBDataService
 
         if (season < currentYear)
         {
-            return DateTime.UtcNow.AddDays(365);
+            return DateTime.MaxValue;
         }
 
         return DateTime.UtcNow.AddHours(_options.SeasonDataExpirationHours);
     }
 
-    private class MaxSeasonYearWrapper
+    internal class MaxSeasonYearWrapper
     {
         public int Year { get; set; }
     }

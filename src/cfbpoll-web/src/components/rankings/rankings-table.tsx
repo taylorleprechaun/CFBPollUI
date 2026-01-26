@@ -115,11 +115,11 @@ export function RankingsTable({ rankings, isLoading, selectedConference }: Ranki
     }),
     columnHelper.accessor('rating', {
       header: 'Rating',
-      cell: (info) => info.getValue().toFixed(2),
+      cell: (info) => info.getValue().toFixed(4),
     }),
     columnHelper.accessor('weightedSOS', {
       header: 'Weighted SOS',
-      cell: (info) => info.getValue().toFixed(3),
+      cell: (info) => info.getValue().toFixed(4),
     }),
     columnHelper.accessor('sosRanking', {
       header: 'SOS Rank',

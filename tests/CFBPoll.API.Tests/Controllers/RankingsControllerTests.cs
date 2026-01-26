@@ -142,8 +142,8 @@ public class RankingsControllerTests
             .Returns(ratings);
 
         _mockRankingsModule
-            .Setup(x => x.GenerateRankings(seasonData, ratings))
-            .Returns(rankingsResult);
+            .Setup(x => x.GenerateRankingsAsync(seasonData, ratings))
+            .ReturnsAsync(rankingsResult);
 
         var result = await _controller.GetRankings(2023, 5);
 

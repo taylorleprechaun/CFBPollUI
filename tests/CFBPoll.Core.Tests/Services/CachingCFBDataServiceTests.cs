@@ -149,6 +149,20 @@ public class CachingCFBDataServiceTests
     }
 
     [Fact]
+    public async Task GetMaxSeasonYearAsync_ReturnsCachedData_WhenCacheHit()
+    {
+        var cachedData = new CachingCFBDataService.MaxSeasonYearWrapper { Year = 2024 };
+
+        _mockCache.Setup(x => x.GetAsync<CachingCFBDataService.MaxSeasonYearWrapper>("maxSeasonYear"))
+            .ReturnsAsync(cachedData);
+
+        var result = await _service.GetMaxSeasonYearAsync();
+
+        Assert.Equal(2024, result);
+        _mockInnerService.Verify(x => x.GetMaxSeasonYearAsync(), Times.Never);
+    }
+
+    [Fact]
     public async Task GetMaxSeasonYearAsync_FetchesFromInnerService_AndCachesResult()
     {
         _mockInnerService.Setup(x => x.GetMaxSeasonYearAsync())
@@ -311,5 +325,121 @@ public class CachingCFBDataServiceTests
 
         _mockCache.Verify(x => x.GetAsync<SeasonData>("seasonData_2024_week_1"), Times.Once);
         _mockCache.Verify(x => x.GetAsync<SeasonData>("seasonData_2024_week_5"), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAdvancedGameStatsAsync_ReturnsCachedData_WhenCacheHit()
+    {
+        var cachedData = new List<AdvancedGameStats>
+        {
+            new AdvancedGameStats
+            {
+                GameID = 12345,
+                Team = "Alabama",
+                Opponent = "Georgia",
+                Week = 5,
+                Offense = new AdvancedGameStatsUnit { Plays = 70, PPA = 0.25 },
+                Defense = new AdvancedGameStatsUnit { Plays = 65, PPA = -0.15 }
+            }
+        };
+
+        _mockCache.Setup(x => x.GetAsync<List<AdvancedGameStats>>("advancedGameStats_2024_regular"))
+            .ReturnsAsync(cachedData);
+
+        var result = await _service.GetAdvancedGameStatsAsync(2024, "regular");
+
+        Assert.Single(result);
+        Assert.Equal("Alabama", result.First().Team);
+        _mockInnerService.Verify(x => x.GetAdvancedGameStatsAsync(It.IsAny<int>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetAdvancedGameStatsAsync_FetchesFromInnerService_WhenCacheMiss()
+    {
+        var apiData = new List<AdvancedGameStats>
+        {
+            new AdvancedGameStats
+            {
+                GameID = 12345,
+                Team = "Ohio State",
+                Opponent = "Michigan",
+                Week = 12,
+                Offense = new AdvancedGameStatsUnit { Plays = 68, PPA = 0.30 },
+                Defense = new AdvancedGameStatsUnit { Plays = 62, PPA = -0.20 }
+            }
+        };
+
+        _mockCache.Setup(x => x.GetAsync<List<AdvancedGameStats>>("advancedGameStats_2024_regular"))
+            .ReturnsAsync((List<AdvancedGameStats>?)null);
+        _mockInnerService.Setup(x => x.GetAdvancedGameStatsAsync(2024, "regular"))
+            .ReturnsAsync(apiData);
+
+        var result = await _service.GetAdvancedGameStatsAsync(2024, "regular");
+
+        Assert.Single(result);
+        Assert.Equal("Ohio State", result.First().Team);
+        _mockInnerService.Verify(x => x.GetAdvancedGameStatsAsync(2024, "regular"), Times.Once);
+        _mockCache.Verify(x => x.SetAsync("advancedGameStats_2024_regular", It.IsAny<List<AdvancedGameStats>>(), It.IsAny<DateTime>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAdvancedGameStatsAsync_UsesLongExpiration_ForPastSeasons()
+    {
+        var pastSeason = DateTime.Now.Year - 1;
+        var apiData = new List<AdvancedGameStats>();
+
+        _mockCache.Setup(x => x.GetAsync<List<AdvancedGameStats>>($"advancedGameStats_{pastSeason}_regular"))
+            .ReturnsAsync((List<AdvancedGameStats>?)null);
+        _mockInnerService.Setup(x => x.GetAdvancedGameStatsAsync(pastSeason, "regular"))
+            .ReturnsAsync(apiData);
+
+        DateTime capturedExpiration = default;
+        _mockCache.Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<List<AdvancedGameStats>>(), It.IsAny<DateTime>()))
+            .Callback<string, List<AdvancedGameStats>, DateTime>((_, _, exp) => capturedExpiration = exp)
+            .ReturnsAsync(true);
+
+        await _service.GetAdvancedGameStatsAsync(pastSeason, "regular");
+
+        var daysUntilExpiration = (capturedExpiration - DateTime.UtcNow).TotalDays;
+        Assert.True(daysUntilExpiration > 300);
+    }
+
+    [Fact]
+    public async Task GetAdvancedGameStatsAsync_UsesShortExpiration_ForCurrentSeason()
+    {
+        var currentSeason = DateTime.Now.Year;
+        var apiData = new List<AdvancedGameStats>();
+
+        _mockCache.Setup(x => x.GetAsync<List<AdvancedGameStats>>($"advancedGameStats_{currentSeason}_postseason"))
+            .ReturnsAsync((List<AdvancedGameStats>?)null);
+        _mockInnerService.Setup(x => x.GetAdvancedGameStatsAsync(currentSeason, "postseason"))
+            .ReturnsAsync(apiData);
+
+        DateTime capturedExpiration = default;
+        _mockCache.Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<List<AdvancedGameStats>>(), It.IsAny<DateTime>()))
+            .Callback<string, List<AdvancedGameStats>, DateTime>((_, _, exp) => capturedExpiration = exp)
+            .ReturnsAsync(true);
+
+        await _service.GetAdvancedGameStatsAsync(currentSeason, "postseason");
+
+        var hoursUntilExpiration = (capturedExpiration - DateTime.UtcNow).TotalHours;
+        Assert.True(hoursUntilExpiration <= 24);
+    }
+
+    [Fact]
+    public async Task GetAdvancedGameStatsAsync_UsesDifferentCacheKeys_ForDifferentSeasonTypes()
+    {
+        var apiData = new List<AdvancedGameStats>();
+
+        _mockCache.Setup(x => x.GetAsync<List<AdvancedGameStats>>(It.IsAny<string>()))
+            .ReturnsAsync((List<AdvancedGameStats>?)null);
+        _mockInnerService.Setup(x => x.GetAdvancedGameStatsAsync(2024, It.IsAny<string>()))
+            .ReturnsAsync(apiData);
+
+        await _service.GetAdvancedGameStatsAsync(2024, "regular");
+        await _service.GetAdvancedGameStatsAsync(2024, "postseason");
+
+        _mockCache.Verify(x => x.GetAsync<List<AdvancedGameStats>>("advancedGameStats_2024_regular"), Times.Once);
+        _mockCache.Verify(x => x.GetAsync<List<AdvancedGameStats>>("advancedGameStats_2024_postseason"), Times.Once);
     }
 }
