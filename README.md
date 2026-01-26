@@ -18,10 +18,9 @@ This was created using Claude Code with a lot of guidelines to follow my code st
 
 ## TODO
 
-Last Updated 1/24/2026
-- At the time of this commit, the unit tests added are boilerplate and don't cover all the scenarios I want to include. I will need to flesh this out and make it more robust.
-- I have not implemented my algorithm into this new repo yet. That is one of my next steps. The main priority was scaffolding everything and getting the base functionality of everything in place.
+Last Updated 1/25/2026
 - I have only recently started to learn React and this application uses it for the UI. I had Claude create it all following the best practices that I could find online, but I don't know for certain that everything is correct. As I learn more I know I will end up refactoring that code.
+- There are more improvements to the UI I plan to implement. They require persistent historical data though, which will require changing my data-caching approach.
 
 ## Features
 
