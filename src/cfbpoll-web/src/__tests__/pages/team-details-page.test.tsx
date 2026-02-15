@@ -362,13 +362,21 @@ describe('TeamDetailsPage', () => {
       expect(screen.queryByText('#120')).not.toBeInTheDocument();
     });
 
-    it('renders opponent name as a clickable link', () => {
+    it('renders FBS opponent name as a clickable link', () => {
       setupMocks({ teamDetailData: mockTeamDetail });
       renderPage('/team-details?team=Oregon&season=2024&week=12');
 
-      const idahoLink = screen.getByRole('link', { name: /Idaho/ });
-      expect(idahoLink).toBeInTheDocument();
-      expect(idahoLink).toHaveAttribute('href', expect.stringContaining('/team-details?team=Idaho'));
+      const georgiaLink = screen.getByRole('link', { name: /Georgia/ });
+      expect(georgiaLink).toBeInTheDocument();
+      expect(georgiaLink).toHaveAttribute('href', expect.stringContaining('/team-details?team=Georgia'));
+    });
+
+    it('does not render FCS opponent name as a clickable link', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      expect(screen.queryByRole('link', { name: /Idaho/ })).not.toBeInTheDocument();
+      expect(screen.getByText('Idaho')).toBeInTheDocument();
     });
 
     it('opponent link includes season and week parameters', () => {

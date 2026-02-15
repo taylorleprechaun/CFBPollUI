@@ -95,6 +95,11 @@ export function TeamDetailsPage() {
       .sort((a, b) => a.teamName.localeCompare(b.teamName));
   }, [rankingsData]);
 
+  const fbsTeamNames = useMemo(() => {
+    if (!rankingsData?.rankings) return new Set<string>();
+    return new Set(rankingsData.rankings.map((t) => t.teamName));
+  }, [rankingsData]);
+
   const handleSeasonChange = (season: number) => {
     isNavigating.current = true;
     setSelectedSeason(season);
@@ -118,13 +123,13 @@ export function TeamDetailsPage() {
     if (teamDetailError) refetchTeamDetail();
   };
 
-  const [logoError, setLogoError] = useState(false);
+  const [logoErrorTeam, setLogoErrorTeam] = useState<string | null>(null);
+  const logoError = logoErrorTeam === selectedTeam;
 
-  const handleLogoError = useCallback(() => setLogoError(true), []);
-
-  useEffect(() => {
-    setLogoError(false);
-  }, [selectedTeam]);
+  const handleLogoError = useCallback(
+    () => setLogoErrorTeam(selectedTeam),
+    [selectedTeam]
+  );
 
   const locationCardRef = useRef<HTMLDivElement>(null);
   const rankCardRef = useRef<HTMLDivElement>(null);
@@ -248,6 +253,7 @@ export function TeamDetailsPage() {
                   {teamDetail.schedule.map((game) => (
                     <ScheduleRow
                       key={`${game.week}-${game.seasonType}-${game.opponentName}`}
+                      fbsTeamNames={fbsTeamNames}
                       game={game}
                       selectedSeason={selectedSeason}
                       selectedWeek={selectedWeek}
@@ -433,11 +439,13 @@ function RecordRow({
 }
 
 function ScheduleRow({
+  fbsTeamNames,
   game,
   selectedSeason,
   selectedWeek,
   onTeamClick,
 }: {
+  fbsTeamNames: Set<string>;
   game: ScheduleGame;
   selectedSeason: number | null;
   selectedWeek: number | null;
@@ -463,7 +471,16 @@ function ScheduleRow({
 
   const showRank = game.opponentRank != null && game.opponentRank >= 1 && game.opponentRank <= 25;
 
+  const isFbs = fbsTeamNames.has(game.opponentName);
   const teamDetailUrl = `/team-details?team=${encodeURIComponent(game.opponentName)}${selectedSeason != null ? `&season=${selectedSeason}` : ''}${selectedWeek != null ? `&week=${selectedWeek}` : ''}`;
+
+  const opponentLabel = (
+    <span className="text-gray-900">
+      {locationPrefix}
+      {showRank && <span className="text-xs">#{game.opponentRank} </span>}
+      {game.opponentName}
+    </span>
+  );
 
   return (
     <tr className="hover:bg-gray-50">
@@ -478,20 +495,20 @@ function ScheduleRow({
         <div className="flex items-center space-x-2">
           <TeamLogo logoURL={game.opponentLogoURL} teamName={game.opponentName} />
           <div>
-            <Link
-              to={teamDetailUrl}
-              className="hover:text-blue-600 hover:underline"
-              onClick={(e) => {
-                e.preventDefault();
-                onTeamClick(game.opponentName);
-              }}
-            >
-              <span className="text-gray-900">
-                {locationPrefix}
-                {showRank && <span className="text-xs">#{game.opponentRank} </span>}
-                {game.opponentName}
-              </span>
-            </Link>
+            {isFbs ? (
+              <Link
+                to={teamDetailUrl}
+                className="hover:text-blue-600 hover:underline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onTeamClick(game.opponentName);
+                }}
+              >
+                {opponentLabel}
+              </Link>
+            ) : (
+              opponentLabel
+            )}
             {game.opponentRecord && (
               <span className="text-gray-400 ml-1">({game.opponentRecord})</span>
             )}
