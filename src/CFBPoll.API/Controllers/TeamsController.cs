@@ -66,7 +66,7 @@ public class TeamsController : ControllerBase
         var teamInfo = seasonData.Teams[teamName];
 
         var response = TeamDetailMapper.ToResponseDTO(
-            rankedTeam, teamInfo, fullSchedule, seasonData.Teams);
+            rankedTeam, teamInfo, fullSchedule, seasonData.Teams, rankingsResult.Rankings);
 
         return Ok(response);
     }

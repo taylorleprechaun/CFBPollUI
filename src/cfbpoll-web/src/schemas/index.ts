@@ -75,6 +75,7 @@ export const ScheduleGameSchema = z.object({
   neutralSite: z.boolean(),
   opponentLogoURL: z.string(),
   opponentName: z.string(),
+  opponentRank: z.number().nullable().optional(),
   opponentRecord: z.string(),
   opponentScore: z.number().nullable().optional(),
   seasonType: z.string().nullable().optional(),

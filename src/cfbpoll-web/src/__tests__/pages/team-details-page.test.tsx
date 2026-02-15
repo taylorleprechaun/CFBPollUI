@@ -111,6 +111,7 @@ const mockTeamDetail = {
       neutralSite: false,
       opponentLogoURL: 'https://example.com/idaho.png',
       opponentName: 'Idaho',
+      opponentRank: 120,
       opponentRecord: '3-8',
       opponentScore: 14,
       seasonType: 'regular',
@@ -120,12 +121,29 @@ const mockTeamDetail = {
       week: 1,
     },
     {
+      gameDate: '2024-09-14T16:00:00',
+      isHome: true,
+      isWin: true,
+      neutralSite: false,
+      opponentLogoURL: 'https://example.com/portland-state.png',
+      opponentName: 'Portland State',
+      opponentRank: null,
+      opponentRecord: '2-9',
+      opponentScore: 7,
+      seasonType: 'regular',
+      startTimeTbd: false,
+      teamScore: 55,
+      venue: 'Autzen Stadium',
+      week: 2,
+    },
+    {
       gameDate: '2024-12-28T20:00:00',
       isHome: false,
       isWin: true,
       neutralSite: true,
       opponentLogoURL: 'https://example.com/georgia.png',
       opponentName: 'Georgia',
+      opponentRank: 2,
       opponentRecord: '10-1',
       opponentScore: 21,
       seasonType: 'postseason',
@@ -302,8 +320,8 @@ describe('TeamDetailsPage', () => {
       setupMocks({ teamDetailData: mockTeamDetail });
       renderPage('/team-details?team=Oregon&season=2024&week=12');
 
-      expect(screen.getByText('vs Idaho')).toBeInTheDocument();
-      expect(screen.queryByText('vs Georgia (N)')).not.toBeInTheDocument();
+      expect(screen.getByText('Idaho')).toBeInTheDocument();
+      expect(screen.queryByText('at Georgia')).not.toBeInTheDocument();
       expect(screen.getByText('W 35-21')).toBeInTheDocument();
     });
 
@@ -328,6 +346,37 @@ describe('TeamDetailsPage', () => {
       renderPage('/team-details?team=Oregon&season=2024&week=12');
 
       expect(screen.getByText('No games found for this season.')).toBeInTheDocument();
+    });
+
+    it('displays opponent rank when rank is 25 or less', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      expect(screen.getByText('#2')).toBeInTheDocument();
+    });
+
+    it('does not display opponent rank when rank is greater than 25', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      expect(screen.queryByText('#120')).not.toBeInTheDocument();
+    });
+
+    it('renders opponent name as a clickable link', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      const idahoLink = screen.getByRole('link', { name: /Idaho/ });
+      expect(idahoLink).toBeInTheDocument();
+      expect(idahoLink).toHaveAttribute('href', expect.stringContaining('/team-details?team=Idaho'));
+    });
+
+    it('opponent link includes season and week parameters', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      const georgiaLink = screen.getByRole('link', { name: /Georgia/ });
+      expect(georgiaLink).toHaveAttribute('href', expect.stringContaining('season=2024'));
     });
   });
 
@@ -371,6 +420,74 @@ describe('TeamDetailsPage', () => {
 
       const neutralRow = screen.getByText('Neutral').closest('div');
       expect(neutralRow?.textContent).toContain('-');
+    });
+
+    it('expands record row on click to show individual games', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      const homeRow = screen.getByText('Home').closest('div[role="button"]');
+      expect(homeRow).toBeInTheDocument();
+      fireEvent.click(homeRow!);
+
+      const expandedContent = document.querySelector('.ml-4');
+      expect(expandedContent).toBeInTheDocument();
+      expect(expandedContent!.textContent).toContain('Idaho');
+    });
+
+    it('shows colored result in expanded game list', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      const homeRow = screen.getByText('Home').closest('div[role="button"]');
+      fireEvent.click(homeRow!);
+
+      const winResult = screen.getByText('W 42-14', { selector: '.ml-4 span' });
+      expect(winResult).toHaveClass('text-green-600');
+    });
+
+    it('collapses record row on second click', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      const homeRow = screen.getByText('Home').closest('div[role="button"]');
+      fireEvent.click(homeRow!);
+      expect(document.querySelector('.ml-4')).toBeInTheDocument();
+
+      fireEvent.click(homeRow!);
+      expect(document.querySelector('.ml-4')).not.toBeInTheDocument();
+    });
+
+    it('does not make record row expandable when there are no games', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      const neutralLabel = screen.getByText('Neutral');
+      const neutralRow = neutralLabel.closest('div');
+      expect(neutralRow).not.toHaveAttribute('role', 'button');
+    });
+
+    it('shows opponent rank in expanded game list', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      const homeRow = screen.getByText('Home').closest('div[role="button"]');
+      fireEvent.click(homeRow!);
+
+      expect(screen.getByText(/^#120/)).toBeInTheDocument();
+    });
+
+    it('includes FCS opponents with null rank in vs #101+ expanded list', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      const rank101Row = screen.getByText('vs #101+').closest('div[role="button"]');
+      expect(rank101Row).toBeInTheDocument();
+      fireEvent.click(rank101Row!);
+
+      const expandedContent = rank101Row!.parentElement!.querySelector('.ml-4');
+      expect(expandedContent).toBeInTheDocument();
+      expect(expandedContent!.textContent).toContain('Portland State');
     });
   });
 

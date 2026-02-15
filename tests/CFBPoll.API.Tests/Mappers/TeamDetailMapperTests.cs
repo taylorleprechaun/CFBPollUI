@@ -52,6 +52,15 @@ public class TeamDetailMapperTests
         };
     }
 
+    private static List<RankedTeam> CreateDefaultRankings()
+    {
+        return
+        [
+            new RankedTeam { Rank = 1, TeamName = "Georgia" },
+            new RankedTeam { Rank = 5, TeamName = "Oregon" }
+        ];
+    }
+
     private static List<ScheduleGame> CreateDefaultScheduleGames()
     {
         return new List<ScheduleGame>
@@ -97,12 +106,13 @@ public class TeamDetailMapperTests
     [Fact]
     public void ToResponseDTO_MapsTeamProperties()
     {
-        RankedTeam rankedTeam = CreateDefaultRankedTeam();
-        TeamInfo teamInfo = CreateDefaultTeamInfo();
-        List<ScheduleGame> schedule = CreateDefaultScheduleGames();
-        Dictionary<string, TeamInfo> allTeams = CreateDefaultAllTeams();
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var schedule = CreateDefaultScheduleGames();
+        var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
 
-        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams);
+        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
 
         Assert.Equal("Georgia", result.TeamName);
         Assert.Equal(1, result.Rank);
@@ -117,12 +127,13 @@ public class TeamDetailMapperTests
     [Fact]
     public void ToResponseDTO_MapsColorFields()
     {
-        RankedTeam rankedTeam = CreateDefaultRankedTeam();
-        TeamInfo teamInfo = CreateDefaultTeamInfo();
-        List<ScheduleGame> schedule = CreateDefaultScheduleGames();
-        Dictionary<string, TeamInfo> allTeams = CreateDefaultAllTeams();
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var schedule = CreateDefaultScheduleGames();
+        var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
 
-        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams);
+        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
 
         Assert.Equal("#BA0C2F", result.Color);
         Assert.Equal("#000000", result.AltColor);
@@ -131,12 +142,13 @@ public class TeamDetailMapperTests
     [Fact]
     public void ToResponseDTO_MapsRecord()
     {
-        RankedTeam rankedTeam = CreateDefaultRankedTeam();
-        TeamInfo teamInfo = CreateDefaultTeamInfo();
-        List<ScheduleGame> schedule = CreateDefaultScheduleGames();
-        Dictionary<string, TeamInfo> allTeams = CreateDefaultAllTeams();
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var schedule = CreateDefaultScheduleGames();
+        var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
 
-        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams);
+        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
 
         Assert.Equal("9-1", result.Record);
     }
@@ -144,12 +156,13 @@ public class TeamDetailMapperTests
     [Fact]
     public void ToResponseDTO_MapsScheduleGames()
     {
-        RankedTeam rankedTeam = CreateDefaultRankedTeam();
-        TeamInfo teamInfo = CreateDefaultTeamInfo();
-        List<ScheduleGame> schedule = CreateDefaultScheduleGames();
-        Dictionary<string, TeamInfo> allTeams = CreateDefaultAllTeams();
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var schedule = CreateDefaultScheduleGames();
+        var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
 
-        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams);
+        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
 
         var games = result.Schedule.ToList();
         Assert.Single(games);
@@ -163,9 +176,10 @@ public class TeamDetailMapperTests
     [Fact]
     public void ToResponseDTO_DeterminesHomeAwayCorrectly()
     {
-        RankedTeam rankedTeam = CreateDefaultRankedTeam();
-        TeamInfo teamInfo = CreateDefaultTeamInfo();
-        Dictionary<string, TeamInfo> allTeams = CreateDefaultAllTeams();
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
 
         var schedule = new List<ScheduleGame>
         {
@@ -191,7 +205,7 @@ public class TeamDetailMapperTests
             }
         };
 
-        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams);
+        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
 
         var games = result.Schedule.ToList();
         Assert.Equal(2, games.Count);
@@ -202,9 +216,10 @@ public class TeamDetailMapperTests
     [Fact]
     public void ToResponseDTO_DeterminesWinLossCorrectly()
     {
-        RankedTeam rankedTeam = CreateDefaultRankedTeam();
-        TeamInfo teamInfo = CreateDefaultTeamInfo();
-        Dictionary<string, TeamInfo> allTeams = CreateDefaultAllTeams();
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
 
         var schedule = new List<ScheduleGame>
         {
@@ -230,7 +245,7 @@ public class TeamDetailMapperTests
             }
         };
 
-        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams);
+        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
 
         var games = result.Schedule.ToList();
         Assert.True(games[0].IsWin);
@@ -240,9 +255,10 @@ public class TeamDetailMapperTests
     [Fact]
     public void ToResponseDTO_SetsNullIsWinForIncompleteGame()
     {
-        RankedTeam rankedTeam = CreateDefaultRankedTeam();
-        TeamInfo teamInfo = CreateDefaultTeamInfo();
-        Dictionary<string, TeamInfo> allTeams = CreateDefaultAllTeams();
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
 
         var schedule = new List<ScheduleGame>
         {
@@ -258,7 +274,7 @@ public class TeamDetailMapperTests
             }
         };
 
-        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams);
+        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
 
         var games = result.Schedule.ToList();
         Assert.Single(games);
@@ -268,12 +284,13 @@ public class TeamDetailMapperTests
     [Fact]
     public void ToResponseDTO_MapsOpponentInfoFromAllTeams()
     {
-        RankedTeam rankedTeam = CreateDefaultRankedTeam();
-        TeamInfo teamInfo = CreateDefaultTeamInfo();
-        List<ScheduleGame> schedule = CreateDefaultScheduleGames();
-        Dictionary<string, TeamInfo> allTeams = CreateDefaultAllTeams();
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var schedule = CreateDefaultScheduleGames();
+        var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
 
-        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams);
+        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
 
         var games = result.Schedule.ToList();
         Assert.Single(games);
@@ -282,55 +299,129 @@ public class TeamDetailMapperTests
     }
 
     [Fact]
+    public void ToResponseDTO_MapsOpponentRankFromRankings()
+    {
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var schedule = CreateDefaultScheduleGames();
+        var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
+
+        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
+
+        var games = result.Schedule.ToList();
+        Assert.Single(games);
+        Assert.Equal(5, games[0].OpponentRank);
+    }
+
+    [Fact]
+    public void ToResponseDTO_SetsNullOpponentRankWhenNotInRankings()
+    {
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var allTeams = CreateDefaultAllTeams();
+        allTeams["FCS Team"] = new TeamInfo
+        {
+            AltColor = "#FFFFFF",
+            Color = "#000000",
+            Conference = "FCS",
+            Division = "",
+            Games = [],
+            LogoURL = "https://example.com/fcs.png",
+            Losses = 5,
+            Name = "FCS Team",
+            Wins = 3
+        };
+
+        var schedule = new List<ScheduleGame>
+        {
+            new ScheduleGame
+            {
+                AwayPoints = 7,
+                AwayTeam = "FCS Team",
+                Completed = true,
+                HomePoints = 52,
+                HomeTeam = "Georgia",
+                SeasonType = "regular",
+                Week = 2
+            }
+        };
+        var rankings = CreateDefaultRankings();
+
+        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
+
+        var games = result.Schedule.ToList();
+        Assert.Single(games);
+        Assert.Null(games[0].OpponentRank);
+    }
+
+    [Fact]
     public void ToResponseDTO_WithNullRankedTeam_ThrowsArgumentNullException()
     {
-        TeamInfo teamInfo = CreateDefaultTeamInfo();
-        List<ScheduleGame> schedule = CreateDefaultScheduleGames();
-        Dictionary<string, TeamInfo> allTeams = CreateDefaultAllTeams();
+        var teamInfo = CreateDefaultTeamInfo();
+        var schedule = CreateDefaultScheduleGames();
+        var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
 
         Assert.Throws<ArgumentNullException>(() =>
-            TeamDetailMapper.ToResponseDTO(null!, teamInfo, schedule, allTeams));
+            TeamDetailMapper.ToResponseDTO(null!, teamInfo, schedule, allTeams, rankings));
     }
 
     [Fact]
     public void ToResponseDTO_WithNullTeamInfo_ThrowsArgumentNullException()
     {
-        RankedTeam rankedTeam = CreateDefaultRankedTeam();
-        List<ScheduleGame> schedule = CreateDefaultScheduleGames();
-        Dictionary<string, TeamInfo> allTeams = CreateDefaultAllTeams();
+        var rankedTeam = CreateDefaultRankedTeam();
+        var schedule = CreateDefaultScheduleGames();
+        var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
 
         Assert.Throws<ArgumentNullException>(() =>
-            TeamDetailMapper.ToResponseDTO(rankedTeam, null!, schedule, allTeams));
+            TeamDetailMapper.ToResponseDTO(rankedTeam, null!, schedule, allTeams, rankings));
     }
 
     [Fact]
     public void ToResponseDTO_WithNullScheduleGames_ThrowsArgumentNullException()
     {
-        RankedTeam rankedTeam = CreateDefaultRankedTeam();
-        TeamInfo teamInfo = CreateDefaultTeamInfo();
-        Dictionary<string, TeamInfo> allTeams = CreateDefaultAllTeams();
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
 
         Assert.Throws<ArgumentNullException>(() =>
-            TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, null!, allTeams));
+            TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, null!, allTeams, rankings));
     }
 
     [Fact]
     public void ToResponseDTO_WithNullAllTeams_ThrowsArgumentNullException()
     {
-        RankedTeam rankedTeam = CreateDefaultRankedTeam();
-        TeamInfo teamInfo = CreateDefaultTeamInfo();
-        List<ScheduleGame> schedule = CreateDefaultScheduleGames();
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var schedule = CreateDefaultScheduleGames();
+        var rankings = CreateDefaultRankings();
 
         Assert.Throws<ArgumentNullException>(() =>
-            TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, null!));
+            TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, null!, rankings));
+    }
+
+    [Fact]
+    public void ToResponseDTO_WithNullRankings_ThrowsArgumentNullException()
+    {
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var schedule = CreateDefaultScheduleGames();
+        var allTeams = CreateDefaultAllTeams();
+
+        Assert.Throws<ArgumentNullException>(() =>
+            TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, null!));
     }
 
     [Fact]
     public void ToResponseDTO_OrdersScheduleBySeasonTypeAndWeek()
     {
-        RankedTeam rankedTeam = CreateDefaultRankedTeam();
-        TeamInfo teamInfo = CreateDefaultTeamInfo();
-        Dictionary<string, TeamInfo> allTeams = CreateDefaultAllTeams();
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
 
         var schedule = new List<ScheduleGame>
         {
@@ -369,7 +460,7 @@ public class TeamDetailMapperTests
             }
         };
 
-        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams);
+        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
 
         var games = result.Schedule.ToList();
         Assert.Equal(3, games.Count);

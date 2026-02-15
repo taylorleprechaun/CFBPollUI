@@ -9,12 +9,14 @@ public static class TeamDetailMapper
         RankedTeam rankedTeam,
         TeamInfo teamInfo,
         IEnumerable<ScheduleGame> scheduleGames,
-        IDictionary<string, TeamInfo> allTeams)
+        IDictionary<string, TeamInfo> allTeams,
+        IEnumerable<RankedTeam> rankings)
     {
         ArgumentNullException.ThrowIfNull(rankedTeam);
         ArgumentNullException.ThrowIfNull(teamInfo);
         ArgumentNullException.ThrowIfNull(scheduleGames);
         ArgumentNullException.ThrowIfNull(allTeams);
+        ArgumentNullException.ThrowIfNull(rankings);
 
         var teamName = rankedTeam.TeamName;
         var scoic = StringComparison.OrdinalIgnoreCase;
@@ -24,7 +26,7 @@ public static class TeamDetailMapper
             .OrderBy(g => g.SeasonType == "regular" ? 0 : 1)
             .ThenBy(g => g.Week)
             .ThenBy(g => g.StartDate)
-            .Select(g => MapScheduleGame(g, teamName, allTeams));
+            .Select(g => MapScheduleGame(g, teamName, allTeams, rankings));
 
         return new TeamDetailResponseDTO
         {
@@ -47,7 +49,8 @@ public static class TeamDetailMapper
     private static ScheduleGameDTO MapScheduleGame(
         ScheduleGame game,
         string teamName,
-        IDictionary<string, TeamInfo> allTeams)
+        IDictionary<string, TeamInfo> allTeams,
+        IEnumerable<RankedTeam> rankings)
     {
         var scoic = StringComparison.OrdinalIgnoreCase;
         var isHome = teamName.Equals(game.HomeTeam, scoic);
@@ -70,6 +73,10 @@ public static class TeamDetailMapper
             opponentRecord = $"{opponentInfo.Wins}-{opponentInfo.Losses}";
         }
 
+        var opponentRanked = rankings.FirstOrDefault(
+            r => r.TeamName.Equals(opponentName, scoic));
+        int? opponentRank = opponentRanked?.Rank;
+
         return new ScheduleGameDTO
         {
             GameDate = game.StartDate,
@@ -78,6 +85,7 @@ public static class TeamDetailMapper
             NeutralSite = game.NeutralSite,
             OpponentLogoURL = opponentLogoURL,
             OpponentName = opponentName,
+            OpponentRank = opponentRank,
             OpponentRecord = opponentRecord,
             OpponentScore = game.Completed ? opponentScore : null,
             SeasonType = game.SeasonType,

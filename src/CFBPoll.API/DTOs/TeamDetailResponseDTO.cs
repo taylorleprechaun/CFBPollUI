@@ -25,6 +25,7 @@ public class ScheduleGameDTO
     public bool NeutralSite { get; set; }
     public string OpponentLogoURL { get; set; } = string.Empty;
     public string OpponentName { get; set; } = string.Empty;
+    public int? OpponentRank { get; set; }
     public string OpponentRecord { get; set; } = string.Empty;
     public int? OpponentScore { get; set; }
     public string? SeasonType { get; set; }

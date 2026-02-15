@@ -25,7 +25,7 @@ Last Updated 2/15/2026
 ## Features
 
 - **Custom Ranking Algorithm**: Evaluates teams based on wins, strength of schedule, and margin of victory
-- **Team Details**: Drill into individual teams to see schedule, record breakdowns by location and opponent tier
+- **Team Details**: Drill into individual teams to see schedule with opponent rankings, clickable opponent links, and expandable record breakdowns by location and opponent tier
 - **Historical Data**: Access rankings from 2002 to present
 - **Interactive UI**: Sortable rankings table with team logos and colors
 - **REST API**: Full API with Swagger documentation
@@ -149,35 +149,35 @@ The frontend runs at `http://localhost:5173`.
 
 ## Testing
 
-The project includes 379 unit and integration tests across backend and frontend.
+The project includes 392 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (254 tests)
+# Backend tests (257 tests)
 dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (125 tests)
+# Frontend tests (135 tests)
 cd src/cfbpoll-web
 npm test
 ```
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-254-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-125-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-257-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-135-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-95%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
-![Web Coverage](https://img.shields.io/badge/Web_Coverage-96%25-brightgreen)
+![Web Coverage](https://img.shields.io/badge/Web_Coverage-95%25-brightgreen)
 
 | Project | Line Coverage | Branch Coverage |
 |---------|---------------|-----------------|
 | CFBPoll.Core | 95% | 97% |
 | CFBPoll.API | 100% | 93% |
-| cfbpoll-web | 96% | 85% |
+| cfbpoll-web | 95% | 85% |
 
 **Excluded from coverage:**
 - `RatingModule` - Proprietary rating algorithm, not included in the repository. Tests are maintained locally.
