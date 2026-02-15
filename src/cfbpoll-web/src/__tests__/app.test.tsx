@@ -12,6 +12,10 @@ vi.mock('../pages/rankings-page', () => ({
   RankingsPage: () => <div>Rankings Page Content</div>
 }));
 
+vi.mock('../pages/team-details-page', () => ({
+  TeamDetailsPage: () => <div>Team Details Page Content</div>
+}));
+
 function renderApp(initialRoute = '/') {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } }
@@ -41,12 +45,20 @@ describe('App', () => {
     });
   });
 
+  it('renders team details page at /team-details route', async () => {
+    renderApp('/team-details');
+    await waitFor(() => {
+      expect(screen.getByText('Team Details Page Content')).toBeInTheDocument();
+    });
+  });
+
   it('includes Layout component with navigation', async () => {
     renderApp('/');
     await waitFor(() => {
       expect(screen.getByText('CFB Poll')).toBeInTheDocument();
       expect(screen.getByText('Home')).toBeInTheDocument();
       expect(screen.getByText('Rankings')).toBeInTheDocument();
+      expect(screen.getByText('Team Details')).toBeInTheDocument();
     });
   });
 });

@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { RankingsTable } from '../components/rankings/rankings-table';
 import type { RankedTeam } from '../types';
 
@@ -62,19 +63,30 @@ const mockRankings: RankedTeam[] = [
   }),
 ];
 
+function renderTable(props: {
+  rankings?: RankedTeam[];
+  isLoading?: boolean;
+  selectedConference?: string | null;
+  selectedSeason?: number | null;
+  selectedWeek?: number | null;
+} = {}) {
+  return render(
+    <MemoryRouter>
+      <RankingsTable
+        rankings={props.rankings ?? mockRankings}
+        isLoading={props.isLoading ?? false}
+        selectedConference={props.selectedConference ?? null}
+        selectedSeason={'selectedSeason' in props ? props.selectedSeason ?? null : 2024}
+        selectedWeek={'selectedWeek' in props ? props.selectedWeek ?? null : 12}
+      />
+    </MemoryRouter>
+  );
+}
+
 describe('RankingsTable', () => {
-  beforeEach(() => {
-    Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true });
-    Object.defineProperty(window, 'innerHeight', { value: 768, writable: true });
-  });
-
-  afterEach(() => {
-    document.body.innerHTML = '';
-  });
-
   describe('basic rendering', () => {
     it('renders all columns', () => {
-      render(<RankingsTable rankings={mockRankings} isLoading={false} selectedConference={null} />);
+      renderTable();
 
       expect(screen.getByText('Rank')).toBeInTheDocument();
       expect(screen.getByText('Team')).toBeInTheDocument();
@@ -85,7 +97,7 @@ describe('RankingsTable', () => {
     });
 
     it('displays team data', () => {
-      render(<RankingsTable rankings={mockRankings} isLoading={false} selectedConference={null} />);
+      renderTable();
 
       expect(screen.getByText('Oregon')).toBeInTheDocument();
       expect(screen.getByText('Ohio State')).toBeInTheDocument();
@@ -95,14 +107,14 @@ describe('RankingsTable', () => {
     });
 
     it('shows loading state', () => {
-      render(<RankingsTable rankings={[]} isLoading={true} selectedConference={null} />);
+      renderTable({ rankings: [], isLoading: true });
 
       expect(screen.queryByText('Rank')).not.toBeInTheDocument();
       expect(document.querySelector('.animate-spin')).toBeInTheDocument();
     });
 
     it('shows empty state when no rankings', () => {
-      render(<RankingsTable rankings={[]} isLoading={false} selectedConference={null} />);
+      renderTable({ rankings: [] });
 
       expect(
         screen.getByText('Select a season and week to view rankings.')
@@ -110,13 +122,13 @@ describe('RankingsTable', () => {
     });
 
     it('displays rating with 4 decimal places', () => {
-      render(<RankingsTable rankings={mockRankings} isLoading={false} selectedConference={null} />);
+      renderTable();
 
       expect(screen.getByText('165.4200')).toBeInTheDocument();
     });
 
     it('displays weighted SOS with 4 decimal places', () => {
-      render(<RankingsTable rankings={mockRankings} isLoading={false} selectedConference={null} />);
+      renderTable();
 
       expect(screen.getByText('0.5820')).toBeInTheDocument();
     });
@@ -124,7 +136,7 @@ describe('RankingsTable', () => {
 
   describe('conference filtering', () => {
     it('filters teams by selected conference', () => {
-      render(<RankingsTable rankings={mockRankings} isLoading={false} selectedConference="Big Ten" />);
+      renderTable({ selectedConference: 'Big Ten' });
 
       expect(screen.getByText('Oregon')).toBeInTheDocument();
       expect(screen.getByText('Ohio State')).toBeInTheDocument();
@@ -132,21 +144,21 @@ describe('RankingsTable', () => {
     });
 
     it('shows conference rank when conference is selected', () => {
-      render(<RankingsTable rankings={mockRankings} isLoading={false} selectedConference="Big Ten" />);
+      renderTable({ selectedConference: 'Big Ten' });
 
       expect(screen.getByText('(1)')).toBeInTheDocument();
       expect(screen.getByText('(2)')).toBeInTheDocument();
     });
 
     it('shows conference SOS rank when conference is selected', () => {
-      render(<RankingsTable rankings={mockRankings} isLoading={false} selectedConference="Big Ten" />);
+      renderTable({ selectedConference: 'Big Ten' });
 
       expect(screen.getByText('(15)')).toBeInTheDocument();
       expect(screen.getByText('(8)')).toBeInTheDocument();
     });
 
     it('shows all teams when no conference is selected', () => {
-      render(<RankingsTable rankings={mockRankings} isLoading={false} selectedConference={null} />);
+      renderTable();
 
       expect(screen.getByText('Oregon')).toBeInTheDocument();
       expect(screen.getByText('Ohio State')).toBeInTheDocument();
@@ -156,7 +168,7 @@ describe('RankingsTable', () => {
 
   describe('sorting', () => {
     it('allows clicking column headers to sort', () => {
-      render(<RankingsTable rankings={mockRankings} isLoading={false} selectedConference={null} />);
+      renderTable();
 
       const ratingHeader = screen.getByText('Rating');
       fireEvent.click(ratingHeader);
@@ -165,7 +177,7 @@ describe('RankingsTable', () => {
     });
 
     it('shows sort indicator when column is sorted', () => {
-      render(<RankingsTable rankings={mockRankings} isLoading={false} selectedConference={null} />);
+      renderTable();
 
       const rankHeader = screen.getByText('Rank');
       fireEvent.click(rankHeader);
@@ -175,40 +187,30 @@ describe('RankingsTable', () => {
     });
   });
 
-  describe('hover interactions', () => {
-    it('team cell has hover event handlers', () => {
-      render(<RankingsTable rankings={mockRankings} isLoading={false} selectedConference={null} />);
-
-      const teamCell = screen.getByText('Oregon').closest('div');
-      expect(teamCell).toBeInTheDocument();
-      expect(teamCell).toHaveClass('cursor-pointer');
-    });
-
-    it('handles mouse leave without error', () => {
-      render(<RankingsTable rankings={mockRankings} isLoading={false} selectedConference={null} />);
-
-      const teamCell = screen.getByText('Oregon').closest('div');
-      fireEvent.mouseLeave(teamCell!);
-
-      expect(teamCell).toBeInTheDocument();
-    });
-
-    it('handles mouse move without error', () => {
-      render(<RankingsTable rankings={mockRankings} isLoading={false} selectedConference={null} />);
-
-      const teamCell = screen.getByText('Oregon').closest('div');
-      fireEvent.mouseMove(teamCell!, { clientX: 200, clientY: 200 });
-
-      expect(teamCell).toBeInTheDocument();
-    });
-  });
-
   describe('team logos', () => {
     it('renders team logos', () => {
-      render(<RankingsTable rankings={mockRankings} isLoading={false} selectedConference={null} />);
+      renderTable();
 
       expect(screen.getByAltText('Oregon logo')).toBeInTheDocument();
       expect(screen.getByAltText('Ohio State logo')).toBeInTheDocument();
+    });
+  });
+
+  describe('team name links', () => {
+    it('renders team name as link to team details', () => {
+      renderTable();
+
+      const oregonLink = screen.getByText('Oregon').closest('a');
+      expect(oregonLink).toBeInTheDocument();
+      expect(oregonLink).toHaveAttribute('href', '/team-details?team=Oregon&season=2024&week=12');
+    });
+
+    it('renders link without season/week when not provided', () => {
+      renderTable({ selectedSeason: null, selectedWeek: null });
+
+      const oregonLink = screen.getByText('Oregon').closest('a');
+      expect(oregonLink).toBeInTheDocument();
+      expect(oregonLink).toHaveAttribute('href', '/team-details?team=Oregon');
     });
   });
 });
