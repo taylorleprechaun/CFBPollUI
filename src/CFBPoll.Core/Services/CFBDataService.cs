@@ -265,6 +265,8 @@ public class CFBDataService : ICFBDataService
 
             teamDict[teamName] = new TeamInfo
             {
+                AltColor = team.AlternateColor ?? string.Empty,
+                Color = team.Color ?? string.Empty,
                 Conference = team.Conference ?? string.Empty,
                 Division = team.Division ?? string.Empty,
                 Games = teamGames,
@@ -283,6 +285,26 @@ public class CFBDataService : ICFBDataService
             Teams = teamDict,
             Week = week
         };
+    }
+
+    public async Task<IEnumerable<ScheduleGame>> GetFullSeasonScheduleAsync(int season)
+    {
+        var regularGames = await _client.Games.GetAsync(config =>
+        {
+            config.QueryParameters.Year = season;
+            config.QueryParameters.SeasonTypeAsSeasonType = ApiModels.SeasonType.Regular;
+        });
+
+        var postseasonGames = await _client.Games.GetAsync(config =>
+        {
+            config.QueryParameters.Year = season;
+            config.QueryParameters.SeasonTypeAsSeasonType = ApiModels.SeasonType.Postseason;
+        });
+
+        var allGames = (regularGames ?? []).Select(g => MapScheduleGame(g, "regular"))
+            .Concat((postseasonGames ?? []).Select(g => MapScheduleGame(g, "postseason")));
+
+        return allGames;
     }
 
     public async Task<IDictionary<string, IEnumerable<TeamStat>>> GetSeasonStatsAsync(int season, int week, string seasonType)
@@ -384,6 +406,25 @@ public class CFBDataService : ICFBDataService
             StuffRate = unit.StuffRate,
             SuccessRate = unit.SuccessRate,
             TotalPPA = null
+        };
+    }
+
+    private ScheduleGame MapScheduleGame(ApiModels.Game g, string seasonType)
+    {
+        return new ScheduleGame
+        {
+            AwayPoints = g.AwayPoints,
+            AwayTeam = g.AwayTeam,
+            Completed = g.Completed ?? false,
+            GameID = g.Id,
+            HomePoints = g.HomePoints,
+            HomeTeam = g.HomeTeam,
+            NeutralSite = g.NeutralSite ?? false,
+            SeasonType = seasonType,
+            StartDate = g.StartDate?.DateTime,
+            StartTimeTbd = g.StartTimeTBD ?? false,
+            Venue = g.Venue,
+            Week = g.Week
         };
     }
 

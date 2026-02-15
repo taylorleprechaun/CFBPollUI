@@ -109,6 +109,27 @@ public class CachingCFBDataService : ICFBDataService
         return dataList;
     }
 
+    public async Task<IEnumerable<ScheduleGame>> GetFullSeasonScheduleAsync(int season)
+    {
+        var cacheKey = $"fullSchedule_{season}";
+
+        var cached = await _cache.GetAsync<List<ScheduleGame>>(cacheKey);
+        if (cached != null)
+        {
+            _logger.LogDebug("Cache hit for full schedule {Season}", season);
+            return cached;
+        }
+
+        _logger.LogDebug("Cache miss for full schedule {Season}, fetching from API", season);
+        var data = await _innerService.GetFullSeasonScheduleAsync(season);
+        var dataList = data.ToList();
+
+        var expiresAt = CalculateSeasonDataExpiration(season);
+        await _cache.SetAsync(cacheKey, dataList, expiresAt);
+
+        return dataList;
+    }
+
     public async Task<SeasonData> GetSeasonDataAsync(int season, int week)
     {
         var cacheKey = $"seasonData_{season}_week_{week}";

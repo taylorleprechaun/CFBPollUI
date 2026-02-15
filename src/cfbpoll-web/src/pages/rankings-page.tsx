@@ -118,6 +118,8 @@ export function RankingsPage() {
           rankings={rankingsData?.rankings ?? []}
           isLoading={rankingsLoading}
           selectedConference={selectedConference}
+          selectedSeason={selectedSeason}
+          selectedWeek={selectedWeek}
         />
       </div>
 

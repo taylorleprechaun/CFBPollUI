@@ -4,6 +4,7 @@ import { Layout } from './components/layout/layout';
 
 const HomePage = lazy(() => import('./pages/home-page').then(m => ({ default: m.HomePage })));
 const RankingsPage = lazy(() => import('./pages/rankings-page').then(m => ({ default: m.RankingsPage })));
+const TeamDetailsPage = lazy(() => import('./pages/team-details-page').then(m => ({ default: m.TeamDetailsPage })));
 
 function PageLoader() {
   return (
@@ -25,6 +26,11 @@ function App() {
         <Route path="rankings" element={
           <Suspense fallback={<PageLoader />}>
             <RankingsPage />
+          </Suspense>
+        } />
+        <Route path="team-details" element={
+          <Suspense fallback={<PageLoader />}>
+            <TeamDetailsPage />
           </Suspense>
         } />
       </Route>

@@ -23,6 +23,12 @@ export function Layout() {
                 >
                   Rankings
                 </Link>
+                <Link
+                  to="/team-details"
+                  className="hover:bg-blue-800 px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  Team Details
+                </Link>
               </div>
             </div>
           </div>

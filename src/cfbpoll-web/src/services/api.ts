@@ -2,13 +2,15 @@ import type { z } from 'zod';
 import { ApiError, ValidationError } from '../lib/api-error';
 import {
   ConferencesResponseSchema,
-  SeasonsResponseSchema,
-  WeeksResponseSchema,
   RankingsResponseSchema,
+  SeasonsResponseSchema,
+  TeamDetailResponseSchema,
+  WeeksResponseSchema,
   type ConferencesResponse,
-  type SeasonsResponse,
-  type WeeksResponse,
   type RankingsResponse,
+  type SeasonsResponse,
+  type TeamDetailResponse,
+  type WeeksResponse,
 } from '../schemas';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:5001';
@@ -75,5 +77,16 @@ export async function fetchConferences(): Promise<ConferencesResponse> {
   return fetchWithValidation(
     `${API_BASE_URL}/api/conferences`,
     ConferencesResponseSchema
+  );
+}
+
+export async function fetchTeamDetail(
+  season: number,
+  week: number,
+  teamName: string
+): Promise<TeamDetailResponse> {
+  return fetchWithValidation(
+    `${API_BASE_URL}/api/teams/${encodeURIComponent(teamName)}?season=${season}&week=${week}`,
+    TeamDetailResponseSchema
   );
 }
