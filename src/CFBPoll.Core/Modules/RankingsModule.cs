@@ -86,7 +86,7 @@ public class RankingsModule : IRankingsModule
         return details;
     }
 
-    private static int GetOpponentTier(string opponentName, IDictionary<string, int> teamRankLookup)
+    private int GetOpponentTier(string opponentName, IDictionary<string, int> teamRankLookup)
     {
         if (!teamRankLookup.TryGetValue(opponentName, out var opponentRank))
             return 5;
@@ -101,52 +101,23 @@ public class RankingsModule : IRankingsModule
         };
     }
 
-    private static TeamDetails UpdateLocationRecord(TeamDetails details, bool neutralSite, bool isHome, bool isWin)
+    private Record UpdateRecord(Record record, bool isWin)
     {
-        if (neutralSite)
-        {
-            return new TeamDetails
-            {
-                Away = details.Away,
-                Home = details.Home,
-                Neutral = isWin ? details.Neutral.AddWin() : details.Neutral.AddLoss(),
-                VsRank101Plus = details.VsRank101Plus,
-                VsRank11To25 = details.VsRank11To25,
-                VsRank1To10 = details.VsRank1To10,
-                VsRank26To50 = details.VsRank26To50,
-                VsRank51To100 = details.VsRank51To100
-            };
-        }
-
-        if (isHome)
-        {
-            return new TeamDetails
-            {
-                Away = details.Away,
-                Home = isWin ? details.Home.AddWin() : details.Home.AddLoss(),
-                Neutral = details.Neutral,
-                VsRank101Plus = details.VsRank101Plus,
-                VsRank11To25 = details.VsRank11To25,
-                VsRank1To10 = details.VsRank1To10,
-                VsRank26To50 = details.VsRank26To50,
-                VsRank51To100 = details.VsRank51To100
-            };
-        }
-
-        return new TeamDetails
-        {
-            Away = isWin ? details.Away.AddWin() : details.Away.AddLoss(),
-            Home = details.Home,
-            Neutral = details.Neutral,
-            VsRank101Plus = details.VsRank101Plus,
-            VsRank11To25 = details.VsRank11To25,
-            VsRank1To10 = details.VsRank1To10,
-            VsRank26To50 = details.VsRank26To50,
-            VsRank51To100 = details.VsRank51To100
-        };
+        return isWin ? record.AddWin() : record.AddLoss();
     }
 
-    private static TeamDetails UpdateOpponentTierRecord(
+    private TeamDetails UpdateLocationRecord(TeamDetails details, bool neutralSite, bool isHome, bool isWin)
+    {
+        if (neutralSite)
+            return details with { Neutral = UpdateRecord(details.Neutral, isWin) };
+
+        if (isHome)
+            return details with { Home = UpdateRecord(details.Home, isWin) };
+
+        return details with { Away = UpdateRecord(details.Away, isWin) };
+    }
+
+    private TeamDetails UpdateOpponentTierRecord(
         TeamDetails details,
         string opponentName,
         IDictionary<string, int> teamRankLookup,
@@ -156,61 +127,11 @@ public class RankingsModule : IRankingsModule
 
         return tier switch
         {
-            1 => new TeamDetails
-            {
-                Away = details.Away,
-                Home = details.Home,
-                Neutral = details.Neutral,
-                VsRank101Plus = details.VsRank101Plus,
-                VsRank11To25 = details.VsRank11To25,
-                VsRank1To10 = isWin ? details.VsRank1To10.AddWin() : details.VsRank1To10.AddLoss(),
-                VsRank26To50 = details.VsRank26To50,
-                VsRank51To100 = details.VsRank51To100
-            },
-            2 => new TeamDetails
-            {
-                Away = details.Away,
-                Home = details.Home,
-                Neutral = details.Neutral,
-                VsRank101Plus = details.VsRank101Plus,
-                VsRank11To25 = isWin ? details.VsRank11To25.AddWin() : details.VsRank11To25.AddLoss(),
-                VsRank1To10 = details.VsRank1To10,
-                VsRank26To50 = details.VsRank26To50,
-                VsRank51To100 = details.VsRank51To100
-            },
-            3 => new TeamDetails
-            {
-                Away = details.Away,
-                Home = details.Home,
-                Neutral = details.Neutral,
-                VsRank101Plus = details.VsRank101Plus,
-                VsRank11To25 = details.VsRank11To25,
-                VsRank1To10 = details.VsRank1To10,
-                VsRank26To50 = isWin ? details.VsRank26To50.AddWin() : details.VsRank26To50.AddLoss(),
-                VsRank51To100 = details.VsRank51To100
-            },
-            4 => new TeamDetails
-            {
-                Away = details.Away,
-                Home = details.Home,
-                Neutral = details.Neutral,
-                VsRank101Plus = details.VsRank101Plus,
-                VsRank11To25 = details.VsRank11To25,
-                VsRank1To10 = details.VsRank1To10,
-                VsRank26To50 = details.VsRank26To50,
-                VsRank51To100 = isWin ? details.VsRank51To100.AddWin() : details.VsRank51To100.AddLoss()
-            },
-            _ => new TeamDetails
-            {
-                Away = details.Away,
-                Home = details.Home,
-                Neutral = details.Neutral,
-                VsRank101Plus = isWin ? details.VsRank101Plus.AddWin() : details.VsRank101Plus.AddLoss(),
-                VsRank11To25 = details.VsRank11To25,
-                VsRank1To10 = details.VsRank1To10,
-                VsRank26To50 = details.VsRank26To50,
-                VsRank51To100 = details.VsRank51To100
-            }
+            1 => details with { VsRank1To10 = UpdateRecord(details.VsRank1To10, isWin) },
+            2 => details with { VsRank11To25 = UpdateRecord(details.VsRank11To25, isWin) },
+            3 => details with { VsRank26To50 = UpdateRecord(details.VsRank26To50, isWin) },
+            4 => details with { VsRank51To100 = UpdateRecord(details.VsRank51To100, isWin) },
+            _ => details with { VsRank101Plus = UpdateRecord(details.VsRank101Plus, isWin) }
         };
     }
 }

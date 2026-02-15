@@ -108,8 +108,8 @@ public class ExceptionHandlingMiddlewareTests
         var responseBody = await reader.ReadToEndAsync();
 
         var response = JsonSerializer.Deserialize<JsonElement>(responseBody);
-        Assert.Equal("test-trace-id", response.GetProperty("traceId").GetString());
-        Assert.Equal("Test error", response.GetProperty("message").GetString());
+        Assert.Equal("test-trace-id", response.GetProperty("traceID").GetString());
+        Assert.Equal("The request was invalid", response.GetProperty("message").GetString());
         Assert.Equal(400, response.GetProperty("statusCode").GetInt32());
     }
 

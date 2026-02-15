@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 namespace CFBPoll.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/[controller]")]
 public class SeasonsController : ControllerBase
 {
     private readonly ICFBDataService _dataService;
@@ -28,6 +28,10 @@ public class SeasonsController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Retrieves the list of available seasons.
+    /// </summary>
+    /// <returns>An array of season years in descending order.</returns>
     [HttpGet]
     public async Task<ActionResult<SeasonsResponseDTO>> GetSeasons()
     {
@@ -39,6 +43,11 @@ public class SeasonsController : ControllerBase
         return Ok(new SeasonsResponseDTO { Seasons = seasons });
     }
 
+    /// <summary>
+    /// Retrieves the available weeks for a given season.
+    /// </summary>
+    /// <param name="season">The season year.</param>
+    /// <returns>A list of weeks with labels for the specified season.</returns>
     [HttpGet("{season}/weeks")]
     public async Task<ActionResult<WeeksResponseDTO>> GetWeeks(int season)
     {
@@ -48,7 +57,7 @@ public class SeasonsController : ControllerBase
         var calendarList = calendar.ToList();
 
         if (calendarList.Count == 0)
-            return NotFound(new { message = $"No calendar data found for season {season}" });
+            return NotFound(new ErrorResponseDTO { Message = $"No calendar data found for season {season}", StatusCode = 404 });
 
         var weeks = _seasonModule.GetWeekLabels(calendarList);
 

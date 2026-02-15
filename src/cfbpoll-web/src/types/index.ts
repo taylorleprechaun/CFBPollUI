@@ -1,11 +1,13 @@
 export type {
   Conference,
   ConferencesResponse,
-  SeasonsResponse,
-  Week,
-  WeeksResponse,
-  Record,
-  TeamDetails,
   RankedTeam,
   RankingsResponse,
+  ScheduleGame,
+  SeasonsResponse,
+  TeamDetailResponse,
+  TeamDetails,
+  TeamRecord,
+  Week,
+  WeeksResponse,
 } from '../schemas';

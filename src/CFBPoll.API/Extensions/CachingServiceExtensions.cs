@@ -16,13 +16,20 @@ public static class CachingServiceExtensions
 
         services.AddSingleton<IPersistentCache, FilePersistentCache>();
 
-        var apiKey = configuration["CollegeFootballData:ApiKey"]
+        string apiKey = configuration["CollegeFootballData:ApiKey"]
             ?? throw new InvalidOperationException(
                 "API key not configured. Set CollegeFootballData:ApiKey in appsettings.json or appsettings-private.json");
 
-        var minimumYear = configuration.GetValue<int>("HistoricalData:MinimumYear", 2002);
+        int minimumYear = configuration.GetValue<int>("HistoricalData:MinimumYear", 2002);
 
-        services.AddSingleton<CFBDataService>(sp => new CFBDataService(apiKey, minimumYear));
+        services.AddHttpClient<CFBDataService>();
+
+        services.AddSingleton<CFBDataService>(sp =>
+        {
+            var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+            HttpClient httpClient = httpClientFactory.CreateClient(nameof(CFBDataService));
+            return new CFBDataService(httpClient, apiKey, minimumYear, sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<CFBDataService>>());
+        });
 
         services.AddSingleton<ICFBDataService>(sp =>
         {

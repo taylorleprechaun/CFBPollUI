@@ -2,13 +2,15 @@ import type { z } from 'zod';
 import { ApiError, ValidationError } from '../lib/api-error';
 import {
   ConferencesResponseSchema,
-  SeasonsResponseSchema,
-  WeeksResponseSchema,
   RankingsResponseSchema,
+  SeasonsResponseSchema,
+  TeamDetailResponseSchema,
+  WeeksResponseSchema,
   type ConferencesResponse,
-  type SeasonsResponse,
-  type WeeksResponse,
   type RankingsResponse,
+  type SeasonsResponse,
+  type TeamDetailResponse,
+  type WeeksResponse,
 } from '../schemas';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:5001';
@@ -49,14 +51,14 @@ async function fetchWithValidation<T>(
 
 export async function fetchSeasons(): Promise<SeasonsResponse> {
   return fetchWithValidation(
-    `${API_BASE_URL}/api/seasons`,
+    `${API_BASE_URL}/api/v1/seasons`,
     SeasonsResponseSchema
   );
 }
 
 export async function fetchWeeks(season: number): Promise<WeeksResponse> {
   return fetchWithValidation(
-    `${API_BASE_URL}/api/seasons/${season}/weeks`,
+    `${API_BASE_URL}/api/v1/seasons/${season}/weeks`,
     WeeksResponseSchema
   );
 }
@@ -66,14 +68,25 @@ export async function fetchRankings(
   week: number
 ): Promise<RankingsResponse> {
   return fetchWithValidation(
-    `${API_BASE_URL}/api/rankings?season=${season}&week=${week}`,
+    `${API_BASE_URL}/api/v1/rankings?season=${season}&week=${week}`,
     RankingsResponseSchema
   );
 }
 
 export async function fetchConferences(): Promise<ConferencesResponse> {
   return fetchWithValidation(
-    `${API_BASE_URL}/api/conferences`,
+    `${API_BASE_URL}/api/v1/conferences`,
     ConferencesResponseSchema
+  );
+}
+
+export async function fetchTeamDetail(
+  season: number,
+  week: number,
+  teamName: string
+): Promise<TeamDetailResponse> {
+  return fetchWithValidation(
+    `${API_BASE_URL}/api/v1/teams/${encodeURIComponent(teamName)}?season=${season}&week=${week}`,
+    TeamDetailResponseSchema
   );
 }

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace CFBPoll.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/[controller]")]
 public class ConferencesController : ControllerBase
 {
     private readonly IConferenceModule _conferenceModule;
@@ -23,6 +23,10 @@ public class ConferencesController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Retrieves all FBS conferences with their display labels.
+    /// </summary>
+    /// <returns>A list of FBS conferences.</returns>
     [HttpGet]
     public async Task<ActionResult<ConferencesResponseDTO>> GetConferences()
     {

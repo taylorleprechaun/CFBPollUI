@@ -1,4 +1,6 @@
 using CFBPoll.Core.Services;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Kiota.Abstractions.Authentication;
 using Xunit;
 
@@ -6,10 +8,13 @@ namespace CFBPoll.Core.Tests.Services;
 
 public class CFBDataServiceTests
 {
+    private readonly HttpClient _httpClient = new();
+    private readonly ILogger<CFBDataService> _logger = NullLogger<CFBDataService>.Instance;
+
     [Fact]
     public void Constructor_WithValidApiKey_CreatesInstance()
     {
-        var service = new CFBDataService("test-api-key");
+        var service = new CFBDataService(_httpClient, "test-api-key", 2002, _logger);
 
         Assert.NotNull(service);
     }
@@ -17,17 +22,15 @@ public class CFBDataServiceTests
     [Fact]
     public void Constructor_WithMinimumYear_CreatesInstance()
     {
-        var service = new CFBDataService("test-api-key", 2010);
+        var service = new CFBDataService(_httpClient, "test-api-key", 2010, _logger);
 
         Assert.NotNull(service);
     }
 
     [Fact]
-    public void Constructor_UsesDefaultMinimumYear()
+    public void Constructor_WithNullLogger_ThrowsArgumentNullException()
     {
-        var service = new CFBDataService("test-api-key");
-
-        Assert.NotNull(service);
+        Assert.Throws<ArgumentNullException>(() => new CFBDataService(_httpClient, "test-api-key", 2002, null!));
     }
 }
 

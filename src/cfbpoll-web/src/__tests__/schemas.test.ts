@@ -5,6 +5,8 @@ import {
   RankingsResponseSchema,
   WeekSchema,
   RankedTeamSchema,
+  ScheduleGameSchema,
+  TeamDetailResponseSchema,
 } from '../schemas';
 
 describe('Zod Schemas', () => {
@@ -135,6 +137,91 @@ describe('Zod Schemas', () => {
         rankings: [{ invalidField: true }],
       };
       const result = RankingsResponseSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('ScheduleGameSchema', () => {
+    it('validates valid schedule game', () => {
+      const data = {
+        gameDate: '2024-09-07T00:00:00',
+        isHome: true,
+        isWin: true,
+        neutralSite: false,
+        opponentLogoURL: 'https://example.com/logo.png',
+        opponentName: 'Oregon',
+        opponentRecord: '8-2',
+        opponentScore: 21,
+        seasonType: 'regular',
+        startTimeTbd: false,
+        teamScore: 35,
+        venue: 'Sanford Stadium',
+        week: 1,
+      };
+      const result = ScheduleGameSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('validates schedule game with null optional fields', () => {
+      const data = {
+        gameDate: null,
+        isHome: false,
+        isWin: null,
+        neutralSite: true,
+        opponentLogoURL: '',
+        opponentName: 'TBD',
+        opponentRecord: '',
+        opponentScore: null,
+        seasonType: null,
+        startTimeTbd: true,
+        teamScore: null,
+        venue: null,
+        week: null,
+      };
+      const result = ScheduleGameSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects schedule game with missing required fields', () => {
+      const data = { isHome: true };
+      const result = ScheduleGameSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('TeamDetailResponseSchema', () => {
+    it('validates valid team detail response', () => {
+      const data = {
+        altColor: '#FFD700',
+        color: '#006400',
+        conference: 'Big Ten',
+        details: {
+          home: { wins: 6, losses: 0 },
+          away: { wins: 4, losses: 0 },
+          neutral: { wins: 1, losses: 0 },
+          vsRank1To10: { wins: 2, losses: 0 },
+          vsRank11To25: { wins: 3, losses: 0 },
+          vsRank26To50: { wins: 1, losses: 0 },
+          vsRank51To100: { wins: 2, losses: 0 },
+          vsRank101Plus: { wins: 3, losses: 0 },
+        },
+        division: '',
+        logoURL: 'https://example.com/oregon.png',
+        rank: 1,
+        rating: 165.42,
+        record: '11-0',
+        schedule: [],
+        sosRanking: 15,
+        teamName: 'Oregon',
+        weightedSOS: 0.582,
+      };
+      const result = TeamDetailResponseSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects response with missing required fields', () => {
+      const data = { teamName: 'Oregon' };
+      const result = TeamDetailResponseSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
   });

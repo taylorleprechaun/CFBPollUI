@@ -2,6 +2,8 @@ namespace CFBPoll.Core.Models;
 
 public class TeamInfo
 {
+    public string AltColor { get; set; } = string.Empty;
+    public string Color { get; set; } = string.Empty;
     public string Conference { get; set; } = string.Empty;
     public string Division { get; set; } = string.Empty;
     public IEnumerable<Game> Games { get; set; } = [];

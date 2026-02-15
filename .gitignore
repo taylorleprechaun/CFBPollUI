@@ -54,6 +54,7 @@ Thumbs.db
 # Test results
 TestResults/
 coverage/
+coverage-results/
 
 # Claude
 .claude/

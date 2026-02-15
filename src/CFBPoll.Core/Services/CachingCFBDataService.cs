@@ -30,19 +30,19 @@ public class CachingCFBDataService : ICFBDataService
     {
         var cacheKey = $"calendar_{year}";
 
-        var cached = await _cache.GetAsync<List<CalendarWeek>>(cacheKey);
-        if (cached != null)
+        var cached = await _cache.GetAsync<List<CalendarWeek>>(cacheKey).ConfigureAwait(false);
+        if (cached is not null)
         {
             _logger.LogDebug("Cache hit for calendar {Year}", year);
             return cached;
         }
 
         _logger.LogDebug("Cache miss for calendar {Year}, fetching from API", year);
-        var data = await _innerService.GetCalendarAsync(year);
+        var data = await _innerService.GetCalendarAsync(year).ConfigureAwait(false);
         var dataList = data.ToList();
 
-        var expiresAt = CalculateCalendarExpiration(year);
-        await _cache.SetAsync(cacheKey, dataList, expiresAt);
+        var expiresAt = CalculateExpiration(year, _options.CalendarExpirationHours);
+        await _cache.SetAsync(cacheKey, dataList, expiresAt).ConfigureAwait(false);
 
         return dataList;
     }
@@ -51,18 +51,18 @@ public class CachingCFBDataService : ICFBDataService
     {
         const string cacheKey = "maxSeasonYear";
 
-        var cached = await _cache.GetAsync<MaxSeasonYearWrapper>(cacheKey);
-        if (cached != null)
+        var cached = await _cache.GetAsync<MaxSeasonYearWrapper>(cacheKey).ConfigureAwait(false);
+        if (cached is not null)
         {
             _logger.LogDebug("Cache hit for max season year");
             return cached.Year;
         }
 
         _logger.LogDebug("Cache miss for max season year, fetching from API");
-        var year = await _innerService.GetMaxSeasonYearAsync();
+        var year = await _innerService.GetMaxSeasonYearAsync().ConfigureAwait(false);
 
         var expiresAt = DateTime.UtcNow.AddHours(_options.MaxSeasonYearExpirationHours);
-        await _cache.SetAsync(cacheKey, new MaxSeasonYearWrapper { Year = year }, expiresAt);
+        await _cache.SetAsync(cacheKey, new MaxSeasonYearWrapper { Year = year }, expiresAt).ConfigureAwait(false);
 
         return year;
     }
@@ -71,19 +71,19 @@ public class CachingCFBDataService : ICFBDataService
     {
         var cacheKey = $"advancedGameStats_{season}_{seasonType}";
 
-        var cached = await _cache.GetAsync<List<AdvancedGameStats>>(cacheKey);
-        if (cached != null)
+        var cached = await _cache.GetAsync<List<AdvancedGameStats>>(cacheKey).ConfigureAwait(false);
+        if (cached is not null)
         {
             _logger.LogDebug("Cache hit for advanced game stats {Season} {SeasonType}", season, seasonType);
             return cached;
         }
 
         _logger.LogDebug("Cache miss for advanced game stats {Season} {SeasonType}, fetching from API", season, seasonType);
-        var data = await _innerService.GetAdvancedGameStatsAsync(season, seasonType);
+        var data = await _innerService.GetAdvancedGameStatsAsync(season, seasonType).ConfigureAwait(false);
         var dataList = data.ToList();
 
-        var expiresAt = CalculateSeasonDataExpiration(season);
-        await _cache.SetAsync(cacheKey, dataList, expiresAt);
+        var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
+        await _cache.SetAsync(cacheKey, dataList, expiresAt).ConfigureAwait(false);
 
         return dataList;
     }
@@ -92,19 +92,40 @@ public class CachingCFBDataService : ICFBDataService
     {
         const string cacheKey = "conferences";
 
-        var cached = await _cache.GetAsync<List<Conference>>(cacheKey);
-        if (cached != null)
+        var cached = await _cache.GetAsync<List<Conference>>(cacheKey).ConfigureAwait(false);
+        if (cached is not null)
         {
             _logger.LogDebug("Cache hit for conferences");
             return cached;
         }
 
         _logger.LogDebug("Cache miss for conferences, fetching from API");
-        var data = await _innerService.GetConferencesAsync();
+        var data = await _innerService.GetConferencesAsync().ConfigureAwait(false);
         var dataList = data.ToList();
 
-        var expiresAt = DateTime.UtcNow.AddDays(30);
-        await _cache.SetAsync(cacheKey, dataList, expiresAt);
+        var expiresAt = DateTime.UtcNow.AddHours(_options.ConferenceExpirationHours);
+        await _cache.SetAsync(cacheKey, dataList, expiresAt).ConfigureAwait(false);
+
+        return dataList;
+    }
+
+    public async Task<IEnumerable<ScheduleGame>> GetFullSeasonScheduleAsync(int season)
+    {
+        var cacheKey = $"fullSchedule_{season}";
+
+        var cached = await _cache.GetAsync<List<ScheduleGame>>(cacheKey).ConfigureAwait(false);
+        if (cached is not null)
+        {
+            _logger.LogDebug("Cache hit for full schedule {Season}", season);
+            return cached;
+        }
+
+        _logger.LogDebug("Cache miss for full schedule {Season}, fetching from API", season);
+        var data = await _innerService.GetFullSeasonScheduleAsync(season).ConfigureAwait(false);
+        var dataList = data.ToList();
+
+        var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
+        await _cache.SetAsync(cacheKey, dataList, expiresAt).ConfigureAwait(false);
 
         return dataList;
     }
@@ -113,44 +134,32 @@ public class CachingCFBDataService : ICFBDataService
     {
         var cacheKey = $"seasonData_{season}_week_{week}";
 
-        var cached = await _cache.GetAsync<SeasonData>(cacheKey);
-        if (cached != null)
+        var cached = await _cache.GetAsync<SeasonData>(cacheKey).ConfigureAwait(false);
+        if (cached is not null)
         {
-            _logger.LogDebug("Cache hit for season {Season} week {Week}", season, week);
+            _logger.LogDebug("Cache hit for season data {Season} week {Week}", season, week);
             return cached;
         }
 
         _logger.LogDebug("Cache miss for season {Season} week {Week}, fetching from API", season, week);
-        var data = await _innerService.GetSeasonDataAsync(season, week);
+        var data = await _innerService.GetSeasonDataAsync(season, week).ConfigureAwait(false);
 
-        var expiresAt = CalculateSeasonDataExpiration(season);
-        await _cache.SetAsync(cacheKey, data, expiresAt);
+        var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
+        await _cache.SetAsync(cacheKey, data, expiresAt).ConfigureAwait(false);
 
         return data;
     }
 
-    private DateTime CalculateCalendarExpiration(int year)
+    private DateTime CalculateExpiration(int year, int expirationHours)
     {
-        var currentYear = DateTime.Now.Year;
+        var currentYear = DateTime.UtcNow.Year;
 
         if (year < currentYear)
         {
             return DateTime.MaxValue;
         }
 
-        return DateTime.UtcNow.AddHours(_options.CalendarExpirationHours);
-    }
-
-    private DateTime CalculateSeasonDataExpiration(int season)
-    {
-        var currentYear = DateTime.Now.Year;
-
-        if (season < currentYear)
-        {
-            return DateTime.MaxValue;
-        }
-
-        return DateTime.UtcNow.AddHours(_options.SeasonDataExpirationHours);
+        return DateTime.UtcNow.AddHours(expirationHours);
     }
 
     internal class MaxSeasonYearWrapper

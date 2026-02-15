@@ -6,15 +6,17 @@ import {
   useReactTable,
   type SortingState,
 } from '@tanstack/react-table';
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import type { RankedTeam } from '../../types';
-import { TeamDetailsPopup } from './team-details-popup';
 import { TeamLogo } from './team-logo';
 
 interface RankingsTableProps {
   rankings: RankedTeam[];
   isLoading: boolean;
   selectedConference: string | null;
+  selectedSeason: number | null;
+  selectedWeek: number | null;
 }
 
 interface DisplayRankedTeam extends RankedTeam {
@@ -22,14 +24,8 @@ interface DisplayRankedTeam extends RankedTeam {
   conferenceSosRank: number | null;
 }
 
-interface HoverState {
-  team: RankedTeam;
-  position: { x: number; y: number };
-}
-
-export function RankingsTable({ rankings, isLoading, selectedConference }: RankingsTableProps) {
+export function RankingsTable({ rankings, isLoading, selectedConference, selectedSeason, selectedWeek }: RankingsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [hoverState, setHoverState] = useState<HoverState | null>(null);
 
   const displayData: DisplayRankedTeam[] = useMemo(() => {
     if (!selectedConference) {
@@ -46,32 +42,15 @@ export function RankingsTable({ rankings, isLoading, selectedConference }: Ranki
 
     const sortedByRank = [...filteredTeams].sort((a, b) => a.rank - b.rank);
     const sortedBySos = [...filteredTeams].sort((a, b) => a.sosRanking - b.sosRanking);
+    const rankMap = new Map(sortedByRank.map((t, i) => [t.teamName, i + 1]));
+    const sosMap = new Map(sortedBySos.map((t, i) => [t.teamName, i + 1]));
 
     return filteredTeams.map((team) => ({
       ...team,
-      conferenceRank: sortedByRank.findIndex((t) => t.teamName === team.teamName) + 1,
-      conferenceSosRank: sortedBySos.findIndex((t) => t.teamName === team.teamName) + 1,
+      conferenceRank: rankMap.get(team.teamName) ?? null,
+      conferenceSosRank: sosMap.get(team.teamName) ?? null,
     }));
   }, [rankings, selectedConference]);
-
-  const handleMouseEnter = useCallback((team: RankedTeam, event: React.MouseEvent) => {
-    setHoverState({
-      team,
-      position: { x: event.clientX, y: event.clientY },
-    });
-  }, []);
-
-  const handleMouseLeave = useCallback(() => {
-    setHoverState(null);
-  }, []);
-
-  const handleMouseMove = useCallback((event: React.MouseEvent) => {
-    if (hoverState) {
-      setHoverState((prev) =>
-        prev ? { ...prev, position: { x: event.clientX, y: event.clientY } } : null
-      );
-    }
-  }, [hoverState]);
 
   const columnHelper = useMemo(() => createColumnHelper<DisplayRankedTeam>(), []);
 
@@ -94,17 +73,18 @@ export function RankingsTable({ rankings, isLoading, selectedConference }: Ranki
       header: 'Team',
       cell: (info) => {
         const team = info.row.original;
+        const teamDetailUrl = selectedSeason && selectedWeek
+          ? `/team-details?team=${encodeURIComponent(info.getValue())}&season=${selectedSeason}&week=${selectedWeek}`
+          : `/team-details?team=${encodeURIComponent(info.getValue())}`;
         return (
-          <div
-            className="flex items-center space-x-3 cursor-pointer"
-            onMouseEnter={(e) => handleMouseEnter(team, e)}
-            onMouseLeave={handleMouseLeave}
-            onMouseMove={handleMouseMove}
-          >
+          <div className="flex items-center space-x-3">
             <TeamLogo logoURL={team.logoURL} teamName={info.getValue()} />
-            <span className="font-medium hover:text-blue-600 hover:underline">
+            <Link
+              to={teamDetailUrl}
+              className="font-medium hover:text-blue-600 hover:underline"
+            >
               {info.getValue()}
-            </span>
+            </Link>
           </div>
         );
       },
@@ -135,7 +115,7 @@ export function RankingsTable({ rankings, isLoading, selectedConference }: Ranki
         return info.getValue();
       },
     }),
-  ], [columnHelper, handleMouseEnter, handleMouseLeave, handleMouseMove]);
+  ], [columnHelper, selectedSeason, selectedWeek]);
 
   const table = useReactTable({
     data: displayData,
@@ -205,9 +185,6 @@ export function RankingsTable({ rankings, isLoading, selectedConference }: Ranki
         </tbody>
       </table>
 
-      {hoverState && (
-        <TeamDetailsPopup team={hoverState.team} position={hoverState.position} />
-      )}
     </div>
   );
 }

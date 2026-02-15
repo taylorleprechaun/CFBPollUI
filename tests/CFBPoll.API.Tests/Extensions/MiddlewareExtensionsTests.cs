@@ -93,7 +93,7 @@ public class MiddlewareExtensionsTests
         var content = await response.Content.ReadAsStringAsync();
 
         Assert.Equal(System.Net.HttpStatusCode.NotFound, response.StatusCode);
-        Assert.Contains("Resource not found", content);
+        Assert.Contains("The requested resource was not found", content);
     }
 
     [Fact]

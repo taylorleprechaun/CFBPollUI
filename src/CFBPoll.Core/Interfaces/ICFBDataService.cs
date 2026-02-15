@@ -42,4 +42,12 @@ public interface ICFBDataService
     /// <param name="seasonType">Season type: "regular", "postseason", or "both".</param>
     /// <returns>Collection of advanced game statistics.</returns>
     Task<IEnumerable<AdvancedGameStats>> GetAdvancedGameStatsAsync(int season, string seasonType);
+
+    /// <summary>
+    /// Retrieves the full season schedule including all regular and postseason games
+    /// regardless of completion status.
+    /// </summary>
+    /// <param name="season">The season year to retrieve the schedule for.</param>
+    /// <returns>Collection of all scheduled games for the season.</returns>
+    Task<IEnumerable<ScheduleGame>> GetFullSeasonScheduleAsync(int season);
 }
