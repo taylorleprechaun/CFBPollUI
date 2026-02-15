@@ -16,7 +16,7 @@ describe('API service', () => {
     await fetchSeasons();
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/seasons')
+      expect.stringContaining('/api/v1/seasons')
     );
   });
 
@@ -34,7 +34,7 @@ describe('API service', () => {
     await fetchWeeks(2024);
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/seasons/2024/weeks')
+      expect.stringContaining('/api/v1/seasons/2024/weeks')
     );
   });
 
@@ -53,7 +53,7 @@ describe('API service', () => {
     await fetchRankings(2024, 12);
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/rankings?season=2024&week=12')
+      expect.stringContaining('/api/v1/rankings?season=2024&week=12')
     );
   });
 
@@ -91,7 +91,7 @@ describe('API service', () => {
     await fetchTeamDetail(2024, 12, 'Oregon');
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/teams/Oregon?season=2024&week=12')
+      expect.stringContaining('/api/v1/teams/Oregon?season=2024&week=12')
     );
   });
 

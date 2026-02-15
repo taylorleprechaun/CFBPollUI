@@ -60,7 +60,7 @@ describe('useRankings', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/rankings?season=2024&week=5')
+      expect.stringContaining('/api/v1/rankings?season=2024&week=5')
     );
   });
 

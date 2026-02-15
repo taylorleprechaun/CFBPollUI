@@ -124,7 +124,7 @@ describe('useTeamDetail', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/teams/Oregon?season=2024&week=5')
+      expect.stringContaining('/api/v1/teams/Oregon?season=2024&week=5')
     );
   });
 
