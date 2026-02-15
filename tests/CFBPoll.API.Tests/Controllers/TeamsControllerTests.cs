@@ -2,10 +2,8 @@ using CFBPoll.API.Controllers;
 using CFBPoll.API.DTOs;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
-using CFBPoll.Core.Options;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 
@@ -17,7 +15,6 @@ public class TeamsControllerTests
 {
     private readonly Mock<ICFBDataService> _mockDataService;
     private readonly Mock<ILogger<TeamsController>> _mockLogger;
-    private readonly Mock<IOptions<HistoricalDataOptions>> _mockOptions;
     private readonly Mock<IRankingsModule> _mockRankingsModule;
     private readonly Mock<IRatingModule> _mockRatingModule;
     private readonly TeamsController _controller;
@@ -26,49 +23,14 @@ public class TeamsControllerTests
     {
         _mockDataService = new Mock<ICFBDataService>();
         _mockLogger = new Mock<ILogger<TeamsController>>();
-        _mockOptions = new Mock<IOptions<HistoricalDataOptions>>();
         _mockRankingsModule = new Mock<IRankingsModule>();
         _mockRatingModule = new Mock<IRatingModule>();
-
-        _mockOptions.Setup(x => x.Value).Returns(new HistoricalDataOptions { MinimumYear = 2002 });
 
         _controller = new TeamsController(
             _mockDataService.Object,
             _mockRankingsModule.Object,
             _mockRatingModule.Object,
-            _mockOptions.Object,
             _mockLogger.Object);
-    }
-
-    [Theory]
-    [InlineData(2001)]
-    [InlineData(1999)]
-    public async Task GetTeamDetail_InvalidSeasonBelowMinimum_ReturnsBadRequest(int season)
-    {
-        var result = await _controller.GetTeamDetail("Georgia", season, 1);
-
-        var badRequest = Assert.IsType<BadRequestObjectResult>(result.Result);
-        Assert.NotNull(badRequest.Value);
-    }
-
-    [Fact]
-    public async Task GetTeamDetail_SeasonTooFarInFuture_ReturnsBadRequest()
-    {
-        var futureYear = DateTime.Now.Year + 2;
-
-        var result = await _controller.GetTeamDetail("Georgia", futureYear, 1);
-
-        Assert.IsType<BadRequestObjectResult>(result.Result);
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(-1)]
-    public async Task GetTeamDetail_InvalidWeek_ReturnsBadRequest(int week)
-    {
-        var result = await _controller.GetTeamDetail("Georgia", 2023, week);
-
-        Assert.IsType<BadRequestObjectResult>(result.Result);
     }
 
     [Fact]

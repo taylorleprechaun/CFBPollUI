@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using CFBPoll.API.DTOs;
 
 namespace CFBPoll.API.Middleware;
 
@@ -28,9 +29,9 @@ public class ExceptionHandlingMiddleware
 
     private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
-        var traceId = context.TraceIdentifier;
+        var traceID = context.TraceIdentifier;
 
-        _logger.LogError(exception, "Unhandled exception occurred. TraceId: {TraceId}", traceId);
+        _logger.LogError(exception, "Unhandled exception occurred. TraceId: {TraceId}", traceID);
 
         var statusCode = exception switch
         {
@@ -41,13 +42,19 @@ public class ExceptionHandlingMiddleware
             _ => HttpStatusCode.InternalServerError
         };
 
-        var response = new
+        var message = statusCode switch
         {
-            traceId,
-            message = statusCode == HttpStatusCode.InternalServerError
-                ? "An unexpected error occurred"
-                : exception.Message,
-            statusCode = (int)statusCode
+            HttpStatusCode.BadRequest => "The request was invalid",
+            HttpStatusCode.NotFound => "The requested resource was not found",
+            HttpStatusCode.Unauthorized => "Authentication is required",
+            _ => "An unexpected error occurred"
+        };
+
+        var response = new ErrorResponseDTO
+        {
+            Message = message,
+            StatusCode = (int)statusCode,
+            TraceID = traceID
         };
 
         context.Response.ContentType = "application/json";

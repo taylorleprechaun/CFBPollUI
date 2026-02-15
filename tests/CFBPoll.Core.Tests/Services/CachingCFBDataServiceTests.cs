@@ -328,6 +328,109 @@ public class CachingCFBDataServiceTests
     }
 
     [Fact]
+    public async Task GetFullSeasonScheduleAsync_ReturnsCachedData_WhenCacheHit()
+    {
+        var cachedData = new List<ScheduleGame>
+        {
+            new ScheduleGame
+            {
+                GameID = 1,
+                Week = 1,
+                SeasonType = "regular",
+                HomeTeam = "Alabama",
+                AwayTeam = "Georgia",
+                HomePoints = 28,
+                AwayPoints = 24,
+                Completed = true
+            }
+        };
+
+        _mockCache.Setup(x => x.GetAsync<List<ScheduleGame>>("fullSchedule_2024"))
+            .ReturnsAsync(cachedData);
+
+        var result = await _service.GetFullSeasonScheduleAsync(2024);
+
+        Assert.Single(result);
+        Assert.Equal("Alabama", result.First().HomeTeam);
+        _mockInnerService.Verify(x => x.GetFullSeasonScheduleAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetFullSeasonScheduleAsync_FetchesFromInnerService_WhenCacheMiss()
+    {
+        var apiData = new List<ScheduleGame>
+        {
+            new ScheduleGame
+            {
+                GameID = 1,
+                Week = 1,
+                SeasonType = "regular",
+                HomeTeam = "Ohio State",
+                AwayTeam = "Michigan",
+                HomePoints = 42,
+                AwayPoints = 35,
+                Completed = true
+            }
+        };
+
+        _mockCache.Setup(x => x.GetAsync<List<ScheduleGame>>("fullSchedule_2024"))
+            .ReturnsAsync((List<ScheduleGame>?)null);
+        _mockInnerService.Setup(x => x.GetFullSeasonScheduleAsync(2024))
+            .ReturnsAsync(apiData);
+
+        var result = await _service.GetFullSeasonScheduleAsync(2024);
+
+        Assert.Single(result);
+        Assert.Equal("Ohio State", result.First().HomeTeam);
+        _mockInnerService.Verify(x => x.GetFullSeasonScheduleAsync(2024), Times.Once);
+        _mockCache.Verify(x => x.SetAsync("fullSchedule_2024", It.IsAny<List<ScheduleGame>>(), It.IsAny<DateTime>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetFullSeasonScheduleAsync_UsesLongExpiration_ForPastSeasons()
+    {
+        var pastSeason = DateTime.Now.Year - 1;
+        var apiData = new List<ScheduleGame>();
+
+        _mockCache.Setup(x => x.GetAsync<List<ScheduleGame>>($"fullSchedule_{pastSeason}"))
+            .ReturnsAsync((List<ScheduleGame>?)null);
+        _mockInnerService.Setup(x => x.GetFullSeasonScheduleAsync(pastSeason))
+            .ReturnsAsync(apiData);
+
+        DateTime capturedExpiration = default;
+        _mockCache.Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<List<ScheduleGame>>(), It.IsAny<DateTime>()))
+            .Callback<string, List<ScheduleGame>, DateTime>((_, _, exp) => capturedExpiration = exp)
+            .ReturnsAsync(true);
+
+        await _service.GetFullSeasonScheduleAsync(pastSeason);
+
+        var daysUntilExpiration = (capturedExpiration - DateTime.UtcNow).TotalDays;
+        Assert.True(daysUntilExpiration > 300);
+    }
+
+    [Fact]
+    public async Task GetFullSeasonScheduleAsync_UsesShortExpiration_ForCurrentSeason()
+    {
+        var currentSeason = DateTime.Now.Year;
+        var apiData = new List<ScheduleGame>();
+
+        _mockCache.Setup(x => x.GetAsync<List<ScheduleGame>>($"fullSchedule_{currentSeason}"))
+            .ReturnsAsync((List<ScheduleGame>?)null);
+        _mockInnerService.Setup(x => x.GetFullSeasonScheduleAsync(currentSeason))
+            .ReturnsAsync(apiData);
+
+        DateTime capturedExpiration = default;
+        _mockCache.Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<List<ScheduleGame>>(), It.IsAny<DateTime>()))
+            .Callback<string, List<ScheduleGame>, DateTime>((_, _, exp) => capturedExpiration = exp)
+            .ReturnsAsync(true);
+
+        await _service.GetFullSeasonScheduleAsync(currentSeason);
+
+        var hoursUntilExpiration = (capturedExpiration - DateTime.UtcNow).TotalHours;
+        Assert.True(hoursUntilExpiration <= 144);
+    }
+
+    [Fact]
     public async Task GetAdvancedGameStatsAsync_ReturnsCachedData_WhenCacheHit()
     {
         var cachedData = new List<AdvancedGameStats>

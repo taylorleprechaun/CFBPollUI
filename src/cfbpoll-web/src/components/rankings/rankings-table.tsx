@@ -42,11 +42,13 @@ export function RankingsTable({ rankings, isLoading, selectedConference, selecte
 
     const sortedByRank = [...filteredTeams].sort((a, b) => a.rank - b.rank);
     const sortedBySos = [...filteredTeams].sort((a, b) => a.sosRanking - b.sosRanking);
+    const rankMap = new Map(sortedByRank.map((t, i) => [t.teamName, i + 1]));
+    const sosMap = new Map(sortedBySos.map((t, i) => [t.teamName, i + 1]));
 
     return filteredTeams.map((team) => ({
       ...team,
-      conferenceRank: sortedByRank.findIndex((t) => t.teamName === team.teamName) + 1,
-      conferenceSosRank: sortedBySos.findIndex((t) => t.teamName === team.teamName) + 1,
+      conferenceRank: rankMap.get(team.teamName) ?? null,
+      conferenceSosRank: sosMap.get(team.teamName) ?? null,
     }));
   }, [rankings, selectedConference]);
 

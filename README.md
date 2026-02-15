@@ -18,16 +18,18 @@ This was created using Claude Code with a lot of guidelines to follow my code st
 
 ## TODO
 
-Last Updated 1/25/2026
+Last Updated 2/15/2026
 - I have only recently started to learn React and this application uses it for the UI. I had Claude create it all following the best practices that I could find online, but I don't know for certain that everything is correct. As I learn more I know I will end up refactoring that code.
 - There are more improvements to the UI I plan to implement. They require persistent historical data though, which will require changing my data-caching approach.
 
 ## Features
 
 - **Custom Ranking Algorithm**: Evaluates teams based on wins, strength of schedule, and margin of victory
+- **Team Details**: Drill into individual teams to see schedule, record breakdowns by location and opponent tier
 - **Historical Data**: Access rankings from 2002 to present
-- **Interactive UI**: Sortable rankings table with team logos
+- **Interactive UI**: Sortable rankings table with team logos and colors
 - **REST API**: Full API with Swagger documentation
+- **Caching**: File-based persistent cache to reduce external API calls
 
 ## Tech Stack
 
@@ -139,42 +141,44 @@ The frontend runs at `http://localhost:5173`.
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /api/conferences` | Returns FBS conferences |
-| `GET /api/rankings?season={season}&week={week}` | Returns ranked teams for the specified week |
-| `GET /api/seasons` | Returns available seasons (2000 to present) |
-| `GET /api/seasons/{season}/weeks` | Returns available weeks for a season |
+| `GET /api/v1/conferences` | Returns FBS conferences |
+| `GET /api/v1/rankings?season={season}&week={week}` | Returns ranked teams for the specified week |
+| `GET /api/v1/seasons` | Returns available seasons (2002 to present) |
+| `GET /api/v1/seasons/{season}/weeks` | Returns available weeks for a season |
+| `GET /api/v1/teams/{teamName}?season={season}&week={week}` | Returns team details including schedule and record breakdowns |
 
 ## Testing
 
-The project includes comprehensive unit and integration tests.
+The project includes 379 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests
+# Backend tests (254 tests)
 dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests
+# Frontend tests (125 tests)
 cd src/cfbpoll-web
 npm test
 ```
 
 ### Coverage Summary
 
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-254-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-125-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-96%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
-![Web Coverage](https://img.shields.io/badge/Web_Coverage-97%25-brightgreen)
+![Web Coverage](https://img.shields.io/badge/Web_Coverage-96%25-brightgreen)
 
 | Project | Line Coverage | Branch Coverage |
 |---------|---------------|-----------------|
-| CFBPoll.Core | 96% | 94% |
-| CFBPoll.API | 100% | - |
-| cfbpoll-web | 97% | 93% |
+| CFBPoll.Core | 96% | 86% |
+| CFBPoll.API | 100% | 93% |
+| cfbpoll-web | 96% | 85% |
 
 **Excluded from coverage:**
 - `CFBDataService` - Makes HTTP calls to the external College Football Data API. Better suited for integration tests.
-- `RatingModule` - Currently being reimplemented. Tests will be added when the new algorithm is finalized.
 - `Program.cs` - ASP.NET Core startup configuration code.

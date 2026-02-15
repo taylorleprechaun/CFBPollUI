@@ -18,13 +18,13 @@ public class RequestLoggingMiddleware
         var stopwatch = Stopwatch.StartNew();
         var requestPath = context.Request.Path;
         var method = context.Request.Method;
-        var traceId = context.TraceIdentifier;
+        var traceID = context.TraceIdentifier;
 
         _logger.LogInformation(
             "Request started: {Method} {Path} TraceId: {TraceId}",
             method,
             requestPath,
-            traceId);
+            traceID);
 
         try
         {
@@ -41,7 +41,7 @@ public class RequestLoggingMiddleware
                 requestPath,
                 statusCode,
                 stopwatch.ElapsedMilliseconds,
-                traceId);
+                traceID);
         }
     }
 }

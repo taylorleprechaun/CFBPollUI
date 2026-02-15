@@ -32,8 +32,8 @@ public class CachingRankingsModule : IRankingsModule
     {
         var cacheKey = $"rankings_{seasonData.Season}_week_{seasonData.Week}";
 
-        var cached = await _cache.GetAsync<RankingsResult>(cacheKey);
-        if (cached != null)
+        var cached = await _cache.GetAsync<RankingsResult>(cacheKey).ConfigureAwait(false);
+        if (cached is not null)
         {
             _logger.LogDebug("Cache hit for rankings {Season} week {Week}", seasonData.Season, seasonData.Week);
             return cached;
@@ -44,17 +44,17 @@ public class CachingRankingsModule : IRankingsModule
             seasonData.Season,
             seasonData.Week);
 
-        var result = await _innerModule.GenerateRankingsAsync(seasonData, ratings);
+        var result = await _innerModule.GenerateRankingsAsync(seasonData, ratings).ConfigureAwait(false);
 
         var expiresAt = CalculateRankingsExpiration(seasonData.Season);
-        await _cache.SetAsync(cacheKey, result, expiresAt);
+        await _cache.SetAsync(cacheKey, result, expiresAt).ConfigureAwait(false);
 
         return result;
     }
 
     private DateTime CalculateRankingsExpiration(int season)
     {
-        var currentYear = DateTime.Now.Year;
+        var currentYear = DateTime.UtcNow.Year;
 
         if (season < currentYear)
         {

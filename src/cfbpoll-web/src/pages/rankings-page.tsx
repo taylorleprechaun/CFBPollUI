@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSeasons } from '../hooks/use-seasons';
 import { useWeeks } from '../hooks/use-weeks';
 import { useRankings } from '../hooks/use-rankings';
 import { useConferences } from '../hooks/use-conferences';
+import { useDefaultSeasonWeek } from '../hooks/use-default-season-week';
 import { SeasonSelector } from '../components/rankings/season-selector';
 import { WeekSelector } from '../components/rankings/week-selector';
 import { ConferenceFilter } from '../components/rankings/conference-filter';
@@ -14,8 +15,6 @@ export function RankingsPage() {
     document.title = 'Taylor Steinberg - College Football Ratings';
   }, []);
 
-  const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
-  const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const [selectedConference, setSelectedConference] = useState<string | null>(null);
 
   const {
@@ -28,12 +27,24 @@ export function RankingsPage() {
     data: conferencesData,
     isLoading: conferencesLoading,
   } = useConferences();
+
+  const seasonRef = useRef<number | null>(null);
   const {
     data: weeksData,
     isLoading: weeksLoading,
     error: weeksError,
     refetch: refetchWeeks,
-  } = useWeeks(selectedSeason);
+  } = useWeeks(seasonRef.current);
+
+  const {
+    season: selectedSeason,
+    setSeason: setSelectedSeason,
+    week: selectedWeek,
+    setWeek: setSelectedWeek,
+    resetWeek,
+  } = useDefaultSeasonWeek(seasonsData, weeksData);
+  seasonRef.current = selectedSeason;
+
   const {
     data: rankingsData,
     isLoading: rankingsLoading,
@@ -41,22 +52,9 @@ export function RankingsPage() {
     refetch: refetchRankings,
   } = useRankings(selectedSeason, selectedWeek);
 
-  useEffect(() => {
-    if (seasonsData?.seasons?.length && selectedSeason === null) {
-      setSelectedSeason(seasonsData.seasons[0]);
-    }
-  }, [seasonsData, selectedSeason]);
-
-  useEffect(() => {
-    if (weeksData?.weeks?.length && selectedWeek === null) {
-      const lastWeek = weeksData.weeks[weeksData.weeks.length - 1];
-      setSelectedWeek(lastWeek.weekNumber);
-    }
-  }, [weeksData, selectedWeek]);
-
   const handleSeasonChange = (season: number) => {
     setSelectedSeason(season);
-    setSelectedWeek(null);
+    resetWeek();
     setSelectedConference(null);
   };
 

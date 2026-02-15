@@ -1,19 +1,17 @@
 using CFBPoll.API.DTOs;
+using CFBPoll.API.Filters;
 using CFBPoll.API.Mappers;
 using CFBPoll.Core.Interfaces;
-using CFBPoll.Core.Options;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 namespace CFBPoll.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/[controller]")]
 public class TeamsController : ControllerBase
 {
     private readonly ICFBDataService _dataService;
     private readonly ILogger<TeamsController> _logger;
-    private readonly HistoricalDataOptions _options;
     private readonly IRankingsModule _rankingsModule;
     private readonly IRatingModule _ratingModule;
 
@@ -21,17 +19,23 @@ public class TeamsController : ControllerBase
         ICFBDataService dataService,
         IRankingsModule rankingsModule,
         IRatingModule ratingModule,
-        IOptions<HistoricalDataOptions> options,
         ILogger<TeamsController> logger)
     {
         _dataService = dataService;
         _rankingsModule = rankingsModule;
         _ratingModule = ratingModule;
-        _options = options.Value;
         _logger = logger;
     }
 
+    /// <summary>
+    /// Retrieves detailed information for a specific team including schedule and record breakdowns.
+    /// </summary>
+    /// <param name="teamName">The name of the team.</param>
+    /// <param name="season">The season year.</param>
+    /// <param name="week">The week number within the season.</param>
+    /// <returns>Detailed team information including rank, rating, schedule, and record breakdowns.</returns>
     [HttpGet("{teamName}")]
+    [ValidateSeasonWeek]
     public async Task<ActionResult<TeamDetailResponseDTO>> GetTeamDetail(
         string teamName,
         [FromQuery] int season,
@@ -41,19 +45,13 @@ public class TeamsController : ControllerBase
             "Fetching team detail for {TeamName}, season {Season}, week {Week}",
             teamName, season, week);
 
-        if (season < _options.MinimumYear || season > DateTime.Now.Year + 1)
-            return BadRequest(new { message = "Invalid season year" });
-
-        if (week < 1)
-            return BadRequest(new { message = "Invalid week number" });
-
         if (string.IsNullOrWhiteSpace(teamName))
-            return BadRequest(new { message = "Team name is required" });
+            return BadRequest(new ErrorResponseDTO { Message = "Team name is required", StatusCode = 400 });
 
         var seasonData = await _dataService.GetSeasonDataAsync(season, week);
 
         if (!seasonData.Teams.ContainsKey(teamName))
-            return NotFound(new { message = $"Team '{teamName}' not found" });
+            return NotFound(new ErrorResponseDTO { Message = $"Team '{teamName}' not found", StatusCode = 404 });
 
         var ratings = _ratingModule.RateTeams(seasonData);
         var rankingsResult = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
@@ -62,7 +60,7 @@ public class TeamsController : ControllerBase
             r => r.TeamName.Equals(teamName, StringComparison.OrdinalIgnoreCase));
 
         if (rankedTeam is null)
-            return NotFound(new { message = $"Team '{teamName}' not found in rankings" });
+            return NotFound(new ErrorResponseDTO { Message = $"Team '{teamName}' not found in rankings", StatusCode = 404 });
 
         var fullSchedule = await _dataService.GetFullSeasonScheduleAsync(season);
         var teamInfo = seasonData.Teams[teamName];

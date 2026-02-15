@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Threading.RateLimiting;
 using CFBPoll.API.Extensions;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Modules;
@@ -43,12 +44,26 @@ try
     builder.Services.AddSingleton<ISeasonModule, SeasonModule>();
     builder.Services.AddSingleton<IConferenceModule, ConferenceModule>();
 
-    builder.Services.AddMemoryCache();
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                factory: _ => new FixedWindowRateLimiterOptions
+                {
+                    AutoReplenishment = true,
+                    PermitLimit = 100,
+                    Window = TimeSpan.FromMinutes(1)
+                }));
+
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    });
 
     var app = builder.Build();
 
     app.UseExceptionHandling();
     app.UseRequestLogging();
+    app.UseRateLimiter();
 
     if (app.Environment.IsDevelopment())
     {

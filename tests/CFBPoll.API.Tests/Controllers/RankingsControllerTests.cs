@@ -1,73 +1,34 @@
-using Xunit;
 using CFBPoll.API.Controllers;
 using CFBPoll.API.DTOs;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
-using CFBPoll.Core.Modules;
-using CFBPoll.Core.Options;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
+using Xunit;
 
 namespace CFBPoll.API.Tests.Controllers;
 
 public class RankingsControllerTests
 {
     private readonly Mock<ICFBDataService> _mockDataService;
+    private readonly Mock<ILogger<RankingsController>> _mockLogger;
     private readonly Mock<IRankingsModule> _mockRankingsModule;
     private readonly Mock<IRatingModule> _mockRatingModule;
-    private readonly Mock<IOptions<HistoricalDataOptions>> _mockOptions;
-    private readonly Mock<ILogger<RankingsController>> _mockLogger;
     private readonly RankingsController _controller;
 
     public RankingsControllerTests()
     {
         _mockDataService = new Mock<ICFBDataService>();
+        _mockLogger = new Mock<ILogger<RankingsController>>();
         _mockRankingsModule = new Mock<IRankingsModule>();
         _mockRatingModule = new Mock<IRatingModule>();
-        _mockOptions = new Mock<IOptions<HistoricalDataOptions>>();
-        _mockLogger = new Mock<ILogger<RankingsController>>();
-
-        _mockOptions.Setup(x => x.Value).Returns(new HistoricalDataOptions { MinimumYear = 2002 });
 
         _controller = new RankingsController(
             _mockDataService.Object,
             _mockRankingsModule.Object,
             _mockRatingModule.Object,
-            _mockOptions.Object,
             _mockLogger.Object);
-    }
-
-    [Theory]
-    [InlineData(2001)]
-    [InlineData(1999)]
-    public async Task GetRankings_InvalidSeasonBelowMinimum_ReturnsBadRequest(int season)
-    {
-        var result = await _controller.GetRankings(season, 1);
-
-        var badRequest = Assert.IsType<BadRequestObjectResult>(result.Result);
-        Assert.NotNull(badRequest.Value);
-    }
-
-    [Fact]
-    public async Task GetRankings_SeasonTooFarInFuture_ReturnsBadRequest()
-    {
-        var futureYear = DateTime.Now.Year + 2;
-
-        var result = await _controller.GetRankings(futureYear, 1);
-
-        Assert.IsType<BadRequestObjectResult>(result.Result);
-    }
-
-    [Theory]
-    [InlineData(0)]
-    [InlineData(-1)]
-    public async Task GetRankings_InvalidWeek_ReturnsBadRequest(int week)
-    {
-        var result = await _controller.GetRankings(2023, week);
-
-        Assert.IsType<BadRequestObjectResult>(result.Result);
     }
 
     [Fact]
@@ -157,21 +118,4 @@ public class RankingsControllerTests
         Assert.Equal(1, rankings.First().Rank);
     }
 
-    [Fact]
-    public async Task GetRankings_UsesMinimumYearFromOptions()
-    {
-        var customOptions = new Mock<IOptions<HistoricalDataOptions>>();
-        customOptions.Setup(x => x.Value).Returns(new HistoricalDataOptions { MinimumYear = 2010 });
-
-        var controller = new RankingsController(
-            _mockDataService.Object,
-            _mockRankingsModule.Object,
-            _mockRatingModule.Object,
-            customOptions.Object,
-            _mockLogger.Object);
-
-        var result = await controller.GetRankings(2009, 1);
-
-        Assert.IsType<BadRequestObjectResult>(result.Result);
-    }
 }

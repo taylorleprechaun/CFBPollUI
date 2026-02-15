@@ -3,11 +3,11 @@ export type {
   ConferencesResponse,
   RankedTeam,
   RankingsResponse,
-  Record,
   ScheduleGame,
   SeasonsResponse,
   TeamDetailResponse,
   TeamDetails,
+  TeamRecord,
   Week,
   WeeksResponse,
 } from '../schemas';

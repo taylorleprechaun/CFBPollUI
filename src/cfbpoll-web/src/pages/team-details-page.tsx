@@ -1,22 +1,27 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ErrorAlert } from '../components/error';
 import { SeasonSelector } from '../components/rankings/season-selector';
 import { TeamLogo } from '../components/rankings/team-logo';
+import { useDefaultSeasonWeek } from '../hooks/use-default-season-week';
 import { useRankings } from '../hooks/use-rankings';
 import { useSeasons } from '../hooks/use-seasons';
 import { useTeamDetail } from '../hooks/use-team-detail';
 import { useWeeks } from '../hooks/use-weeks';
 import { getContrastTextColor } from '../lib/color-utils';
-import type { Record as TeamRecord, ScheduleGame } from '../types';
+import type { TeamRecord, ScheduleGame } from '../types';
 
 export function TeamDetailsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [selectedSeason, setSelectedSeason] = useState<number | null>(
-    searchParams.get('season') ? Number(searchParams.get('season')) : null
-  );
-  const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
+  const initialSeason = useMemo(() => {
+    const param = searchParams.get('season');
+    if (!param) return null;
+    const parsed = Number(param);
+    return Number.isNaN(parsed) ? null : parsed;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [selectedTeam, setSelectedTeam] = useState<string | null>(
     searchParams.get('team') || null
   );
@@ -31,11 +36,22 @@ export function TeamDetailsPage() {
     error: seasonsError,
     refetch: refetchSeasons,
   } = useSeasons();
+
+  const seasonRef = useRef<number | null>(initialSeason);
   const {
     data: weeksData,
     error: weeksError,
     refetch: refetchWeeks,
-  } = useWeeks(selectedSeason);
+  } = useWeeks(seasonRef.current);
+
+  const {
+    season: selectedSeason,
+    setSeason: setSelectedSeason,
+    week: selectedWeek,
+    resetWeek,
+  } = useDefaultSeasonWeek(seasonsData, weeksData, { initialSeason });
+  seasonRef.current = selectedSeason;
+
   const {
     data: rankingsData,
     isLoading: rankingsLoading,
@@ -48,19 +64,6 @@ export function TeamDetailsPage() {
     error: teamDetailError,
     refetch: refetchTeamDetail,
   } = useTeamDetail(selectedSeason, selectedWeek, selectedTeam);
-
-  useEffect(() => {
-    if (seasonsData?.seasons?.length && selectedSeason === null) {
-      setSelectedSeason(seasonsData.seasons[0]);
-    }
-  }, [seasonsData, selectedSeason]);
-
-  useEffect(() => {
-    if (weeksData?.weeks?.length && selectedWeek === null) {
-      const lastWeek = weeksData.weeks[weeksData.weeks.length - 1];
-      setSelectedWeek(lastWeek.weekNumber);
-    }
-  }, [weeksData, selectedWeek]);
 
   useEffect(() => {
     const params: globalThis.Record<string, string> = {};
@@ -77,7 +80,7 @@ export function TeamDetailsPage() {
 
   const handleSeasonChange = (season: number) => {
     setSelectedSeason(season);
-    setSelectedWeek(null);
+    resetWeek();
     setSelectedTeam(null);
   };
 
@@ -92,6 +95,14 @@ export function TeamDetailsPage() {
     if (rankingsError) refetchRankings();
     if (teamDetailError) refetchTeamDetail();
   };
+
+  const [logoError, setLogoError] = useState(false);
+
+  const handleLogoError = useCallback(() => setLogoError(true), []);
+
+  useEffect(() => {
+    setLogoError(false);
+  }, [selectedTeam]);
 
   const bgColor = teamDetail?.color || '#6B7280';
   const textColor = getContrastTextColor(bgColor);
@@ -145,12 +156,14 @@ export function TeamDetailsPage() {
           >
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center space-x-4">
-                <img
-                  src={teamDetail.logoURL}
-                  alt={`${teamDetail.teamName} logo`}
-                  className="w-16 h-16 object-contain rounded-lg bg-white p-1"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                />
+                {!logoError && (
+                  <img
+                    src={teamDetail.logoURL}
+                    alt={`${teamDetail.teamName} logo`}
+                    className="w-16 h-16 object-contain rounded-lg bg-white p-1"
+                    onError={handleLogoError}
+                  />
+                )}
                 <div>
                   <h2 className="text-2xl font-bold">{teamDetail.teamName}</h2>
                   <p className="opacity-80">
@@ -207,8 +220,8 @@ export function TeamDetailsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {teamDetail.schedule.map((game, index) => (
-                    <ScheduleRow key={index} game={game} />
+                  {teamDetail.schedule.map((game) => (
+                    <ScheduleRow key={`${game.week}-${game.seasonType}-${game.opponentName}`} game={game} />
                   ))}
                   {teamDetail.schedule.length === 0 && (
                     <tr>
@@ -257,7 +270,7 @@ export function TeamDetailsPage() {
 
       {!teamDetailLoading && !teamDetail && selectedTeam && !error && (
         <div className="text-center py-12 text-gray-500">
-          Loading team details...
+          No details available for the selected team.
         </div>
       )}
 

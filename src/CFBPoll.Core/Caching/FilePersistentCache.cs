@@ -5,20 +5,19 @@ using Microsoft.Extensions.Options;
 
 namespace CFBPoll.Core.Caching;
 
-public partial class FilePersistentCache : IPersistentCache
+public partial class FilePersistentCache : IPersistentCache, IDisposable
 {
     private readonly string _cacheDirectory;
-    private readonly ILogger<FilePersistentCache> _logger;
-    private readonly SemaphoreSlim _semaphore = new(1, 1);
-
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
         WriteIndented = true
     };
+    private readonly ILogger<FilePersistentCache> _logger;
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
 
     public FilePersistentCache(IOptions<CacheOptions> options, ILogger<FilePersistentCache> logger)
     {
-        if (options?.Value == null)
+        if (options?.Value is null)
         {
             throw new ArgumentNullException(nameof(options));
         }
@@ -31,7 +30,7 @@ public partial class FilePersistentCache : IPersistentCache
 
     public async Task<int> CleanupExpiredAsync()
     {
-        await _semaphore.WaitAsync();
+        await _semaphore.WaitAsync().ConfigureAwait(false);
         try
         {
             var removedCount = 0;
@@ -41,7 +40,7 @@ public partial class FilePersistentCache : IPersistentCache
             {
                 try
                 {
-                    var json = await File.ReadAllTextAsync(file);
+                    var json = await File.ReadAllTextAsync(file).ConfigureAwait(false);
                     using var document = JsonDocument.Parse(json);
 
                     if (document.RootElement.TryGetProperty("ExpiresAt", out var expiresAtElement))
@@ -77,7 +76,7 @@ public partial class FilePersistentCache : IPersistentCache
             throw new ArgumentException("Cache key cannot be null or empty", nameof(key));
         }
 
-        await _semaphore.WaitAsync();
+        await _semaphore.WaitAsync().ConfigureAwait(false);
         try
         {
             var filePath = GetFilePath(key);
@@ -88,10 +87,10 @@ public partial class FilePersistentCache : IPersistentCache
                 return null;
             }
 
-            var json = await File.ReadAllTextAsync(filePath);
+            var json = await File.ReadAllTextAsync(filePath).ConfigureAwait(false);
             var cacheEntry = JsonSerializer.Deserialize<CacheEntry<T>>(json, _jsonOptions);
 
-            if (cacheEntry == null)
+            if (cacheEntry is null)
             {
                 _logger.LogDebug("Cache miss for key: {Key} (null entry)", key);
                 return null;
@@ -125,7 +124,7 @@ public partial class FilePersistentCache : IPersistentCache
             throw new ArgumentException("Cache key cannot be null or empty", nameof(key));
         }
 
-        await _semaphore.WaitAsync();
+        await _semaphore.WaitAsync().ConfigureAwait(false);
         try
         {
             var filePath = GetFilePath(key);
@@ -157,12 +156,12 @@ public partial class FilePersistentCache : IPersistentCache
             throw new ArgumentException("Cache key cannot be null or empty", nameof(key));
         }
 
-        if (data == null)
+        if (data is null)
         {
             throw new ArgumentNullException(nameof(data));
         }
 
-        await _semaphore.WaitAsync();
+        await _semaphore.WaitAsync().ConfigureAwait(false);
         try
         {
             var cacheEntry = new CacheEntry<T>
@@ -176,7 +175,7 @@ public partial class FilePersistentCache : IPersistentCache
             var json = JsonSerializer.Serialize(cacheEntry, _jsonOptions);
             var filePath = GetFilePath(key);
 
-            await File.WriteAllTextAsync(filePath, json);
+            await File.WriteAllTextAsync(filePath, json).ConfigureAwait(false);
             _logger.LogDebug("Cached data for key: {Key}, expires at: {ExpiresAt}", key, expiresAt);
             return true;
         }
@@ -212,6 +211,12 @@ public partial class FilePersistentCache : IPersistentCache
     {
         var safeKey = InvalidFileNameCharsRegex().Replace(key, "_");
         return Path.Combine(_cacheDirectory, $"{safeKey}.json");
+    }
+
+    public void Dispose()
+    {
+        _semaphore.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     [System.Text.RegularExpressions.GeneratedRegex(@"[<>:""/\\|?*\x00-\x1F]")]
