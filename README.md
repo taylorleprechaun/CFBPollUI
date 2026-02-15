@@ -169,16 +169,17 @@ npm test
 
 ![Backend Tests](https://img.shields.io/badge/Backend_Tests-254-blue)
 ![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-125-blue)
-![Core Coverage](https://img.shields.io/badge/Core_Coverage-96%25-brightgreen)
+![Core Coverage](https://img.shields.io/badge/Core_Coverage-95%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
 ![Web Coverage](https://img.shields.io/badge/Web_Coverage-96%25-brightgreen)
 
 | Project | Line Coverage | Branch Coverage |
 |---------|---------------|-----------------|
-| CFBPoll.Core | 96% | 86% |
+| CFBPoll.Core | 95% | 97% |
 | CFBPoll.API | 100% | 93% |
 | cfbpoll-web | 96% | 85% |
 
 **Excluded from coverage:**
+- `RatingModule` - Proprietary rating algorithm, not included in the repository. Tests are maintained locally.
 - `CFBDataService` - Makes HTTP calls to the external College Football Data API. Better suited for integration tests.
 - `Program.cs` - ASP.NET Core startup configuration code.
