@@ -29,7 +29,11 @@ try
     {
         options.AddDefaultPolicy(policy =>
         {
-            policy.WithOrigins("http://localhost:5173")
+            policy.WithOrigins(
+                    "http://localhost:5173",
+                    "https://taylorsteinberg.net",
+                    "https://www.taylorsteinberg.net"
+                )
                 .AllowAnyHeader()
                 .AllowAnyMethod();
         });
