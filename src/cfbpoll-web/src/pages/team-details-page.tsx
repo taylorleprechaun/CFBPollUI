@@ -12,7 +12,7 @@ import { getContrastTextColor } from '../lib/color-utils';
 import type { TeamRecord, ScheduleGame } from '../types';
 
 export function TeamDetailsPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   const initialSeason = useMemo(() => {
     const param = searchParams.get('season');
