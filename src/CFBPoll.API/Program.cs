@@ -42,11 +42,15 @@ try
     builder.Services.Configure<HistoricalDataOptions>(
         builder.Configuration.GetSection(HistoricalDataOptions.SectionName));
 
+    builder.Services.AddDatabase(builder.Configuration);
     builder.Services.AddCFBDataServiceWithCaching(builder.Configuration);
     builder.Services.AddSingleton<IRatingModule, RatingModule>();
-    builder.Services.AddRankingsModuleWithCaching();
+    builder.Services.AddRankingsModule();
     builder.Services.AddSingleton<ISeasonModule, SeasonModule>();
     builder.Services.AddSingleton<IConferenceModule, ConferenceModule>();
+    builder.Services.AddSingleton<IAdminModule, AdminModule>();
+    builder.Services.AddSingleton<IExcelExportModule, ExcelExportModule>();
+    builder.Services.AddJwtAuthentication(builder.Configuration);
 
     builder.Services.AddRateLimiter(options =>
     {
@@ -77,8 +81,11 @@ try
 
     app.UseHttpsRedirection();
     app.UseCors();
+    app.UseAuthentication();
     app.UseAuthorization();
     app.MapControllers();
+
+    await app.InitializeDatabaseAsync();
 
     Log.Information("Starting CFBPoll API");
     app.Run();

@@ -389,6 +389,87 @@ public class RankingsModuleTests
     }
 
     [Fact]
+    public async Task GenerateRankingsAsync_PopulatesRatingComponents()
+    {
+        var seasonData = CreateSeasonDataWithTeams("Team A");
+        var components = new Dictionary<string, double>
+        {
+            ["WinPercentage"] = 0.75,
+            ["MarginOfVictory"] = 12.5,
+            ["SOSFactor"] = 0.62
+        };
+        var ratings = new Dictionary<string, RatingDetails>
+        {
+            ["Team A"] = new RatingDetails
+            {
+                Rating = 80.0,
+                RatingComponents = components
+            }
+        };
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        var team = result.Rankings.First();
+        Assert.Equal(3, team.RatingComponents.Count);
+        Assert.Equal(0.75, team.RatingComponents["WinPercentage"]);
+        Assert.Equal(12.5, team.RatingComponents["MarginOfVictory"]);
+        Assert.Equal(0.62, team.RatingComponents["SOSFactor"]);
+    }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_RatingComponentsDefaultsToEmptyDictionary()
+    {
+        var seasonData = CreateSeasonDataWithTeams("Team A");
+        var ratings = new Dictionary<string, RatingDetails>
+        {
+            ["Team A"] = CreateRatingDetails(rating: 80.0)
+        };
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        var team = result.Rankings.First();
+        Assert.NotNull(team.RatingComponents);
+        Assert.Empty(team.RatingComponents);
+    }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_PopulatesStrengthOfSchedule()
+    {
+        var seasonData = CreateSeasonDataWithTeams("Team A");
+        var ratings = new Dictionary<string, RatingDetails>
+        {
+            ["Team A"] = new RatingDetails
+            {
+                Rating = 80.0,
+                StrengthOfSchedule = 0.654321789
+            }
+        };
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        var team = result.Rankings.First();
+        Assert.Equal(0.6543, team.StrengthOfSchedule);
+    }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_RoundsStrengthOfScheduleToFourDecimals()
+    {
+        var seasonData = CreateSeasonDataWithTeams("Team A");
+        var ratings = new Dictionary<string, RatingDetails>
+        {
+            ["Team A"] = new RatingDetails
+            {
+                Rating = 80.0,
+                StrengthOfSchedule = 0.123456789
+            }
+        };
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        Assert.Equal(0.1235, result.Rankings.First().StrengthOfSchedule);
+    }
+
+    [Fact]
     public async Task GenerateRankingsAsync_WhenOpponentNotRanked_DefaultsToTier5()
     {
         var game = new Game { HomeTeam = "Team A", AwayTeam = "Unranked Opponent", HomePoints = 28, AwayPoints = 14 };

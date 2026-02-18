@@ -175,56 +175,35 @@ public class CachingServiceExtensionsTests
     }
 
     [Fact]
-    public void AddRankingsModuleWithCaching_RegistersRankingsModule()
+    public void AddRankingsModule_RegistersRankingsModule()
     {
         var services = new ServiceCollection();
-        services.AddLogging();
-        RegisterCacheDependencies(services);
 
-        services.AddRankingsModuleWithCaching();
-
-        var provider = services.BuildServiceProvider();
-        var module = provider.GetService<RankingsModule>();
-
-        Assert.NotNull(module);
-    }
-
-    [Fact]
-    public void AddRankingsModuleWithCaching_RegistersIRankingsModuleAsCachingModule()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        RegisterCacheDependencies(services);
-
-        services.AddRankingsModuleWithCaching();
+        services.AddRankingsModule();
 
         var provider = services.BuildServiceProvider();
         var module = provider.GetService<IRankingsModule>();
 
         Assert.NotNull(module);
-        Assert.IsType<CachingRankingsModule>(module);
+        Assert.IsType<RankingsModule>(module);
     }
 
     [Fact]
-    public void AddRankingsModuleWithCaching_ReturnsServiceCollection()
+    public void AddRankingsModule_ReturnsServiceCollection()
     {
         var services = new ServiceCollection();
-        services.AddLogging();
-        RegisterCacheDependencies(services);
 
-        var result = services.AddRankingsModuleWithCaching();
+        var result = services.AddRankingsModule();
 
         Assert.Same(services, result);
     }
 
     [Fact]
-    public void AddRankingsModuleWithCaching_RegistersServicesAsSingletons()
+    public void AddRankingsModule_RegistersAsSingleton()
     {
         var services = new ServiceCollection();
-        services.AddLogging();
-        RegisterCacheDependencies(services);
 
-        services.AddRankingsModuleWithCaching();
+        services.AddRankingsModule();
 
         var provider = services.BuildServiceProvider();
 
@@ -232,32 +211,6 @@ public class CachingServiceExtensionsTests
         var module2 = provider.GetService<IRankingsModule>();
 
         Assert.Same(module1, module2);
-    }
-
-    [Fact]
-    public void AddRankingsModuleWithCaching_CachingModuleWrapsInnerModule()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        RegisterCacheDependencies(services);
-
-        services.AddRankingsModuleWithCaching();
-
-        var provider = services.BuildServiceProvider();
-
-        var cachingModule = provider.GetService<IRankingsModule>();
-        var innerModule = provider.GetService<RankingsModule>();
-
-        Assert.NotNull(cachingModule);
-        Assert.NotNull(innerModule);
-        Assert.IsType<CachingRankingsModule>(cachingModule);
-        Assert.IsType<RankingsModule>(innerModule);
-    }
-
-    private static void RegisterCacheDependencies(IServiceCollection services)
-    {
-        services.AddSingleton<IPersistentCache, FilePersistentCache>();
-        services.Configure<CacheOptions>(_ => { });
     }
 
     private static IConfiguration BuildConfiguration(

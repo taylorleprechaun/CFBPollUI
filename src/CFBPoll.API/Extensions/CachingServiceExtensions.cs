@@ -44,19 +44,9 @@ public static class CachingServiceExtensions
         return services;
     }
 
-    public static IServiceCollection AddRankingsModuleWithCaching(this IServiceCollection services)
+    public static IServiceCollection AddRankingsModule(this IServiceCollection services)
     {
-        services.AddSingleton<RankingsModule>();
-
-        services.AddSingleton<IRankingsModule>(sp =>
-        {
-            var innerModule = sp.GetRequiredService<RankingsModule>();
-            var cache = sp.GetRequiredService<IPersistentCache>();
-            var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<CacheOptions>>();
-            var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<CachingRankingsModule>>();
-
-            return new CachingRankingsModule(innerModule, cache, options, logger);
-        });
+        services.AddSingleton<IRankingsModule, RankingsModule>();
 
         return services;
     }

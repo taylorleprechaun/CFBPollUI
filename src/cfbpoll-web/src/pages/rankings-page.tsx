@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSeasons } from '../hooks/use-seasons';
-import { useWeeks } from '../hooks/use-weeks';
+import { useAvailableWeeks } from '../hooks/use-available-weeks';
 import { useRankings } from '../hooks/use-rankings';
 import { useConferences } from '../hooks/use-conferences';
 import { useDefaultSeasonWeek } from '../hooks/use-default-season-week';
@@ -34,7 +34,7 @@ export function RankingsPage() {
     isLoading: weeksLoading,
     error: weeksError,
     refetch: refetchWeeks,
-  } = useWeeks(seasonRef.current);
+  } = useAvailableWeeks(seasonRef.current);
 
   const {
     season: selectedSeason,

@@ -2,7 +2,9 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Layout } from './components/layout/layout';
 
+const AdminPage = lazy(() => import('./pages/admin-page').then(m => ({ default: m.AdminPage })));
 const HomePage = lazy(() => import('./pages/home-page').then(m => ({ default: m.HomePage })));
+const LoginPage = lazy(() => import('./pages/login-page').then(m => ({ default: m.LoginPage })));
 const RankingsPage = lazy(() => import('./pages/rankings-page').then(m => ({ default: m.RankingsPage })));
 const TeamDetailsPage = lazy(() => import('./pages/team-details-page').then(m => ({ default: m.TeamDetailsPage })));
 
@@ -31,6 +33,16 @@ function App() {
         <Route path="team-details" element={
           <Suspense fallback={<PageLoader />}>
             <TeamDetailsPage />
+          </Suspense>
+        } />
+        <Route path="login" element={
+          <Suspense fallback={<PageLoader />}>
+            <LoginPage />
+          </Suspense>
+        } />
+        <Route path="admin" element={
+          <Suspense fallback={<PageLoader />}>
+            <AdminPage />
           </Suspense>
         } />
       </Route>

@@ -15,6 +15,7 @@ public class TeamsControllerTests
 {
     private readonly Mock<ICFBDataService> _mockDataService;
     private readonly Mock<ILogger<TeamsController>> _mockLogger;
+    private readonly Mock<IRankingsData> _mockRankingsData;
     private readonly Mock<IRankingsModule> _mockRankingsModule;
     private readonly Mock<IRatingModule> _mockRatingModule;
     private readonly TeamsController _controller;
@@ -23,11 +24,13 @@ public class TeamsControllerTests
     {
         _mockDataService = new Mock<ICFBDataService>();
         _mockLogger = new Mock<ILogger<TeamsController>>();
+        _mockRankingsData = new Mock<IRankingsData>();
         _mockRankingsModule = new Mock<IRankingsModule>();
         _mockRatingModule = new Mock<IRatingModule>();
 
         _controller = new TeamsController(
             _mockDataService.Object,
+            _mockRankingsData.Object,
             _mockRankingsModule.Object,
             _mockRatingModule.Object,
             _mockLogger.Object);
@@ -125,6 +128,10 @@ public class TeamsControllerTests
         _mockDataService
             .Setup(x => x.GetSeasonDataAsync(2023, 5))
             .ReturnsAsync(seasonData);
+
+        _mockRankingsData
+            .Setup(x => x.GetPublishedSnapshotAsync(2023, 5))
+            .ReturnsAsync((RankingsResult?)null);
 
         _mockRatingModule
             .Setup(x => x.RateTeams(seasonData))
@@ -230,6 +237,10 @@ public class TeamsControllerTests
             .Setup(x => x.GetSeasonDataAsync(2023, 5))
             .ReturnsAsync(seasonData);
 
+        _mockRankingsData
+            .Setup(x => x.GetPublishedSnapshotAsync(2023, 5))
+            .ReturnsAsync((RankingsResult?)null);
+
         _mockRatingModule
             .Setup(x => x.RateTeams(seasonData))
             .Returns(ratings);
@@ -257,5 +268,77 @@ public class TeamsControllerTests
         Assert.Equal(0.8, response.WeightedSOS);
         Assert.NotNull(response.Details);
         Assert.NotNull(response.Schedule);
+    }
+
+    [Fact]
+    public async Task GetTeamDetail_PersistedSnapshot_UsesPersistedRankings()
+    {
+        var seasonData = new SeasonData
+        {
+            Season = 2023,
+            Week = 5,
+            Teams = new Dictionary<string, TeamInfo>
+            {
+                ["Georgia"] = new TeamInfo
+                {
+                    Name = "Georgia",
+                    Color = "#BA0C2F",
+                    AltColor = "#000000",
+                    Conference = "SEC",
+                    Division = "East",
+                    LogoURL = "https://example.com/georgia.png",
+                    Wins = 5,
+                    Losses = 0,
+                    Games = []
+                }
+            },
+            Games = []
+        };
+
+        var persistedResult = new RankingsResult
+        {
+            Season = 2023,
+            Week = 5,
+            Rankings = new List<RankedTeam>
+            {
+                new RankedTeam
+                {
+                    TeamName = "Georgia",
+                    Rank = 1,
+                    Conference = "SEC",
+                    Division = "East",
+                    LogoURL = "https://example.com/georgia.png",
+                    Wins = 5,
+                    Losses = 0,
+                    Rating = 70.0,
+                    SOSRanking = 3,
+                    WeightedSOS = 0.8,
+                    Details = new TeamDetails()
+                }
+            }
+        };
+
+        _mockDataService
+            .Setup(x => x.GetSeasonDataAsync(2023, 5))
+            .ReturnsAsync(seasonData);
+
+        _mockRankingsData
+            .Setup(x => x.GetPublishedSnapshotAsync(2023, 5))
+            .ReturnsAsync(persistedResult);
+
+        _mockDataService
+            .Setup(x => x.GetFullSeasonScheduleAsync(2023))
+            .ReturnsAsync(new List<ScheduleGame>());
+
+        var result = await _controller.GetTeamDetail("Georgia", 2023, 5);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<TeamDetailResponseDTO>(okResult.Value);
+        Assert.Equal("Georgia", response.TeamName);
+
+        _mockRatingModule.Verify(x => x.RateTeams(It.IsAny<SeasonData>()), Times.Never);
+        _mockRankingsModule.Verify(
+            x => x.GenerateRankingsAsync(It.IsAny<SeasonData>(), It.IsAny<IDictionary<string, RatingDetails>>()),
+            Times.Never);
     }
 }

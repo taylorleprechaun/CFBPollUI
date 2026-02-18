@@ -48,14 +48,20 @@ logs/
 # Cache
 cache/
 
+# Database (runtime SQLite data directory, not source code Data/ folders)
+src/CFBPoll.API/data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
 # OS files
 .DS_Store
 Thumbs.db
 
 # Test results
 TestResults/
-coverage/
-coverage-results/
+coverage*/
 
 # Claude
 .claude/

@@ -43,7 +43,9 @@ public class RankingsModule : IRankingsModule
                 Losses = ratingDetails.Losses,
                 Rank = rank,
                 Rating = Math.Round(ratingDetails.Rating, 4),
+                RatingComponents = ratingDetails.RatingComponents,
                 SOSRanking = sosRankings.TryGetValue(teamName, out var sosRank) ? sosRank : 0,
+                StrengthOfSchedule = Math.Round(ratingDetails.StrengthOfSchedule, 4),
                 TeamName = teamName,
                 WeightedSOS = Math.Round(ratingDetails.WeightedStrengthOfSchedule, 4),
                 Wins = ratingDetails.Wins

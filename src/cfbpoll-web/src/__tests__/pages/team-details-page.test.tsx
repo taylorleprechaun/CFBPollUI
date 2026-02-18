@@ -549,4 +549,246 @@ describe('TeamDetailsPage', () => {
       expect(seasonSelect.value).toBe('2023');
     });
   });
+
+  describe('season change', () => {
+    it('resets team and week when season changes', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      const seasonSelect = screen.getByLabelText('Season:') as HTMLSelectElement;
+      fireEvent.change(seasonSelect, { target: { value: '2023' } });
+
+      expect(seasonSelect.value).toBe('2023');
+      const teamSelect = screen.getByLabelText('Team:') as HTMLSelectElement;
+      expect(teamSelect.value).toBe('');
+    });
+  });
+
+  describe('error handling', () => {
+    it('shows error alert when seasons fail to load', () => {
+      const refetch = vi.fn();
+      vi.mocked(useSeasons).mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: new Error('Seasons failed'),
+        refetch,
+      } as ReturnType<typeof useSeasons>);
+      vi.mocked(useWeeks).mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch,
+      } as ReturnType<typeof useWeeks>);
+      vi.mocked(useRankings).mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch,
+      } as ReturnType<typeof useRankings>);
+      vi.mocked(useTeamDetail).mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch,
+      } as ReturnType<typeof useTeamDetail>);
+
+      renderPage();
+
+      expect(screen.getByText(/Seasons failed/)).toBeInTheDocument();
+    });
+
+    it('calls refetch when retry is clicked for seasons error', () => {
+      const refetch = vi.fn();
+      vi.mocked(useSeasons).mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: new Error('Seasons failed'),
+        refetch,
+      } as ReturnType<typeof useSeasons>);
+      vi.mocked(useWeeks).mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch,
+      } as ReturnType<typeof useWeeks>);
+      vi.mocked(useRankings).mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch,
+      } as ReturnType<typeof useRankings>);
+      vi.mocked(useTeamDetail).mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch,
+      } as ReturnType<typeof useTeamDetail>);
+
+      renderPage();
+
+      fireEvent.click(screen.getByText('Retry'));
+      expect(refetch).toHaveBeenCalled();
+    });
+
+    it('shows no details message when team selected but no data returned', () => {
+      setupMocks({ teamDetailData: undefined });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      expect(screen.getByText('No details available for the selected team.')).toBeInTheDocument();
+    });
+  });
+
+  describe('schedule interactions', () => {
+    it('navigates when clicking opponent link', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      const georgiaLink = screen.getByRole('link', { name: /Georgia/ });
+      fireEvent.click(georgiaLink);
+
+      expect(vi.mocked(useTeamDetail)).toHaveBeenCalled();
+    });
+
+    it('renders venue for games', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      expect(screen.getAllByText('Autzen Stadium').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Mercedes-Benz Stadium').length).toBeGreaterThan(0);
+    });
+
+    it('shows TBD date when gameDate is null', () => {
+      const detailWithTbdGame = {
+        ...mockTeamDetail,
+        schedule: [
+          {
+            gameDate: null,
+            isHome: true,
+            isWin: null,
+            neutralSite: false,
+            opponentLogoURL: 'https://example.com/tbd.png',
+            opponentName: 'TBD Opponent',
+            opponentRank: null,
+            opponentRecord: null,
+            opponentScore: null,
+            seasonType: 'regular',
+            startTimeTbd: true,
+            teamScore: null,
+            venue: null,
+            week: 13,
+          },
+        ],
+      };
+
+      setupMocks({ teamDetailData: detailWithTbdGame });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      expect(screen.getByText('TBD')).toBeInTheDocument();
+    });
+
+    it('shows loss result in red', () => {
+      const detailWithLoss = {
+        ...mockTeamDetail,
+        schedule: [
+          {
+            gameDate: '2024-09-21T12:00:00',
+            isHome: false,
+            isWin: false,
+            neutralSite: false,
+            opponentLogoURL: 'https://example.com/boise.png',
+            opponentName: 'Boise State',
+            opponentRank: 5,
+            opponentRecord: '11-0',
+            opponentScore: 35,
+            seasonType: 'regular',
+            startTimeTbd: false,
+            teamScore: 21,
+            venue: null,
+            week: 3,
+          },
+        ],
+      };
+
+      setupMocks({ teamDetailData: detailWithLoss });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      const lossResult = screen.getByText('L 21-35');
+      expect(lossResult).toHaveClass('text-red-600');
+    });
+
+    it('shows "at" prefix for away games', () => {
+      const awayGame = {
+        ...mockTeamDetail,
+        schedule: [
+          {
+            gameDate: '2024-10-05T19:00:00',
+            isHome: false,
+            isWin: true,
+            neutralSite: false,
+            opponentLogoURL: 'https://example.com/usc.png',
+            opponentName: 'USC',
+            opponentRank: 15,
+            opponentRecord: '5-3',
+            opponentScore: 14,
+            seasonType: 'regular',
+            startTimeTbd: false,
+            teamScore: 28,
+            venue: 'LA Coliseum',
+            week: 5,
+          },
+        ],
+      };
+
+      setupMocks({ teamDetailData: awayGame });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      const opponentCell = screen.getByText(/at.*USC/);
+      expect(opponentCell).toBeInTheDocument();
+    });
+
+    it('shows "vs" prefix for neutral site games', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      const neutralCell = screen.getByText(/vs.*Georgia/);
+      expect(neutralCell).toBeInTheDocument();
+    });
+  });
+
+  describe('logo error handling', () => {
+    it('hides logo when image fails to load', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      const logo = screen.getByAltText('Oregon logo');
+      expect(logo).toBeInTheDocument();
+
+      fireEvent.error(logo);
+
+      expect(screen.queryByAltText('Oregon logo')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('division display', () => {
+    it('renders conference with division when present', () => {
+      const detailWithDivision = {
+        ...mockTeamDetail,
+        conference: 'SEC',
+        division: 'East',
+      };
+
+      setupMocks({ teamDetailData: detailWithDivision });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      expect(screen.getByText('SEC - East')).toBeInTheDocument();
+    });
+
+    it('renders conference without division when division is empty', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=Oregon&season=2024&week=12');
+
+      expect(screen.getByText('Big Ten')).toBeInTheDocument();
+      expect(screen.queryByText('Big Ten -')).not.toBeInTheDocument();
+    });
+  });
 });

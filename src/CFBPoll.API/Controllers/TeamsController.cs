@@ -12,16 +12,19 @@ public class TeamsController : ControllerBase
 {
     private readonly ICFBDataService _dataService;
     private readonly ILogger<TeamsController> _logger;
+    private readonly IRankingsData _rankingsData;
     private readonly IRankingsModule _rankingsModule;
     private readonly IRatingModule _ratingModule;
 
     public TeamsController(
         ICFBDataService dataService,
+        IRankingsData rankingsData,
         IRankingsModule rankingsModule,
         IRatingModule ratingModule,
         ILogger<TeamsController> logger)
     {
         _dataService = dataService;
+        _rankingsData = rankingsData;
         _rankingsModule = rankingsModule;
         _ratingModule = ratingModule;
         _logger = logger;
@@ -53,8 +56,13 @@ public class TeamsController : ControllerBase
         if (!seasonData.Teams.ContainsKey(teamName))
             return NotFound(new ErrorResponseDTO { Message = $"Team '{teamName}' not found", StatusCode = 404 });
 
-        var ratings = _ratingModule.RateTeams(seasonData);
-        var rankingsResult = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+        var rankingsResult = await _rankingsData.GetPublishedSnapshotAsync(season, week);
+
+        if (rankingsResult is null)
+        {
+            var ratings = _ratingModule.RateTeams(seasonData);
+            rankingsResult = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+        }
 
         var rankedTeam = rankingsResult.Rankings.FirstOrDefault(
             r => r.TeamName.Equals(teamName, StringComparison.OrdinalIgnoreCase));

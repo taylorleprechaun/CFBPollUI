@@ -131,4 +131,25 @@ public class ExceptionHandlingMiddlewareTests
         var response = JsonSerializer.Deserialize<JsonElement>(responseBody);
         Assert.Equal("An unexpected error occurred", response.GetProperty("message").GetString());
     }
+
+    [Fact]
+    public async Task InvokeAsync_InvalidOperationException_Returns400()
+    {
+        var context = new DefaultHttpContext();
+        context.Response.Body = new MemoryStream();
+
+        RequestDelegate next = _ => throw new InvalidOperationException("Invalid operation");
+        var middleware = new ExceptionHandlingMiddleware(next, _mockLogger.Object);
+
+        await middleware.InvokeAsync(context);
+
+        Assert.Equal((int)HttpStatusCode.BadRequest, context.Response.StatusCode);
+
+        context.Response.Body.Seek(0, SeekOrigin.Begin);
+        using var reader = new StreamReader(context.Response.Body);
+        var responseBody = await reader.ReadToEndAsync();
+
+        var response = JsonSerializer.Deserialize<JsonElement>(responseBody);
+        Assert.Equal("The request was invalid", response.GetProperty("message").GetString());
+    }
 }
