@@ -18,9 +18,8 @@ This was created using Claude Code with a lot of guidelines to follow my code st
 
 ## TODO
 
-Last Updated 2/15/2026
+Last Updated 2/17/2026
 - I have only recently started to learn React and this application uses it for the UI. I had Claude create it all following the best practices that I could find online, but I don't know for certain that everything is correct. As I learn more I know I will end up refactoring that code.
-- There are more improvements to the UI I plan to implement. They require persistent historical data though, which will require changing my data-caching approach.
 
 ## Features
 
@@ -28,6 +27,9 @@ Last Updated 2/15/2026
 - **Team Details**: Drill into individual teams to see schedule with opponent rankings, clickable opponent links, and expandable record breakdowns by location and opponent tier
 - **Historical Data**: Access rankings from 2002 to present
 - **Interactive UI**: Sortable rankings table with team logos and colors
+- **Admin Dashboard**: JWT-authenticated admin panel to calculate, preview, and publish rankings with a two-step draft/publish workflow
+- **Excel Export**: Download rankings as Excel spreadsheets with rating breakdowns
+- **SQLite Persistence**: Rankings snapshots stored in SQLite for fast retrieval without redundant API calls
 - **REST API**: Full API with Swagger documentation
 - **Caching**: File-based persistent cache to reduce external API calls
 
@@ -35,6 +37,9 @@ Last Updated 2/15/2026
 
 ### Backend
 - ASP.NET Core 10.0 Web API
+- SQLite via Microsoft.Data.Sqlite
+- JWT authentication
+- EPPlus for Excel export
 - College Football Data API integration
 - Swagger/OpenAPI documentation
 
@@ -45,6 +50,7 @@ Last Updated 2/15/2026
 - TanStack Table for sortable tables
 - Tailwind CSS for styling
 - React Router for navigation
+- Zod for runtime response validation
 
 ## Project Structure
 
@@ -52,13 +58,43 @@ Last Updated 2/15/2026
 CFBPoll/
 ├── CFBPoll.sln
 ├── src/
-│   ├── CFBPoll.API/           # ASP.NET Core Web API
-│   ├── CFBPoll.Core/          # Shared business logic
+│   ├── CFBPoll.API/           # ASP.NET Core Web API (presentation layer)
+│   ├── CFBPoll.Core/          # Business logic, models, interfaces (domain layer)
 │   └── cfbpoll-web/           # React frontend
 └── tests/
-    ├── CFBPoll.API.Tests/     # API integration tests
-    └── CFBPoll.Core.Tests/    # Unit tests
+    ├── CFBPoll.API.Tests/     # Controller/middleware tests
+    └── CFBPoll.Core.Tests/    # Module/service tests
 ```
+
+## Architecture
+
+The backend enforces a strict layered architecture: **Controllers &rarr; Modules &rarr; Data Layer**.
+
+```
+Controllers (Presentation)         Modules (Business Logic)          Data Layer
+-----------------------------      --------------------------        ----------
+AuthController                     AuthModule
+  -> IAuthModule                     -> IOptions<AuthOptions>
+
+RankingsController                 RankingsModule
+  -> ICFBDataService                 -> IRankingsData               RankingsData
+  -> IRankingsModule                 -> ISeasonModule                 -> SQLite
+  -> IRatingModule
+
+TeamsController                    TeamsModule
+  -> ITeamsModule                    -> ICFBDataService
+                                     -> IRankingsModule
+                                     -> IRatingModule
+
+AdminController                    AdminModule
+  -> IAdminModule                    -> ICFBDataService
+                                     -> IExcelExportModule
+                                     -> IPersistentCache
+                                     -> IRankingsModule
+                                     -> IRatingModule
+```
+
+Only `RankingsModule` has a direct dependency on `IRankingsData`. Controllers never reference data-layer interfaces.
 
 ## Prerequisites
 
@@ -71,8 +107,8 @@ CFBPoll/
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/CFBPoll.git
-cd CFBPoll
+git clone https://github.com/taylorleprechaun/CFBPollUI.git
+cd CFBPollUI
 ```
 
 ### 2. Configure API Key
@@ -83,9 +119,18 @@ Create `src/CFBPoll.API/appsettings-private.json`:
 {
   "CollegeFootballData": {
     "ApiKey": "your-api-key-here"
+  },
+  "Auth": {
+    "Username": "admin",
+    "PasswordHash": "your-bcrypt-hash-here",
+    "Secret": "your-jwt-secret-at-least-32-characters-long",
+    "Issuer": "CFBPoll",
+    "ExpirationMinutes": 480
   }
 }
 ```
+
+Generate a bcrypt password hash for the `PasswordHash` field (e.g., using an online bcrypt generator or `BCrypt.Net.BCrypt.HashPassword("your-password")`).
 
 ### 3. Install dependencies
 
@@ -139,45 +184,64 @@ The frontend runs at `http://localhost:5173`.
 
 ## API Endpoints
 
+### Public
+
 | Endpoint | Description |
 |----------|-------------|
 | `GET /api/v1/conferences` | Returns FBS conferences |
-| `GET /api/v1/rankings?season={season}&week={week}` | Returns ranked teams for the specified week |
+| `GET /api/v1/rankings?season={s}&week={w}` | Returns ranked teams for the specified week |
+| `GET /api/v1/rankings/available-weeks?season={s}` | Returns published weeks for a season |
 | `GET /api/v1/seasons` | Returns available seasons (2002 to present) |
-| `GET /api/v1/seasons/{season}/weeks` | Returns available weeks for a season |
-| `GET /api/v1/teams/{teamName}?season={season}&week={week}` | Returns team details including schedule and record breakdowns |
+| `GET /api/v1/seasons/{season}/weeks` | Returns all weeks for a season |
+| `GET /api/v1/teams/{teamName}?season={s}&week={w}` | Returns team details including schedule and record breakdowns |
+
+### Authentication
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/v1/auth/login` | Authenticate with username/password, returns JWT |
+
+### Admin (JWT required)
+
+| Endpoint | Description |
+|----------|-------------|
+| `POST /api/v1/admin/calculate` | Calculate rankings for a season/week and save as draft |
+| `POST /api/v1/admin/snapshots/{season}/{week}/publish` | Publish a draft snapshot |
+| `DELETE /api/v1/admin/snapshots/{season}/{week}` | Delete a snapshot |
+| `GET /api/v1/admin/persisted-weeks` | List all persisted snapshots |
+| `GET /api/v1/admin/export?season={s}&week={w}` | Download rankings as Excel |
 
 ## Testing
 
-The project includes 393 unit and integration tests across backend and frontend.
+The project includes 561 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (257 tests)
+# Backend tests (324 tests)
 dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (136 tests)
+# Frontend tests (237 tests)
 cd src/cfbpoll-web
 npm test
 ```
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-257-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-136-blue)
-![Core Coverage](https://img.shields.io/badge/Core_Coverage-95%25-brightgreen)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-324-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-237-blue)
+![Core Coverage](https://img.shields.io/badge/Core_Coverage-96%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
-![Web Coverage](https://img.shields.io/badge/Web_Coverage-93%25-brightgreen)
+![Web Coverage](https://img.shields.io/badge/Web_Coverage-97%25-brightgreen)
 
 | Project | Line Coverage | Branch Coverage |
 |---------|---------------|-----------------|
-| CFBPoll.Core | 95% | 97% |
-| CFBPoll.API | 100% | 93% |
-| cfbpoll-web | 93% | 84% |
+| CFBPoll.Core | 96% | 89% |
+| CFBPoll.API | 100% | 91% |
+| cfbpoll-web | 97% | 91% |
 
 **Excluded from coverage:**
 - `RatingModule` - Proprietary rating algorithm, not included in the repository. Tests are maintained locally.

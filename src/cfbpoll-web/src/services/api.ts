@@ -80,6 +80,15 @@ export async function fetchConferences(): Promise<ConferencesResponse> {
   );
 }
 
+export async function fetchAvailableWeeks(
+  season: number
+): Promise<WeeksResponse> {
+  return fetchWithValidation(
+    `${API_BASE_URL}/api/v1/rankings/available-weeks?season=${season}`,
+    WeeksResponseSchema
+  );
+}
+
 export async function fetchTeamDetail(
   season: number,
   week: number,

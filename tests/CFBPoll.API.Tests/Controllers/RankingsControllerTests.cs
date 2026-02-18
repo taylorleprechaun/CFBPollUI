@@ -32,46 +32,9 @@ public class RankingsControllerTests
     }
 
     [Fact]
-    public async Task GetRankings_ValidRequest_ReturnsRankings()
+    public async Task GetRankings_PersistedSnapshot_ReturnsPersistedRankings()
     {
-        var seasonData = new SeasonData
-        {
-            Season = 2023,
-            Week = 5,
-            Teams = new Dictionary<string, TeamInfo>
-            {
-                ["Team A"] = new TeamInfo
-                {
-                    Name = "Team A",
-                    Conference = "Conference 1",
-                    Division = "Division 1",
-                    LogoURL = "https://example.com/logo.png",
-                    Wins = 4,
-                    Losses = 1,
-                    Games = []
-                }
-            },
-            Games = []
-        };
-
-        var ratings = new Dictionary<string, RatingDetails>
-        {
-            ["Team A"] = new RatingDetails
-            {
-                Wins = 4,
-                Losses = 1,
-                StrengthOfSchedule = 0.5,
-                WeightedStrengthOfSchedule = 0.6,
-                RatingComponents = new Dictionary<string, double>
-                {
-                    ["BaseWins"] = 40,
-                    ["MarginFactor"] = 5,
-                    ["SOSBonus"] = 10
-                }
-            }
-        };
-
-        var rankingsResult = new RankingsResult
+        var persistedResult = new RankingsResult
         {
             Season = 2023,
             Week = 5,
@@ -81,16 +44,58 @@ public class RankingsControllerTests
                 {
                     TeamName = "Team A",
                     Rank = 1,
-                    Conference = "Conference 1",
-                    Division = "Division 1",
-                    LogoURL = "https://example.com/logo.png",
-                    Wins = 4,
-                    Losses = 1,
                     Rating = 55,
-                    SOSRanking = 1,
-                    WeightedSOS = 0.6,
                     Details = new TeamDetails()
                 }
+            }
+        };
+
+        _mockRankingsModule
+            .Setup(x => x.GetPublishedSnapshotAsync(2023, 5))
+            .ReturnsAsync(persistedResult);
+
+        var result = await _controller.GetRankings(2023, 5);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<RankingsResponseDTO>(okResult.Value);
+        Assert.Equal(2023, response.Season);
+        Assert.Equal(5, response.Week);
+        Assert.Single(response.Rankings);
+        Assert.Equal("Team A", response.Rankings.First().TeamName);
+
+        _mockDataService.Verify(x => x.GetSeasonDataAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetRankings_NoPersistedSnapshot_FallsBackToLiveCalculation()
+    {
+        _mockRankingsModule
+            .Setup(x => x.GetPublishedSnapshotAsync(2023, 5))
+            .ReturnsAsync((RankingsResult?)null);
+
+        var seasonData = new SeasonData
+        {
+            Season = 2023,
+            Week = 5,
+            Teams = new Dictionary<string, TeamInfo>
+            {
+                ["Team A"] = new TeamInfo { Name = "Team A", Conference = "Conference 1", Games = [] }
+            },
+            Games = []
+        };
+
+        var ratings = new Dictionary<string, RatingDetails>
+        {
+            ["Team A"] = new RatingDetails { Wins = 4, Losses = 1, RatingComponents = new Dictionary<string, double>() }
+        };
+
+        var rankingsResult = new RankingsResult
+        {
+            Season = 2023,
+            Week = 5,
+            Rankings = new List<RankedTeam>
+            {
+                new RankedTeam { TeamName = "Team A", Rank = 1, Rating = 55, Details = new TeamDetails() }
             }
         };
 
@@ -110,12 +115,91 @@ public class RankingsControllerTests
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var response = Assert.IsType<RankingsResponseDTO>(okResult.Value);
-        Assert.Equal(2023, response.Season);
-        Assert.Equal(5, response.Week);
-        var rankings = response.Rankings;
-        Assert.Single(rankings);
-        Assert.Equal("Team A", rankings.First().TeamName);
-        Assert.Equal(1, rankings.First().Rank);
+        Assert.Equal("Team A", response.Rankings.First().TeamName);
     }
 
+    [Fact]
+    public async Task GetAvailableWeeks_ReturnsPublishedWeeksOnly()
+    {
+        var calendarWeeks = new List<CalendarWeek>
+        {
+            new CalendarWeek { Week = 1, SeasonType = "regular" },
+            new CalendarWeek { Week = 2, SeasonType = "regular" },
+            new CalendarWeek { Week = 3, SeasonType = "regular" }
+        };
+
+        _mockDataService
+            .Setup(x => x.GetCalendarAsync(2024))
+            .ReturnsAsync(calendarWeeks);
+
+        _mockRankingsModule
+            .Setup(x => x.GetAvailableWeeksAsync(2024, calendarWeeks))
+            .ReturnsAsync(new List<WeekInfo>
+            {
+                new WeekInfo { WeekNumber = 1, Label = "Week 1" },
+                new WeekInfo { WeekNumber = 3, Label = "Week 3" }
+            });
+
+        var result = await _controller.GetAvailableWeeks(2024);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<WeeksResponseDTO>(okResult.Value);
+        Assert.Equal(2024, response.Season);
+
+        var weeks = response.Weeks.ToList();
+        Assert.Equal(2, weeks.Count);
+        Assert.Contains(weeks, w => w.WeekNumber == 1);
+        Assert.Contains(weeks, w => w.WeekNumber == 3);
+    }
+
+    [Fact]
+    public async Task GetAvailableWeeks_NoPublishedWeeks_ReturnsEmpty()
+    {
+        var calendarWeeks = new List<CalendarWeek>
+        {
+            new CalendarWeek { Week = 1, SeasonType = "regular" }
+        };
+
+        _mockDataService
+            .Setup(x => x.GetCalendarAsync(2024))
+            .ReturnsAsync(calendarWeeks);
+
+        _mockRankingsModule
+            .Setup(x => x.GetAvailableWeeksAsync(2024, calendarWeeks))
+            .ReturnsAsync(new List<WeekInfo>());
+
+        var result = await _controller.GetAvailableWeeks(2024);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<WeeksResponseDTO>(okResult.Value);
+        Assert.Empty(response.Weeks);
+    }
+
+    [Fact]
+    public async Task GetRankings_LiveCalculation_DoesNotAttemptAutoPersist()
+    {
+        _mockRankingsModule
+            .Setup(x => x.GetPublishedSnapshotAsync(2023, 5))
+            .ReturnsAsync((RankingsResult?)null);
+
+        var seasonData = new SeasonData
+        {
+            Season = 2023,
+            Week = 5,
+            Teams = new Dictionary<string, TeamInfo>(),
+            Games = []
+        };
+
+        var ratings = new Dictionary<string, RatingDetails>();
+        var rankingsResult = new RankingsResult { Season = 2023, Week = 5, Rankings = [] };
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2023, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeams(seasonData)).Returns(ratings);
+        _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankingsResult);
+
+        await _controller.GetRankings(2023, 5);
+
+        _mockRankingsModule.Verify(x => x.SaveSnapshotAsync(It.IsAny<RankingsResult>()), Times.Never);
+        _mockRankingsModule.Verify(x => x.PublishSnapshotAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
 }

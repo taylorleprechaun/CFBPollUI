@@ -15,11 +15,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="CollegeFootballData" Version="5.13.2" />
+    <PackageReference Include="EPPlus" Version="7.7.2" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.0" />
     <PackageReference Include="Microsoft.Kiota.Abstractions" Version="1.21.2" />
     <PackageReference Include="Microsoft.Kiota.Http.HttpClientLibrary" Version="1.21.2" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.3.1" />
   </ItemGroup>
 
 </Project>

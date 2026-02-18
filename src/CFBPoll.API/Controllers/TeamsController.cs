@@ -10,20 +10,12 @@ namespace CFBPoll.API.Controllers;
 [Route("api/v1/[controller]")]
 public class TeamsController : ControllerBase
 {
-    private readonly ICFBDataService _dataService;
     private readonly ILogger<TeamsController> _logger;
-    private readonly IRankingsModule _rankingsModule;
-    private readonly IRatingModule _ratingModule;
+    private readonly ITeamsModule _teamsModule;
 
-    public TeamsController(
-        ICFBDataService dataService,
-        IRankingsModule rankingsModule,
-        IRatingModule ratingModule,
-        ILogger<TeamsController> logger)
+    public TeamsController(ITeamsModule teamsModule, ILogger<TeamsController> logger)
     {
-        _dataService = dataService;
-        _rankingsModule = rankingsModule;
-        _ratingModule = ratingModule;
+        _teamsModule = teamsModule;
         _logger = logger;
     }
 
@@ -48,25 +40,15 @@ public class TeamsController : ControllerBase
         if (string.IsNullOrWhiteSpace(teamName))
             return BadRequest(new ErrorResponseDTO { Message = "Team name is required", StatusCode = 400 });
 
-        var seasonData = await _dataService.GetSeasonDataAsync(season, week);
+        var result = await _teamsModule.GetTeamDetailAsync(teamName, season, week);
 
-        if (!seasonData.Teams.ContainsKey(teamName))
+        if (result is null)
             return NotFound(new ErrorResponseDTO { Message = $"Team '{teamName}' not found", StatusCode = 404 });
 
-        var ratings = _ratingModule.RateTeams(seasonData);
-        var rankingsResult = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
-
-        var rankedTeam = rankingsResult.Rankings.FirstOrDefault(
-            r => r.TeamName.Equals(teamName, StringComparison.OrdinalIgnoreCase));
-
-        if (rankedTeam is null)
-            return NotFound(new ErrorResponseDTO { Message = $"Team '{teamName}' not found in rankings", StatusCode = 404 });
-
-        var fullSchedule = await _dataService.GetFullSeasonScheduleAsync(season);
-        var teamInfo = seasonData.Teams[teamName];
+        var teamInfo = result.Teams[teamName];
 
         var response = TeamDetailMapper.ToResponseDTO(
-            rankedTeam, teamInfo, fullSchedule, seasonData.Teams, rankingsResult.Rankings);
+            result.RankedTeam, teamInfo, result.FullSchedule, result.Teams, result.AllRankings);
 
         return Ok(response);
     }
