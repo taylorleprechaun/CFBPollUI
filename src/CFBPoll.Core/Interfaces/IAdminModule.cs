@@ -18,6 +18,12 @@ public interface IAdminModule
     Task<bool> DeleteSnapshotAsync(int season, int week);
 
     /// <summary>
+    /// Generates an Excel export of rankings for the given season and week.
+    /// </summary>
+    /// <returns>Excel file bytes, or null if no snapshot exists.</returns>
+    Task<byte[]?> ExportRankingsAsync(int season, int week);
+
+    /// <summary>
     /// Gets all persisted week summaries.
     /// </summary>
     Task<IEnumerable<PersistedWeekSummary>> GetPersistedWeeksAsync();

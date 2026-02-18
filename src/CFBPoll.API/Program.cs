@@ -49,7 +49,9 @@ try
     builder.Services.AddSingleton<ISeasonModule, SeasonModule>();
     builder.Services.AddSingleton<IConferenceModule, ConferenceModule>();
     builder.Services.AddSingleton<IAdminModule, AdminModule>();
+    builder.Services.AddSingleton<IAuthModule, AuthModule>();
     builder.Services.AddSingleton<IExcelExportModule, ExcelExportModule>();
+    builder.Services.AddSingleton<ITeamsModule, TeamsModule>();
     builder.Services.AddJwtAuthentication(builder.Configuration);
 
     builder.Services.AddRateLimiter(options =>

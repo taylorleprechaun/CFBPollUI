@@ -12,8 +12,8 @@ public class AdminModuleTests
 {
     private readonly Mock<IPersistentCache> _mockCache;
     private readonly Mock<ICFBDataService> _mockDataService;
+    private readonly Mock<IExcelExportModule> _mockExcelExportModule;
     private readonly Mock<ILogger<AdminModule>> _mockLogger;
-    private readonly Mock<IRankingsData> _mockRankingsData;
     private readonly Mock<IRankingsModule> _mockRankingsModule;
     private readonly Mock<IRatingModule> _mockRatingModule;
     private readonly AdminModule _adminModule;
@@ -22,15 +22,15 @@ public class AdminModuleTests
     {
         _mockCache = new Mock<IPersistentCache>();
         _mockDataService = new Mock<ICFBDataService>();
+        _mockExcelExportModule = new Mock<IExcelExportModule>();
         _mockLogger = new Mock<ILogger<AdminModule>>();
-        _mockRankingsData = new Mock<IRankingsData>();
         _mockRankingsModule = new Mock<IRankingsModule>();
         _mockRatingModule = new Mock<IRatingModule>();
 
         _adminModule = new AdminModule(
             _mockDataService.Object,
+            _mockExcelExportModule.Object,
             _mockCache.Object,
-            _mockRankingsData.Object,
             _mockRankingsModule.Object,
             _mockRatingModule.Object,
             _mockLogger.Object);
@@ -53,7 +53,7 @@ public class AdminModuleTests
         Assert.Equal(2024, result.Rankings.Season);
         Assert.Equal(5, result.Rankings.Week);
         Assert.True(result.Persisted);
-        _mockRankingsData.Verify(x => x.SaveSnapshotAsync(rankings), Times.Once);
+        _mockRankingsModule.Verify(x => x.SaveSnapshotAsync(rankings), Times.Once);
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public class AdminModuleTests
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
         _mockRatingModule.Setup(x => x.RateTeams(seasonData)).Returns(ratings);
         _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankings);
-        _mockRankingsData.Setup(x => x.SaveSnapshotAsync(It.IsAny<RankingsResult>()))
+        _mockRankingsModule.Setup(x => x.SaveSnapshotAsync(It.IsAny<RankingsResult>()))
             .ThrowsAsync(new InvalidOperationException("DB error"));
 
         var result = await _adminModule.CalculateRankingsAsync(2024, 5);
@@ -101,40 +101,65 @@ public class AdminModuleTests
     }
 
     [Fact]
-    public async Task PublishSnapshotAsync_DelegatesToRankingsData()
+    public async Task PublishSnapshotAsync_DelegatesToRankingsModule()
     {
-        _mockRankingsData.Setup(x => x.PublishSnapshotAsync(2024, 5)).ReturnsAsync(true);
+        _mockRankingsModule.Setup(x => x.PublishSnapshotAsync(2024, 5)).ReturnsAsync(true);
 
         var result = await _adminModule.PublishSnapshotAsync(2024, 5);
 
         Assert.True(result);
-        _mockRankingsData.Verify(x => x.PublishSnapshotAsync(2024, 5), Times.Once);
+        _mockRankingsModule.Verify(x => x.PublishSnapshotAsync(2024, 5), Times.Once);
     }
 
     [Fact]
-    public async Task DeleteSnapshotAsync_DelegatesToRankingsData()
+    public async Task DeleteSnapshotAsync_DelegatesToRankingsModule()
     {
-        _mockRankingsData.Setup(x => x.DeleteSnapshotAsync(2024, 5)).ReturnsAsync(true);
+        _mockRankingsModule.Setup(x => x.DeleteSnapshotAsync(2024, 5)).ReturnsAsync(true);
 
         var result = await _adminModule.DeleteSnapshotAsync(2024, 5);
 
         Assert.True(result);
-        _mockRankingsData.Verify(x => x.DeleteSnapshotAsync(2024, 5), Times.Once);
+        _mockRankingsModule.Verify(x => x.DeleteSnapshotAsync(2024, 5), Times.Once);
     }
 
     [Fact]
-    public async Task GetPersistedWeeksAsync_DelegatesToRankingsData()
+    public async Task GetPersistedWeeksAsync_DelegatesToRankingsModule()
     {
         var weeks = new List<PersistedWeekSummary>
         {
             new PersistedWeekSummary { Season = 2024, Week = 1, Published = true }
         };
 
-        _mockRankingsData.Setup(x => x.GetPersistedWeeksAsync()).ReturnsAsync(weeks);
+        _mockRankingsModule.Setup(x => x.GetPersistedWeeksAsync()).ReturnsAsync(weeks);
 
         var result = await _adminModule.GetPersistedWeeksAsync();
 
         Assert.Single(result);
-        _mockRankingsData.Verify(x => x.GetPersistedWeeksAsync(), Times.Once);
+        _mockRankingsModule.Verify(x => x.GetPersistedWeeksAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExportRankingsAsync_SnapshotExists_ReturnsBytes()
+    {
+        var snapshot = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+        var expectedBytes = new byte[] { 1, 2, 3 };
+
+        _mockRankingsModule.Setup(x => x.GetSnapshotAsync(2024, 5)).ReturnsAsync(snapshot);
+        _mockExcelExportModule.Setup(x => x.GenerateRankingsWorkbook(snapshot)).Returns(expectedBytes);
+
+        var result = await _adminModule.ExportRankingsAsync(2024, 5);
+
+        Assert.Equal(expectedBytes, result);
+    }
+
+    [Fact]
+    public async Task ExportRankingsAsync_NoSnapshot_ReturnsNull()
+    {
+        _mockRankingsModule.Setup(x => x.GetSnapshotAsync(2024, 5)).ReturnsAsync((RankingsResult?)null);
+
+        var result = await _adminModule.ExportRankingsAsync(2024, 5);
+
+        Assert.Null(result);
+        _mockExcelExportModule.Verify(x => x.GenerateRankingsWorkbook(It.IsAny<RankingsResult>()), Times.Never);
     }
 }

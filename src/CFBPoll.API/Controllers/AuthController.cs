@@ -1,11 +1,6 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using CFBPoll.API.DTOs;
-using CFBPoll.Core.Options;
+using CFBPoll.Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 
 namespace CFBPoll.API.Controllers;
 
@@ -13,12 +8,12 @@ namespace CFBPoll.API.Controllers;
 [Route("api/v1/[controller]")]
 public class AuthController : ControllerBase
 {
+    private readonly IAuthModule _authModule;
     private readonly ILogger<AuthController> _logger;
-    private readonly AuthOptions _options;
 
-    public AuthController(IOptions<AuthOptions> options, ILogger<AuthController> logger)
+    public AuthController(IAuthModule authModule, ILogger<AuthController> logger)
     {
-        _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+        _authModule = authModule ?? throw new ArgumentNullException(nameof(authModule));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -33,47 +28,20 @@ public class AuthController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
             return BadRequest(new ErrorResponseDTO { Message = "Username and password are required", StatusCode = 400 });
 
-        if (!request.Username.Equals(_options.Username, StringComparison.OrdinalIgnoreCase))
+        var result = _authModule.Login(request.Username, request.Password);
+
+        if (!result.Success)
         {
-            _logger.LogWarning("Login attempt with invalid username: {Username}", request.Username);
+            _logger.LogWarning("Login attempt failed for username: {Username}", request.Username);
             return Unauthorized(new ErrorResponseDTO { Message = "Invalid credentials", StatusCode = 401 });
         }
-
-        if (!BCrypt.Net.BCrypt.Verify(request.Password, _options.PasswordHash))
-        {
-            _logger.LogWarning("Login attempt with invalid password for user: {Username}", request.Username);
-            return Unauthorized(new ErrorResponseDTO { Message = "Invalid credentials", StatusCode = 401 });
-        }
-
-        var token = GenerateToken();
 
         _logger.LogInformation("User {Username} logged in successfully", request.Username);
 
         return Ok(new LoginResponseDTO
         {
-            ExpiresIn = _options.ExpirationMinutes * 60,
-            Token = token
+            ExpiresIn = result.ExpiresIn,
+            Token = result.Token
         });
-    }
-
-    private string GenerateToken()
-    {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var claims = new[]
-        {
-            new Claim(ClaimTypes.Name, _options.Username),
-            new Claim(ClaimTypes.Role, "Admin")
-        };
-
-        var token = new JwtSecurityToken(
-            issuer: _options.Issuer,
-            audience: _options.Issuer,
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(_options.ExpirationMinutes),
-            signingCredentials: credentials);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

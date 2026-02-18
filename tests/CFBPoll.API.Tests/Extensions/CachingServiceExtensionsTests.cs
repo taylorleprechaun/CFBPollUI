@@ -7,6 +7,7 @@ using CFBPoll.Core.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Moq;
 using Xunit;
 
 namespace CFBPoll.API.Tests.Extensions;
@@ -178,6 +179,8 @@ public class CachingServiceExtensionsTests
     public void AddRankingsModule_RegistersRankingsModule()
     {
         var services = new ServiceCollection();
+        services.AddSingleton(new Mock<IRankingsData>().Object);
+        services.AddSingleton(new Mock<ISeasonModule>().Object);
 
         services.AddRankingsModule();
 
@@ -202,6 +205,8 @@ public class CachingServiceExtensionsTests
     public void AddRankingsModule_RegistersAsSingleton()
     {
         var services = new ServiceCollection();
+        services.AddSingleton(new Mock<IRankingsData>().Object);
+        services.AddSingleton(new Mock<ISeasonModule>().Object);
 
         services.AddRankingsModule();
 

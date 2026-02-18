@@ -1,9 +1,9 @@
 using CFBPoll.API.Controllers;
 using CFBPoll.API.DTOs;
-using CFBPoll.Core.Options;
+using CFBPoll.Core.Interfaces;
+using CFBPoll.Core.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 
@@ -11,31 +11,29 @@ namespace CFBPoll.API.Tests.Controllers;
 
 public class AuthControllerTests
 {
+    private readonly Mock<IAuthModule> _mockAuthModule;
     private readonly AuthController _controller;
-    private readonly AuthOptions _authOptions;
 
     public AuthControllerTests()
     {
-        _authOptions = new AuthOptions
-        {
-            Username = "admin",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("testpassword"),
-            Secret = "TestSecretKeyThatIsAtLeast32CharactersLong!",
-            Issuer = "CFBPoll",
-            ExpirationMinutes = 480
-        };
-
-        var options = new Mock<IOptions<AuthOptions>>();
-        options.Setup(x => x.Value).Returns(_authOptions);
-
+        _mockAuthModule = new Mock<IAuthModule>();
         var logger = new Mock<ILogger<AuthController>>();
 
-        _controller = new AuthController(options.Object, logger.Object);
+        _controller = new AuthController(_mockAuthModule.Object, logger.Object);
     }
 
     [Fact]
     public void Login_ValidCredentials_ReturnsToken()
     {
+        _mockAuthModule
+            .Setup(x => x.Login("admin", "testpassword"))
+            .Returns(new LoginResult
+            {
+                Success = true,
+                Token = "test-jwt-token",
+                ExpiresIn = 28800
+            });
+
         var request = new LoginRequestDTO
         {
             Username = "admin",
@@ -46,13 +44,17 @@ public class AuthControllerTests
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var response = Assert.IsType<LoginResponseDTO>(okResult.Value);
-        Assert.False(string.IsNullOrEmpty(response.Token));
-        Assert.Equal(480 * 60, response.ExpiresIn);
+        Assert.Equal("test-jwt-token", response.Token);
+        Assert.Equal(28800, response.ExpiresIn);
     }
 
     [Fact]
     public void Login_InvalidUsername_ReturnsUnauthorized()
     {
+        _mockAuthModule
+            .Setup(x => x.Login("wronguser", "testpassword"))
+            .Returns(new LoginResult { Success = false });
+
         var request = new LoginRequestDTO
         {
             Username = "wronguser",
@@ -67,6 +69,10 @@ public class AuthControllerTests
     [Fact]
     public void Login_InvalidPassword_ReturnsUnauthorized()
     {
+        _mockAuthModule
+            .Setup(x => x.Login("admin", "wrongpassword"))
+            .Returns(new LoginResult { Success = false });
+
         var request = new LoginRequestDTO
         {
             Username = "admin",
@@ -109,6 +115,15 @@ public class AuthControllerTests
     [Fact]
     public void Login_CaseInsensitiveUsername_ReturnsToken()
     {
+        _mockAuthModule
+            .Setup(x => x.Login("ADMIN", "testpassword"))
+            .Returns(new LoginResult
+            {
+                Success = true,
+                Token = "test-jwt-token",
+                ExpiresIn = 28800
+            });
+
         var request = new LoginRequestDTO
         {
             Username = "ADMIN",

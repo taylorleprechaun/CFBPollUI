@@ -58,13 +58,43 @@ Last Updated 2/17/2026
 CFBPoll/
 ├── CFBPoll.sln
 ├── src/
-│   ├── CFBPoll.API/           # ASP.NET Core Web API
-│   ├── CFBPoll.Core/          # Shared business logic
+│   ├── CFBPoll.API/           # ASP.NET Core Web API (presentation layer)
+│   ├── CFBPoll.Core/          # Business logic, models, interfaces (domain layer)
 │   └── cfbpoll-web/           # React frontend
 └── tests/
-    ├── CFBPoll.API.Tests/     # API integration tests
-    └── CFBPoll.Core.Tests/    # Unit tests
+    ├── CFBPoll.API.Tests/     # Controller/middleware tests
+    └── CFBPoll.Core.Tests/    # Module/service tests
 ```
+
+## Architecture
+
+The backend enforces a strict layered architecture: **Controllers &rarr; Modules &rarr; Data Layer**.
+
+```
+Controllers (Presentation)         Modules (Business Logic)          Data Layer
+-----------------------------      --------------------------        ----------
+AuthController                     AuthModule
+  -> IAuthModule                     -> IOptions<AuthOptions>
+
+RankingsController                 RankingsModule
+  -> ICFBDataService                 -> IRankingsData               RankingsData
+  -> IRankingsModule                 -> ISeasonModule                 -> SQLite
+  -> IRatingModule
+
+TeamsController                    TeamsModule
+  -> ITeamsModule                    -> ICFBDataService
+                                     -> IRankingsModule
+                                     -> IRatingModule
+
+AdminController                    AdminModule
+  -> IAdminModule                    -> ICFBDataService
+                                     -> IExcelExportModule
+                                     -> IPersistentCache
+                                     -> IRankingsModule
+                                     -> IRatingModule
+```
+
+Only `RankingsModule` has a direct dependency on `IRankingsData`. Controllers never reference data-layer interfaces.
 
 ## Prerequisites
 
@@ -183,12 +213,12 @@ The frontend runs at `http://localhost:5173`.
 
 ## Testing
 
-The project includes 546 unit and integration tests across backend and frontend.
+The project includes 561 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (309 tests)
+# Backend tests (324 tests)
 dotnet test
 
 # Run with coverage
@@ -201,15 +231,15 @@ npm test
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-309-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-324-blue)
 ![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-237-blue)
-![Core Coverage](https://img.shields.io/badge/Core_Coverage-95%25-brightgreen)
+![Core Coverage](https://img.shields.io/badge/Core_Coverage-96%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
 ![Web Coverage](https://img.shields.io/badge/Web_Coverage-97%25-brightgreen)
 
 | Project | Line Coverage | Branch Coverage |
 |---------|---------------|-----------------|
-| CFBPoll.Core | 95% | 92% |
+| CFBPoll.Core | 96% | 89% |
 | CFBPoll.API | 100% | 91% |
 | cfbpoll-web | 97% | 91% |
 

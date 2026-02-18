@@ -12,19 +12,11 @@ namespace CFBPoll.API.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly IAdminModule _adminModule;
-    private readonly IExcelExportModule _excelExportModule;
     private readonly ILogger<AdminController> _logger;
-    private readonly IRankingsData _rankingsData;
 
-    public AdminController(
-        IAdminModule adminModule,
-        IExcelExportModule excelExportModule,
-        IRankingsData rankingsData,
-        ILogger<AdminController> logger)
+    public AdminController(IAdminModule adminModule, ILogger<AdminController> logger)
     {
         _adminModule = adminModule;
-        _excelExportModule = excelExportModule;
-        _rankingsData = rankingsData;
         _logger = logger;
     }
 
@@ -105,12 +97,10 @@ public class AdminController : ControllerBase
     {
         _logger.LogInformation("Admin exporting rankings for season {Season}, week {Week}", season, week);
 
-        var snapshot = await _rankingsData.GetSnapshotAsync(season, week);
+        var bytes = await _adminModule.ExportRankingsAsync(season, week);
 
-        if (snapshot is null)
+        if (bytes is null)
             return NotFound(new ErrorResponseDTO { Message = "Snapshot not found", StatusCode = 404 });
-
-        var bytes = _excelExportModule.GenerateRankingsWorkbook(snapshot);
 
         return File(bytes,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

@@ -5,7 +5,20 @@ namespace CFBPoll.Core.Modules;
 
 public class RankingsModule : IRankingsModule
 {
+    private readonly IRankingsData _rankingsData;
+    private readonly ISeasonModule _seasonModule;
     private readonly StringComparison _scoic = StringComparison.OrdinalIgnoreCase;
+
+    public RankingsModule(IRankingsData rankingsData, ISeasonModule seasonModule)
+    {
+        _rankingsData = rankingsData ?? throw new ArgumentNullException(nameof(rankingsData));
+        _seasonModule = seasonModule ?? throw new ArgumentNullException(nameof(seasonModule));
+    }
+
+    public async Task<bool> DeleteSnapshotAsync(int season, int week)
+    {
+        return await _rankingsData.DeleteSnapshotAsync(season, week).ConfigureAwait(false);
+    }
 
     public Task<RankingsResult> GenerateRankingsAsync(SeasonData seasonData, IDictionary<string, RatingDetails> ratings)
     {
@@ -60,6 +73,41 @@ public class RankingsModule : IRankingsModule
             Week = seasonData.Week,
             Rankings = rankedTeams
         });
+    }
+
+    public async Task<IEnumerable<WeekInfo>> GetAvailableWeeksAsync(int season, IEnumerable<CalendarWeek> calendarWeeks)
+    {
+        var publishedWeeks = await _rankingsData.GetPublishedWeekNumbersAsync(season).ConfigureAwait(false);
+        var publishedWeekSet = publishedWeeks.ToHashSet();
+
+        var weekLabels = _seasonModule.GetWeekLabels(calendarWeeks);
+
+        return weekLabels.Where(w => publishedWeekSet.Contains(w.WeekNumber));
+    }
+
+    public async Task<IEnumerable<PersistedWeekSummary>> GetPersistedWeeksAsync()
+    {
+        return await _rankingsData.GetPersistedWeeksAsync().ConfigureAwait(false);
+    }
+
+    public async Task<RankingsResult?> GetPublishedSnapshotAsync(int season, int week)
+    {
+        return await _rankingsData.GetPublishedSnapshotAsync(season, week).ConfigureAwait(false);
+    }
+
+    public async Task<RankingsResult?> GetSnapshotAsync(int season, int week)
+    {
+        return await _rankingsData.GetSnapshotAsync(season, week).ConfigureAwait(false);
+    }
+
+    public async Task<bool> PublishSnapshotAsync(int season, int week)
+    {
+        return await _rankingsData.PublishSnapshotAsync(season, week).ConfigureAwait(false);
+    }
+
+    public async Task SaveSnapshotAsync(RankingsResult rankings)
+    {
+        await _rankingsData.SaveSnapshotAsync(rankings).ConfigureAwait(false);
     }
 
     private TeamDetails CalculateTeamDetails(

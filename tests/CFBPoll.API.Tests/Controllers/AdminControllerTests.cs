@@ -12,23 +12,15 @@ namespace CFBPoll.API.Tests.Controllers;
 public class AdminControllerTests
 {
     private readonly Mock<IAdminModule> _mockAdminModule;
-    private readonly Mock<IExcelExportModule> _mockExcelExportModule;
     private readonly Mock<ILogger<AdminController>> _mockLogger;
-    private readonly Mock<IRankingsData> _mockRankingsData;
     private readonly AdminController _controller;
 
     public AdminControllerTests()
     {
         _mockAdminModule = new Mock<IAdminModule>();
-        _mockExcelExportModule = new Mock<IExcelExportModule>();
         _mockLogger = new Mock<ILogger<AdminController>>();
-        _mockRankingsData = new Mock<IRankingsData>();
 
-        _controller = new AdminController(
-            _mockAdminModule.Object,
-            _mockExcelExportModule.Object,
-            _mockRankingsData.Object,
-            _mockLogger.Object);
+        _controller = new AdminController(_mockAdminModule.Object, _mockLogger.Object);
     }
 
     [Fact]
@@ -123,18 +115,9 @@ public class AdminControllerTests
     [Fact]
     public async Task Export_Found_ReturnsFile()
     {
-        var snapshot = new RankingsResult
-        {
-            Season = 2024,
-            Week = 5,
-            Rankings =
-            [
-                new RankedTeam { TeamName = "Team A", Rank = 1, Details = new TeamDetails() }
-            ]
-        };
-
-        _mockRankingsData.Setup(x => x.GetSnapshotAsync(2024, 5)).ReturnsAsync(snapshot);
-        _mockExcelExportModule.Setup(x => x.GenerateRankingsWorkbook(snapshot)).Returns(new byte[] { 1, 2, 3 });
+        _mockAdminModule
+            .Setup(x => x.ExportRankingsAsync(2024, 5))
+            .ReturnsAsync(new byte[] { 1, 2, 3 });
 
         var result = await _controller.Export(2024, 5);
 
@@ -146,7 +129,9 @@ public class AdminControllerTests
     [Fact]
     public async Task Export_NotFound_ReturnsNotFound()
     {
-        _mockRankingsData.Setup(x => x.GetSnapshotAsync(2024, 5)).ReturnsAsync((RankingsResult?)null);
+        _mockAdminModule
+            .Setup(x => x.ExportRankingsAsync(2024, 5))
+            .ReturnsAsync((byte[]?)null);
 
         var result = await _controller.Export(2024, 5);
 
