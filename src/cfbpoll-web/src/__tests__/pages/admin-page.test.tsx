@@ -9,6 +9,8 @@ const mockLogout = vi.fn();
 let mockIsAuthenticated = true;
 let mockToken: string | null = 'test-token';
 
+const mockSetSelectedSeason = vi.fn();
+
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return {
@@ -26,10 +28,14 @@ vi.mock('../../contexts/auth-context', () => ({
   }),
 }));
 
-vi.mock('../../hooks/use-seasons', () => ({
-  useSeasons: () => ({
-    data: { seasons: [2024, 2023] },
-    isLoading: false,
+vi.mock('../../contexts/season-context', () => ({
+  useSeason: () => ({
+    seasons: [2024, 2023],
+    seasonsLoading: false,
+    seasonsError: null,
+    selectedSeason: 2024,
+    setSelectedSeason: mockSetSelectedSeason,
+    refetchSeasons: vi.fn(),
   }),
 }));
 
@@ -506,7 +512,7 @@ describe('AdminPage', () => {
     const seasonSelect = screen.getByLabelText('Season');
     fireEvent.change(seasonSelect, { target: { value: '2023' } });
 
-    expect((seasonSelect as HTMLSelectElement).value).toBe('2023');
+    expect(mockSetSelectedSeason).toHaveBeenCalledWith(2023);
   });
 
   it('changes week on week dropdown change', () => {
@@ -641,5 +647,39 @@ describe('AdminPage', () => {
     await waitFor(() => {
       expect(screen.getByText(/Server unavailable/)).toBeInTheDocument();
     });
+  });
+
+  it('preview publish checkmark does not appear in snapshot section', async () => {
+    vi.mocked(calculateRankings).mockResolvedValue({
+      persisted: true,
+      rankings: { season: 2024, week: 5, rankings: [] },
+    });
+    vi.mocked(fetchPersistedWeeks).mockResolvedValue([
+      { season: 2024, week: 5, published: false, createdAt: '2024-09-01T00:00:00Z' },
+    ]);
+    vi.mocked(publishSnapshot).mockResolvedValue(undefined);
+
+    renderAdminPage();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Preview: 2024 Week 5/)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('2024 Season'));
+
+    const publishButtons = screen.getAllByText('Publish');
+    fireEvent.click(publishButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Success')).toBeInTheDocument();
+    });
+
+    const successIcons = screen.getAllByLabelText('Success');
+    expect(successIcons).toHaveLength(1);
+
+    const previewSection = screen.getByText(/Preview: 2024 Week 5/).closest('div.bg-white');
+    expect(previewSection?.querySelector('[aria-label="Success"]')).toBeInTheDocument();
   });
 });

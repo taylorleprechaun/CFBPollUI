@@ -3,9 +3,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ErrorAlert } from '../components/error';
 import { SeasonSelector } from '../components/rankings/season-selector';
 import { TeamLogo } from '../components/rankings/team-logo';
-import { useDefaultSeasonWeek } from '../hooks/use-default-season-week';
+import { useSeason } from '../contexts/season-context';
 import { useRankings } from '../hooks/use-rankings';
-import { useSeasons } from '../hooks/use-seasons';
 import { useTeamDetail } from '../hooks/use-team-detail';
 import { useWeeks } from '../hooks/use-weeks';
 import { getContrastTextColor } from '../lib/color-utils';
@@ -25,32 +24,40 @@ export function TeamDetailsPage() {
   const [selectedTeam, setSelectedTeam] = useState<string | null>(
     searchParams.get('team') || null
   );
+  const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
 
   useEffect(() => {
     document.title = 'Taylor Steinberg - Team Details';
   }, []);
 
   const {
-    data: seasonsData,
-    isLoading: seasonsLoading,
-    error: seasonsError,
-    refetch: refetchSeasons,
-  } = useSeasons();
+    seasons,
+    seasonsLoading,
+    seasonsError,
+    refetchSeasons,
+    selectedSeason,
+    setSelectedSeason,
+  } = useSeason();
 
-  const seasonRef = useRef<number | null>(initialSeason);
+  useEffect(() => {
+    if (initialSeason !== null && selectedSeason !== initialSeason) {
+      setSelectedSeason(initialSeason);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const {
     data: weeksData,
     error: weeksError,
     refetch: refetchWeeks,
-  } = useWeeks(seasonRef.current);
+  } = useWeeks(selectedSeason);
 
-  const {
-    season: selectedSeason,
-    setSeason: setSelectedSeason,
-    week: selectedWeek,
-    resetWeek,
-  } = useDefaultSeasonWeek(seasonsData, weeksData, { initialSeason });
-  seasonRef.current = selectedSeason;
+  useEffect(() => {
+    if (weeksData?.weeks?.length && selectedWeek === null) {
+      const lastWeek = weeksData.weeks[weeksData.weeks.length - 1];
+      setSelectedWeek(lastWeek.weekNumber);
+    }
+  }, [weeksData, selectedWeek]);
 
   const {
     data: rankingsData,
@@ -76,7 +83,7 @@ export function TeamDetailsPage() {
     return qs ? `/team-details?${qs}` : '/team-details';
   }, []);
 
-  // Sync URL → state for browser back/forward
+  // Sync URL -> state for browser back/forward
   useEffect(() => {
     if (isNavigating.current) {
       isNavigating.current = false;
@@ -103,7 +110,7 @@ export function TeamDetailsPage() {
   const handleSeasonChange = (season: number) => {
     isNavigating.current = true;
     setSelectedSeason(season);
-    resetWeek();
+    setSelectedWeek(null);
     setSelectedTeam(null);
     navigate(buildPath(season, null), { replace: true });
   };
@@ -143,7 +150,7 @@ export function TeamDetailsPage() {
         <h1 className="text-2xl font-bold text-gray-900 mb-4">Team Details</h1>
         <div className="flex flex-wrap gap-4">
           <SeasonSelector
-            seasons={seasonsData?.seasons ?? []}
+            seasons={seasons}
             selectedSeason={selectedSeason}
             onSeasonChange={handleSeasonChange}
             isLoading={seasonsLoading}
@@ -405,7 +412,7 @@ function RecordRow({
         <span className="text-gray-600">
           {hasGames && (
             <span className="inline-block w-4 text-gray-400" aria-label={expanded ? 'collapse' : 'expand'}>
-              {expanded ? '▾' : '▸'}
+              {expanded ? '\u25BE' : '\u25B8'}
             </span>
           )}
           <span>{label}</span>

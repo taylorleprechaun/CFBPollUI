@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '../contexts/auth-context';
+import { SeasonProvider } from '../contexts/season-context';
 import App from '../App';
 
 vi.mock('../pages/home-page', () => ({
@@ -25,6 +26,15 @@ vi.mock('../pages/admin-page', () => ({
   AdminPage: () => <div>Admin Page Content</div>
 }));
 
+vi.mock('../hooks/use-seasons', () => ({
+  useSeasons: () => ({
+    data: { seasons: [2024, 2023] },
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  }),
+}));
+
 function renderApp(initialRoute = '/') {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } }
@@ -34,7 +44,9 @@ function renderApp(initialRoute = '/') {
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[initialRoute]}>
         <AuthProvider>
-          <App />
+          <SeasonProvider>
+            <App />
+          </SeasonProvider>
         </AuthProvider>
       </MemoryRouter>
     </QueryClientProvider>
