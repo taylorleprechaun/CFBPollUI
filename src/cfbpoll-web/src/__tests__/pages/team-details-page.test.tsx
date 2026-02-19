@@ -3,8 +3,18 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { TeamDetailsPage } from '../../pages/team-details-page';
 
-vi.mock('../../hooks/use-seasons', () => ({
-  useSeasons: vi.fn(),
+const mockSetSelectedSeason = vi.fn();
+let mockSelectedSeason: number | null = 2024;
+
+vi.mock('../../contexts/season-context', () => ({
+  useSeason: () => ({
+    seasons: [2024, 2023, 2022],
+    seasonsLoading: false,
+    seasonsError: null,
+    selectedSeason: mockSelectedSeason,
+    setSelectedSeason: mockSetSelectedSeason,
+    refetchSeasons: vi.fn(),
+  }),
 }));
 
 vi.mock('../../hooks/use-weeks', () => ({
@@ -19,12 +29,10 @@ vi.mock('../../hooks/use-team-detail', () => ({
   useTeamDetail: vi.fn(),
 }));
 
-import { useSeasons } from '../../hooks/use-seasons';
 import { useWeeks } from '../../hooks/use-weeks';
 import { useRankings } from '../../hooks/use-rankings';
 import { useTeamDetail } from '../../hooks/use-team-detail';
 
-const mockSeasonsData = { seasons: [2024, 2023, 2022] };
 const mockWeeksData = {
   season: 2024,
   weeks: [
@@ -159,23 +167,15 @@ const mockTeamDetail = {
 };
 
 function setupMocks(overrides: {
-  seasonsData?: typeof mockSeasonsData | undefined;
   weeksData?: typeof mockWeeksData | undefined;
   rankingsData?: typeof mockRankingsData | undefined;
   teamDetailData?: typeof mockTeamDetail | undefined;
-  seasonsLoading?: boolean;
   weeksLoading?: boolean;
   rankingsLoading?: boolean;
   teamDetailLoading?: boolean;
   teamDetailError?: Error | null;
 } = {}) {
   const refetch = vi.fn();
-  vi.mocked(useSeasons).mockReturnValue({
-    data: overrides.seasonsData ?? mockSeasonsData,
-    isLoading: overrides.seasonsLoading ?? false,
-    error: null,
-    refetch,
-  } as ReturnType<typeof useSeasons>);
   vi.mocked(useWeeks).mockReturnValue({
     data: overrides.weeksData ?? mockWeeksData,
     isLoading: overrides.weeksLoading ?? false,
@@ -207,6 +207,7 @@ function renderPage(initialRoute = '/team-details') {
 describe('TeamDetailsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSelectedSeason = 2024;
   });
 
   describe('rendering', () => {
@@ -541,12 +542,11 @@ describe('TeamDetailsPage', () => {
       expect(teamSelect.value).toBe('Oregon');
     });
 
-    it('reads initial season from URL params', () => {
+    it('calls setSelectedSeason with URL season param', () => {
       setupMocks();
       renderPage('/team-details?season=2023');
 
-      const seasonSelect = screen.getByLabelText('Season:') as HTMLSelectElement;
-      expect(seasonSelect.value).toBe('2023');
+      expect(mockSetSelectedSeason).toHaveBeenCalledWith(2023);
     });
   });
 
@@ -558,25 +558,19 @@ describe('TeamDetailsPage', () => {
       const seasonSelect = screen.getByLabelText('Season:') as HTMLSelectElement;
       fireEvent.change(seasonSelect, { target: { value: '2023' } });
 
-      expect(seasonSelect.value).toBe('2023');
+      expect(mockSetSelectedSeason).toHaveBeenCalledWith(2023);
       const teamSelect = screen.getByLabelText('Team:') as HTMLSelectElement;
       expect(teamSelect.value).toBe('');
     });
   });
 
   describe('error handling', () => {
-    it('shows error alert when seasons fail to load', () => {
+    it('shows error alert when weeks fail to load', () => {
       const refetch = vi.fn();
-      vi.mocked(useSeasons).mockReturnValue({
-        data: undefined,
-        isLoading: false,
-        error: new Error('Seasons failed'),
-        refetch,
-      } as ReturnType<typeof useSeasons>);
       vi.mocked(useWeeks).mockReturnValue({
         data: undefined,
         isLoading: false,
-        error: null,
+        error: new Error('Weeks failed'),
         refetch,
       } as ReturnType<typeof useWeeks>);
       vi.mocked(useRankings).mockReturnValue({
@@ -594,21 +588,15 @@ describe('TeamDetailsPage', () => {
 
       renderPage();
 
-      expect(screen.getByText(/Seasons failed/)).toBeInTheDocument();
+      expect(screen.getByText(/Weeks failed/)).toBeInTheDocument();
     });
 
-    it('calls refetch when retry is clicked for seasons error', () => {
+    it('calls refetch when retry is clicked for error', () => {
       const refetch = vi.fn();
-      vi.mocked(useSeasons).mockReturnValue({
-        data: undefined,
-        isLoading: false,
-        error: new Error('Seasons failed'),
-        refetch,
-      } as ReturnType<typeof useSeasons>);
       vi.mocked(useWeeks).mockReturnValue({
         data: undefined,
         isLoading: false,
-        error: null,
+        error: new Error('Weeks failed'),
         refetch,
       } as ReturnType<typeof useWeeks>);
       vi.mocked(useRankings).mockReturnValue({

@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/auth-context';
-import { useSeasons } from '../hooks/use-seasons';
+import { useSeason } from '../contexts/season-context';
 import { useWeeks } from '../hooks/use-weeks';
 import {
   calculateRankings,
@@ -55,7 +55,13 @@ export function AdminPage() {
     }
   }, [isAuthenticated, navigate]);
 
-  const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
+  const {
+    seasons,
+    seasonsLoading,
+    selectedSeason,
+    setSelectedSeason,
+  } = useSeason();
+
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const [calculatedResult, setCalculatedResult] = useState<CalculateResponse | null>(null);
   const [persistedWeeks, setPersistedWeeks] = useState<PersistedWeek[]>([]);
@@ -66,15 +72,7 @@ export function AdminPage() {
   const [collapsedSeasons, setCollapsedSeasons] = useState<Set<number>>(new Set());
   const [actionFeedback, setActionFeedback] = useState<ActionFeedback | null>(null);
 
-  const seasonRef = useRef<number | null>(null);
-  const { data: seasonsData, isLoading: seasonsLoading } = useSeasons();
-  const { data: weeksData, isLoading: weeksLoading } = useWeeks(seasonRef.current);
-
-  useEffect(() => {
-    if (seasonsData?.seasons?.length && selectedSeason === null) {
-      setSelectedSeason(seasonsData.seasons[0]);
-    }
-  }, [seasonsData, selectedSeason]);
+  const { data: weeksData, isLoading: weeksLoading } = useWeeks(selectedSeason);
 
   useEffect(() => {
     if (weeksData?.weeks?.length && selectedWeek === null) {
@@ -82,8 +80,6 @@ export function AdminPage() {
       setSelectedWeek(lastWeek.weekNumber);
     }
   }, [weeksData, selectedWeek]);
-
-  seasonRef.current = selectedSeason;
 
   useEffect(() => {
     if (token) {
@@ -124,11 +120,11 @@ export function AdminPage() {
 
   const clearFeedback = useCallback(() => setActionFeedback(null), []);
 
-  const handlePublish = async (season: number, week: number) => {
+  const handlePublish = async (season: number, week: number, source: 'preview' | 'snapshot') => {
     if (!token) return;
     setError(null);
     setActionFeedback(null);
-    const feedbackKey = `publish-${season}-${week}`;
+    const feedbackKey = `${source}-publish-${season}-${week}`;
     setActionInProgress(feedbackKey);
 
     try {
@@ -221,7 +217,7 @@ export function AdminPage() {
   if (!isAuthenticated) return null;
 
   const previewPublishKey = previewRankings
-    ? `publish-${previewRankings.season}-${previewRankings.week}`
+    ? `preview-publish-${previewRankings.season}-${previewRankings.week}`
     : null;
 
   return (
@@ -264,7 +260,7 @@ export function AdminPage() {
               disabled={seasonsLoading}
               className="border border-gray-300 rounded-md px-3 py-2"
             >
-              {seasonsData?.seasons.map((s) => (
+              {seasons.map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
@@ -315,7 +311,7 @@ export function AdminPage() {
                   Download Excel
                 </button>
                 <button
-                  onClick={() => handlePublish(previewRankings.season, previewRankings.week)}
+                  onClick={() => handlePublish(previewRankings.season, previewRankings.week, 'preview')}
                   disabled={actionInProgress !== null}
                   className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
                 >
@@ -407,7 +403,7 @@ export function AdminPage() {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                           {group.weeks.map((pw) => {
-                            const publishKey = `publish-${pw.season}-${pw.week}`;
+                            const publishKey = `snapshot-publish-${pw.season}-${pw.week}`;
                             return (
                               <tr key={`${pw.season}-${pw.week}`}>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{pw.week}</td>
@@ -427,7 +423,7 @@ export function AdminPage() {
                                   <div className="flex items-center gap-2">
                                     {!pw.published && (
                                       <button
-                                        onClick={() => handlePublish(pw.season, pw.week)}
+                                        onClick={() => handlePublish(pw.season, pw.week, 'snapshot')}
                                         disabled={actionInProgress !== null}
                                         className="text-blue-600 hover:text-blue-800 disabled:opacity-50"
                                       >

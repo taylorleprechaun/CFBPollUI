@@ -26,6 +26,8 @@
     <None Update="appsettings-private.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <Content Remove="cache\**" />
+    <None Remove="cache\**" />
   </ItemGroup>
 
 </Project>
