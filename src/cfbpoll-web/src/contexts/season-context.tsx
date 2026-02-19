@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useSeasons } from '../hooks/use-seasons';
-import type { SeasonsResponse } from '../types';
+
 
 interface SeasonContextValue {
   refetchSeasons: () => void;
