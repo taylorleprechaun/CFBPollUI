@@ -24,6 +24,8 @@ interface DisplayRankedTeam extends RankedTeam {
   conferenceSosRank: number | null;
 }
 
+const columnHelper = createColumnHelper<DisplayRankedTeam>();
+
 export function RankingsTable({ rankings, isLoading, selectedConference, selectedSeason, selectedWeek }: RankingsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -51,8 +53,6 @@ export function RankingsTable({ rankings, isLoading, selectedConference, selecte
       conferenceSosRank: sosMap.get(team.teamName) ?? null,
     }));
   }, [rankings, selectedConference]);
-
-  const columnHelper = useMemo(() => createColumnHelper<DisplayRankedTeam>(), []);
 
   const columns = useMemo(() => [
     columnHelper.accessor('rank', {
@@ -115,7 +115,7 @@ export function RankingsTable({ rankings, isLoading, selectedConference, selecte
         return info.getValue();
       },
     }),
-  ], [columnHelper, selectedSeason, selectedWeek]);
+  ], [selectedSeason, selectedWeek]);
 
   const table = useReactTable({
     data: displayData,

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -34,6 +34,10 @@ vi.mock('../hooks/use-seasons', () => ({
     refetch: vi.fn(),
   }),
 }));
+
+afterEach(() => {
+  localStorage.clear();
+});
 
 function renderApp(initialRoute = '/') {
   const queryClient = new QueryClient({
@@ -75,17 +79,37 @@ describe('App', () => {
     });
   });
 
-  it('renders login page at /login route', async () => {
+  it('renders login page at /login route when not authenticated', async () => {
     renderApp('/login');
     await waitFor(() => {
       expect(screen.getByText('Login Page Content')).toBeInTheDocument();
     });
   });
 
-  it('renders admin page at /admin route', async () => {
+  it('redirects /login to admin when authenticated', async () => {
+    localStorage.setItem('cfbpoll_token', 'test-token');
+    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
+
+    renderApp('/login');
+    await waitFor(() => {
+      expect(screen.getByText('Admin Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('renders admin page at /admin route when authenticated', async () => {
+    localStorage.setItem('cfbpoll_token', 'test-token');
+    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
+
     renderApp('/admin');
     await waitFor(() => {
       expect(screen.getByText('Admin Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('redirects /admin to login when not authenticated', async () => {
+    renderApp('/admin');
+    await waitFor(() => {
+      expect(screen.getByText('Login Page Content')).toBeInTheDocument();
     });
   });
 

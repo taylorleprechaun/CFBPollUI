@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { RequireAuth, RequireGuest } from './components/auth';
 import { Layout } from './components/layout/layout';
 
 const AdminPage = lazy(() => import('./pages/admin-page').then(m => ({ default: m.AdminPage })));
@@ -35,16 +36,20 @@ function App() {
             <TeamDetailsPage />
           </Suspense>
         } />
-        <Route path="login" element={
-          <Suspense fallback={<PageLoader />}>
-            <LoginPage />
-          </Suspense>
-        } />
-        <Route path="admin" element={
-          <Suspense fallback={<PageLoader />}>
-            <AdminPage />
-          </Suspense>
-        } />
+        <Route element={<RequireGuest />}>
+          <Route path="login" element={
+            <Suspense fallback={<PageLoader />}>
+              <LoginPage />
+            </Suspense>
+          } />
+        </Route>
+        <Route element={<RequireAuth />}>
+          <Route path="admin" element={
+            <Suspense fallback={<PageLoader />}>
+              <AdminPage />
+            </Suspense>
+          } />
+        </Route>
       </Route>
     </Routes>
   );

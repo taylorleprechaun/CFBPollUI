@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSeason } from '../contexts/season-context';
 import { useAvailableWeeks } from '../hooks/use-available-weeks';
 import { useRankings } from '../hooks/use-rankings';
+import { useWeekSelection } from '../hooks/use-week-selection';
 import { useConferences } from '../hooks/use-conferences';
 import { SeasonSelector } from '../components/rankings/season-selector';
 import { WeekSelector } from '../components/rankings/week-selector';
@@ -15,7 +16,6 @@ export function RankingsPage() {
   }, []);
 
   const [selectedConference, setSelectedConference] = useState<string | null>(null);
-  const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
 
   const {
     seasons,
@@ -38,12 +38,7 @@ export function RankingsPage() {
     refetch: refetchWeeks,
   } = useAvailableWeeks(selectedSeason);
 
-  useEffect(() => {
-    if (weeksData?.weeks?.length && selectedWeek === null) {
-      const lastWeek = weeksData.weeks[weeksData.weeks.length - 1];
-      setSelectedWeek(lastWeek.weekNumber);
-    }
-  }, [weeksData, selectedWeek]);
+  const { selectedWeek, setSelectedWeek } = useWeekSelection(weeksData?.weeks);
 
   const {
     data: rankingsData,

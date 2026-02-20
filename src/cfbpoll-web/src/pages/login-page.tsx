@@ -7,19 +7,13 @@ export function LoginPage() {
     document.title = 'Login - CFB Poll';
   }, []);
 
-  const { isAuthenticated, login } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/admin');
-    }
-  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

@@ -86,13 +86,6 @@ describe('LoginPage', () => {
     });
   });
 
-  it('redirects to admin if already authenticated', () => {
-    mockIsAuthenticated = true;
-    renderLoginPage();
-
-    expect(mockNavigate).toHaveBeenCalledWith('/admin');
-  });
-
   it('disables button while submitting', async () => {
     mockLogin.mockImplementation(() => new Promise(() => {}));
     renderLoginPage();

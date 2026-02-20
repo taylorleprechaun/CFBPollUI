@@ -1,5 +1,6 @@
 import type { z } from 'zod';
-import { ApiError, ValidationError } from '../lib/api-error';
+import { ValidationError } from '../lib/api-error';
+import { safeFetch } from '../lib/safe-fetch';
 import {
   ConferencesResponseSchema,
   RankingsResponseSchema,
@@ -19,25 +20,7 @@ async function fetchWithValidation<T>(
   url: string,
   schema: z.ZodSchema<T>
 ): Promise<T> {
-  let response: Response;
-
-  try {
-    response = await fetch(url);
-  } catch (error) {
-    throw new ApiError(
-      error instanceof Error ? error.message : 'Network request failed',
-      0
-    );
-  }
-
-  if (!response.ok) {
-    let body: { message?: string; traceId?: string } | undefined;
-    try {
-      body = await response.json();
-    } catch {
-    }
-    throw ApiError.fromResponse(response, body);
-  }
+  const response = await safeFetch(url);
 
   const data = await response.json();
   const result = schema.safeParse(data);

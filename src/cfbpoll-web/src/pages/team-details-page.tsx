@@ -1,30 +1,33 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ErrorAlert } from '../components/error';
 import { SeasonSelector } from '../components/rankings/season-selector';
 import { TeamLogo } from '../components/rankings/team-logo';
 import { useSeason } from '../contexts/season-context';
 import { useRankings } from '../hooks/use-rankings';
 import { useTeamDetail } from '../hooks/use-team-detail';
+import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
 import { getContrastTextColor } from '../lib/color-utils';
 import type { TeamRecord, ScheduleGame } from '../types';
 
+function hasResult(g: ScheduleGame): boolean {
+  return g.isWin !== null && g.isWin !== undefined;
+}
+
+const filterHome = (g: ScheduleGame) => g.isHome && !g.neutralSite && hasResult(g);
+const filterAway = (g: ScheduleGame) => !g.isHome && !g.neutralSite && hasResult(g);
+const filterNeutral = (g: ScheduleGame) => g.neutralSite && hasResult(g);
+const filterVsRank1To10 = (g: ScheduleGame) => g.opponentRank != null && g.opponentRank >= 1 && g.opponentRank <= 10 && hasResult(g);
+const filterVsRank11To25 = (g: ScheduleGame) => g.opponentRank != null && g.opponentRank >= 11 && g.opponentRank <= 25 && hasResult(g);
+const filterVsRank26To50 = (g: ScheduleGame) => g.opponentRank != null && g.opponentRank >= 26 && g.opponentRank <= 50 && hasResult(g);
+const filterVsRank51To100 = (g: ScheduleGame) => g.opponentRank != null && g.opponentRank >= 51 && g.opponentRank <= 100 && hasResult(g);
+const filterVsRank101Plus = (g: ScheduleGame) => (g.opponentRank == null || g.opponentRank >= 101) && hasResult(g);
+
 export function TeamDetailsPage() {
-  const [searchParams] = useSearchParams();
-
-  const initialSeason = useMemo(() => {
-    const param = searchParams.get('season');
-    if (!param) return null;
-    const parsed = Number(param);
-    return Number.isNaN(parsed) ? null : parsed;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const [selectedTeam, setSelectedTeam] = useState<string | null>(
-    searchParams.get('team') || null
-  );
-  const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedTeam = searchParams.get('team') || null;
+  const initialSeasonApplied = useRef(false);
 
   useEffect(() => {
     document.title = 'Taylor Steinberg - Team Details';
@@ -40,11 +43,16 @@ export function TeamDetailsPage() {
   } = useSeason();
 
   useEffect(() => {
-    if (initialSeason !== null && selectedSeason !== initialSeason) {
-      setSelectedSeason(initialSeason);
+    if (initialSeasonApplied.current) return;
+    const param = searchParams.get('season');
+    if (param) {
+      const parsed = Number(param);
+      if (!Number.isNaN(parsed) && parsed !== selectedSeason) {
+        setSelectedSeason(parsed);
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    initialSeasonApplied.current = true;
+  }, [searchParams, selectedSeason, setSelectedSeason]);
 
   const {
     data: weeksData,
@@ -52,12 +60,7 @@ export function TeamDetailsPage() {
     refetch: refetchWeeks,
   } = useWeeks(selectedSeason);
 
-  useEffect(() => {
-    if (weeksData?.weeks?.length && selectedWeek === null) {
-      const lastWeek = weeksData.weeks[weeksData.weeks.length - 1];
-      setSelectedWeek(lastWeek.weekNumber);
-    }
-  }, [weeksData, selectedWeek]);
+  const { selectedWeek, setSelectedWeek } = useWeekSelection(weeksData?.weeks);
 
   const {
     data: rankingsData,
@@ -72,30 +75,6 @@ export function TeamDetailsPage() {
     refetch: refetchTeamDetail,
   } = useTeamDetail(selectedSeason, selectedWeek, selectedTeam);
 
-  const navigate = useNavigate();
-  const isNavigating = useRef(false);
-
-  const buildPath = useCallback((season: number | null, team: string | null) => {
-    const params = new URLSearchParams();
-    if (season !== null) params.set('season', String(season));
-    if (team) params.set('team', team);
-    const qs = params.toString();
-    return qs ? `/team-details?${qs}` : '/team-details';
-  }, []);
-
-  // Sync URL -> state for browser back/forward
-  useEffect(() => {
-    if (isNavigating.current) {
-      isNavigating.current = false;
-      return;
-    }
-    const teamFromUrl = searchParams.get('team') || null;
-    if (teamFromUrl !== selectedTeam) {
-      setSelectedTeam(teamFromUrl);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
-
   const teamOptions = useMemo(() => {
     if (!rankingsData?.rankings) return [];
     return [...rankingsData.rankings]
@@ -108,18 +87,16 @@ export function TeamDetailsPage() {
   }, [rankingsData]);
 
   const handleSeasonChange = (season: number) => {
-    isNavigating.current = true;
     setSelectedSeason(season);
     setSelectedWeek(null);
-    setSelectedTeam(null);
-    navigate(buildPath(season, null), { replace: true });
+    setSearchParams({ season: String(season) }, { replace: true });
   };
 
   const handleTeamChange = (teamName: string) => {
-    const team = teamName || null;
-    isNavigating.current = true;
-    setSelectedTeam(team);
-    navigate(buildPath(selectedSeason, team));
+    const params: Record<string, string> = {};
+    if (selectedSeason !== null) params.season = String(selectedSeason);
+    if (teamName) params.team = teamName;
+    setSearchParams(params);
   };
 
   const error = seasonsError || weeksError || rankingsError || teamDetailError;
@@ -292,21 +269,21 @@ export function TeamDetailsPage() {
                   label="Home"
                   record={teamDetail.details.home}
                   schedule={teamDetail.schedule}
-                  filter={(g) => g.isHome && !g.neutralSite && g.isWin !== null && g.isWin !== undefined}
+                  filter={filterHome}
                   containerRef={locationCardRef}
                 />
                 <RecordRow
                   label="Away"
                   record={teamDetail.details.away}
                   schedule={teamDetail.schedule}
-                  filter={(g) => !g.isHome && !g.neutralSite && g.isWin !== null && g.isWin !== undefined}
+                  filter={filterAway}
                   containerRef={locationCardRef}
                 />
                 <RecordRow
                   label="Neutral"
                   record={teamDetail.details.neutral}
                   schedule={teamDetail.schedule}
-                  filter={(g) => g.neutralSite && g.isWin !== null && g.isWin !== undefined}
+                  filter={filterNeutral}
                   containerRef={locationCardRef}
                 />
               </div>
@@ -323,35 +300,35 @@ export function TeamDetailsPage() {
                   label="vs #1-10"
                   record={teamDetail.details.vsRank1To10}
                   schedule={teamDetail.schedule}
-                  filter={(g) => g.opponentRank != null && g.opponentRank >= 1 && g.opponentRank <= 10 && g.isWin !== null && g.isWin !== undefined}
+                  filter={filterVsRank1To10}
                   containerRef={rankCardRef}
                 />
                 <RecordRow
                   label="vs #11-25"
                   record={teamDetail.details.vsRank11To25}
                   schedule={teamDetail.schedule}
-                  filter={(g) => g.opponentRank != null && g.opponentRank >= 11 && g.opponentRank <= 25 && g.isWin !== null && g.isWin !== undefined}
+                  filter={filterVsRank11To25}
                   containerRef={rankCardRef}
                 />
                 <RecordRow
                   label="vs #26-50"
                   record={teamDetail.details.vsRank26To50}
                   schedule={teamDetail.schedule}
-                  filter={(g) => g.opponentRank != null && g.opponentRank >= 26 && g.opponentRank <= 50 && g.isWin !== null && g.isWin !== undefined}
+                  filter={filterVsRank26To50}
                   containerRef={rankCardRef}
                 />
                 <RecordRow
                   label="vs #51-100"
                   record={teamDetail.details.vsRank51To100}
                   schedule={teamDetail.schedule}
-                  filter={(g) => g.opponentRank != null && g.opponentRank >= 51 && g.opponentRank <= 100 && g.isWin !== null && g.isWin !== undefined}
+                  filter={filterVsRank51To100}
                   containerRef={rankCardRef}
                 />
                 <RecordRow
                   label="vs #101+"
                   record={teamDetail.details.vsRank101Plus}
                   schedule={teamDetail.schedule}
-                  filter={(g) => (g.opponentRank == null || g.opponentRank >= 101) && g.isWin !== null && g.isWin !== undefined}
+                  filter={filterVsRank101Plus}
                   containerRef={rankCardRef}
                 />
               </div>
@@ -392,20 +369,23 @@ function RecordRow({
   const hasGames = record.wins > 0 || record.losses > 0;
   const matchingGames = useMemo(() => schedule.filter(filter), [schedule, filter]);
 
-  useEffect(() => {
-    if (expanded && containerRef.current?.scrollIntoView) {
+  const handleClick = () => {
+    if (!hasGames) return;
+    const willExpand = !expanded;
+    setExpanded(willExpand);
+    if (willExpand && containerRef.current?.scrollIntoView) {
       const el = containerRef.current;
       requestAnimationFrame(() => {
         el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
     }
-  }, [expanded, containerRef]);
+  };
 
   return (
     <div>
       <div
         className={`flex justify-between text-sm${hasGames ? ' cursor-pointer' : ''}`}
-        onClick={() => hasGames && setExpanded(!expanded)}
+        onClick={handleClick}
         role={hasGames ? 'button' : undefined}
         aria-expanded={hasGames ? expanded : undefined}
       >
