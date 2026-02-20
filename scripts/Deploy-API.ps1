@@ -6,10 +6,9 @@
     This script automates the full API deployment process:
     1. Builds a release publish of the API
     2. Copies the published files to the server
-    3. Copies the SQLite database (data/) to the server
-    4. Copies the file cache (cache/) to the server
-    5. Copies appsettings-private.json to the server
-    6. Restarts the API service on the server
+    3. Copies the SQLite databases (data/) to the server, including rankings (cfbpoll.db) and cache (cache.db)
+    4. Copies appsettings-private.json to the server
+    5. Restarts the API service on the server
 
 .PARAMETER ServerIP
     The IP address of the Linode VPS. Required.
@@ -24,10 +23,7 @@
     Skip the dotnet publish step and deploy existing publish output.
 
 .PARAMETER SkipData
-    Skip copying the SQLite database.
-
-.PARAMETER SkipCache
-    Skip copying the cache directory.
+    Skip copying the SQLite databases (cfbpoll.db and cache.db).
 
 .EXAMPLE
     .\Deploy-API.ps1 -ServerIP "123.45.67.89"
@@ -36,7 +32,7 @@
     .\Deploy-API.ps1 -ServerIP "123.45.67.89" -SkipBuild
 
 .EXAMPLE
-    .\Deploy-API.ps1 -ServerIP "123.45.67.89" -SkipCache -SkipData
+    .\Deploy-API.ps1 -ServerIP "123.45.67.89" -SkipData
 #>
 
 param(
@@ -49,9 +45,7 @@ param(
 
     [switch]$SkipBuild,
 
-    [switch]$SkipData,
-
-    [switch]$SkipCache
+    [switch]$SkipData
 )
 
 $ErrorActionPreference = "Stop"
@@ -64,7 +58,6 @@ if (-not (Test-Path (Join-Path $ProjectRoot "src\CFBPoll.API"))) {
 $ApiProject = Join-Path $ProjectRoot "src\CFBPoll.API"
 $PublishDir = Join-Path $ProjectRoot "publish"
 $DataDir = Join-Path $ApiProject "data"
-$CacheDir = Join-Path $ApiProject "cache"
 $PrivateConfig = Join-Path $ApiProject "appsettings-private.json"
 $RemoteTarget = "${ServerUser}@${ServerIP}:${RemotePath}"
 
@@ -128,8 +121,8 @@ else {
     Write-Skip "appsettings-private.json not found at $PrivateConfig"
 }
 
-# Step 4: Copy SQLite database
-Write-Step "Step 4: Deploy SQLite Database"
+# Step 4: Copy SQLite databases (rankings + cache)
+Write-Step "Step 4: Deploy SQLite Databases"
 if ($SkipData) {
     Write-Skip "Database copy skipped (-SkipData)"
 }
@@ -140,32 +133,14 @@ elseif (Test-Path $DataDir) {
         Write-Host "  [ERROR] Failed to copy database files" -ForegroundColor Red
         exit 1
     }
-    Write-Success "Database deployed from $DataDir"
+    Write-Success "Databases deployed from $DataDir (cfbpoll.db + cache.db)"
 }
 else {
     Write-Skip "No data directory found at $DataDir"
 }
 
-# Step 5: Copy cache files
-Write-Step "Step 5: Deploy Cache Files"
-if ($SkipCache) {
-    Write-Skip "Cache copy skipped (-SkipCache)"
-}
-elseif (Test-Path $CacheDir) {
-    ssh "${ServerUser}@${ServerIP}" "mkdir -p ${RemotePath}/cache"
-    scp -r "${CacheDir}/*" "${RemoteTarget}/cache/"
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "  [ERROR] Failed to copy cache files" -ForegroundColor Red
-        exit 1
-    }
-    Write-Success "Cache deployed from $CacheDir"
-}
-else {
-    Write-Skip "No cache directory found at $CacheDir"
-}
-
-# Step 6: Restart the service
-Write-Step "Step 6: Restart API Service"
+# Step 5: Restart the service
+Write-Step "Step 5: Restart API Service"
 ssh "${ServerUser}@${ServerIP}" "sudo systemctl restart cfbpoll-api"
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  [ERROR] Failed to restart service" -ForegroundColor Red
@@ -176,6 +151,5 @@ Write-Success "cfbpoll-api service restarted"
 # Done
 Write-Step "Deployment Complete"
 Write-Host "  Application: $RemoteTarget" -ForegroundColor Green
-Write-Host "  Database:    $(if ($SkipData) { 'skipped' } elseif (Test-Path $DataDir) { 'deployed' } else { 'not found' })" -ForegroundColor Green
-Write-Host "  Cache:       $(if ($SkipCache) { 'skipped' } elseif (Test-Path $CacheDir) { 'deployed' } else { 'not found' })" -ForegroundColor Green
+Write-Host "  Databases:   $(if ($SkipData) { 'skipped' } elseif (Test-Path $DataDir) { 'deployed' } else { 'not found' })" -ForegroundColor Green
 Write-Host ""

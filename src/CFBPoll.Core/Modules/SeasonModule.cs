@@ -17,9 +17,10 @@ public class SeasonModule : ISeasonModule
         return calendarWeeks.Select(w => new WeekInfo
         {
             WeekNumber = w.Week,
+            // Week numbers represent when games are played; rankings reflect results after that week, so labels shift by +1
             Label = w.SeasonType.Equals("postseason", _scoic)
                 ? "Postseason"
-                : $"Week {w.Week}"
+                : $"Week {w.Week + 1}"
         });
     }
 }

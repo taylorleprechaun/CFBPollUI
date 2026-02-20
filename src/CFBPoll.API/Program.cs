@@ -88,6 +88,7 @@ try
     app.MapControllers();
 
     await app.InitializeDatabaseAsync();
+    await app.InitializeCacheAsync();
 
     Log.Information("Starting CFBPoll API");
     app.Run();

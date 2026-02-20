@@ -4,24 +4,14 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AdminPage } from '../../pages/admin-page';
 
-const mockNavigate = vi.fn();
 const mockLogout = vi.fn();
-let mockIsAuthenticated = true;
 let mockToken: string | null = 'test-token';
 
 const mockSetSelectedSeason = vi.fn();
 
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom');
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-  };
-});
-
 vi.mock('../../contexts/auth-context', () => ({
   useAuth: () => ({
-    isAuthenticated: mockIsAuthenticated,
+    isAuthenticated: mockToken !== null,
     login: vi.fn(),
     logout: mockLogout,
     token: mockToken,
@@ -44,29 +34,52 @@ vi.mock('../../hooks/use-weeks', () => ({
     data: {
       season: 2024,
       weeks: [
-        { weekNumber: 1, label: 'Week 1' },
-        { weekNumber: 5, label: 'Week 5' },
+        { weekNumber: 1, label: 'Week 2' },
+        { weekNumber: 5, label: 'Week 6' },
       ],
     },
     isLoading: false,
   }),
 }));
 
-vi.mock('../../services/admin-api', () => ({
-  calculateRankings: vi.fn(),
-  deleteSnapshot: vi.fn(),
-  downloadExport: vi.fn(),
-  fetchPersistedWeeks: vi.fn().mockResolvedValue([]),
-  publishSnapshot: vi.fn(),
+const mockCalculateMutateAsync = vi.fn();
+const mockPublishMutateAsync = vi.fn();
+const mockDeleteMutateAsync = vi.fn();
+const mockExportMutateAsync = vi.fn();
+let mockCalculateIsPending = false;
+let mockPublishIsPending = false;
+let mockDeleteIsPending = false;
+let mockExportIsPending = false;
+
+vi.mock('../../hooks/use-admin-mutations', () => ({
+  useCalculateRankings: () => ({
+    mutateAsync: mockCalculateMutateAsync,
+    isPending: mockCalculateIsPending,
+  }),
+  usePublishSnapshot: () => ({
+    mutateAsync: mockPublishMutateAsync,
+    isPending: mockPublishIsPending,
+  }),
+  useDeleteSnapshot: () => ({
+    mutateAsync: mockDeleteMutateAsync,
+    isPending: mockDeleteIsPending,
+  }),
+  useExportSnapshot: () => ({
+    mutateAsync: mockExportMutateAsync,
+    isPending: mockExportIsPending,
+  }),
 }));
 
-import {
-  calculateRankings,
-  deleteSnapshot,
-  downloadExport,
-  fetchPersistedWeeks,
-  publishSnapshot,
-} from '../../services/admin-api';
+let mockPersistedWeeksData: { season: number; week: number; published: boolean; createdAt: string }[] | undefined = [];
+let mockPersistedWeeksError: Error | null = null;
+
+vi.mock('../../hooks/use-persisted-weeks', () => ({
+  usePersistedWeeks: () => ({
+    data: mockPersistedWeeksData,
+    error: mockPersistedWeeksError,
+    isLoading: false,
+  }),
+}));
 
 function renderAdminPage() {
   const queryClient = new QueryClient({
@@ -85,24 +98,20 @@ function renderAdminPage() {
 describe('AdminPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockIsAuthenticated = true;
     mockToken = 'test-token';
-    vi.mocked(fetchPersistedWeeks).mockResolvedValue([]);
+    mockPersistedWeeksData = [];
+    mockPersistedWeeksError = null;
+    mockCalculateIsPending = false;
+    mockPublishIsPending = false;
+    mockDeleteIsPending = false;
+    mockExportIsPending = false;
   });
-
 
   it('renders admin dashboard when authenticated', () => {
     renderAdminPage();
     expect(screen.getByText('Admin Dashboard')).toBeInTheDocument();
     expect(screen.getByText('Calculate Rankings')).toBeInTheDocument();
     expect(screen.getByText('Persisted Snapshots')).toBeInTheDocument();
-  });
-
-  it('redirects to login when not authenticated', () => {
-    mockIsAuthenticated = false;
-    mockToken = null;
-    renderAdminPage();
-    expect(mockNavigate).toHaveBeenCalledWith('/login');
   });
 
   it('renders season and week dropdowns', () => {
@@ -117,76 +126,57 @@ describe('AdminPage', () => {
   });
 
   it('calls calculateRankings on calculate button click', async () => {
-    vi.mocked(calculateRankings).mockResolvedValue({
+    mockCalculateMutateAsync.mockResolvedValue({
       persisted: true,
-      rankings: {
-        season: 2024,
-        week: 5,
-        rankings: [],
-      },
+      rankings: { season: 2024, week: 5, rankings: [] },
     });
 
     renderAdminPage();
-
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
-      expect(calculateRankings).toHaveBeenCalledWith('test-token', 2024, 5);
+      expect(mockCalculateMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
     });
   });
 
   it('shows preview after calculation', async () => {
-    vi.mocked(calculateRankings).mockResolvedValue({
+    mockCalculateMutateAsync.mockResolvedValue({
       persisted: true,
-      rankings: {
-        season: 2024,
-        week: 5,
-        rankings: [],
-      },
+      rankings: { season: 2024, week: 5, rankings: [] },
     });
 
     renderAdminPage();
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Preview: 2024 Week 5/)).toBeInTheDocument();
+      expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
     });
   });
 
   it('collapses and expands preview', async () => {
-    vi.mocked(calculateRankings).mockResolvedValue({
+    mockCalculateMutateAsync.mockResolvedValue({
       persisted: true,
-      rankings: {
-        season: 2024,
-        week: 5,
-        rankings: [],
-      },
+      rankings: { season: 2024, week: 5, rankings: [] },
     });
 
     renderAdminPage();
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Preview: 2024 Week 5/)).toBeInTheDocument();
+      expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText(/Preview: 2024 Week 5/));
-
+    fireEvent.click(screen.getByText(/Preview: 2024 Week 6/));
     expect(screen.getByText(/\u25B6/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText(/Preview: 2024 Week 5/));
-
+    fireEvent.click(screen.getByText(/Preview: 2024 Week 6/));
     expect(screen.getByText(/\u25BC/)).toBeInTheDocument();
   });
 
   it('shows persist warning when not persisted', async () => {
-    vi.mocked(calculateRankings).mockResolvedValue({
+    mockCalculateMutateAsync.mockResolvedValue({
       persisted: false,
-      rankings: {
-        season: 2024,
-        week: 5,
-        rankings: [],
-      },
+      rankings: { season: 2024, week: 5, rankings: [] },
     });
 
     renderAdminPage();
@@ -202,48 +192,38 @@ describe('AdminPage', () => {
     expect(screen.getByText('No persisted snapshots found.')).toBeInTheDocument();
   });
 
-  it('renders persisted weeks grouped by season', async () => {
-    vi.mocked(fetchPersistedWeeks).mockResolvedValue([
+  it('renders persisted weeks grouped by season', () => {
+    mockPersistedWeeksData = [
       { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
       { season: 2024, week: 2, published: false, createdAt: '2024-09-08T00:00:00Z' },
       { season: 2023, week: 1, published: true, createdAt: '2023-09-01T00:00:00Z' },
-    ]);
+    ];
 
     renderAdminPage();
 
-    await waitFor(() => {
-      expect(screen.getByText('2024 Season')).toBeInTheDocument();
-      expect(screen.getByText('2023 Season')).toBeInTheDocument();
-      expect(screen.getByText('(2 snapshots)')).toBeInTheDocument();
-      expect(screen.getByText('(1 snapshot)')).toBeInTheDocument();
-    });
+    expect(screen.getByText('2024 Season')).toBeInTheDocument();
+    expect(screen.getByText('2023 Season')).toBeInTheDocument();
+    expect(screen.getByText('(2 snapshots)')).toBeInTheDocument();
+    expect(screen.getByText('(1 snapshot)')).toBeInTheDocument();
   });
 
-  it('seasons start collapsed by default', async () => {
-    vi.mocked(fetchPersistedWeeks).mockResolvedValue([
+  it('seasons start collapsed by default', () => {
+    mockPersistedWeeksData = [
       { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
-    ]);
+    ];
 
     renderAdminPage();
-
-    await waitFor(() => {
-      expect(screen.getByText('2024 Season')).toBeInTheDocument();
-    });
 
     const seasonButton = screen.getByText('2024 Season').closest('button')!;
     expect(seasonButton.textContent).toContain('\u25B6');
   });
 
-  it('expands and collapses season groups on click', async () => {
-    vi.mocked(fetchPersistedWeeks).mockResolvedValue([
+  it('expands and collapses season groups on click', () => {
+    mockPersistedWeeksData = [
       { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
-    ]);
+    ];
 
     renderAdminPage();
-
-    await waitFor(() => {
-      expect(screen.getByText('2024 Season')).toBeInTheDocument();
-    });
 
     const seasonButton = screen.getByText('2024 Season').closest('button')!;
 
@@ -254,18 +234,13 @@ describe('AdminPage', () => {
     expect(seasonButton.textContent).toContain('\u25B6');
   });
 
-  it('expand all and collapse all buttons work', async () => {
-    vi.mocked(fetchPersistedWeeks).mockResolvedValue([
+  it('expand all and collapse all buttons work', () => {
+    mockPersistedWeeksData = [
       { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
       { season: 2023, week: 1, published: true, createdAt: '2023-09-01T00:00:00Z' },
-    ]);
+    ];
 
     renderAdminPage();
-
-    await waitFor(() => {
-      expect(screen.getByText('2024 Season')).toBeInTheDocument();
-      expect(screen.getByText('2023 Season')).toBeInTheDocument();
-    });
 
     const button2024 = screen.getByText('2024 Season').closest('button')!;
     const button2023 = screen.getByText('2023 Season').closest('button')!;
@@ -291,97 +266,92 @@ describe('AdminPage', () => {
   });
 
   it('calls deleteSnapshot when delete is clicked on draft', async () => {
-    vi.mocked(fetchPersistedWeeks).mockResolvedValue([
+    mockPersistedWeeksData = [
       { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
-    ]);
-    vi.mocked(deleteSnapshot).mockResolvedValue(undefined);
+    ];
+    mockDeleteMutateAsync.mockResolvedValue(undefined);
 
     renderAdminPage();
 
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-    });
+    // Expand to see Delete button
+    fireEvent.click(screen.getByText('2024 Season'));
 
     fireEvent.click(screen.getByText('Delete'));
 
     await waitFor(() => {
-      expect(deleteSnapshot).toHaveBeenCalledWith('test-token', 2024, 1);
+      expect(mockDeleteMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 1 });
     });
   });
 
   it('shows confirm dialog when deleting published snapshot', async () => {
-    vi.mocked(fetchPersistedWeeks).mockResolvedValue([
+    mockPersistedWeeksData = [
       { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
-    ]);
-    vi.mocked(deleteSnapshot).mockResolvedValue(undefined);
+    ];
+    mockDeleteMutateAsync.mockResolvedValue(undefined);
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     renderAdminPage();
 
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-    });
+    // Expand to see Delete button
+    fireEvent.click(screen.getByText('2024 Season'));
 
     fireEvent.click(screen.getByText('Delete'));
 
     await waitFor(() => {
       expect(confirmSpy).toHaveBeenCalled();
-      expect(deleteSnapshot).toHaveBeenCalledWith('test-token', 2024, 1);
+      expect(mockDeleteMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 1 });
     });
 
     confirmSpy.mockRestore();
   });
 
-  it('does not delete when confirm is cancelled', async () => {
-    vi.mocked(fetchPersistedWeeks).mockResolvedValue([
+  it('does not delete when confirm is cancelled', () => {
+    mockPersistedWeeksData = [
       { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
-    ]);
+    ];
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
 
     renderAdminPage();
 
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-    });
+    // Expand to see Delete button
+    fireEvent.click(screen.getByText('2024 Season'));
 
     fireEvent.click(screen.getByText('Delete'));
 
     expect(confirmSpy).toHaveBeenCalled();
-    expect(deleteSnapshot).not.toHaveBeenCalled();
+    expect(mockDeleteMutateAsync).not.toHaveBeenCalled();
 
     confirmSpy.mockRestore();
   });
 
   it('calls publishSnapshot when publish is clicked on draft', async () => {
-    vi.mocked(fetchPersistedWeeks).mockResolvedValue([
+    mockPersistedWeeksData = [
       { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
-    ]);
-    vi.mocked(publishSnapshot).mockResolvedValue(undefined);
+    ];
+    mockPublishMutateAsync.mockResolvedValue(undefined);
 
     renderAdminPage();
 
-    await waitFor(() => {
-      expect(screen.getByText('Publish')).toBeInTheDocument();
-    });
+    // Expand to see Publish button
+    fireEvent.click(screen.getByText('2024 Season'));
 
     fireEvent.click(screen.getByText('Publish'));
 
     await waitFor(() => {
-      expect(publishSnapshot).toHaveBeenCalledWith('test-token', 2024, 1);
+      expect(mockPublishMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 1 });
     });
   });
 
   it('shows success checkmark after publish succeeds', async () => {
-    vi.mocked(fetchPersistedWeeks).mockResolvedValue([
+    mockPersistedWeeksData = [
       { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
-    ]);
-    vi.mocked(publishSnapshot).mockResolvedValue(undefined);
+    ];
+    mockPublishMutateAsync.mockResolvedValue(undefined);
 
     renderAdminPage();
 
-    await waitFor(() => {
-      expect(screen.getByText('Publish')).toBeInTheDocument();
-    });
+    // Expand to see Publish button
+    fireEvent.click(screen.getByText('2024 Season'));
 
     fireEvent.click(screen.getByText('Publish'));
 
@@ -391,16 +361,15 @@ describe('AdminPage', () => {
   });
 
   it('shows error message after publish fails', async () => {
-    vi.mocked(fetchPersistedWeeks).mockResolvedValue([
+    mockPersistedWeeksData = [
       { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
-    ]);
-    vi.mocked(publishSnapshot).mockRejectedValue(new Error('Snapshot not found'));
+    ];
+    mockPublishMutateAsync.mockRejectedValue(new Error('Snapshot not found'));
 
     renderAdminPage();
 
-    await waitFor(() => {
-      expect(screen.getByText('Publish')).toBeInTheDocument();
-    });
+    // Expand to see Publish button
+    fireEvent.click(screen.getByText('2024 Season'));
 
     fireEvent.click(screen.getByText('Publish'));
 
@@ -410,17 +379,17 @@ describe('AdminPage', () => {
   });
 
   it('shows success checkmark on preview publish', async () => {
-    vi.mocked(calculateRankings).mockResolvedValue({
+    mockCalculateMutateAsync.mockResolvedValue({
       persisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
-    vi.mocked(publishSnapshot).mockResolvedValue(undefined);
+    mockPublishMutateAsync.mockResolvedValue(undefined);
 
     renderAdminPage();
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Preview: 2024 Week 5/)).toBeInTheDocument();
+      expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
     });
 
     const publishButtons = screen.getAllByText('Publish');
@@ -432,17 +401,17 @@ describe('AdminPage', () => {
   });
 
   it('shows error message on preview publish failure', async () => {
-    vi.mocked(calculateRankings).mockResolvedValue({
+    mockCalculateMutateAsync.mockResolvedValue({
       persisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
-    vi.mocked(publishSnapshot).mockRejectedValue(new Error('Server error'));
+    mockPublishMutateAsync.mockRejectedValue(new Error('Server error'));
 
     renderAdminPage();
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Preview: 2024 Week 5/)).toBeInTheDocument();
+      expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
     });
 
     const publishButtons = screen.getAllByText('Publish');
@@ -454,16 +423,15 @@ describe('AdminPage', () => {
   });
 
   it('success checkmark disappears after timeout', async () => {
-    vi.mocked(fetchPersistedWeeks).mockResolvedValue([
+    mockPersistedWeeksData = [
       { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
-    ]);
-    vi.mocked(publishSnapshot).mockResolvedValue(undefined);
+    ];
+    mockPublishMutateAsync.mockResolvedValue(undefined);
 
     renderAdminPage();
 
-    await waitFor(() => {
-      expect(screen.getByText('Publish')).toBeInTheDocument();
-    });
+    // Expand to see Publish button
+    fireEvent.click(screen.getByText('2024 Season'));
 
     fireEvent.click(screen.getByText('Publish'));
 
@@ -477,26 +445,25 @@ describe('AdminPage', () => {
   });
 
   it('calls downloadExport when export is clicked', async () => {
-    vi.mocked(fetchPersistedWeeks).mockResolvedValue([
+    mockPersistedWeeksData = [
       { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
-    ]);
-    vi.mocked(downloadExport).mockResolvedValue(undefined);
+    ];
+    mockExportMutateAsync.mockResolvedValue(undefined);
 
     renderAdminPage();
 
-    await waitFor(() => {
-      expect(screen.getByText('Export')).toBeInTheDocument();
-    });
+    // Expand to see Export button
+    fireEvent.click(screen.getByText('2024 Season'));
 
     fireEvent.click(screen.getByText('Export'));
 
     await waitFor(() => {
-      expect(downloadExport).toHaveBeenCalledWith('test-token', 2024, 1);
+      expect(mockExportMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 1 });
     });
   });
 
   it('shows error when calculation fails', async () => {
-    vi.mocked(calculateRankings).mockRejectedValue(new Error('Network error'));
+    mockCalculateMutateAsync.mockRejectedValue(new Error('Network error'));
 
     renderAdminPage();
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
@@ -506,7 +473,7 @@ describe('AdminPage', () => {
     });
   });
 
-  it('changes season and resets week on season dropdown change', () => {
+  it('changes season on season dropdown change', () => {
     renderAdminPage();
 
     const seasonSelect = screen.getByLabelText('Season');
@@ -525,16 +492,15 @@ describe('AdminPage', () => {
   });
 
   it('shows error when delete fails', async () => {
-    vi.mocked(fetchPersistedWeeks).mockResolvedValue([
+    mockPersistedWeeksData = [
       { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
-    ]);
-    vi.mocked(deleteSnapshot).mockRejectedValue(new Error('Delete failed'));
+    ];
+    mockDeleteMutateAsync.mockRejectedValue(new Error('Delete failed'));
 
     renderAdminPage();
 
-    await waitFor(() => {
-      expect(screen.getByText('Delete')).toBeInTheDocument();
-    });
+    // Expand to see Delete button
+    fireEvent.click(screen.getByText('2024 Season'));
 
     fireEvent.click(screen.getByText('Delete'));
 
@@ -544,16 +510,15 @@ describe('AdminPage', () => {
   });
 
   it('shows error when export fails', async () => {
-    vi.mocked(fetchPersistedWeeks).mockResolvedValue([
+    mockPersistedWeeksData = [
       { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
-    ]);
-    vi.mocked(downloadExport).mockRejectedValue(new Error('Export failed'));
+    ];
+    mockExportMutateAsync.mockRejectedValue(new Error('Export failed'));
 
     renderAdminPage();
 
-    await waitFor(() => {
-      expect(screen.getByText('Export')).toBeInTheDocument();
-    });
+    // Expand to see Export button
+    fireEvent.click(screen.getByText('2024 Season'));
 
     fireEvent.click(screen.getByText('Export'));
 
@@ -563,67 +528,66 @@ describe('AdminPage', () => {
   });
 
   it('calls downloadExport for preview Download Excel button', async () => {
-    vi.mocked(calculateRankings).mockResolvedValue({
+    mockCalculateMutateAsync.mockResolvedValue({
       persisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
-    vi.mocked(downloadExport).mockResolvedValue(undefined);
+    mockExportMutateAsync.mockResolvedValue(undefined);
 
     renderAdminPage();
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Preview: 2024 Week 5/)).toBeInTheDocument();
+      expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByText('Download Excel'));
 
     await waitFor(() => {
-      expect(downloadExport).toHaveBeenCalledWith('test-token', 2024, 5);
+      expect(mockExportMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
     });
   });
 
   it('clears calculated result when matching snapshot is deleted', async () => {
-    vi.mocked(calculateRankings).mockResolvedValue({
+    mockCalculateMutateAsync.mockResolvedValue({
       persisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
-    vi.mocked(fetchPersistedWeeks).mockResolvedValue([
+    mockPersistedWeeksData = [
       { season: 2024, week: 5, published: false, createdAt: '2024-09-01T00:00:00Z' },
-    ]);
-    vi.mocked(deleteSnapshot).mockResolvedValue(undefined);
+    ];
+    mockDeleteMutateAsync.mockResolvedValue(undefined);
 
     renderAdminPage();
 
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Preview: 2024 Week 5/)).toBeInTheDocument();
+      expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
     });
+
+    // Expand to see Delete button
+    fireEvent.click(screen.getByText('2024 Season'));
 
     fireEvent.click(screen.getByText('Delete'));
 
     await waitFor(() => {
-      expect(deleteSnapshot).toHaveBeenCalledWith('test-token', 2024, 5);
+      expect(mockDeleteMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
     });
 
     await waitFor(() => {
-      expect(screen.queryByText(/Preview: 2024 Week 5/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Preview: 2024 Week 6/)).not.toBeInTheDocument();
     });
   });
 
   it('preserves collapsed state after publish', async () => {
-    vi.mocked(fetchPersistedWeeks).mockResolvedValue([
+    mockPersistedWeeksData = [
       { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
       { season: 2024, week: 2, published: false, createdAt: '2024-09-08T00:00:00Z' },
-    ]);
-    vi.mocked(publishSnapshot).mockResolvedValue(undefined);
+    ];
+    mockPublishMutateAsync.mockResolvedValue(undefined);
 
     renderAdminPage();
-
-    await waitFor(() => {
-      expect(screen.getByText('2024 Season')).toBeInTheDocument();
-    });
 
     fireEvent.click(screen.getByText('2024 Season'));
     const seasonButton = screen.getByText('2024 Season').closest('button')!;
@@ -633,38 +597,36 @@ describe('AdminPage', () => {
     fireEvent.click(publishButtons[0]);
 
     await waitFor(() => {
-      expect(publishSnapshot).toHaveBeenCalled();
+      expect(mockPublishMutateAsync).toHaveBeenCalled();
     });
 
     expect(seasonButton.textContent).toContain('\u25BC');
   });
 
-  it('shows error when fetching persisted weeks fails', async () => {
-    vi.mocked(fetchPersistedWeeks).mockRejectedValue(new Error('Server unavailable'));
+  it('shows error when fetching persisted weeks fails', () => {
+    mockPersistedWeeksError = new Error('Server unavailable');
 
     renderAdminPage();
 
-    await waitFor(() => {
-      expect(screen.getByText(/Server unavailable/)).toBeInTheDocument();
-    });
+    expect(screen.getByText(/Server unavailable/)).toBeInTheDocument();
   });
 
   it('preview publish checkmark does not appear in snapshot section', async () => {
-    vi.mocked(calculateRankings).mockResolvedValue({
+    mockCalculateMutateAsync.mockResolvedValue({
       persisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
-    vi.mocked(fetchPersistedWeeks).mockResolvedValue([
+    mockPersistedWeeksData = [
       { season: 2024, week: 5, published: false, createdAt: '2024-09-01T00:00:00Z' },
-    ]);
-    vi.mocked(publishSnapshot).mockResolvedValue(undefined);
+    ];
+    mockPublishMutateAsync.mockResolvedValue(undefined);
 
     renderAdminPage();
 
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Preview: 2024 Week 5/)).toBeInTheDocument();
+      expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByText('2024 Season'));
@@ -679,7 +641,7 @@ describe('AdminPage', () => {
     const successIcons = screen.getAllByLabelText('Success');
     expect(successIcons).toHaveLength(1);
 
-    const previewSection = screen.getByText(/Preview: 2024 Week 5/).closest('div.bg-white');
+    const previewSection = screen.getByText(/Preview: 2024 Week 6/).closest('div.bg-white');
     expect(previewSection?.querySelector('[aria-label="Success"]')).toBeInTheDocument();
   });
 });

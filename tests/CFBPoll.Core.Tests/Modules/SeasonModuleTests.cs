@@ -58,11 +58,11 @@ public class SeasonModuleTests
         var result = _seasonModule.GetWeekLabels(calendarWeeks);
 
         Assert.Equal(3, result.Count());
-        Assert.Equal("Week 1", result.ElementAt(0).Label);
+        Assert.Equal("Week 2", result.ElementAt(0).Label);
         Assert.Equal(1, result.ElementAt(0).WeekNumber);
-        Assert.Equal("Week 2", result.ElementAt(1).Label);
+        Assert.Equal("Week 3", result.ElementAt(1).Label);
         Assert.Equal(2, result.ElementAt(1).WeekNumber);
-        Assert.Equal("Week 3", result.ElementAt(2).Label);
+        Assert.Equal("Week 4", result.ElementAt(2).Label);
         Assert.Equal(3, result.ElementAt(2).WeekNumber);
     }
 
@@ -78,7 +78,7 @@ public class SeasonModuleTests
         var result = _seasonModule.GetWeekLabels(calendarWeeks);
 
         Assert.Equal(2, result.Count());
-        Assert.Equal("Week 15", result.ElementAt(0).Label);
+        Assert.Equal("Week 16", result.ElementAt(0).Label);
         Assert.Equal("Postseason", result.ElementAt(1).Label);
     }
 

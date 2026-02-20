@@ -1,7 +1,7 @@
 namespace CFBPoll.Core.Caching;
 
 /// <summary>
-/// Provides persistent caching with file-based storage that survives application restarts.
+/// Provides persistent caching with storage that survives application restarts.
 /// </summary>
 public interface IPersistentCache
 {

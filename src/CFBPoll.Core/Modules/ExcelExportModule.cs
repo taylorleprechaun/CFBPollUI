@@ -28,7 +28,7 @@ public class ExcelExportModule : IExcelExportModule
         return package.GetAsByteArray();
     }
 
-    private static List<string> GetDynamicColumns(IEnumerable<RankedTeam> teams)
+    private IReadOnlyList<string> GetDynamicColumns(IEnumerable<RankedTeam> teams)
     {
         var columns = new HashSet<string>();
 
@@ -43,7 +43,7 @@ public class ExcelExportModule : IExcelExportModule
         return columns.OrderBy(c => c).ToList();
     }
 
-    private static void FormatWorksheet(ExcelWorksheet worksheet, int dataRows, int dynamicColumnCount)
+    private void FormatWorksheet(ExcelWorksheet worksheet, int dataRows, int dynamicColumnCount)
     {
         var totalColumns = 11 + dynamicColumnCount;
 
@@ -71,7 +71,7 @@ public class ExcelExportModule : IExcelExportModule
         worksheet.Cells.AutoFitColumns();
     }
 
-    private static void WriteData(ExcelWorksheet worksheet, List<RankedTeam> teams, List<string> dynamicColumns)
+    private void WriteData(ExcelWorksheet worksheet, IReadOnlyList<RankedTeam> teams, IReadOnlyList<string> dynamicColumns)
     {
         for (var i = 0; i < teams.Count; i++)
         {
@@ -102,7 +102,7 @@ public class ExcelExportModule : IExcelExportModule
         }
     }
 
-    private static void WriteHeaders(ExcelWorksheet worksheet, List<string> dynamicColumns)
+    private void WriteHeaders(ExcelWorksheet worksheet, IReadOnlyList<string> dynamicColumns)
     {
         worksheet.Cells[1, 1].Value = "Ranking";
         worksheet.Cells[1, 2].Value = "Team Name";

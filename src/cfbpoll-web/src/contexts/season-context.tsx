@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useSeasons } from '../hooks/use-seasons';
 
-
 interface SeasonContextValue {
   refetchSeasons: () => void;
   seasons: number[];

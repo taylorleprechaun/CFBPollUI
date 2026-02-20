@@ -63,4 +63,28 @@ public class AuthModuleTests
         Assert.True(result.Success);
         Assert.False(string.IsNullOrEmpty(result.Token));
     }
+
+    [Fact]
+    public void Login_NullUsername_ThrowsArgumentException()
+    {
+        Assert.Throws<ArgumentNullException>(() => _authModule.Login(null!, "testpassword"));
+    }
+
+    [Fact]
+    public void Login_EmptyUsername_ThrowsArgumentException()
+    {
+        Assert.Throws<ArgumentException>(() => _authModule.Login("", "testpassword"));
+    }
+
+    [Fact]
+    public void Login_NullPassword_ThrowsArgumentException()
+    {
+        Assert.Throws<ArgumentNullException>(() => _authModule.Login("admin", null!));
+    }
+
+    [Fact]
+    public void Login_EmptyPassword_ThrowsArgumentException()
+    {
+        Assert.Throws<ArgumentException>(() => _authModule.Login("admin", ""));
+    }
 }

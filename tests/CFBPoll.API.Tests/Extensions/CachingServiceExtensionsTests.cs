@@ -1,9 +1,11 @@
 using CFBPoll.API.Extensions;
 using CFBPoll.Core.Caching;
+using CFBPoll.Core.Data;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Modules;
 using CFBPoll.Core.Options;
 using CFBPoll.Core.Services;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -27,7 +29,23 @@ public class CachingServiceExtensionsTests
         var cache = provider.GetService<IPersistentCache>();
 
         Assert.NotNull(cache);
-        Assert.IsType<FilePersistentCache>(cache);
+        Assert.IsType<CacheModule>(cache);
+    }
+
+    [Fact]
+    public void AddCFBDataServiceWithCaching_RegistersICacheData()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration(apiKey: "test-api-key");
+
+        services.AddCFBDataServiceWithCaching(configuration);
+
+        var provider = services.BuildServiceProvider();
+        var cacheData = provider.GetService<ICacheData>();
+
+        Assert.NotNull(cacheData);
+        Assert.IsType<CacheData>(cacheData);
     }
 
     [Fact]
@@ -81,6 +99,24 @@ public class CachingServiceExtensionsTests
         Assert.Equal(48, options.Value.CalendarExpirationHours);
         Assert.Equal(12, options.Value.MaxSeasonYearExpirationHours);
         Assert.Equal(6, options.Value.SeasonDataExpirationHours);
+    }
+
+    [Fact]
+    public void AddCFBDataServiceWithCaching_ConfiguresCacheConnectionString()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration(
+            apiKey: "test-api-key",
+            connectionString: "Data Source=test/cache.db");
+
+        services.AddCFBDataServiceWithCaching(configuration);
+
+        var provider = services.BuildServiceProvider();
+        var options = provider.GetService<IOptions<CacheOptions>>();
+
+        Assert.NotNull(options);
+        Assert.Equal("Data Source=test/cache.db", options.Value.ConnectionString);
     }
 
     [Fact]
@@ -176,6 +212,24 @@ public class CachingServiceExtensionsTests
     }
 
     [Fact]
+    public async Task InitializeCacheAsync_CallsInitialize()
+    {
+        var mockCacheData = new Mock<ICacheData>();
+        mockCacheData.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+
+        var services = new ServiceCollection();
+        services.AddSingleton(mockCacheData.Object);
+
+        var builder = WebApplication.CreateBuilder();
+        builder.Services.AddSingleton(mockCacheData.Object);
+        var app = builder.Build();
+
+        await app.InitializeCacheAsync();
+
+        mockCacheData.Verify(x => x.InitializeAsync(), Times.Once);
+    }
+
+    [Fact]
     public void AddRankingsModule_RegistersRankingsModule()
     {
         var services = new ServiceCollection();
@@ -221,13 +275,14 @@ public class CachingServiceExtensionsTests
     private static IConfiguration BuildConfiguration(
         string? apiKey,
         int? calendarExpirationHours = null,
+        string? connectionString = null,
         int? maxSeasonYearExpirationHours = null,
         int? seasonDataExpirationHours = null,
         int? minimumYear = null)
     {
         var configValues = new Dictionary<string, string?>();
 
-        if (apiKey != null)
+        if (apiKey is not null)
         {
             configValues["CollegeFootballData:ApiKey"] = apiKey;
         }
@@ -235,6 +290,11 @@ public class CachingServiceExtensionsTests
         if (calendarExpirationHours.HasValue)
         {
             configValues["Cache:CalendarExpirationHours"] = calendarExpirationHours.Value.ToString();
+        }
+
+        if (connectionString is not null)
+        {
+            configValues["Cache:ConnectionString"] = connectionString;
         }
 
         if (maxSeasonYearExpirationHours.HasValue)

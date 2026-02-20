@@ -20,6 +20,9 @@ public class AuthModule : IAuthModule
 
     public LoginResult Login(string username, string password)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(username);
+        ArgumentException.ThrowIfNullOrWhiteSpace(password);
+
         if (!username.Equals(_options.Username, StringComparison.OrdinalIgnoreCase))
             return new LoginResult { Success = false };
 

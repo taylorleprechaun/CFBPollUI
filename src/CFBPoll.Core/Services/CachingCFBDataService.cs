@@ -26,25 +26,58 @@ public class CachingCFBDataService : ICFBDataService
         _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
     }
 
+    public async Task<IEnumerable<AdvancedGameStats>> GetAdvancedGameStatsAsync(int season, string seasonType)
+    {
+        var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
+        return await GetOrCacheListAsync(
+            $"advancedGameStats_{season}_{seasonType}",
+            () => _innerService.GetAdvancedGameStatsAsync(season, seasonType),
+            expiresAt).ConfigureAwait(false);
+    }
+
     public async Task<IEnumerable<CalendarWeek>> GetCalendarAsync(int year)
     {
-        var cacheKey = $"calendar_{year}";
-
-        var cached = await _cache.GetAsync<List<CalendarWeek>>(cacheKey).ConfigureAwait(false);
-        if (cached is not null)
-        {
-            _logger.LogDebug("Cache hit for calendar {Year}", year);
-            return cached;
-        }
-
-        _logger.LogDebug("Cache miss for calendar {Year}, fetching from API", year);
-        var data = await _innerService.GetCalendarAsync(year).ConfigureAwait(false);
-        var dataList = data.ToList();
-
         var expiresAt = CalculateExpiration(year, _options.CalendarExpirationHours);
-        await _cache.SetAsync(cacheKey, dataList, expiresAt).ConfigureAwait(false);
+        return await GetOrCacheListAsync(
+            $"calendar_{year}",
+            () => _innerService.GetCalendarAsync(year),
+            expiresAt).ConfigureAwait(false);
+    }
 
-        return dataList;
+    public async Task<IEnumerable<Conference>> GetConferencesAsync()
+    {
+        var expiresAt = DateTime.UtcNow.AddHours(_options.ConferenceExpirationHours);
+        return await GetOrCacheListAsync(
+            "conferences",
+            () => _innerService.GetConferencesAsync(),
+            expiresAt).ConfigureAwait(false);
+    }
+
+    public async Task<IEnumerable<FBSTeam>> GetFBSTeamsAsync(int season)
+    {
+        var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
+        return await GetOrCacheListAsync(
+            $"teams_{season}",
+            () => _innerService.GetFBSTeamsAsync(season),
+            expiresAt).ConfigureAwait(false);
+    }
+
+    public async Task<IEnumerable<ScheduleGame>> GetFullSeasonScheduleAsync(int season)
+    {
+        var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
+        return await GetOrCacheListAsync(
+            $"fullSchedule_{season}",
+            () => _innerService.GetFullSeasonScheduleAsync(season),
+            expiresAt).ConfigureAwait(false);
+    }
+
+    public async Task<IEnumerable<Game>> GetGamesAsync(int season, string seasonType)
+    {
+        var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
+        return await GetOrCacheListAsync(
+            $"games_{season}_{seasonType}",
+            () => _innerService.GetGamesAsync(season, seasonType),
+            expiresAt).ConfigureAwait(false);
     }
 
     public async Task<int> GetMaxSeasonYearAsync()
@@ -54,11 +87,11 @@ public class CachingCFBDataService : ICFBDataService
         var cached = await _cache.GetAsync<MaxSeasonYearWrapper>(cacheKey).ConfigureAwait(false);
         if (cached is not null)
         {
-            _logger.LogDebug("Cache hit for max season year");
+            _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
             return cached.Year;
         }
 
-        _logger.LogDebug("Cache miss for max season year, fetching from API");
+        _logger.LogDebug("Cache miss for {CacheKey}, fetching from API", cacheKey);
         var year = await _innerService.GetMaxSeasonYearAsync().ConfigureAwait(false);
 
         var expiresAt = DateTime.UtcNow.AddHours(_options.MaxSeasonYearExpirationHours);
@@ -67,85 +100,66 @@ public class CachingCFBDataService : ICFBDataService
         return year;
     }
 
-    public async Task<IEnumerable<AdvancedGameStats>> GetAdvancedGameStatsAsync(int season, string seasonType)
-    {
-        var cacheKey = $"advancedGameStats_{season}_{seasonType}";
-
-        var cached = await _cache.GetAsync<List<AdvancedGameStats>>(cacheKey).ConfigureAwait(false);
-        if (cached is not null)
-        {
-            _logger.LogDebug("Cache hit for advanced game stats {Season} {SeasonType}", season, seasonType);
-            return cached;
-        }
-
-        _logger.LogDebug("Cache miss for advanced game stats {Season} {SeasonType}, fetching from API", season, seasonType);
-        var data = await _innerService.GetAdvancedGameStatsAsync(season, seasonType).ConfigureAwait(false);
-        var dataList = data.ToList();
-
-        var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
-        await _cache.SetAsync(cacheKey, dataList, expiresAt).ConfigureAwait(false);
-
-        return dataList;
-    }
-
-    public async Task<IEnumerable<Conference>> GetConferencesAsync()
-    {
-        const string cacheKey = "conferences";
-
-        var cached = await _cache.GetAsync<List<Conference>>(cacheKey).ConfigureAwait(false);
-        if (cached is not null)
-        {
-            _logger.LogDebug("Cache hit for conferences");
-            return cached;
-        }
-
-        _logger.LogDebug("Cache miss for conferences, fetching from API");
-        var data = await _innerService.GetConferencesAsync().ConfigureAwait(false);
-        var dataList = data.ToList();
-
-        var expiresAt = DateTime.UtcNow.AddHours(_options.ConferenceExpirationHours);
-        await _cache.SetAsync(cacheKey, dataList, expiresAt).ConfigureAwait(false);
-
-        return dataList;
-    }
-
-    public async Task<IEnumerable<ScheduleGame>> GetFullSeasonScheduleAsync(int season)
-    {
-        var cacheKey = $"fullSchedule_{season}";
-
-        var cached = await _cache.GetAsync<List<ScheduleGame>>(cacheKey).ConfigureAwait(false);
-        if (cached is not null)
-        {
-            _logger.LogDebug("Cache hit for full schedule {Season}", season);
-            return cached;
-        }
-
-        _logger.LogDebug("Cache miss for full schedule {Season}, fetching from API", season);
-        var data = await _innerService.GetFullSeasonScheduleAsync(season).ConfigureAwait(false);
-        var dataList = data.ToList();
-
-        var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
-        await _cache.SetAsync(cacheKey, dataList, expiresAt).ConfigureAwait(false);
-
-        return dataList;
-    }
-
     public async Task<SeasonData> GetSeasonDataAsync(int season, int week)
     {
-        var cacheKey = $"seasonData_{season}_week_{week}";
+        _logger.LogDebug("Assembling season data for {Season} week {Week} from cached components", season, week);
 
-        var cached = await _cache.GetAsync<SeasonData>(cacheKey).ConfigureAwait(false);
+        var teamsTask = GetFBSTeamsAsync(season);
+        var regularGamesTask = GetGamesAsync(season, "regular");
+        var postseasonGamesTask = GetGamesAsync(season, "postseason");
+        var regularAdvancedStatsTask = GetAdvancedGameStatsAsync(season, "regular");
+
+        await Task.WhenAll(teamsTask, regularGamesTask, postseasonGamesTask, regularAdvancedStatsTask).ConfigureAwait(false);
+
+        var teams = await teamsTask.ConfigureAwait(false);
+        var regularGames = await regularGamesTask.ConfigureAwait(false);
+        var postseasonGames = await postseasonGamesTask.ConfigureAwait(false);
+        var regularAdvancedStats = await regularAdvancedStatsTask.ConfigureAwait(false);
+
+        var maxRegularWeek = regularGames
+            .Where(g => g.Week.HasValue)
+            .Select(g => g.Week!.Value)
+            .DefaultIfEmpty(0)
+            .Max();
+
+        var includePostseason = week > maxRegularWeek;
+        var postseasonAdvancedStats = includePostseason
+            ? await GetAdvancedGameStatsAsync(season, "postseason").ConfigureAwait(false)
+            : Enumerable.Empty<AdvancedGameStats>();
+
+        var hasPostseasonGames = includePostseason && postseasonGames.Any();
+        int? endWeek = hasPostseasonGames ? null : week;
+        var seasonStats = await GetSeasonTeamStatsAsync(season, endWeek).ConfigureAwait(false);
+
+        return SeasonDataAssembler.Assemble(
+            season, week, teams, regularGames, postseasonGames,
+            regularAdvancedStats, postseasonAdvancedStats, seasonStats);
+    }
+
+    public async Task<IDictionary<string, IEnumerable<TeamStat>>> GetSeasonTeamStatsAsync(int season, int? endWeek)
+    {
+        var cacheKey = endWeek.HasValue
+            ? $"seasonStats_{season}_week_{endWeek.Value}"
+            : $"seasonStats_{season}";
+
+        var cached = await _cache.GetAsync<Dictionary<string, List<TeamStat>>>(cacheKey).ConfigureAwait(false);
         if (cached is not null)
         {
-            _logger.LogDebug("Cache hit for season data {Season} week {Week}", season, week);
-            return cached;
+            _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
+            return cached.ToDictionary(
+                kvp => kvp.Key,
+                kvp => (IEnumerable<TeamStat>)kvp.Value);
         }
 
-        _logger.LogDebug("Cache miss for season {Season} week {Week}, fetching from API", season, week);
-        var data = await _innerService.GetSeasonDataAsync(season, week).ConfigureAwait(false);
+        _logger.LogDebug("Cache miss for {CacheKey}, fetching from API", cacheKey);
+        var data = await _innerService.GetSeasonTeamStatsAsync(season, endWeek).ConfigureAwait(false);
+
+        var serializableData = data.ToDictionary(
+            kvp => kvp.Key,
+            kvp => kvp.Value.ToList());
 
         var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
-        await _cache.SetAsync(cacheKey, data, expiresAt).ConfigureAwait(false);
+        await _cache.SetAsync(cacheKey, serializableData, expiresAt).ConfigureAwait(false);
 
         return data;
     }
@@ -160,6 +174,25 @@ public class CachingCFBDataService : ICFBDataService
         }
 
         return DateTime.UtcNow.AddHours(expirationHours);
+    }
+
+    private async Task<List<T>> GetOrCacheListAsync<T>(
+        string cacheKey,
+        Func<Task<IEnumerable<T>>> fetchFunc,
+        DateTime expiresAt) where T : class
+    {
+        var cached = await _cache.GetAsync<List<T>>(cacheKey).ConfigureAwait(false);
+        if (cached is not null)
+        {
+            _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
+            return cached;
+        }
+
+        _logger.LogDebug("Cache miss for {CacheKey}, fetching from API", cacheKey);
+        var data = (await fetchFunc().ConfigureAwait(false)).ToList();
+        await _cache.SetAsync(cacheKey, data, expiresAt).ConfigureAwait(false);
+
+        return data;
     }
 
     internal class MaxSeasonYearWrapper

@@ -47,7 +47,7 @@ public class RankingsData : IRankingsData
         command.CommandText = "SELECT Season, Week, Published, CreatedAt FROM RankingsSnapshot ORDER BY Season DESC, Week DESC";
 
         await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
-        var results = new List<PersistedWeekSummary>();
+        List<PersistedWeekSummary> results = [];
 
         while (await reader.ReadAsync().ConfigureAwait(false))
         {
@@ -73,7 +73,7 @@ public class RankingsData : IRankingsData
         command.Parameters.AddWithValue("@Season", season);
 
         await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
-        var weeks = new List<int>();
+        List<int> weeks = [];
 
         while (await reader.ReadAsync().ConfigureAwait(false))
         {
@@ -95,10 +95,10 @@ public class RankingsData : IRankingsData
 
         var result = await command.ExecuteScalarAsync().ConfigureAwait(false);
 
-        if (result is null)
+        if (result is not string json)
             return null;
 
-        return JsonSerializer.Deserialize<RankingsResult>(result.ToString()!);
+        return JsonSerializer.Deserialize<RankingsResult>(json);
     }
 
     public async Task<RankingsResult?> GetSnapshotAsync(int season, int week)
@@ -113,10 +113,10 @@ public class RankingsData : IRankingsData
 
         var result = await command.ExecuteScalarAsync().ConfigureAwait(false);
 
-        if (result is null)
+        if (result is not string json)
             return null;
 
-        return JsonSerializer.Deserialize<RankingsResult>(result.ToString()!);
+        return JsonSerializer.Deserialize<RankingsResult>(json);
     }
 
     public async Task InitializeAsync()
@@ -161,7 +161,7 @@ public class RankingsData : IRankingsData
         return rowsAffected > 0;
     }
 
-    public async Task SaveSnapshotAsync(RankingsResult rankings)
+    public async Task<bool> SaveSnapshotAsync(RankingsResult rankings)
     {
         ArgumentNullException.ThrowIfNull(rankings);
 
@@ -180,9 +180,11 @@ public class RankingsData : IRankingsData
         command.Parameters.AddWithValue("@RankingsJson", json);
         command.Parameters.AddWithValue("@CreatedAt", DateTime.UtcNow.ToString("o"));
 
-        await command.ExecuteNonQueryAsync().ConfigureAwait(false);
+        var rowsAffected = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
 
         _logger.LogInformation("Saved snapshot for season {Season}, week {Week}", rankings.Season, rankings.Week);
+
+        return rowsAffected > 0;
     }
 
     private void EnsureDirectoryExists()

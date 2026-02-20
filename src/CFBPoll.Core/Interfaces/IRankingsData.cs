@@ -45,5 +45,5 @@ public interface IRankingsData
     /// <summary>
     /// Saves a rankings result as a draft snapshot.
     /// </summary>
-    Task SaveSnapshotAsync(RankingsResult rankings);
+    Task<bool> SaveSnapshotAsync(RankingsResult rankings);
 }

@@ -57,7 +57,7 @@ public class AdminModuleTests
     }
 
     [Fact]
-    public async Task CalculateRankingsAsync_ClearsCacheBeforeFetching()
+    public async Task CalculateRankingsAsync_ClearsComponentCachesBeforeFetching()
     {
         var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
         var ratings = new Dictionary<string, RatingDetails>();
@@ -68,8 +68,8 @@ public class AdminModuleTests
         _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankings);
 
         var callOrder = new List<string>();
-        _mockCache.Setup(x => x.RemoveAsync("seasonData_2024_week_5"))
-            .Callback(() => callOrder.Add("cache_remove"))
+        _mockCache.Setup(x => x.RemoveAsync(It.IsAny<string>()))
+            .Callback<string>(key => callOrder.Add($"cache_remove:{key}"))
             .ReturnsAsync(true);
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5))
             .Callback(() => callOrder.Add("get_season_data"))
@@ -77,9 +77,15 @@ public class AdminModuleTests
 
         await _adminModule.CalculateRankingsAsync(2024, 5);
 
-        _mockCache.Verify(x => x.RemoveAsync("seasonData_2024_week_5"), Times.Once);
-        Assert.Equal("cache_remove", callOrder[0]);
-        Assert.Equal("get_season_data", callOrder[1]);
+        _mockCache.Verify(x => x.RemoveAsync("teams_2024"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("games_2024_regular"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("games_2024_postseason"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("advancedGameStats_2024_regular"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("advancedGameStats_2024_postseason"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("seasonStats_2024"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("seasonStats_2024_week_5"), Times.Once);
+
+        Assert.True(callOrder.IndexOf("get_season_data") > callOrder.IndexOf("cache_remove:teams_2024"));
     }
 
     [Fact]

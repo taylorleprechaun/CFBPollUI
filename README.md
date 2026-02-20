@@ -31,7 +31,7 @@ Last Updated 2/17/2026
 - **Excel Export**: Download rankings as Excel spreadsheets with rating breakdowns
 - **SQLite Persistence**: Rankings snapshots stored in SQLite for fast retrieval without redundant API calls
 - **REST API**: Full API with Swagger documentation
-- **Caching**: File-based persistent cache to reduce external API calls
+- **Caching**: SQLite + GZip persistent cache with per-component storage to reduce external API calls
 
 ## Tech Stack
 
@@ -80,7 +80,8 @@ RankingsController                 RankingsModule
   -> ICFBDataService                 -> IRankingsData               RankingsData
   -> IRankingsModule                 -> ISeasonModule                 -> SQLite
   -> IRatingModule
-
+                                   CacheModule (IPersistentCache)    CacheData
+                                     -> ICacheData                     -> SQLite
 TeamsController                    TeamsModule
   -> ITeamsModule                    -> ICFBDataService
                                      -> IRankingsModule
@@ -94,7 +95,7 @@ AdminController                    AdminModule
                                      -> IRatingModule
 ```
 
-Only `RankingsModule` has a direct dependency on `IRankingsData`. Controllers never reference data-layer interfaces.
+Only `RankingsModule` has a direct dependency on `IRankingsData`, and only `CacheModule` has a direct dependency on `ICacheData`. Controllers never reference data-layer interfaces.
 
 ## Prerequisites
 
@@ -213,35 +214,35 @@ The frontend runs at `http://localhost:5173`.
 
 ## Testing
 
-The project includes 571 unit and integration tests across backend and frontend.
+The project includes 702 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (324 tests)
+# Backend tests (389 tests)
 dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (254 tests)
+# Frontend tests (313 tests)
 cd src/cfbpoll-web
 npm test
 ```
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-324-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-254-blue)
-![Core Coverage](https://img.shields.io/badge/Core_Coverage-96%25-brightgreen)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-389-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-313-blue)
+![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
-![Web Coverage](https://img.shields.io/badge/Web_Coverage-97%25-brightgreen)
+![Web Coverage](https://img.shields.io/badge/Web_Coverage-98%25-brightgreen)
 
 | Project | Line Coverage | Branch Coverage |
 |---------|---------------|-----------------|
-| CFBPoll.Core | 96% | 89% |
-| CFBPoll.API | 100% | 91% |
-| cfbpoll-web | 97% | 91% |
+| CFBPoll.Core | 99% | 90% |
+| CFBPoll.API | 100% | 94% |
+| cfbpoll-web | 98% | 92% |
 
 **Excluded from coverage:**
 - `RatingModule` - Proprietary rating algorithm, not included in the repository. Tests are maintained locally.

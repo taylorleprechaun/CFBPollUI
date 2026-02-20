@@ -205,4 +205,25 @@ public class TeamsModuleTests
         Assert.Single(result.FullSchedule);
         Assert.Single(result.Teams);
     }
+
+    [Fact]
+    public async Task GetTeamDetailAsync_NullTeamName_ThrowsArgumentException()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => _teamsModule.GetTeamDetailAsync(null!, 2024, 5));
+    }
+
+    [Fact]
+    public async Task GetTeamDetailAsync_EmptyTeamName_ThrowsArgumentException()
+    {
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => _teamsModule.GetTeamDetailAsync("", 2024, 5));
+    }
+
+    [Fact]
+    public async Task GetTeamDetailAsync_WhitespaceTeamName_ThrowsArgumentException()
+    {
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => _teamsModule.GetTeamDetailAsync("   ", 2024, 5));
+    }
 }

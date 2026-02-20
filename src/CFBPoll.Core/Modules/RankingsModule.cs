@@ -22,6 +22,9 @@ public class RankingsModule : IRankingsModule
 
     public Task<RankingsResult> GenerateRankingsAsync(SeasonData seasonData, IDictionary<string, RatingDetails> ratings)
     {
+        ArgumentNullException.ThrowIfNull(seasonData);
+        ArgumentNullException.ThrowIfNull(ratings);
+
         var sortedTeams = ratings
             .OrderByDescending(kvp => kvp.Value.Rating);
 
@@ -34,7 +37,7 @@ public class RankingsModule : IRankingsModule
             .Select((kvp, index) => new { TeamName = kvp.Key, Rank = index + 1 })
             .ToDictionary(x => x.TeamName, x => x.Rank, StringComparer.OrdinalIgnoreCase);
 
-        var rankedTeams = new List<RankedTeam>();
+        List<RankedTeam> rankedTeams = [];
         var rank = 1;
 
         foreach (var kvp in sortedTeams)
@@ -77,6 +80,8 @@ public class RankingsModule : IRankingsModule
 
     public async Task<IEnumerable<WeekInfo>> GetAvailableWeeksAsync(int season, IEnumerable<CalendarWeek> calendarWeeks)
     {
+        ArgumentNullException.ThrowIfNull(calendarWeeks);
+
         var publishedWeeks = await _rankingsData.GetPublishedWeekNumbersAsync(season).ConfigureAwait(false);
         var publishedWeekSet = publishedWeeks.ToHashSet();
 
@@ -105,9 +110,11 @@ public class RankingsModule : IRankingsModule
         return await _rankingsData.PublishSnapshotAsync(season, week).ConfigureAwait(false);
     }
 
-    public async Task SaveSnapshotAsync(RankingsResult rankings)
+    public async Task<bool> SaveSnapshotAsync(RankingsResult rankings)
     {
-        await _rankingsData.SaveSnapshotAsync(rankings).ConfigureAwait(false);
+        ArgumentNullException.ThrowIfNull(rankings);
+
+        return await _rankingsData.SaveSnapshotAsync(rankings).ConfigureAwait(false);
     }
 
     private TeamDetails CalculateTeamDetails(
