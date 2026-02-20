@@ -759,4 +759,36 @@ public class RankingsModuleTests
 
         return await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
     }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_NullSeasonData_ThrowsArgumentNullException()
+    {
+        var ratings = new Dictionary<string, RatingDetails>();
+
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => _rankingsModule.GenerateRankingsAsync(null!, ratings));
+    }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_NullRatings_ThrowsArgumentNullException()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
+
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => _rankingsModule.GenerateRankingsAsync(seasonData, null!));
+    }
+
+    [Fact]
+    public async Task GetAvailableWeeksAsync_NullCalendarWeeks_ThrowsArgumentNullException()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => _rankingsModule.GetAvailableWeeksAsync(2024, null!));
+    }
+
+    [Fact]
+    public async Task SaveSnapshotAsync_NullRankings_ThrowsArgumentNullException()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => _rankingsModule.SaveSnapshotAsync(null!));
+    }
 }

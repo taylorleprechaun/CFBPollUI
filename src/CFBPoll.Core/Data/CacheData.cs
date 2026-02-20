@@ -49,6 +49,9 @@ public class CacheData : ICacheData
         if (!await reader.ReadAsync().ConfigureAwait(false))
             return null;
 
+        if (reader.IsDBNull(1))
+            return null;
+
         return new CacheDataEntry
         {
             CacheKey = reader.GetString(0),

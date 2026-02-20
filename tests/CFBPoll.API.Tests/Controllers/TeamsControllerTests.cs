@@ -123,4 +123,18 @@ public class TeamsControllerTests
         Assert.Equal(70.0, response.Rating);
         Assert.Equal("SEC", response.Conference);
     }
+
+    [Fact]
+    public void Constructor_NullTeamsModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new TeamsController(null!, new Mock<ILogger<TeamsController>>().Object));
+    }
+
+    [Fact]
+    public void Constructor_NullLogger_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new TeamsController(new Mock<ITeamsModule>().Object, null!));
+    }
 }

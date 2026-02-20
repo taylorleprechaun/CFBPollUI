@@ -137,4 +137,18 @@ public class AdminControllerTests
 
         Assert.IsType<NotFoundObjectResult>(result);
     }
+
+    [Fact]
+    public void Constructor_NullAdminModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminController(null!, new Mock<ILogger<AdminController>>().Object));
+    }
+
+    [Fact]
+    public void Constructor_NullLogger_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminController(new Mock<IAdminModule>().Object, null!));
+    }
 }

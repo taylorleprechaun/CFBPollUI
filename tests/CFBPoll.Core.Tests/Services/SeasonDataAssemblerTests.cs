@@ -265,4 +265,46 @@ public class SeasonDataAssemblerTests
 
         Assert.Equal(2, result.Games.Count());
     }
+
+    [Fact]
+    public void Assemble_NullTeams_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => SeasonDataAssembler.Assemble(2024, 5, null!, [], [], [], [], new Dictionary<string, IEnumerable<TeamStat>>()));
+    }
+
+    [Fact]
+    public void Assemble_NullRegularGames_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => SeasonDataAssembler.Assemble(2024, 5, [], null!, [], [], [], new Dictionary<string, IEnumerable<TeamStat>>()));
+    }
+
+    [Fact]
+    public void Assemble_NullPostseasonGames_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => SeasonDataAssembler.Assemble(2024, 5, [], [], null!, [], [], new Dictionary<string, IEnumerable<TeamStat>>()));
+    }
+
+    [Fact]
+    public void Assemble_NullRegularAdvancedStats_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => SeasonDataAssembler.Assemble(2024, 5, [], [], [], null!, [], new Dictionary<string, IEnumerable<TeamStat>>()));
+    }
+
+    [Fact]
+    public void Assemble_NullPostseasonAdvancedStats_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => SeasonDataAssembler.Assemble(2024, 5, [], [], [], [], null!, new Dictionary<string, IEnumerable<TeamStat>>()));
+    }
+
+    [Fact]
+    public void Assemble_NullSeasonStats_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => SeasonDataAssembler.Assemble(2024, 5, [], [], [], [], [], null!));
+    }
 }

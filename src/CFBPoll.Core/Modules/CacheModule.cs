@@ -103,6 +103,8 @@ public class CacheModule : IPersistentCache
 
     private T? Decompress<T>(byte[] compressed)
     {
+        ArgumentNullException.ThrowIfNull(compressed);
+
         using var input = new MemoryStream(compressed);
         using var gzip = new GZipStream(input, CompressionMode.Decompress);
         using var output = new MemoryStream();

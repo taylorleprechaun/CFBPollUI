@@ -95,10 +95,10 @@ public class RankingsData : IRankingsData
 
         var result = await command.ExecuteScalarAsync().ConfigureAwait(false);
 
-        if (result is null)
+        if (result is not string json)
             return null;
 
-        return JsonSerializer.Deserialize<RankingsResult>(result.ToString()!);
+        return JsonSerializer.Deserialize<RankingsResult>(json);
     }
 
     public async Task<RankingsResult?> GetSnapshotAsync(int season, int week)
@@ -113,10 +113,10 @@ public class RankingsData : IRankingsData
 
         var result = await command.ExecuteScalarAsync().ConfigureAwait(false);
 
-        if (result is null)
+        if (result is not string json)
             return null;
 
-        return JsonSerializer.Deserialize<RankingsResult>(result.ToString()!);
+        return JsonSerializer.Deserialize<RankingsResult>(json);
     }
 
     public async Task InitializeAsync()

@@ -202,4 +202,48 @@ public class RankingsControllerTests
         _mockRankingsModule.Verify(x => x.SaveSnapshotAsync(It.IsAny<RankingsResult>()), Times.Never);
         _mockRankingsModule.Verify(x => x.PublishSnapshotAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
     }
+
+    [Fact]
+    public void Constructor_NullDataService_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new RankingsController(
+                null!,
+                new Mock<IRankingsModule>().Object,
+                new Mock<IRatingModule>().Object,
+                new Mock<ILogger<RankingsController>>().Object));
+    }
+
+    [Fact]
+    public void Constructor_NullRankingsModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new RankingsController(
+                new Mock<ICFBDataService>().Object,
+                null!,
+                new Mock<IRatingModule>().Object,
+                new Mock<ILogger<RankingsController>>().Object));
+    }
+
+    [Fact]
+    public void Constructor_NullRatingModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new RankingsController(
+                new Mock<ICFBDataService>().Object,
+                new Mock<IRankingsModule>().Object,
+                null!,
+                new Mock<ILogger<RankingsController>>().Object));
+    }
+
+    [Fact]
+    public void Constructor_NullLogger_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new RankingsController(
+                new Mock<ICFBDataService>().Object,
+                new Mock<IRankingsModule>().Object,
+                new Mock<IRatingModule>().Object,
+                null!));
+    }
 }

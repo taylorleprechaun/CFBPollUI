@@ -16,8 +16,8 @@ public class AdminController : ControllerBase
 
     public AdminController(IAdminModule adminModule, ILogger<AdminController> logger)
     {
-        _adminModule = adminModule;
-        _logger = logger;
+        _adminModule = adminModule ?? throw new ArgumentNullException(nameof(adminModule));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>

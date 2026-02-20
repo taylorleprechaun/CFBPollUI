@@ -16,6 +16,13 @@ public static class SeasonDataAssembler
         IEnumerable<AdvancedGameStats> postseasonAdvancedStats,
         IDictionary<string, IEnumerable<TeamStat>> seasonStats)
     {
+        ArgumentNullException.ThrowIfNull(teams);
+        ArgumentNullException.ThrowIfNull(regularGames);
+        ArgumentNullException.ThrowIfNull(postseasonGames);
+        ArgumentNullException.ThrowIfNull(regularAdvancedStats);
+        ArgumentNullException.ThrowIfNull(postseasonAdvancedStats);
+        ArgumentNullException.ThrowIfNull(seasonStats);
+
         var maxRegularWeek = regularGames
             .Where(g => g.Week.HasValue)
             .Select(g => g.Week!.Value)

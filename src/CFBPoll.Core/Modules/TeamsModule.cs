@@ -25,6 +25,8 @@ public class TeamsModule : ITeamsModule
 
     public async Task<TeamDetailResult?> GetTeamDetailAsync(string teamName, int season, int week)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(teamName);
+
         var seasonData = await _dataService.GetSeasonDataAsync(season, week).ConfigureAwait(false);
 
         if (!seasonData.Teams.ContainsKey(teamName))

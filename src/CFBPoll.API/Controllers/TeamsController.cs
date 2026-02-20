@@ -15,8 +15,8 @@ public class TeamsController : ControllerBase
 
     public TeamsController(ITeamsModule teamsModule, ILogger<TeamsController> logger)
     {
-        _teamsModule = teamsModule;
-        _logger = logger;
+        _teamsModule = teamsModule ?? throw new ArgumentNullException(nameof(teamsModule));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
@@ -45,7 +45,8 @@ public class TeamsController : ControllerBase
         if (result is null)
             return NotFound(new ErrorResponseDTO { Message = $"Team '{teamName}' not found", StatusCode = 404 });
 
-        var teamInfo = result.Teams[teamName];
+        if (!result.Teams.TryGetValue(teamName, out var teamInfo))
+            return NotFound(new ErrorResponseDTO { Message = $"Team '{teamName}' not found", StatusCode = 404 });
 
         var response = TeamDetailMapper.ToResponseDTO(
             result.RankedTeam, teamInfo, result.FullSchedule, result.Teams, result.AllRankings);

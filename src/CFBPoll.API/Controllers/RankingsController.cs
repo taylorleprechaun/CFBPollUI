@@ -21,10 +21,10 @@ public class RankingsController : ControllerBase
         IRatingModule ratingModule,
         ILogger<RankingsController> logger)
     {
-        _dataService = dataService;
-        _rankingsModule = rankingsModule;
-        _ratingModule = ratingModule;
-        _logger = logger;
+        _dataService = dataService ?? throw new ArgumentNullException(nameof(dataService));
+        _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
+        _ratingModule = ratingModule ?? throw new ArgumentNullException(nameof(ratingModule));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <summary>
