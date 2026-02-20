@@ -120,7 +120,8 @@ export function RankingsPage() {
         <div className="text-sm text-gray-500 text-center">
           Showing rankings for {rankingsData.season} Season,{' '}
           {weeksData?.weeks?.find((w) => w.weekNumber === rankingsData.week)?.label ??
-            `Week ${rankingsData.week}`}
+            /* Week labels shift by +1: raw week number is when games are played, label reflects rankings after that week */
+            `Week ${rankingsData.week + 1}`}
         </div>
       )}
     </div>

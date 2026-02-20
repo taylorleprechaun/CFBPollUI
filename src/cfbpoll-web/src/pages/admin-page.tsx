@@ -99,7 +99,8 @@ export function AdminPage() {
   const handleDelete = async (season: number, week: number, published: boolean) => {
     if (published) {
       const confirmed = window.confirm(
-        `This snapshot (${season} Week ${week}) is published and visible to users. Are you sure you want to delete it?`
+        // Week labels shift by +1: raw week number is when games are played, label reflects rankings after that week
+        `This snapshot (${season} Week ${week + 1}) is published and visible to users. Are you sure you want to delete it?`
       );
       if (!confirmed) return;
     }

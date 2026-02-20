@@ -33,7 +33,7 @@ describe('PreviewSection', () => {
   it('renders preview heading with season and week', () => {
     renderPreview();
 
-    expect(screen.getByText(/Preview: 2024 Week 5/)).toBeInTheDocument();
+    expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
   });
 
   it('renders Download Excel and Publish buttons', () => {
@@ -78,7 +78,7 @@ describe('PreviewSection', () => {
   it('toggles expand/collapse on heading click', () => {
     renderPreview();
 
-    const heading = screen.getByText(/Preview: 2024 Week 5/);
+    const heading = screen.getByText(/Preview: 2024 Week 6/);
 
     expect(heading.textContent).toContain('\u25BC');
 

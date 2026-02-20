@@ -35,7 +35,8 @@ export function PreviewSection({
             className="flex items-center gap-2 text-lg font-semibold text-gray-900 hover:text-gray-700"
           >
             <span className="text-sm">{previewExpanded ? '\u25BC' : '\u25B6'}</span>
-            Preview: {previewRankings.season} Week {previewRankings.week}
+            {/* Week labels shift by +1: raw week number is when games are played, label reflects rankings after that week */}
+            Preview: {previewRankings.season} Week {previewRankings.week + 1}
           </button>
           <div className="flex items-center gap-2">
             <button

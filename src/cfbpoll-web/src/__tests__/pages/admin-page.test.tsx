@@ -34,8 +34,8 @@ vi.mock('../../hooks/use-weeks', () => ({
     data: {
       season: 2024,
       weeks: [
-        { weekNumber: 1, label: 'Week 1' },
-        { weekNumber: 5, label: 'Week 5' },
+        { weekNumber: 1, label: 'Week 2' },
+        { weekNumber: 5, label: 'Week 6' },
       ],
     },
     isLoading: false,
@@ -149,7 +149,7 @@ describe('AdminPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Preview: 2024 Week 5/)).toBeInTheDocument();
+      expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
     });
   });
 
@@ -163,13 +163,13 @@ describe('AdminPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Preview: 2024 Week 5/)).toBeInTheDocument();
+      expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText(/Preview: 2024 Week 5/));
+    fireEvent.click(screen.getByText(/Preview: 2024 Week 6/));
     expect(screen.getByText(/\u25B6/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText(/Preview: 2024 Week 5/));
+    fireEvent.click(screen.getByText(/Preview: 2024 Week 6/));
     expect(screen.getByText(/\u25BC/)).toBeInTheDocument();
   });
 
@@ -389,7 +389,7 @@ describe('AdminPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Preview: 2024 Week 5/)).toBeInTheDocument();
+      expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
     });
 
     const publishButtons = screen.getAllByText('Publish');
@@ -411,7 +411,7 @@ describe('AdminPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Preview: 2024 Week 5/)).toBeInTheDocument();
+      expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
     });
 
     const publishButtons = screen.getAllByText('Publish');
@@ -538,7 +538,7 @@ describe('AdminPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Preview: 2024 Week 5/)).toBeInTheDocument();
+      expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByText('Download Excel'));
@@ -563,7 +563,7 @@ describe('AdminPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Preview: 2024 Week 5/)).toBeInTheDocument();
+      expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
     });
 
     // Expand to see Delete button
@@ -576,7 +576,7 @@ describe('AdminPage', () => {
     });
 
     await waitFor(() => {
-      expect(screen.queryByText(/Preview: 2024 Week 5/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Preview: 2024 Week 6/)).not.toBeInTheDocument();
     });
   });
 
@@ -626,7 +626,7 @@ describe('AdminPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Preview: 2024 Week 5/)).toBeInTheDocument();
+      expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByText('2024 Season'));
@@ -641,7 +641,7 @@ describe('AdminPage', () => {
     const successIcons = screen.getAllByLabelText('Success');
     expect(successIcons).toHaveLength(1);
 
-    const previewSection = screen.getByText(/Preview: 2024 Week 5/).closest('div.bg-white');
+    const previewSection = screen.getByText(/Preview: 2024 Week 6/).closest('div.bg-white');
     expect(previewSection?.querySelector('[aria-label="Success"]')).toBeInTheDocument();
   });
 });

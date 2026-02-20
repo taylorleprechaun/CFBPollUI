@@ -107,7 +107,8 @@ export function PersistedSnapshotsSection({
                           const publishKey = `snapshot-publish-${pw.season}-${pw.week}`;
                           return (
                             <tr key={`${pw.season}-${pw.week}`}>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{pw.week}</td>
+                              {/* Week labels shift by +1: raw week number is when games are played, label reflects rankings after that week */}
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{pw.week + 1}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm">
                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                                   pw.published
