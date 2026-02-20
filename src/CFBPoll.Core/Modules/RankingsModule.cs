@@ -34,7 +34,7 @@ public class RankingsModule : IRankingsModule
             .Select((kvp, index) => new { TeamName = kvp.Key, Rank = index + 1 })
             .ToDictionary(x => x.TeamName, x => x.Rank, StringComparer.OrdinalIgnoreCase);
 
-        var rankedTeams = new List<RankedTeam>();
+        List<RankedTeam> rankedTeams = [];
         var rank = 1;
 
         foreach (var kvp in sortedTeams)
@@ -105,9 +105,9 @@ public class RankingsModule : IRankingsModule
         return await _rankingsData.PublishSnapshotAsync(season, week).ConfigureAwait(false);
     }
 
-    public async Task SaveSnapshotAsync(RankingsResult rankings)
+    public async Task<bool> SaveSnapshotAsync(RankingsResult rankings)
     {
-        await _rankingsData.SaveSnapshotAsync(rankings).ConfigureAwait(false);
+        return await _rankingsData.SaveSnapshotAsync(rankings).ConfigureAwait(false);
     }
 
     private TeamDetails CalculateTeamDetails(

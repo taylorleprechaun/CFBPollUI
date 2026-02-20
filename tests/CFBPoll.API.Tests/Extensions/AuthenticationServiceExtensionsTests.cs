@@ -103,6 +103,46 @@ public class AuthenticationServiceExtensionsTests
         Assert.Equal(expectedKey.Key, actualKey.Key);
     }
 
+    [Fact]
+    public void AddJwtAuthentication_MissingSecret_ThrowsInvalidOperationException()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configValues = new Dictionary<string, string?>
+        {
+            ["Auth:Username"] = "testuser",
+            ["Auth:Issuer"] = "CFBPoll"
+        };
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(configValues)
+            .Build();
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            services.AddJwtAuthentication(configuration));
+
+        Assert.Contains("Secret", exception.Message);
+    }
+
+    [Fact]
+    public void AddJwtAuthentication_MissingIssuer_ThrowsInvalidOperationException()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configValues = new Dictionary<string, string?>
+        {
+            ["Auth:Username"] = "testuser",
+            ["Auth:Secret"] = "TestSecretKeyThatIsAtLeast32CharactersLong!"
+        };
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(configValues)
+            .Build();
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            services.AddJwtAuthentication(configuration));
+
+        Assert.Contains("Issuer", exception.Message);
+    }
+
     private static IConfiguration BuildConfiguration()
     {
         var configValues = new Dictionary<string, string?>

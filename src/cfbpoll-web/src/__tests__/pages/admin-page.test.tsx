@@ -68,18 +68,27 @@ import {
   publishSnapshot,
 } from '../../services/admin-api';
 
-function renderAdminPage() {
+async function renderAdminPage() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
 
-  return render(
+  const result = render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
         <AdminPage />
       </MemoryRouter>
     </QueryClientProvider>
   );
+
+  if (mockToken) {
+    // Wait for the initial fetchPersistedWeeks effect to settle
+    await waitFor(() => {
+      expect(fetchPersistedWeeks).toHaveBeenCalled();
+    });
+  }
+
+  return result;
 }
 
 describe('AdminPage', () => {
@@ -91,28 +100,28 @@ describe('AdminPage', () => {
   });
 
 
-  it('renders admin dashboard when authenticated', () => {
-    renderAdminPage();
+  it('renders admin dashboard when authenticated', async () => {
+    await renderAdminPage();
     expect(screen.getByText('Admin Dashboard')).toBeInTheDocument();
     expect(screen.getByText('Calculate Rankings')).toBeInTheDocument();
     expect(screen.getByText('Persisted Snapshots')).toBeInTheDocument();
   });
 
-  it('redirects to login when not authenticated', () => {
+  it('redirects to login when not authenticated', async () => {
     mockIsAuthenticated = false;
     mockToken = null;
-    renderAdminPage();
+    await renderAdminPage();
     expect(mockNavigate).toHaveBeenCalledWith('/login');
   });
 
-  it('renders season and week dropdowns', () => {
-    renderAdminPage();
+  it('renders season and week dropdowns', async () => {
+    await renderAdminPage();
     expect(screen.getByLabelText('Season')).toBeInTheDocument();
     expect(screen.getByLabelText('Week')).toBeInTheDocument();
   });
 
-  it('renders calculate button', () => {
-    renderAdminPage();
+  it('renders calculate button', async () => {
+    await renderAdminPage();
     expect(screen.getByRole('button', { name: 'Calculate' })).toBeInTheDocument();
   });
 
@@ -126,7 +135,7 @@ describe('AdminPage', () => {
       },
     });
 
-    renderAdminPage();
+    await renderAdminPage();
 
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
@@ -145,7 +154,7 @@ describe('AdminPage', () => {
       },
     });
 
-    renderAdminPage();
+    await renderAdminPage();
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -163,7 +172,7 @@ describe('AdminPage', () => {
       },
     });
 
-    renderAdminPage();
+    await renderAdminPage();
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -189,7 +198,7 @@ describe('AdminPage', () => {
       },
     });
 
-    renderAdminPage();
+    await renderAdminPage();
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -197,8 +206,8 @@ describe('AdminPage', () => {
     });
   });
 
-  it('shows empty state for persisted snapshots', () => {
-    renderAdminPage();
+  it('shows empty state for persisted snapshots', async () => {
+    await renderAdminPage();
     expect(screen.getByText('No persisted snapshots found.')).toBeInTheDocument();
   });
 
@@ -209,7 +218,7 @@ describe('AdminPage', () => {
       { season: 2023, week: 1, published: true, createdAt: '2023-09-01T00:00:00Z' },
     ]);
 
-    renderAdminPage();
+    await renderAdminPage();
 
     await waitFor(() => {
       expect(screen.getByText('2024 Season')).toBeInTheDocument();
@@ -224,7 +233,7 @@ describe('AdminPage', () => {
       { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
     ]);
 
-    renderAdminPage();
+    await renderAdminPage();
 
     await waitFor(() => {
       expect(screen.getByText('2024 Season')).toBeInTheDocument();
@@ -239,7 +248,7 @@ describe('AdminPage', () => {
       { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
     ]);
 
-    renderAdminPage();
+    await renderAdminPage();
 
     await waitFor(() => {
       expect(screen.getByText('2024 Season')).toBeInTheDocument();
@@ -260,7 +269,7 @@ describe('AdminPage', () => {
       { season: 2023, week: 1, published: true, createdAt: '2023-09-01T00:00:00Z' },
     ]);
 
-    renderAdminPage();
+    await renderAdminPage();
 
     await waitFor(() => {
       expect(screen.getByText('2024 Season')).toBeInTheDocument();
@@ -284,8 +293,8 @@ describe('AdminPage', () => {
     expect(button2023.textContent).toContain('\u25B6');
   });
 
-  it('calls logout when Log Out is clicked', () => {
-    renderAdminPage();
+  it('calls logout when Log Out is clicked', async () => {
+    await renderAdminPage();
     fireEvent.click(screen.getByText('Log Out'));
     expect(mockLogout).toHaveBeenCalled();
   });
@@ -296,7 +305,7 @@ describe('AdminPage', () => {
     ]);
     vi.mocked(deleteSnapshot).mockResolvedValue(undefined);
 
-    renderAdminPage();
+    await renderAdminPage();
 
     await waitFor(() => {
       expect(screen.getByText('Delete')).toBeInTheDocument();
@@ -316,7 +325,7 @@ describe('AdminPage', () => {
     vi.mocked(deleteSnapshot).mockResolvedValue(undefined);
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
-    renderAdminPage();
+    await renderAdminPage();
 
     await waitFor(() => {
       expect(screen.getByText('Delete')).toBeInTheDocument();
@@ -338,7 +347,7 @@ describe('AdminPage', () => {
     ]);
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
 
-    renderAdminPage();
+    await renderAdminPage();
 
     await waitFor(() => {
       expect(screen.getByText('Delete')).toBeInTheDocument();
@@ -358,7 +367,7 @@ describe('AdminPage', () => {
     ]);
     vi.mocked(publishSnapshot).mockResolvedValue(undefined);
 
-    renderAdminPage();
+    await renderAdminPage();
 
     await waitFor(() => {
       expect(screen.getByText('Publish')).toBeInTheDocument();
@@ -377,7 +386,7 @@ describe('AdminPage', () => {
     ]);
     vi.mocked(publishSnapshot).mockResolvedValue(undefined);
 
-    renderAdminPage();
+    await renderAdminPage();
 
     await waitFor(() => {
       expect(screen.getByText('Publish')).toBeInTheDocument();
@@ -396,7 +405,7 @@ describe('AdminPage', () => {
     ]);
     vi.mocked(publishSnapshot).mockRejectedValue(new Error('Snapshot not found'));
 
-    renderAdminPage();
+    await renderAdminPage();
 
     await waitFor(() => {
       expect(screen.getByText('Publish')).toBeInTheDocument();
@@ -416,7 +425,7 @@ describe('AdminPage', () => {
     });
     vi.mocked(publishSnapshot).mockResolvedValue(undefined);
 
-    renderAdminPage();
+    await renderAdminPage();
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -438,7 +447,7 @@ describe('AdminPage', () => {
     });
     vi.mocked(publishSnapshot).mockRejectedValue(new Error('Server error'));
 
-    renderAdminPage();
+    await renderAdminPage();
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -459,7 +468,7 @@ describe('AdminPage', () => {
     ]);
     vi.mocked(publishSnapshot).mockResolvedValue(undefined);
 
-    renderAdminPage();
+    await renderAdminPage();
 
     await waitFor(() => {
       expect(screen.getByText('Publish')).toBeInTheDocument();
@@ -482,7 +491,7 @@ describe('AdminPage', () => {
     ]);
     vi.mocked(downloadExport).mockResolvedValue(undefined);
 
-    renderAdminPage();
+    await renderAdminPage();
 
     await waitFor(() => {
       expect(screen.getByText('Export')).toBeInTheDocument();
@@ -498,7 +507,7 @@ describe('AdminPage', () => {
   it('shows error when calculation fails', async () => {
     vi.mocked(calculateRankings).mockRejectedValue(new Error('Network error'));
 
-    renderAdminPage();
+    await renderAdminPage();
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -506,8 +515,8 @@ describe('AdminPage', () => {
     });
   });
 
-  it('changes season and resets week on season dropdown change', () => {
-    renderAdminPage();
+  it('changes season and resets week on season dropdown change', async () => {
+    await renderAdminPage();
 
     const seasonSelect = screen.getByLabelText('Season');
     fireEvent.change(seasonSelect, { target: { value: '2023' } });
@@ -515,8 +524,8 @@ describe('AdminPage', () => {
     expect(mockSetSelectedSeason).toHaveBeenCalledWith(2023);
   });
 
-  it('changes week on week dropdown change', () => {
-    renderAdminPage();
+  it('changes week on week dropdown change', async () => {
+    await renderAdminPage();
 
     const weekSelect = screen.getByLabelText('Week');
     fireEvent.change(weekSelect, { target: { value: '1' } });
@@ -530,7 +539,7 @@ describe('AdminPage', () => {
     ]);
     vi.mocked(deleteSnapshot).mockRejectedValue(new Error('Delete failed'));
 
-    renderAdminPage();
+    await renderAdminPage();
 
     await waitFor(() => {
       expect(screen.getByText('Delete')).toBeInTheDocument();
@@ -549,7 +558,7 @@ describe('AdminPage', () => {
     ]);
     vi.mocked(downloadExport).mockRejectedValue(new Error('Export failed'));
 
-    renderAdminPage();
+    await renderAdminPage();
 
     await waitFor(() => {
       expect(screen.getByText('Export')).toBeInTheDocument();
@@ -569,7 +578,7 @@ describe('AdminPage', () => {
     });
     vi.mocked(downloadExport).mockResolvedValue(undefined);
 
-    renderAdminPage();
+    await renderAdminPage();
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -593,7 +602,7 @@ describe('AdminPage', () => {
     ]);
     vi.mocked(deleteSnapshot).mockResolvedValue(undefined);
 
-    renderAdminPage();
+    await renderAdminPage();
 
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
@@ -619,7 +628,7 @@ describe('AdminPage', () => {
     ]);
     vi.mocked(publishSnapshot).mockResolvedValue(undefined);
 
-    renderAdminPage();
+    await renderAdminPage();
 
     await waitFor(() => {
       expect(screen.getByText('2024 Season')).toBeInTheDocument();
@@ -642,7 +651,7 @@ describe('AdminPage', () => {
   it('shows error when fetching persisted weeks fails', async () => {
     vi.mocked(fetchPersistedWeeks).mockRejectedValue(new Error('Server unavailable'));
 
-    renderAdminPage();
+    await renderAdminPage();
 
     await waitFor(() => {
       expect(screen.getByText(/Server unavailable/)).toBeInTheDocument();
@@ -659,7 +668,7 @@ describe('AdminPage', () => {
     ]);
     vi.mocked(publishSnapshot).mockResolvedValue(undefined);
 
-    renderAdminPage();
+    await renderAdminPage();
 
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 

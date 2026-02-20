@@ -225,106 +225,230 @@ public class CachingCFBDataServiceTests
     }
 
     [Fact]
-    public async Task GetSeasonDataAsync_ReturnsCachedData_WhenCacheHit()
+    public async Task GetFBSTeamsAsync_ReturnsCachedData_WhenCacheHit()
     {
-        var cachedData = new SeasonData
+        var cachedData = new List<FBSTeam>
         {
-            Season = 2024,
-            Week = 5,
-            Teams = new Dictionary<string, TeamInfo>()
+            new FBSTeam { Name = "Alabama", Conference = "SEC" }
         };
 
-        _mockCache.Setup(x => x.GetAsync<SeasonData>("seasonData_2024_week_5"))
+        _mockCache.Setup(x => x.GetAsync<List<FBSTeam>>("teams_2024"))
             .ReturnsAsync(cachedData);
+
+        var result = await _service.GetFBSTeamsAsync(2024);
+
+        Assert.Single(result);
+        Assert.Equal("Alabama", result.First().Name);
+        _mockInnerService.Verify(x => x.GetFBSTeamsAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetFBSTeamsAsync_FetchesFromInnerService_WhenCacheMiss()
+    {
+        var apiData = new List<FBSTeam>
+        {
+            new FBSTeam { Name = "Ohio State", Conference = "Big Ten" }
+        };
+
+        _mockCache.Setup(x => x.GetAsync<List<FBSTeam>>("teams_2024"))
+            .ReturnsAsync((List<FBSTeam>?)null);
+        _mockInnerService.Setup(x => x.GetFBSTeamsAsync(2024))
+            .ReturnsAsync(apiData);
+
+        var result = await _service.GetFBSTeamsAsync(2024);
+
+        Assert.Single(result);
+        _mockInnerService.Verify(x => x.GetFBSTeamsAsync(2024), Times.Once);
+        _mockCache.Verify(x => x.SetAsync("teams_2024", It.IsAny<List<FBSTeam>>(), It.IsAny<DateTime>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetGamesAsync_ReturnsCachedData_WhenCacheHit()
+    {
+        var cachedData = new List<Game>
+        {
+            new Game { GameID = 1, HomeTeam = "Alabama", AwayTeam = "Georgia", HomePoints = 28, AwayPoints = 24 }
+        };
+
+        _mockCache.Setup(x => x.GetAsync<List<Game>>("games_2024_regular"))
+            .ReturnsAsync(cachedData);
+
+        var result = await _service.GetGamesAsync(2024, "regular");
+
+        Assert.Single(result);
+        _mockInnerService.Verify(x => x.GetGamesAsync(It.IsAny<int>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetGamesAsync_FetchesFromInnerService_WhenCacheMiss()
+    {
+        var apiData = new List<Game>
+        {
+            new Game { GameID = 1, HomeTeam = "Ohio State", AwayTeam = "Michigan", HomePoints = 42, AwayPoints = 35 }
+        };
+
+        _mockCache.Setup(x => x.GetAsync<List<Game>>("games_2024_regular"))
+            .ReturnsAsync((List<Game>?)null);
+        _mockInnerService.Setup(x => x.GetGamesAsync(2024, "regular"))
+            .ReturnsAsync(apiData);
+
+        var result = await _service.GetGamesAsync(2024, "regular");
+
+        Assert.Single(result);
+        _mockInnerService.Verify(x => x.GetGamesAsync(2024, "regular"), Times.Once);
+        _mockCache.Verify(x => x.SetAsync("games_2024_regular", It.IsAny<List<Game>>(), It.IsAny<DateTime>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetGamesAsync_UsesDifferentCacheKeys_ForDifferentSeasonTypes()
+    {
+        _mockCache.Setup(x => x.GetAsync<List<Game>>(It.IsAny<string>()))
+            .ReturnsAsync((List<Game>?)null);
+        _mockInnerService.Setup(x => x.GetGamesAsync(2024, It.IsAny<string>()))
+            .ReturnsAsync(new List<Game>());
+
+        await _service.GetGamesAsync(2024, "regular");
+        await _service.GetGamesAsync(2024, "postseason");
+
+        _mockCache.Verify(x => x.GetAsync<List<Game>>("games_2024_regular"), Times.Once);
+        _mockCache.Verify(x => x.GetAsync<List<Game>>("games_2024_postseason"), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetSeasonTeamStatsAsync_ReturnsCachedData_WhenCacheHit()
+    {
+        var cachedData = new Dictionary<string, List<TeamStat>>
+        {
+            ["Alabama"] = [new TeamStat { StatName = "rushingYards", StatValue = new StatValue { Double = 250.0 } }]
+        };
+
+        _mockCache.Setup(x => x.GetAsync<Dictionary<string, List<TeamStat>>>("seasonStats_2024_week_5"))
+            .ReturnsAsync(cachedData);
+
+        var result = await _service.GetSeasonTeamStatsAsync(2024, 5);
+
+        Assert.Single(result);
+        _mockInnerService.Verify(x => x.GetSeasonTeamStatsAsync(It.IsAny<int>(), It.IsAny<int?>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetSeasonTeamStatsAsync_FetchesFromInnerService_WhenCacheMiss()
+    {
+        var apiData = new Dictionary<string, IEnumerable<TeamStat>>
+        {
+            ["Ohio State"] = new List<TeamStat> { new TeamStat { StatName = "passingYards", StatValue = new StatValue { Double = 300.0 } } }
+        };
+
+        _mockCache.Setup(x => x.GetAsync<Dictionary<string, List<TeamStat>>>("seasonStats_2024_week_5"))
+            .ReturnsAsync((Dictionary<string, List<TeamStat>>?)null);
+        _mockInnerService.Setup(x => x.GetSeasonTeamStatsAsync(2024, 5))
+            .ReturnsAsync(apiData);
+
+        var result = await _service.GetSeasonTeamStatsAsync(2024, 5);
+
+        Assert.Single(result);
+        _mockInnerService.Verify(x => x.GetSeasonTeamStatsAsync(2024, 5), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetSeasonTeamStatsAsync_UsesCorrectKey_WhenEndWeekIsNull()
+    {
+        _mockCache.Setup(x => x.GetAsync<Dictionary<string, List<TeamStat>>>("seasonStats_2024"))
+            .ReturnsAsync((Dictionary<string, List<TeamStat>>?)null);
+        _mockInnerService.Setup(x => x.GetSeasonTeamStatsAsync(2024, null))
+            .ReturnsAsync(new Dictionary<string, IEnumerable<TeamStat>>());
+
+        await _service.GetSeasonTeamStatsAsync(2024, null);
+
+        _mockCache.Verify(x => x.GetAsync<Dictionary<string, List<TeamStat>>>("seasonStats_2024"), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetSeasonDataAsync_FetchesComponentsIndividually()
+    {
+        SetupComponentMocks(2024, 5);
 
         var result = await _service.GetSeasonDataAsync(2024, 5);
 
         Assert.Equal(2024, result.Season);
         Assert.Equal(5, result.Week);
-        _mockInnerService.Verify(x => x.GetSeasonDataAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+
+        _mockInnerService.Verify(x => x.GetFBSTeamsAsync(2024), Times.Once);
+        _mockInnerService.Verify(x => x.GetGamesAsync(2024, "regular"), Times.Once);
+        _mockInnerService.Verify(x => x.GetGamesAsync(2024, "postseason"), Times.Once);
+        _mockInnerService.Verify(x => x.GetAdvancedGameStatsAsync(2024, "regular"), Times.Once);
     }
 
     [Fact]
-    public async Task GetSeasonDataAsync_FetchesFromInnerService_WhenCacheMiss()
+    public async Task GetSeasonDataAsync_DoesNotCacheAssembledResult()
     {
-        var apiData = new SeasonData
+        SetupComponentMocks(2024, 5);
+
+        await _service.GetSeasonDataAsync(2024, 5);
+
+        _mockCache.Verify(x => x.SetAsync(It.Is<string>(k => k.StartsWith("seasonData_")), It.IsAny<SeasonData>(), It.IsAny<DateTime>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetSeasonDataAsync_FetchesPostseasonAdvancedStats_WhenWeekExceedsMaxRegular()
+    {
+        var teams = new List<FBSTeam> { new FBSTeam { Name = "Alabama" } };
+        var regularGames = new List<Game>
         {
-            Season = 2024,
-            Week = 5,
-            Teams = new Dictionary<string, TeamInfo>()
+            new Game { GameID = 1, Week = 1, HomeTeam = "Alabama", AwayTeam = "Georgia", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" }
+        };
+        var postseasonGames = new List<Game>
+        {
+            new Game { GameID = 2, Week = 16, HomeTeam = "Alabama", AwayTeam = "Ohio State", HomePoints = 35, AwayPoints = 28, SeasonType = "postseason" }
         };
 
-        _mockCache.Setup(x => x.GetAsync<SeasonData>("seasonData_2024_week_5"))
-            .ReturnsAsync((SeasonData?)null);
-        _mockInnerService.Setup(x => x.GetSeasonDataAsync(2024, 5))
-            .ReturnsAsync(apiData);
+        SetupCacheMiss();
+        _mockInnerService.Setup(x => x.GetFBSTeamsAsync(2024)).ReturnsAsync(teams);
+        _mockInnerService.Setup(x => x.GetGamesAsync(2024, "regular")).ReturnsAsync(regularGames);
+        _mockInnerService.Setup(x => x.GetGamesAsync(2024, "postseason")).ReturnsAsync(postseasonGames);
+        _mockInnerService.Setup(x => x.GetAdvancedGameStatsAsync(2024, It.IsAny<string>())).ReturnsAsync(new List<AdvancedGameStats>());
+        _mockInnerService.Setup(x => x.GetSeasonTeamStatsAsync(2024, It.IsAny<int?>())).ReturnsAsync(new Dictionary<string, IEnumerable<TeamStat>>());
+
+        await _service.GetSeasonDataAsync(2024, 16);
+
+        _mockInnerService.Verify(x => x.GetAdvancedGameStatsAsync(2024, "postseason"), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetSeasonDataAsync_DoesNotFetchPostseasonAdvancedStats_WhenWeekIsRegular()
+    {
+        SetupComponentMocks(2024, 5);
+
+        await _service.GetSeasonDataAsync(2024, 5);
+
+        _mockInnerService.Verify(x => x.GetAdvancedGameStatsAsync(2024, "postseason"), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetSeasonDataAsync_AssemblesTeamsCorrectly()
+    {
+        var teams = new List<FBSTeam>
+        {
+            new FBSTeam { Name = "Alabama", Conference = "SEC", Color = "#9E1B32" },
+            new FBSTeam { Name = "Georgia", Conference = "SEC", Color = "#BA0C2F" }
+        };
+        var regularGames = new List<Game>
+        {
+            new Game { GameID = 1, Week = 1, HomeTeam = "Alabama", AwayTeam = "Georgia", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" }
+        };
+
+        SetupCacheMiss();
+        _mockInnerService.Setup(x => x.GetFBSTeamsAsync(2024)).ReturnsAsync(teams);
+        _mockInnerService.Setup(x => x.GetGamesAsync(2024, "regular")).ReturnsAsync(regularGames);
+        _mockInnerService.Setup(x => x.GetGamesAsync(2024, "postseason")).ReturnsAsync(new List<Game>());
+        _mockInnerService.Setup(x => x.GetAdvancedGameStatsAsync(2024, "regular")).ReturnsAsync(new List<AdvancedGameStats>());
+        _mockInnerService.Setup(x => x.GetSeasonTeamStatsAsync(2024, 5)).ReturnsAsync(new Dictionary<string, IEnumerable<TeamStat>>());
 
         var result = await _service.GetSeasonDataAsync(2024, 5);
 
-        Assert.Equal(2024, result.Season);
-        _mockInnerService.Verify(x => x.GetSeasonDataAsync(2024, 5), Times.Once);
-        _mockCache.Verify(x => x.SetAsync("seasonData_2024_week_5", It.IsAny<SeasonData>(), It.IsAny<DateTime>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task GetSeasonDataAsync_UsesLongExpiration_ForPastSeasons()
-    {
-        var pastSeason = DateTime.Now.Year - 1;
-        var apiData = new SeasonData { Season = pastSeason, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
-
-        _mockCache.Setup(x => x.GetAsync<SeasonData>($"seasonData_{pastSeason}_week_5"))
-            .ReturnsAsync((SeasonData?)null);
-        _mockInnerService.Setup(x => x.GetSeasonDataAsync(pastSeason, 5))
-            .ReturnsAsync(apiData);
-
-        DateTime capturedExpiration = default;
-        _mockCache.Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<SeasonData>(), It.IsAny<DateTime>()))
-            .Callback<string, SeasonData, DateTime>((_, _, exp) => capturedExpiration = exp)
-            .ReturnsAsync(true);
-
-        await _service.GetSeasonDataAsync(pastSeason, 5);
-
-        var daysUntilExpiration = (capturedExpiration - DateTime.UtcNow).TotalDays;
-        Assert.True(daysUntilExpiration > 300);
-    }
-
-    [Fact]
-    public async Task GetSeasonDataAsync_UsesShortExpiration_ForCurrentSeason()
-    {
-        var currentSeason = DateTime.Now.Year;
-        var apiData = new SeasonData { Season = currentSeason, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
-
-        _mockCache.Setup(x => x.GetAsync<SeasonData>($"seasonData_{currentSeason}_week_5"))
-            .ReturnsAsync((SeasonData?)null);
-        _mockInnerService.Setup(x => x.GetSeasonDataAsync(currentSeason, 5))
-            .ReturnsAsync(apiData);
-
-        DateTime capturedExpiration = default;
-        _mockCache.Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<SeasonData>(), It.IsAny<DateTime>()))
-            .Callback<string, SeasonData, DateTime>((_, _, exp) => capturedExpiration = exp)
-            .ReturnsAsync(true);
-
-        await _service.GetSeasonDataAsync(currentSeason, 5);
-
-        var hoursUntilExpiration = (capturedExpiration - DateTime.UtcNow).TotalHours;
-        Assert.True(hoursUntilExpiration <= 24);
-    }
-
-    [Fact]
-    public async Task GetSeasonDataAsync_UsesDifferentCacheKeys_ForDifferentWeeks()
-    {
-        var apiData = new SeasonData { Season = 2024, Week = 1, Teams = new Dictionary<string, TeamInfo>() };
-
-        _mockCache.Setup(x => x.GetAsync<SeasonData>(It.IsAny<string>()))
-            .ReturnsAsync((SeasonData?)null);
-        _mockInnerService.Setup(x => x.GetSeasonDataAsync(2024, It.IsAny<int>()))
-            .ReturnsAsync(apiData);
-
-        await _service.GetSeasonDataAsync(2024, 1);
-        await _service.GetSeasonDataAsync(2024, 5);
-
-        _mockCache.Verify(x => x.GetAsync<SeasonData>("seasonData_2024_week_1"), Times.Once);
-        _mockCache.Verify(x => x.GetAsync<SeasonData>("seasonData_2024_week_5"), Times.Once);
+        Assert.Equal(2, result.Teams.Count);
+        Assert.Equal(1, result.Teams["Alabama"].Wins);
+        Assert.Equal(1, result.Teams["Georgia"].Losses);
     }
 
     [Fact]
@@ -544,5 +668,33 @@ public class CachingCFBDataServiceTests
 
         _mockCache.Verify(x => x.GetAsync<List<AdvancedGameStats>>("advancedGameStats_2024_regular"), Times.Once);
         _mockCache.Verify(x => x.GetAsync<List<AdvancedGameStats>>("advancedGameStats_2024_postseason"), Times.Once);
+    }
+
+    private void SetupCacheMiss()
+    {
+        _mockCache.Setup(x => x.GetAsync<List<FBSTeam>>(It.IsAny<string>())).ReturnsAsync((List<FBSTeam>?)null);
+        _mockCache.Setup(x => x.GetAsync<List<Game>>(It.IsAny<string>())).ReturnsAsync((List<Game>?)null);
+        _mockCache.Setup(x => x.GetAsync<List<AdvancedGameStats>>(It.IsAny<string>())).ReturnsAsync((List<AdvancedGameStats>?)null);
+        _mockCache.Setup(x => x.GetAsync<Dictionary<string, List<TeamStat>>>(It.IsAny<string>())).ReturnsAsync((Dictionary<string, List<TeamStat>>?)null);
+    }
+
+    private void SetupComponentMocks(int season, int week)
+    {
+        var teams = new List<FBSTeam> { new FBSTeam { Name = "Alabama", Conference = "SEC" } };
+        var regularGames = new List<Game>
+        {
+            new Game { GameID = 1, Week = 1, HomeTeam = "Alabama", AwayTeam = "Georgia", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" },
+            new Game { GameID = 2, Week = 10, HomeTeam = "Alabama", AwayTeam = "LSU", HomePoints = 35, AwayPoints = 21, SeasonType = "regular" }
+        };
+        var postseasonGames = new List<Game>();
+        var advancedStats = new List<AdvancedGameStats>();
+        var seasonStats = new Dictionary<string, IEnumerable<TeamStat>>();
+
+        SetupCacheMiss();
+        _mockInnerService.Setup(x => x.GetFBSTeamsAsync(season)).ReturnsAsync(teams);
+        _mockInnerService.Setup(x => x.GetGamesAsync(season, "regular")).ReturnsAsync(regularGames);
+        _mockInnerService.Setup(x => x.GetGamesAsync(season, "postseason")).ReturnsAsync(postseasonGames);
+        _mockInnerService.Setup(x => x.GetAdvancedGameStatsAsync(season, "regular")).ReturnsAsync(advancedStats);
+        _mockInnerService.Setup(x => x.GetSeasonTeamStatsAsync(season, week)).ReturnsAsync(seasonStats);
     }
 }

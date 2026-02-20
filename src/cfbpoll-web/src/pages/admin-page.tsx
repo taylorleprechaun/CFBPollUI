@@ -222,15 +222,6 @@ export function AdminPage() {
 
   return (
     <div className="space-y-6">
-      <style>{`
-        @keyframes fadeInOut {
-          0% { opacity: 0; transform: scale(0.5); }
-          15% { opacity: 1; transform: scale(1); }
-          70% { opacity: 1; transform: scale(1); }
-          100% { opacity: 0; transform: scale(0.5); }
-        }
-      `}</style>
-
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
         <button

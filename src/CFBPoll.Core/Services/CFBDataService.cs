@@ -108,6 +108,87 @@ public class CFBDataService : ICFBDataService
         return weeks.OrderBy(w => w.Week);
     }
 
+    public async Task<IEnumerable<FBSTeam>> GetFBSTeamsAsync(int season)
+    {
+        try
+        {
+            var teamsResponse = await _client.Teams.Fbs.GetAsync(config =>
+            {
+                config.QueryParameters.Year = season;
+            });
+
+            if (teamsResponse is null)
+                return [];
+
+            return teamsResponse
+                .Where(t => !string.IsNullOrEmpty(t.School))
+                .Select(t => new FBSTeam
+                {
+                    AltColor = t.AlternateColor ?? string.Empty,
+                    Color = t.Color ?? string.Empty,
+                    Conference = t.Conference ?? string.Empty,
+                    Division = t.Division ?? string.Empty,
+                    LogoURL = t.Logos?.FirstOrDefault() ?? string.Empty,
+                    Name = t.School!
+                });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to fetch FBS teams for season {Season}", season);
+            return [];
+        }
+    }
+
+    public async Task<IEnumerable<Game>> GetGamesAsync(int season, string seasonType)
+    {
+        try
+        {
+            var seasonTypeEnum = seasonType.Equals("regular", _scoic)
+                ? ApiModels.SeasonType.Regular
+                : ApiModels.SeasonType.Postseason;
+
+            var response = await _client.Games.GetAsync(config =>
+            {
+                config.QueryParameters.Year = season;
+                config.QueryParameters.SeasonTypeAsSeasonType = seasonTypeEnum;
+            });
+
+            if (response is null)
+                return [];
+
+            return response
+                .Where(g => g.HomePoints.HasValue && g.AwayPoints.HasValue)
+                .Select(g => MapGame(g, seasonType));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to fetch games for season {Season}, type {SeasonType}", season, seasonType);
+            return [];
+        }
+    }
+
+    public async Task<IDictionary<string, IEnumerable<TeamStat>>> GetSeasonTeamStatsAsync(int season, int? endWeek)
+    {
+        try
+        {
+            var response = await _client.Stats.Season.GetAsync(config =>
+            {
+                config.QueryParameters.Year = season;
+                config.QueryParameters.EndWeek = endWeek;
+            });
+
+            if (response is null)
+                return new Dictionary<string, IEnumerable<TeamStat>>();
+
+            return MapTeamStats(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to fetch season team stats for season {Season}, endWeek {EndWeek}", season, endWeek);
+            return new Dictionary<string, IEnumerable<TeamStat>>();
+        }
+    }
+
     public async Task<IEnumerable<Conference>> GetConferencesAsync()
     {
         var conferencesResponse = await _client.Conferences.GetAsync();

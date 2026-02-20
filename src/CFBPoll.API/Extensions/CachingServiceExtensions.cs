@@ -1,4 +1,5 @@
 using CFBPoll.Core.Caching;
+using CFBPoll.Core.Data;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Modules;
 using CFBPoll.Core.Options;
@@ -14,7 +15,8 @@ public static class CachingServiceExtensions
     {
         services.Configure<CacheOptions>(configuration.GetSection(CacheOptions.SectionName));
 
-        services.AddSingleton<IPersistentCache, FilePersistentCache>();
+        services.AddSingleton<ICacheData, CacheData>();
+        services.AddSingleton<IPersistentCache, CacheModule>();
 
         string apiKey = configuration["CollegeFootballData:ApiKey"]
             ?? throw new InvalidOperationException(
@@ -42,6 +44,12 @@ public static class CachingServiceExtensions
         });
 
         return services;
+    }
+
+    public static async Task InitializeCacheAsync(this WebApplication app)
+    {
+        var cacheData = app.Services.GetRequiredService<ICacheData>();
+        await cacheData.InitializeAsync().ConfigureAwait(false);
     }
 
     public static IServiceCollection AddRankingsModule(this IServiceCollection services)

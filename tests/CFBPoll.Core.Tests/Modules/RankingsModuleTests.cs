@@ -560,9 +560,11 @@ public class RankingsModuleTests
     public async Task SaveSnapshotAsync_DelegatesToRankingsData()
     {
         var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+        _mockRankingsData.Setup(x => x.SaveSnapshotAsync(rankings)).ReturnsAsync(true);
 
-        await _rankingsModule.SaveSnapshotAsync(rankings);
+        var result = await _rankingsModule.SaveSnapshotAsync(rankings);
 
+        Assert.True(result);
         _mockRankingsData.Verify(x => x.SaveSnapshotAsync(rankings), Times.Once);
     }
 

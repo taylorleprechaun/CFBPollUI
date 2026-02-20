@@ -34,9 +34,8 @@ public class AdminModule : IAdminModule
     {
         _logger.LogInformation("Calculating rankings for season {Season}, week {Week}", season, week);
 
-        var cacheKey = $"seasonData_{season}_week_{week}";
-        await _cache.RemoveAsync(cacheKey).ConfigureAwait(false);
-        _logger.LogDebug("Cleared cache for {CacheKey} to force fresh API data", cacheKey);
+        await ClearSeasonCacheAsync(season, week).ConfigureAwait(false);
+        _logger.LogDebug("Cleared component caches for season {Season} to force fresh API data", season);
 
         var seasonData = await _dataService.GetSeasonDataAsync(season, week).ConfigureAwait(false);
         var ratings = _ratingModule.RateTeams(seasonData);
@@ -88,5 +87,24 @@ public class AdminModule : IAdminModule
     {
         _logger.LogInformation("Publishing snapshot for season {Season}, week {Week}", season, week);
         return await _rankingsModule.PublishSnapshotAsync(season, week).ConfigureAwait(false);
+    }
+
+    private async Task ClearSeasonCacheAsync(int season, int week)
+    {
+        var cacheKeys = new[]
+        {
+            $"teams_{season}",
+            $"games_{season}_regular",
+            $"games_{season}_postseason",
+            $"advancedGameStats_{season}_regular",
+            $"advancedGameStats_{season}_postseason",
+            $"seasonStats_{season}",
+            $"seasonStats_{season}_week_{week}"
+        };
+
+        foreach (var key in cacheKeys)
+        {
+            await _cache.RemoveAsync(key).ConfigureAwait(false);
+        }
     }
 }
