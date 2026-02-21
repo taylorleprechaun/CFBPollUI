@@ -1,12 +1,14 @@
-import type { z } from 'zod';
-import { ValidationError } from '../lib/api-error';
+import { API_BASE_URL } from '../lib/config';
+import { parseResponse } from '../lib/parse-response';
 import { safeFetch } from '../lib/safe-fetch';
 import {
+  AllTimeResponseSchema,
   ConferencesResponseSchema,
   RankingsResponseSchema,
   SeasonsResponseSchema,
   TeamDetailResponseSchema,
   WeeksResponseSchema,
+  type AllTimeResponse,
   type ConferencesResponse,
   type RankingsResponse,
   type SeasonsResponse,
@@ -14,62 +16,39 @@ import {
   type WeeksResponse,
 } from '../schemas';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:5001';
-
-async function fetchWithValidation<T>(
-  url: string,
-  schema: z.ZodSchema<T>
-): Promise<T> {
-  const response = await safeFetch(url);
-
-  const data = await response.json();
-  const result = schema.safeParse(data);
-
-  if (!result.success) {
-    throw new ValidationError(result.error);
-  }
-
-  return result.data;
-}
-
 export async function fetchSeasons(): Promise<SeasonsResponse> {
-  return fetchWithValidation(
-    `${API_BASE_URL}/api/v1/seasons`,
-    SeasonsResponseSchema
-  );
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/seasons`);
+  return parseResponse(response, SeasonsResponseSchema);
 }
 
 export async function fetchWeeks(season: number): Promise<WeeksResponse> {
-  return fetchWithValidation(
-    `${API_BASE_URL}/api/v1/seasons/${season}/weeks`,
-    WeeksResponseSchema
-  );
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/seasons/${season}/weeks`);
+  return parseResponse(response, WeeksResponseSchema);
 }
 
 export async function fetchRankings(
   season: number,
   week: number
 ): Promise<RankingsResponse> {
-  return fetchWithValidation(
-    `${API_BASE_URL}/api/v1/rankings?season=${season}&week=${week}`,
-    RankingsResponseSchema
-  );
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/rankings?season=${season}&week=${week}`);
+  return parseResponse(response, RankingsResponseSchema);
 }
 
 export async function fetchConferences(): Promise<ConferencesResponse> {
-  return fetchWithValidation(
-    `${API_BASE_URL}/api/v1/conferences`,
-    ConferencesResponseSchema
-  );
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/conferences`);
+  return parseResponse(response, ConferencesResponseSchema);
 }
 
 export async function fetchAvailableWeeks(
   season: number
 ): Promise<WeeksResponse> {
-  return fetchWithValidation(
-    `${API_BASE_URL}/api/v1/rankings/available-weeks?season=${season}`,
-    WeeksResponseSchema
-  );
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/rankings/available-weeks?season=${season}`);
+  return parseResponse(response, WeeksResponseSchema);
+}
+
+export async function fetchAllTimeRankings(): Promise<AllTimeResponse> {
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/all-time`);
+  return parseResponse(response, AllTimeResponseSchema);
 }
 
 export async function fetchTeamDetail(
@@ -77,8 +56,8 @@ export async function fetchTeamDetail(
   week: number,
   teamName: string
 ): Promise<TeamDetailResponse> {
-  return fetchWithValidation(
-    `${API_BASE_URL}/api/v1/teams/${encodeURIComponent(teamName)}?season=${season}&week=${week}`,
-    TeamDetailResponseSchema
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/teams/${encodeURIComponent(teamName)}?season=${season}&week=${week}`
   );
+  return parseResponse(response, TeamDetailResponseSchema);
 }

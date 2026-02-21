@@ -29,7 +29,15 @@ describe('Layout', () => {
     expect(screen.getByText('CFB Poll')).toBeInTheDocument();
     expect(screen.getByText('Home')).toBeInTheDocument();
     expect(screen.getByText('Rankings')).toBeInTheDocument();
+    expect(screen.getByText('All-Time')).toBeInTheDocument();
     expect(screen.getByText('Team Details')).toBeInTheDocument();
+  });
+
+  it('renders All-Time nav link with correct href', () => {
+    renderLayout();
+
+    const allTimeLink = screen.getByText('All-Time');
+    expect(allTimeLink).toHaveAttribute('href', '/all-time');
   });
 
   it('shows lock icon linking to login when not authenticated', () => {

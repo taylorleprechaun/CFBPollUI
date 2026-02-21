@@ -18,13 +18,16 @@ This was created using Claude Code with a lot of guidelines to follow my code st
 
 ## TODO
 
-Last Updated 2/17/2026
+Last Updated 2/21/2026
 - I have only recently started to learn React and this application uses it for the UI. I had Claude create it all following the best practices that I could find online, but I don't know for certain that everything is correct. As I learn more I know I will end up refactoring that code.
+- Finish back-filling rankings. My original repo started mid-2018 and has gone since then. Any season before that never had "official" rankings, and the algorithm has changed a bit over time so I need to publish real rankings back-dated to 2002 (the start of the data being used here).
+- Add a page with my own version of [The Chart](http://cfbcomparer.com/ap-poll-leaders).
 
 ## Features
 
 - **Custom Ranking Algorithm**: Evaluates teams based on wins, strength of schedule, and margin of victory
 - **Team Details**: Drill into individual teams to see schedule with opponent rankings, clickable opponent links, and expandable record breakdowns by location and opponent tier
+- **All-Time Rankings**: View the best teams, worst teams, and hardest schedules across all seasons with sortable tables
 - **Historical Data**: Access rankings from 2002 to present
 - **Interactive UI**: Sortable rankings table with team logos and colors
 - **Admin Dashboard**: JWT-authenticated admin panel to calculate, preview, and publish rankings with a two-step draft/publish workflow
@@ -73,24 +76,30 @@ The backend enforces a strict layered architecture: **Controllers &rarr; Modules
 ```
 Controllers (Presentation)         Modules (Business Logic)          Data Layer
 -----------------------------      --------------------------        ----------
-AuthController                     AuthModule
-  -> IAuthModule                     -> IOptions<AuthOptions>
-
-RankingsController                 RankingsModule
-  -> ICFBDataService                 -> IRankingsData               RankingsData
-  -> IRankingsModule                 -> ISeasonModule                 -> SQLite
-  -> IRatingModule
-                                   CacheModule (IPersistentCache)    CacheData
-                                     -> ICacheData                     -> SQLite
-TeamsController                    TeamsModule
-  -> ITeamsModule                    -> ICFBDataService
-                                     -> IRankingsModule
-                                     -> IRatingModule
-
 AdminController                    AdminModule
   -> IAdminModule                    -> ICFBDataService
                                      -> IExcelExportModule
                                      -> IPersistentCache
+                                     -> IRankingsModule
+                                     -> IRatingModule
+
+AllTimeController                  AllTimeModule
+  -> IAllTimeModule                  -> ICFBDataService
+                                     -> IRankingsModule
+
+AuthController                     AuthModule
+  -> IAuthModule                     -> IOptions<AuthOptions>
+
+                                   CacheModule (IPersistentCache)    CacheData
+                                     -> ICacheData                     -> SQLite
+                                     
+RankingsController                 RankingsModule
+  -> ICFBDataService                 -> IRankingsData               RankingsData
+  -> IRankingsModule                 -> ISeasonModule                 -> SQLite
+  -> IRatingModule
+
+TeamsController                    TeamsModule
+  -> ITeamsModule                    -> ICFBDataService
                                      -> IRankingsModule
                                      -> IRatingModule
 ```
@@ -189,6 +198,7 @@ The frontend runs at `http://localhost:5173`.
 
 | Endpoint | Description |
 |----------|-------------|
+| `GET /api/v1/all-time` | Returns all-time rankings: best teams, worst teams, and hardest schedules |
 | `GET /api/v1/conferences` | Returns FBS conferences |
 | `GET /api/v1/rankings?season={s}&week={w}` | Returns ranked teams for the specified week |
 | `GET /api/v1/rankings/available-weeks?season={s}` | Returns published weeks for a season |
@@ -214,26 +224,26 @@ The frontend runs at `http://localhost:5173`.
 
 ## Testing
 
-The project includes 702 unit and integration tests across backend and frontend.
+The project includes 786 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (389 tests)
+# Backend tests (428 tests)
 dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (313 tests)
+# Frontend tests (358 tests)
 cd src/cfbpoll-web
 npm test
 ```
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-389-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-313-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-428-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-358-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
 ![Web Coverage](https://img.shields.io/badge/Web_Coverage-98%25-brightgreen)
@@ -242,7 +252,7 @@ npm test
 |---------|---------------|-----------------|
 | CFBPoll.Core | 99% | 90% |
 | CFBPoll.API | 100% | 94% |
-| cfbpoll-web | 98% | 92% |
+| cfbpoll-web | 98% | 90% |
 
 **Excluded from coverage:**
 - `RatingModule` - Proprietary rating algorithm, not included in the repository. Tests are maintained locally.

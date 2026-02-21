@@ -4,7 +4,7 @@ export async function safeFetch(url: string, options?: RequestInit): Promise<Res
   let response: Response;
 
   try {
-    response = options ? await fetch(url, options) : await fetch(url);
+    response = await fetch(url, options);
   } catch (error) {
     throw new ApiError(
       error instanceof Error ? error.message : 'Network request failed',

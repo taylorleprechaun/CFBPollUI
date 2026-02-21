@@ -8,21 +8,22 @@ import {
   type ActionFeedback,
 } from '../components/admin';
 import { ErrorAlert } from '../components/error';
+import { ConfirmModal } from '../components/ui/confirm-modal';
 import {
   useCalculateRankings,
   useDeleteSnapshot,
   useExportSnapshot,
   usePublishSnapshot,
 } from '../hooks/use-admin-mutations';
+import { useDocumentTitle } from '../hooks/use-document-title';
 import { usePersistedWeeks } from '../hooks/use-persisted-weeks';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
+import { getWeekLabel } from '../lib/week-utils';
 import type { CalculateResponse } from '../schemas/admin';
 
 export function AdminPage() {
-  useEffect(() => {
-    document.title = 'Admin - CFB Poll';
-  }, []);
+  useDocumentTitle('Admin - CFB Poll');
 
   const { token, logout } = useAuth();
 
@@ -51,6 +52,7 @@ export function AdminPage() {
   const [actionFeedback, setActionFeedback] = useState<ActionFeedback | null>(null);
   const [collapsedSeasons, setCollapsedSeasons] = useState<Set<number>>(new Set());
   const [initialCollapseApplied, setInitialCollapseApplied] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ season: number; week: number } | null>(null);
 
   useEffect(() => {
     if (persistedWeeks?.length && !initialCollapseApplied) {
@@ -98,14 +100,15 @@ export function AdminPage() {
 
   const handleDelete = async (season: number, week: number, published: boolean) => {
     if (published) {
-      const confirmed = window.confirm(
-        // Week labels shift by +1: raw week number is when games are played, label reflects rankings after that week
-        `This snapshot (${season} Week ${week + 1}) is published and visible to users. Are you sure you want to delete it?`
-      );
-      if (!confirmed) return;
+      setDeleteConfirm({ season, week });
+      return;
     }
+    await executeDelete(season, week);
+  };
 
+  const executeDelete = async (season: number, week: number) => {
     setError(null);
+    setDeleteConfirm(null);
 
     try {
       await deleteMutation.mutateAsync({ season, week });
@@ -197,6 +200,15 @@ export function AdminPage() {
         onToggleSeason={toggleSeason}
         persistedWeeks={persistedWeeks ?? []}
       />
+
+      {deleteConfirm && (
+        <ConfirmModal
+          title="Delete Published Snapshot"
+          message={`This snapshot (${deleteConfirm.season} ${getWeekLabel(deleteConfirm.week)}) is published and visible to users. Are you sure you want to delete it?`}
+          onConfirm={() => executeDelete(deleteConfirm.season, deleteConfirm.week)}
+          onCancel={() => setDeleteConfirm(null)}
+        />
+      )}
     </div>
   );
 }

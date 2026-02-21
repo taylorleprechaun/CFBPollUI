@@ -24,7 +24,7 @@ function TestConsumer() {
 describe('AuthContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.clear();
+    sessionStorage.clear();
   });
 
   it('starts unauthenticated when no token in storage', () => {
@@ -38,9 +38,9 @@ describe('AuthContext', () => {
     expect(screen.getByTestId('token').textContent).toBe('no-token');
   });
 
-  it('restores token from localStorage if not expired', () => {
-    localStorage.setItem('cfbpoll_token', 'stored-token');
-    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 60000));
+  it('restores token from sessionStorage if not expired', () => {
+    sessionStorage.setItem('cfbpoll_token', 'stored-token');
+    sessionStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 60000));
 
     render(
       <AuthProvider>
@@ -52,9 +52,9 @@ describe('AuthContext', () => {
     expect(screen.getByTestId('token').textContent).toBe('stored-token');
   });
 
-  it('clears expired token from localStorage on mount', () => {
-    localStorage.setItem('cfbpoll_token', 'expired-token');
-    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() - 1000));
+  it('clears expired token from sessionStorage on mount', () => {
+    sessionStorage.setItem('cfbpoll_token', 'expired-token');
+    sessionStorage.setItem('cfbpoll_token_expiry', String(Date.now() - 1000));
 
     render(
       <AuthProvider>
@@ -86,7 +86,7 @@ describe('AuthContext', () => {
       expect(screen.getByTestId('token').textContent).toBe('new-jwt-token');
     });
 
-    expect(localStorage.getItem('cfbpoll_token')).toBe('new-jwt-token');
+    expect(sessionStorage.getItem('cfbpoll_token')).toBe('new-jwt-token');
   });
 
   it('logout clears token and storage', async () => {
@@ -114,7 +114,7 @@ describe('AuthContext', () => {
     });
 
     expect(screen.getByTestId('auth-status').textContent).toBe('not-authenticated');
-    expect(localStorage.getItem('cfbpoll_token')).toBeNull();
+    expect(sessionStorage.getItem('cfbpoll_token')).toBeNull();
   });
 
   it('throws error when useAuth is used outside AuthProvider', () => {

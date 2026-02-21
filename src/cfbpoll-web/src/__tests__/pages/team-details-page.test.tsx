@@ -435,7 +435,7 @@ describe('TeamDetailsPage', () => {
       setupMocks({ teamDetailData: mockTeamDetail });
       renderPage('/team-details?team=Oregon&season=2024&week=12');
 
-      const homeRow = screen.getByText('Home').closest('div[role="button"]');
+      const homeRow = screen.getByText('Home').closest('button');
       expect(homeRow).toBeInTheDocument();
       fireEvent.click(homeRow!);
 
@@ -448,7 +448,7 @@ describe('TeamDetailsPage', () => {
       setupMocks({ teamDetailData: mockTeamDetail });
       renderPage('/team-details?team=Oregon&season=2024&week=12');
 
-      const homeRow = screen.getByText('Home').closest('div[role="button"]');
+      const homeRow = screen.getByText('Home').closest('button');
       fireEvent.click(homeRow!);
 
       const winResult = screen.getByText('W 42-14', { selector: '.ml-4 span' });
@@ -459,7 +459,7 @@ describe('TeamDetailsPage', () => {
       setupMocks({ teamDetailData: mockTeamDetail });
       renderPage('/team-details?team=Oregon&season=2024&week=12');
 
-      const homeRow = screen.getByText('Home').closest('div[role="button"]');
+      const homeRow = screen.getByText('Home').closest('button');
       fireEvent.click(homeRow!);
       expect(document.querySelector('.ml-4')).toBeInTheDocument();
 
@@ -480,7 +480,7 @@ describe('TeamDetailsPage', () => {
       setupMocks({ teamDetailData: mockTeamDetail });
       renderPage('/team-details?team=Oregon&season=2024&week=12');
 
-      const homeRow = screen.getByText('Home').closest('div[role="button"]');
+      const homeRow = screen.getByText('Home').closest('button');
       fireEvent.click(homeRow!);
 
       expect(screen.getByText(/^#120/)).toBeInTheDocument();
@@ -490,7 +490,7 @@ describe('TeamDetailsPage', () => {
       setupMocks({ teamDetailData: mockTeamDetail });
       renderPage('/team-details?team=Oregon&season=2024&week=12');
 
-      const rank101Row = screen.getByText('vs #101+').closest('div[role="button"]');
+      const rank101Row = screen.getByText('vs #101+').closest('button');
       expect(rank101Row).toBeInTheDocument();
       fireEvent.click(rank101Row!);
 
@@ -551,7 +551,7 @@ describe('TeamDetailsPage', () => {
   });
 
   describe('season change', () => {
-    it('resets team and week when season changes', () => {
+    it('preserves team selection when season changes', () => {
       setupMocks({ teamDetailData: mockTeamDetail });
       renderPage('/team-details?team=Oregon&season=2024&week=12');
 
@@ -559,6 +559,18 @@ describe('TeamDetailsPage', () => {
       fireEvent.change(seasonSelect, { target: { value: '2023' } });
 
       expect(mockSetSelectedSeason).toHaveBeenCalledWith(2023);
+      const teamSelect = screen.getByLabelText('Team:') as HTMLSelectElement;
+      expect(teamSelect.value).toBe('Oregon');
+    });
+
+    it('clears team when team does not exist in new season rankings', () => {
+      const rankingsWithoutOregon = {
+        ...mockRankingsData,
+        rankings: [mockRankingsData.rankings[1]],
+      };
+      setupMocks({ rankingsData: rankingsWithoutOregon });
+      renderPage('/team-details?team=Oregon&season=2023');
+
       const teamSelect = screen.getByLabelText('Team:') as HTMLSelectElement;
       expect(teamSelect.value).toBe('');
     });

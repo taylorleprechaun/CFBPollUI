@@ -1,4 +1,6 @@
 export type {
+  AllTimeEntry,
+  AllTimeResponse,
   Conference,
   ConferencesResponse,
   RankedTeam,
