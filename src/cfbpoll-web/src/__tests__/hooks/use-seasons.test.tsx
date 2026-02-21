@@ -46,7 +46,8 @@ describe('useSeasons', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/v1/seasons')
+      expect.stringContaining('/api/v1/seasons'),
+      undefined
     );
     expect(result.current.data?.seasons).toEqual([2024, 2023, 2022]);
   });

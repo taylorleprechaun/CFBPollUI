@@ -166,11 +166,14 @@ describe('AdminPage', () => {
       expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText(/Preview: 2024 Week 6/));
-    expect(screen.getByText(/\u25B6/)).toBeInTheDocument();
+    const previewButton = screen.getByText(/Preview: 2024 Week 6/).closest('button')!;
+    const chevron = () => previewButton.querySelector('svg')!;
 
     fireEvent.click(screen.getByText(/Preview: 2024 Week 6/));
-    expect(screen.getByText(/\u25BC/)).toBeInTheDocument();
+    expect(chevron().classList.toString()).toContain('-rotate-90');
+
+    fireEvent.click(screen.getByText(/Preview: 2024 Week 6/));
+    expect(chevron().classList.toString()).not.toContain('-rotate-90');
   });
 
   it('shows persist warning when not persisted', async () => {
@@ -215,7 +218,8 @@ describe('AdminPage', () => {
     renderAdminPage();
 
     const seasonButton = screen.getByText('2024 Season').closest('button')!;
-    expect(seasonButton.textContent).toContain('\u25B6');
+    const chevron = seasonButton.querySelector('svg')!;
+    expect(chevron.classList.toString()).toContain('-rotate-90');
   });
 
   it('expands and collapses season groups on click', () => {
@@ -226,12 +230,13 @@ describe('AdminPage', () => {
     renderAdminPage();
 
     const seasonButton = screen.getByText('2024 Season').closest('button')!;
+    const chevron = () => seasonButton.querySelector('svg')!;
 
     fireEvent.click(screen.getByText('2024 Season'));
-    expect(seasonButton.textContent).toContain('\u25BC');
+    expect(chevron().classList.toString()).not.toContain('-rotate-90');
 
     fireEvent.click(screen.getByText('2024 Season'));
-    expect(seasonButton.textContent).toContain('\u25B6');
+    expect(chevron().classList.toString()).toContain('-rotate-90');
   });
 
   it('expand all and collapse all buttons work', () => {
@@ -244,19 +249,21 @@ describe('AdminPage', () => {
 
     const button2024 = screen.getByText('2024 Season').closest('button')!;
     const button2023 = screen.getByText('2023 Season').closest('button')!;
+    const chevron2024 = () => button2024.querySelector('svg')!;
+    const chevron2023 = () => button2023.querySelector('svg')!;
 
-    expect(button2024.textContent).toContain('\u25B6');
-    expect(button2023.textContent).toContain('\u25B6');
+    expect(chevron2024().classList.toString()).toContain('-rotate-90');
+    expect(chevron2023().classList.toString()).toContain('-rotate-90');
 
     fireEvent.click(screen.getByText('Expand All'));
 
-    expect(button2024.textContent).toContain('\u25BC');
-    expect(button2023.textContent).toContain('\u25BC');
+    expect(chevron2024().classList.toString()).not.toContain('-rotate-90');
+    expect(chevron2023().classList.toString()).not.toContain('-rotate-90');
 
     fireEvent.click(screen.getByText('Collapse All'));
 
-    expect(button2024.textContent).toContain('\u25B6');
-    expect(button2023.textContent).toContain('\u25B6');
+    expect(chevron2024().classList.toString()).toContain('-rotate-90');
+    expect(chevron2023().classList.toString()).toContain('-rotate-90');
   });
 
   it('calls logout when Log Out is clicked', () => {
@@ -283,12 +290,11 @@ describe('AdminPage', () => {
     });
   });
 
-  it('shows confirm dialog when deleting published snapshot', async () => {
+  it('shows confirm modal when deleting published snapshot', async () => {
     mockPersistedWeeksData = [
       { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockDeleteMutateAsync.mockResolvedValue(undefined);
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
     renderAdminPage();
 
@@ -297,19 +303,26 @@ describe('AdminPage', () => {
 
     fireEvent.click(screen.getByText('Delete'));
 
+    // Confirm modal should appear
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toBeInTheDocument();
+    expect(screen.getByText('Delete Published Snapshot')).toBeInTheDocument();
+
+    // Click "Delete" in the modal to confirm
+    const modalDeleteButton = screen.getAllByText('Delete').find(
+      (btn) => btn.closest('[role="dialog"]') !== null
+    )!;
+    fireEvent.click(modalDeleteButton);
+
     await waitFor(() => {
-      expect(confirmSpy).toHaveBeenCalled();
       expect(mockDeleteMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 1 });
     });
-
-    confirmSpy.mockRestore();
   });
 
-  it('does not delete when confirm is cancelled', () => {
+  it('does not delete when confirm modal is cancelled', () => {
     mockPersistedWeeksData = [
       { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
     ];
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
 
     renderAdminPage();
 
@@ -318,10 +331,15 @@ describe('AdminPage', () => {
 
     fireEvent.click(screen.getByText('Delete'));
 
-    expect(confirmSpy).toHaveBeenCalled();
-    expect(mockDeleteMutateAsync).not.toHaveBeenCalled();
+    // Confirm modal should appear
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
 
-    confirmSpy.mockRestore();
+    // Click "Cancel" in the modal
+    fireEvent.click(screen.getByText('Cancel'));
+
+    // Modal should be dismissed and delete should not have been called
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(mockDeleteMutateAsync).not.toHaveBeenCalled();
   });
 
   it('calls publishSnapshot when publish is clicked on draft', async () => {
@@ -591,7 +609,8 @@ describe('AdminPage', () => {
 
     fireEvent.click(screen.getByText('2024 Season'));
     const seasonButton = screen.getByText('2024 Season').closest('button')!;
-    expect(seasonButton.textContent).toContain('\u25BC');
+    const chevron = () => seasonButton.querySelector('svg')!;
+    expect(chevron().classList.toString()).not.toContain('-rotate-90');
 
     const publishButtons = screen.getAllByText('Publish');
     fireEvent.click(publishButtons[0]);
@@ -600,7 +619,7 @@ describe('AdminPage', () => {
       expect(mockPublishMutateAsync).toHaveBeenCalled();
     });
 
-    expect(seasonButton.textContent).toContain('\u25BC');
+    expect(chevron().classList.toString()).not.toContain('-rotate-90');
   });
 
   it('shows error when fetching persisted weeks fails', () => {

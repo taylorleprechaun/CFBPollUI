@@ -4,6 +4,7 @@ import { RequireAuth, RequireGuest } from './components/auth';
 import { Layout } from './components/layout/layout';
 
 const AdminPage = lazy(() => import('./pages/admin-page').then(m => ({ default: m.AdminPage })));
+const AllTimePage = lazy(() => import('./pages/all-time-page').then(m => ({ default: m.AllTimePage })));
 const HomePage = lazy(() => import('./pages/home-page').then(m => ({ default: m.HomePage })));
 const LoginPage = lazy(() => import('./pages/login-page').then(m => ({ default: m.LoginPage })));
 const RankingsPage = lazy(() => import('./pages/rankings-page').then(m => ({ default: m.RankingsPage })));
@@ -34,6 +35,11 @@ function App() {
         <Route path="team-details" element={
           <Suspense fallback={<PageLoader />}>
             <TeamDetailsPage />
+          </Suspense>
+        } />
+        <Route path="all-time" element={
+          <Suspense fallback={<PageLoader />}>
+            <AllTimePage />
           </Suspense>
         } />
         <Route element={<RequireGuest />}>

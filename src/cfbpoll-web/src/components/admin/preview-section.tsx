@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { getWeekLabel } from '../../lib/week-utils';
 import { RankingsTable } from '../rankings/rankings-table';
+import { ChevronIcon } from '../ui/chevron-icon';
 import { SuccessCheckmark } from './success-checkmark';
 import type { CalculateResponse } from '../../schemas/admin';
 import type { ActionFeedback } from './types';
@@ -31,12 +33,12 @@ export function PreviewSection({
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <button
+            type="button"
             onClick={() => setPreviewExpanded(!previewExpanded)}
             className="flex items-center gap-2 text-lg font-semibold text-gray-900 hover:text-gray-700"
           >
-            <span className="text-sm">{previewExpanded ? '\u25BC' : '\u25B6'}</span>
-            {/* Week labels shift by +1: raw week number is when games are played, label reflects rankings after that week */}
-            Preview: {previewRankings.season} Week {previewRankings.week + 1}
+            <ChevronIcon open={previewExpanded} size="w-4 h-4" />
+            Preview: {previewRankings.season} {getWeekLabel(previewRankings.week)}
           </button>
           <div className="flex items-center gap-2">
             <button

@@ -36,7 +36,7 @@ vi.mock('../hooks/use-seasons', () => ({
 }));
 
 afterEach(() => {
-  localStorage.clear();
+  sessionStorage.clear();
 });
 
 function renderApp(initialRoute = '/') {
@@ -87,8 +87,8 @@ describe('App', () => {
   });
 
   it('redirects /login to admin when authenticated', async () => {
-    localStorage.setItem('cfbpoll_token', 'test-token');
-    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
+    sessionStorage.setItem('cfbpoll_token', 'test-token');
+    sessionStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
 
     renderApp('/login');
     await waitFor(() => {
@@ -97,8 +97,8 @@ describe('App', () => {
   });
 
   it('renders admin page at /admin route when authenticated', async () => {
-    localStorage.setItem('cfbpoll_token', 'test-token');
-    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
+    sessionStorage.setItem('cfbpoll_token', 'test-token');
+    sessionStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
 
     renderApp('/admin');
     await waitFor(() => {

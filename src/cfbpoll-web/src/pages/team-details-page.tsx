@@ -1,37 +1,33 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { ErrorAlert } from '../components/error';
 import { SeasonSelector } from '../components/rankings/season-selector';
-import { TeamLogo } from '../components/rankings/team-logo';
+import { RecordRow, ScheduleRow } from '../components/team-details';
+import { LoadingSpinner } from '../components/ui/loading-spinner';
 import { useSeason } from '../contexts/season-context';
+import { useDocumentTitle } from '../hooks/use-document-title';
 import { useRankings } from '../hooks/use-rankings';
 import { useTeamDetail } from '../hooks/use-team-detail';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
 import { getContrastTextColor } from '../lib/color-utils';
-import type { TeamRecord, ScheduleGame } from '../types';
+import type { ScheduleGame } from '../types';
 
-function hasResult(g: ScheduleGame): boolean {
-  return g.isWin !== null && g.isWin !== undefined;
-}
-
-const filterHome = (g: ScheduleGame) => g.isHome && !g.neutralSite && hasResult(g);
-const filterAway = (g: ScheduleGame) => !g.isHome && !g.neutralSite && hasResult(g);
-const filterNeutral = (g: ScheduleGame) => g.neutralSite && hasResult(g);
-const filterVsRank1To10 = (g: ScheduleGame) => g.opponentRank != null && g.opponentRank >= 1 && g.opponentRank <= 10 && hasResult(g);
-const filterVsRank11To25 = (g: ScheduleGame) => g.opponentRank != null && g.opponentRank >= 11 && g.opponentRank <= 25 && hasResult(g);
-const filterVsRank26To50 = (g: ScheduleGame) => g.opponentRank != null && g.opponentRank >= 26 && g.opponentRank <= 50 && hasResult(g);
-const filterVsRank51To100 = (g: ScheduleGame) => g.opponentRank != null && g.opponentRank >= 51 && g.opponentRank <= 100 && hasResult(g);
-const filterVsRank101Plus = (g: ScheduleGame) => (g.opponentRank == null || g.opponentRank >= 101) && hasResult(g);
+const filterHome = (g: ScheduleGame) => g.isHome && !g.neutralSite && g.isWin != null;
+const filterAway = (g: ScheduleGame) => !g.isHome && !g.neutralSite && g.isWin != null;
+const filterNeutral = (g: ScheduleGame) => g.neutralSite && g.isWin != null;
+const filterVsRank1To10 = (g: ScheduleGame) => g.opponentRank != null && g.opponentRank >= 1 && g.opponentRank <= 10 && g.isWin != null;
+const filterVsRank11To25 = (g: ScheduleGame) => g.opponentRank != null && g.opponentRank >= 11 && g.opponentRank <= 25 && g.isWin != null;
+const filterVsRank26To50 = (g: ScheduleGame) => g.opponentRank != null && g.opponentRank >= 26 && g.opponentRank <= 50 && g.isWin != null;
+const filterVsRank51To100 = (g: ScheduleGame) => g.opponentRank != null && g.opponentRank >= 51 && g.opponentRank <= 100 && g.isWin != null;
+const filterVsRank101Plus = (g: ScheduleGame) => (g.opponentRank == null || g.opponentRank >= 101) && g.isWin != null;
 
 export function TeamDetailsPage() {
+  useDocumentTitle('Taylor Steinberg - Team Details');
+
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedTeam = searchParams.get('team') || null;
   const initialSeasonApplied = useRef(false);
-
-  useEffect(() => {
-    document.title = 'Taylor Steinberg - Team Details';
-  }, []);
 
   const {
     seasons,
@@ -79,25 +75,33 @@ export function TeamDetailsPage() {
     if (!rankingsData?.rankings) return [];
     return [...rankingsData.rankings]
       .sort((a, b) => a.teamName.localeCompare(b.teamName));
-  }, [rankingsData]);
+  }, [rankingsData?.rankings]);
 
   const fbsTeamNames = useMemo(() => {
     if (!rankingsData?.rankings) return new Set<string>();
     return new Set(rankingsData.rankings.map((t) => t.teamName));
-  }, [rankingsData]);
+  }, [rankingsData?.rankings]);
 
   const handleSeasonChange = (season: number) => {
     setSelectedSeason(season);
     setSelectedWeek(null);
-    setSearchParams({ season: String(season) }, { replace: true });
+    const params: Record<string, string> = { season: String(season) };
+    if (selectedTeam) params.team = selectedTeam;
+    setSearchParams(params, { replace: true });
   };
 
-  const handleTeamChange = (teamName: string) => {
+  const handleTeamChange = useCallback((teamName: string) => {
     const params: Record<string, string> = {};
     if (selectedSeason !== null) params.season = String(selectedSeason);
     if (teamName) params.team = teamName;
     setSearchParams(params);
-  };
+  }, [selectedSeason, setSearchParams]);
+
+  useEffect(() => {
+    if (selectedTeam && fbsTeamNames.size > 0 && !fbsTeamNames.has(selectedTeam)) {
+      handleTeamChange('');
+    }
+  }, [fbsTeamNames, selectedTeam, handleTeamChange]);
 
   const error = seasonsError || weeksError || rankingsError || teamDetailError;
   const handleRetry = () => {
@@ -156,11 +160,7 @@ export function TeamDetailsPage() {
 
       {error && <ErrorAlert error={error} onRetry={handleRetry} />}
 
-      {teamDetailLoading && (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-900"></div>
-        </div>
-      )}
+      {teamDetailLoading && <LoadingSpinner />}
 
       {teamDetail && (
         <>
@@ -265,27 +265,9 @@ export function TeamDetailsPage() {
                 Record by Location
               </h3>
               <div className="space-y-2 p-4">
-                <RecordRow
-                  label="Home"
-                  record={teamDetail.details.home}
-                  schedule={teamDetail.schedule}
-                  filter={filterHome}
-                  containerRef={locationCardRef}
-                />
-                <RecordRow
-                  label="Away"
-                  record={teamDetail.details.away}
-                  schedule={teamDetail.schedule}
-                  filter={filterAway}
-                  containerRef={locationCardRef}
-                />
-                <RecordRow
-                  label="Neutral"
-                  record={teamDetail.details.neutral}
-                  schedule={teamDetail.schedule}
-                  filter={filterNeutral}
-                  containerRef={locationCardRef}
-                />
+                <RecordRow label="Home" record={teamDetail.details.home} schedule={teamDetail.schedule} filter={filterHome} containerRef={locationCardRef} />
+                <RecordRow label="Away" record={teamDetail.details.away} schedule={teamDetail.schedule} filter={filterAway} containerRef={locationCardRef} />
+                <RecordRow label="Neutral" record={teamDetail.details.neutral} schedule={teamDetail.schedule} filter={filterNeutral} containerRef={locationCardRef} />
               </div>
             </div>
             <div ref={rankCardRef} className="bg-white shadow rounded-lg overflow-hidden">
@@ -296,41 +278,11 @@ export function TeamDetailsPage() {
                 Record vs Opponent Rank
               </h3>
               <div className="space-y-2 p-4">
-                <RecordRow
-                  label="vs #1-10"
-                  record={teamDetail.details.vsRank1To10}
-                  schedule={teamDetail.schedule}
-                  filter={filterVsRank1To10}
-                  containerRef={rankCardRef}
-                />
-                <RecordRow
-                  label="vs #11-25"
-                  record={teamDetail.details.vsRank11To25}
-                  schedule={teamDetail.schedule}
-                  filter={filterVsRank11To25}
-                  containerRef={rankCardRef}
-                />
-                <RecordRow
-                  label="vs #26-50"
-                  record={teamDetail.details.vsRank26To50}
-                  schedule={teamDetail.schedule}
-                  filter={filterVsRank26To50}
-                  containerRef={rankCardRef}
-                />
-                <RecordRow
-                  label="vs #51-100"
-                  record={teamDetail.details.vsRank51To100}
-                  schedule={teamDetail.schedule}
-                  filter={filterVsRank51To100}
-                  containerRef={rankCardRef}
-                />
-                <RecordRow
-                  label="vs #101+"
-                  record={teamDetail.details.vsRank101Plus}
-                  schedule={teamDetail.schedule}
-                  filter={filterVsRank101Plus}
-                  containerRef={rankCardRef}
-                />
+                <RecordRow label="vs #1-10" record={teamDetail.details.vsRank1To10} schedule={teamDetail.schedule} filter={filterVsRank1To10} containerRef={rankCardRef} />
+                <RecordRow label="vs #11-25" record={teamDetail.details.vsRank11To25} schedule={teamDetail.schedule} filter={filterVsRank11To25} containerRef={rankCardRef} />
+                <RecordRow label="vs #26-50" record={teamDetail.details.vsRank26To50} schedule={teamDetail.schedule} filter={filterVsRank26To50} containerRef={rankCardRef} />
+                <RecordRow label="vs #51-100" record={teamDetail.details.vsRank51To100} schedule={teamDetail.schedule} filter={filterVsRank51To100} containerRef={rankCardRef} />
+                <RecordRow label="vs #101+" record={teamDetail.details.vsRank101Plus} schedule={teamDetail.schedule} filter={filterVsRank101Plus} containerRef={rankCardRef} />
               </div>
             </div>
           </div>
@@ -349,169 +301,5 @@ export function TeamDetailsPage() {
         </div>
       )}
     </div>
-  );
-}
-
-function RecordRow({
-  label,
-  record,
-  schedule,
-  filter,
-  containerRef,
-}: {
-  label: string;
-  record: TeamRecord;
-  schedule: ScheduleGame[];
-  filter: (g: ScheduleGame) => boolean;
-  containerRef: React.RefObject<HTMLDivElement | null>;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const hasGames = record.wins > 0 || record.losses > 0;
-  const matchingGames = useMemo(() => schedule.filter(filter), [schedule, filter]);
-
-  const handleClick = () => {
-    if (!hasGames) return;
-    const willExpand = !expanded;
-    setExpanded(willExpand);
-    if (willExpand && containerRef.current?.scrollIntoView) {
-      const el = containerRef.current;
-      requestAnimationFrame(() => {
-        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      });
-    }
-  };
-
-  return (
-    <div>
-      <div
-        className={`flex justify-between text-sm${hasGames ? ' cursor-pointer' : ''}`}
-        onClick={handleClick}
-        role={hasGames ? 'button' : undefined}
-        aria-expanded={hasGames ? expanded : undefined}
-      >
-        <span className="text-gray-600">
-          {hasGames && (
-            <span className="inline-block w-4 text-gray-400" aria-label={expanded ? 'collapse' : 'expand'}>
-              {expanded ? '\u25BE' : '\u25B8'}
-            </span>
-          )}
-          <span>{label}</span>
-        </span>
-        <span className="font-medium">{hasGames ? `${record.wins}-${record.losses}` : '-'}</span>
-      </div>
-      {expanded && matchingGames.length > 0 && (
-        <div className="ml-4 mt-1 pb-3 space-y-0.5 max-w-sm">
-          {matchingGames.map((g) => (
-            <div
-              key={`${g.week}-${g.seasonType}-${g.opponentName}`}
-              className="text-sm flex items-baseline"
-            >
-              <span className="w-10 text-right text-gray-400 shrink-0">
-                {g.opponentRank != null ? `#${g.opponentRank}` : ''}
-              </span>
-              <span className="ml-2 flex-1 text-gray-600 truncate">
-                {g.opponentName}
-              </span>
-              {g.isWin !== null && g.isWin !== undefined && g.teamScore != null && g.opponentScore != null && (
-                <span className={`ml-2 shrink-0 ${g.isWin ? 'text-green-600' : 'text-red-600'}`}>
-                  {g.isWin ? 'W' : 'L'} {g.teamScore}-{g.opponentScore}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ScheduleRow({
-  fbsTeamNames,
-  game,
-  selectedSeason,
-  selectedWeek,
-  onTeamClick,
-}: {
-  fbsTeamNames: Set<string>;
-  game: ScheduleGame;
-  selectedSeason: number | null;
-  selectedWeek: number | null;
-  onTeamClick: (teamName: string) => void;
-}) {
-  const gameDate = game.gameDate ? new Date(game.gameDate) : null;
-  const dateStr = gameDate
-    ? gameDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    : 'TBD';
-  const timeStr = game.startTimeTbd
-    ? 'TBA'
-    : gameDate
-      ? gameDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-      : '';
-
-  const locationPrefix = game.neutralSite
-    ? 'vs '
-    : game.isHome
-      ? ''
-      : 'at ';
-
-  const weekLabel = game.seasonType === 'postseason' ? 'Post' : `${game.week ?? ''}`;
-
-  const showRank = game.opponentRank != null && game.opponentRank >= 1 && game.opponentRank <= 25;
-
-  const isFbs = fbsTeamNames.has(game.opponentName);
-  const teamDetailUrl = `/team-details?team=${encodeURIComponent(game.opponentName)}${selectedSeason != null ? `&season=${selectedSeason}` : ''}${selectedWeek != null ? `&week=${selectedWeek}` : ''}`;
-
-  const opponentLabel = (
-    <span className="text-gray-900">
-      {locationPrefix}
-      {showRank && <span className="text-xs">#{game.opponentRank} </span>}
-      {game.opponentName}
-    </span>
-  );
-
-  return (
-    <tr className="hover:bg-gray-50">
-      <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">
-        {weekLabel}
-      </td>
-      <td className="px-6 py-3 whitespace-nowrap text-sm">
-        <div className="text-gray-900">{dateStr}</div>
-        {timeStr && <div className="text-gray-400 text-xs">{timeStr}</div>}
-      </td>
-      <td className="px-6 py-3 whitespace-nowrap text-sm">
-        <div className="flex items-center space-x-2">
-          <TeamLogo logoURL={game.opponentLogoURL} teamName={game.opponentName} />
-          <div>
-            {isFbs ? (
-              <Link
-                to={teamDetailUrl}
-                className="hover:text-blue-600 hover:underline"
-                onClick={(e) => {
-                  e.preventDefault();
-                  onTeamClick(game.opponentName);
-                }}
-              >
-                {opponentLabel}
-              </Link>
-            ) : (
-              opponentLabel
-            )}
-            {game.opponentRecord && (
-              <span className="text-gray-400 ml-1">({game.opponentRecord})</span>
-            )}
-            {game.venue && (
-              <div className="text-gray-400 text-xs">{game.venue}</div>
-            )}
-          </div>
-        </div>
-      </td>
-      <td className="px-6 py-3 whitespace-nowrap text-sm">
-        {game.isWin !== null && game.isWin !== undefined && game.teamScore !== null && game.teamScore !== undefined && game.opponentScore !== null && game.opponentScore !== undefined ? (
-          <span className={game.isWin ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
-            {game.isWin ? 'W' : 'L'} {game.teamScore}-{game.opponentScore}
-          </span>
-        ) : null}
-      </td>
-    </tr>
   );
 }

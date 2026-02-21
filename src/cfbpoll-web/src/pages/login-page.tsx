@@ -1,11 +1,10 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/auth-context';
+import { useDocumentTitle } from '../hooks/use-document-title';
 
 export function LoginPage() {
-  useEffect(() => {
-    document.title = 'Login - CFB Poll';
-  }, []);
+  useDocumentTitle('Login - CFB Poll');
 
   const { login } = useAuth();
   const navigate = useNavigate();

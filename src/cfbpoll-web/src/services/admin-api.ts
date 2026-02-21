@@ -1,4 +1,5 @@
-import { ValidationError } from '../lib/api-error';
+import { API_BASE_URL } from '../lib/config';
+import { parseResponse } from '../lib/parse-response';
 import { safeFetch } from '../lib/safe-fetch';
 import {
   CalculateResponseSchema,
@@ -8,8 +9,6 @@ import {
   type LoginResponse,
   type PersistedWeek,
 } from '../schemas/admin';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:5001';
 
 function withAuth(token: string, options: RequestInit = {}): RequestInit {
   return {
@@ -21,32 +20,6 @@ function withAuth(token: string, options: RequestInit = {}): RequestInit {
   };
 }
 
-async function fetchWithAuth<T>(
-  url: string,
-  token: string,
-  schema: import('zod').ZodSchema<T>,
-  options: RequestInit = {}
-): Promise<T> {
-  const response = await safeFetch(url, withAuth(token, options));
-
-  const data = await response.json();
-  const result = schema.safeParse(data);
-
-  if (!result.success) {
-    throw new ValidationError(result.error);
-  }
-
-  return result.data;
-}
-
-async function fetchWithAuthNoBody(
-  url: string,
-  token: string,
-  options: RequestInit = {}
-): Promise<Response> {
-  return safeFetch(url, withAuth(token, options));
-}
-
 export async function loginUser(
   username: string,
   password: string
@@ -56,15 +29,7 @@ export async function loginUser(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password }),
   });
-
-  const data = await response.json();
-  const result = LoginResponseSchema.safeParse(data);
-
-  if (!result.success) {
-    throw new ValidationError(result.error);
-  }
-
-  return result.data;
+  return parseResponse(response, LoginResponseSchema);
 }
 
 export async function calculateRankings(
@@ -72,16 +37,15 @@ export async function calculateRankings(
   season: number,
   week: number
 ): Promise<CalculateResponse> {
-  return fetchWithAuth(
+  const response = await safeFetch(
     `${API_BASE_URL}/api/v1/admin/calculate`,
-    token,
-    CalculateResponseSchema,
-    {
+    withAuth(token, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ season, week }),
-    }
+    })
   );
+  return parseResponse(response, CalculateResponseSchema);
 }
 
 export async function publishSnapshot(
@@ -89,10 +53,9 @@ export async function publishSnapshot(
   season: number,
   week: number
 ): Promise<void> {
-  await fetchWithAuthNoBody(
+  await safeFetch(
     `${API_BASE_URL}/api/v1/admin/snapshots/${season}/${week}/publish`,
-    token,
-    { method: 'POST' }
+    withAuth(token, { method: 'POST' })
   );
 }
 
@@ -101,21 +64,20 @@ export async function deleteSnapshot(
   season: number,
   week: number
 ): Promise<void> {
-  await fetchWithAuthNoBody(
+  await safeFetch(
     `${API_BASE_URL}/api/v1/admin/snapshots/${season}/${week}`,
-    token,
-    { method: 'DELETE' }
+    withAuth(token, { method: 'DELETE' })
   );
 }
 
 export async function fetchPersistedWeeks(
   token: string
 ): Promise<PersistedWeek[]> {
-  return fetchWithAuth(
+  const response = await safeFetch(
     `${API_BASE_URL}/api/v1/admin/persisted-weeks`,
-    token,
-    PersistedWeeksResponseSchema
+    withAuth(token)
   );
+  return parseResponse(response, PersistedWeeksResponseSchema);
 }
 
 export async function downloadExport(
@@ -123,9 +85,9 @@ export async function downloadExport(
   season: number,
   week: number
 ): Promise<void> {
-  const response = await fetchWithAuthNoBody(
+  const response = await safeFetch(
     `${API_BASE_URL}/api/v1/admin/export?season=${season}&week=${week}`,
-    token
+    withAuth(token)
   );
 
   const blob = await response.blob();

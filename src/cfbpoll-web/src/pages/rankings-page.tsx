@@ -1,19 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSeason } from '../contexts/season-context';
 import { useAvailableWeeks } from '../hooks/use-available-weeks';
 import { useRankings } from '../hooks/use-rankings';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useConferences } from '../hooks/use-conferences';
+import { useDocumentTitle } from '../hooks/use-document-title';
 import { SeasonSelector } from '../components/rankings/season-selector';
 import { WeekSelector } from '../components/rankings/week-selector';
 import { ConferenceFilter } from '../components/rankings/conference-filter';
 import { RankingsTable } from '../components/rankings/rankings-table';
 import { ErrorAlert } from '../components/error';
+import { getWeekLabel } from '../lib/week-utils';
 
 export function RankingsPage() {
-  useEffect(() => {
-    document.title = 'Taylor Steinberg - College Football Ratings';
-  }, []);
+  useDocumentTitle('Taylor Steinberg - College Football Ratings');
 
   const [selectedConference, setSelectedConference] = useState<string | null>(null);
 
@@ -120,8 +120,7 @@ export function RankingsPage() {
         <div className="text-sm text-gray-500 text-center">
           Showing rankings for {rankingsData.season} Season,{' '}
           {weeksData?.weeks?.find((w) => w.weekNumber === rankingsData.week)?.label ??
-            /* Week labels shift by +1: raw week number is when games are played, label reflects rankings after that week */
-            `Week ${rankingsData.week + 1}`}
+            getWeekLabel(rankingsData.week)}
         </div>
       )}
     </div>

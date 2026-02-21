@@ -102,7 +102,30 @@ export const TeamDetailResponseSchema = z.object({
   weightedSOS: z.number(),
 });
 
+// All-time schemas
+export const AllTimeEntrySchema = z.object({
+  allTimeRank: z.number(),
+  logoURL: z.string(),
+  losses: z.number(),
+  rank: z.number(),
+  rating: z.number(),
+  record: z.string(),
+  season: z.number(),
+  teamName: z.string(),
+  weightedSOS: z.number(),
+  week: z.number(),
+  wins: z.number(),
+});
+
+export const AllTimeResponseSchema = z.object({
+  bestTeams: z.array(AllTimeEntrySchema),
+  hardestSchedules: z.array(AllTimeEntrySchema),
+  worstTeams: z.array(AllTimeEntrySchema),
+});
+
 // Type exports inferred from schemas
+export type AllTimeEntry = z.infer<typeof AllTimeEntrySchema>;
+export type AllTimeResponse = z.infer<typeof AllTimeResponseSchema>;
 export type Conference = z.infer<typeof ConferenceSchema>;
 export type ConferencesResponse = z.infer<typeof ConferencesResponseSchema>;
 export type RankedTeam = z.infer<typeof RankedTeamSchema>;

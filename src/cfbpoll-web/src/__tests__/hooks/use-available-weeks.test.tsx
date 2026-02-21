@@ -52,7 +52,8 @@ describe('useAvailableWeeks', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/v1/rankings/available-weeks?season=2024')
+      expect.stringContaining('/api/v1/rankings/available-weeks?season=2024'),
+      undefined
     );
     expect(result.current.data?.weeks).toHaveLength(2);
   });

@@ -226,6 +226,7 @@ describe('PersistedSnapshotsSection', () => {
     );
 
     const seasonButton = screen.getByText('2024 Season').closest('button')!;
-    expect(seasonButton.textContent).toContain('\u25B6');
+    const chevron = seasonButton.querySelector('svg')!;
+    expect(chevron.classList.toString()).toContain('-rotate-90');
   });
 });

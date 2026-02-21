@@ -1,4 +1,6 @@
 import { useMemo } from 'react';
+import { getWeekLabel } from '../../lib/week-utils';
+import { ChevronIcon } from '../ui/chevron-icon';
 import { SuccessCheckmark } from './success-checkmark';
 import type { PersistedWeek } from '../../schemas/admin';
 import type { ActionFeedback } from './types';
@@ -79,10 +81,11 @@ export function PersistedSnapshotsSection({
             return (
               <div key={group.season} className="border border-gray-200 rounded-lg overflow-hidden">
                 <button
+                  type="button"
                   onClick={() => onToggleSeason(group.season)}
                   className="w-full flex items-center gap-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 text-left font-medium text-gray-900"
                 >
-                  <span className="text-xs">{isCollapsed ? '\u25B6' : '\u25BC'}</span>
+                  <ChevronIcon open={!isCollapsed} size="w-4 h-4" />
                   <span>{group.season} Season</span>
                   <span className="text-sm font-normal text-gray-500">
                     ({group.weeks.length} snapshot{group.weeks.length !== 1 ? 's' : ''})
@@ -107,8 +110,7 @@ export function PersistedSnapshotsSection({
                           const publishKey = `snapshot-publish-${pw.season}-${pw.week}`;
                           return (
                             <tr key={`${pw.season}-${pw.week}`}>
-                              {/* Week labels shift by +1: raw week number is when games are played, label reflects rankings after that week */}
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{pw.week + 1}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{getWeekLabel(pw.week)}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm">
                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                                   pw.published

@@ -79,14 +79,15 @@ describe('PreviewSection', () => {
     renderPreview();
 
     const heading = screen.getByText(/Preview: 2024 Week 6/);
+    const chevron = () => heading.closest('button')!.querySelector('svg')!;
 
-    expect(heading.textContent).toContain('\u25BC');
-
-    fireEvent.click(heading);
-    expect(heading.textContent).toContain('\u25B6');
+    expect(chevron().classList.toString()).not.toContain('-rotate-90');
 
     fireEvent.click(heading);
-    expect(heading.textContent).toContain('\u25BC');
+    expect(chevron().classList.toString()).toContain('-rotate-90');
+
+    fireEvent.click(heading);
+    expect(chevron().classList.toString()).not.toContain('-rotate-90');
   });
 
   it('disables buttons when isActionPending is true', () => {
