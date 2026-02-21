@@ -40,7 +40,7 @@ public class TeamsModule : ITeamsModule
 
         if (rankingsResult is null)
         {
-            var ratings = _ratingModule.RateTeams(seasonData);
+            var ratings = await _ratingModule.RateTeamsAsync(seasonData).ConfigureAwait(false);
             rankingsResult = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings).ConfigureAwait(false);
         }
 

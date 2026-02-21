@@ -38,7 +38,7 @@ public class AdminModule : IAdminModule
         _logger.LogDebug("Cleared component caches for season {Season} to force fresh API data", season);
 
         var seasonData = await _dataService.GetSeasonDataAsync(season, week).ConfigureAwait(false);
-        var ratings = _ratingModule.RateTeams(seasonData);
+        var ratings = await _ratingModule.RateTeamsAsync(seasonData).ConfigureAwait(false);
         var rankings = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings).ConfigureAwait(false);
 
         var persisted = true;

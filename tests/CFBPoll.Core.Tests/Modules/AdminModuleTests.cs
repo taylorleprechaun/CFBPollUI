@@ -44,7 +44,7 @@ public class AdminModuleTests
         var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
 
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
-        _mockRatingModule.Setup(x => x.RateTeams(seasonData)).Returns(ratings);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
         _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankings);
 
         var result = await _adminModule.CalculateRankingsAsync(2024, 5);
@@ -64,7 +64,7 @@ public class AdminModuleTests
         var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
 
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
-        _mockRatingModule.Setup(x => x.RateTeams(seasonData)).Returns(ratings);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
         _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankings);
 
         var callOrder = new List<string>();
@@ -96,7 +96,7 @@ public class AdminModuleTests
         var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
 
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
-        _mockRatingModule.Setup(x => x.RateTeams(seasonData)).Returns(ratings);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
         _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankings);
         _mockRankingsModule.Setup(x => x.SaveSnapshotAsync(It.IsAny<RankingsResult>()))
             .ThrowsAsync(new InvalidOperationException("DB error"));
