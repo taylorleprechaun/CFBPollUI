@@ -9,8 +9,9 @@ public interface IRatingModule
 {
     /// <summary>
     /// Calculates ratings for all teams based on the provided season data.
+    /// During early-season weeks, blends with previous-season data for stabilization.
     /// </summary>
     /// <param name="seasonData">The season data containing teams and game results.</param>
     /// <returns>Dictionary mapping team names to their calculated rating details.</returns>
-    IDictionary<string, RatingDetails> RateTeams(SeasonData seasonData);
+    Task<IDictionary<string, RatingDetails>> RateTeamsAsync(SeasonData seasonData);
 }

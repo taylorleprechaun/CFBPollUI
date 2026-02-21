@@ -104,8 +104,8 @@ public class RankingsControllerTests
             .ReturnsAsync(seasonData);
 
         _mockRatingModule
-            .Setup(x => x.RateTeams(seasonData))
-            .Returns(ratings);
+            .Setup(x => x.RateTeamsAsync(seasonData))
+            .ReturnsAsync(ratings);
 
         _mockRankingsModule
             .Setup(x => x.GenerateRankingsAsync(seasonData, ratings))
@@ -194,7 +194,7 @@ public class RankingsControllerTests
         var rankingsResult = new RankingsResult { Season = 2023, Week = 5, Rankings = [] };
 
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2023, 5)).ReturnsAsync(seasonData);
-        _mockRatingModule.Setup(x => x.RateTeams(seasonData)).Returns(ratings);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
         _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankingsResult);
 
         await _controller.GetRankings(2023, 5);

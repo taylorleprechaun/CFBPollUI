@@ -82,7 +82,7 @@ public class TeamsModuleTests
             ["Georgia"] = new RatingDetails { RatingComponents = new Dictionary<string, double>() }
         };
 
-        _mockRatingModule.Setup(x => x.RateTeams(seasonData)).Returns(ratings);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
         _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankingsResult);
 
         var result = await _teamsModule.GetTeamDetailAsync("Georgia", 2023, 5);
@@ -122,7 +122,7 @@ public class TeamsModuleTests
 
         Assert.NotNull(result);
         Assert.Equal("Georgia", result.RankedTeam.TeamName);
-        _mockRatingModule.Verify(x => x.RateTeams(It.IsAny<SeasonData>()), Times.Never);
+        _mockRatingModule.Verify(x => x.RateTeamsAsync(It.IsAny<SeasonData>()), Times.Never);
     }
 
     [Fact]
@@ -156,7 +156,7 @@ public class TeamsModuleTests
 
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2023, 5)).ReturnsAsync(seasonData);
         _mockRankingsModule.Setup(x => x.GetPublishedSnapshotAsync(2023, 5)).ReturnsAsync((RankingsResult?)null);
-        _mockRatingModule.Setup(x => x.RateTeams(seasonData)).Returns(ratings);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
         _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankingsResult);
         _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2023)).ReturnsAsync(new List<ScheduleGame>());
 
@@ -164,7 +164,7 @@ public class TeamsModuleTests
 
         Assert.NotNull(result);
         Assert.Equal("Georgia", result.RankedTeam.TeamName);
-        _mockRatingModule.Verify(x => x.RateTeams(seasonData), Times.Once);
+        _mockRatingModule.Verify(x => x.RateTeamsAsync(seasonData), Times.Once);
     }
 
     [Fact]

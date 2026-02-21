@@ -1,5 +1,8 @@
+using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
 using CFBPoll.Core.Modules;
+using CFBPoll.Core.Options;
+using Moq;
 using Xunit;
 
 namespace CFBPoll.Core.Tests;
@@ -10,16 +13,18 @@ public class RatingModuleTests
 
     public RatingModuleTests()
     {
-        _ratingModule = new RatingModule();
+        var mockDataService = new Mock<ICFBDataService>();
+        var options = Microsoft.Extensions.Options.Options.Create(new HistoricalDataOptions { MinimumYear = 2002 });
+        _ratingModule = new RatingModule(mockDataService.Object, options);
     }
 
     [Fact]
-    public void RateTeams_WithNoGames_ReturnsRatingsWithZeroSOS()
+    public async Task RateTeamsAsync_WithNoGames_ReturnsRatingsWithZeroSOS()
     {
         var seasonData = new SeasonData
         {
             Season = 2024,
-            Week = 1,
+            Week = 6,
             Teams = new Dictionary<string, TeamInfo>
             {
                 ["Team A"] = new TeamInfo { Name = "Team A", Wins = 0, Losses = 0, Games = [] }
@@ -27,7 +32,7 @@ public class RatingModuleTests
             Games = []
         };
 
-        var ratings = _ratingModule.RateTeams(seasonData);
+        var ratings = await _ratingModule.RateTeamsAsync(seasonData);
 
         Assert.Single(ratings);
         Assert.True(ratings.ContainsKey("Team A"));
@@ -36,7 +41,7 @@ public class RatingModuleTests
     }
 
     [Fact]
-    public void RateTeams_CalculatesSOSCorrectly()
+    public async Task RateTeamsAsync_CalculatesSOSCorrectly()
     {
         var gamesA = new List<Game>
         {
@@ -51,7 +56,7 @@ public class RatingModuleTests
         var seasonData = new SeasonData
         {
             Season = 2024,
-            Week = 1,
+            Week = 6,
             Teams = new Dictionary<string, TeamInfo>
             {
                 ["Team A"] = new TeamInfo { Name = "Team A", Wins = 1, Losses = 0, Games = gamesA },
@@ -60,14 +65,14 @@ public class RatingModuleTests
             Games = gamesA
         };
 
-        var ratings = _ratingModule.RateTeams(seasonData);
+        var ratings = await _ratingModule.RateTeamsAsync(seasonData);
 
         Assert.Equal(0.0, ratings["Team A"].StrengthOfSchedule);
         Assert.Equal(1.0, ratings["Team B"].StrengthOfSchedule);
     }
 
     [Fact]
-    public void RateTeams_RecordsWinsAndLosses()
+    public async Task RateTeamsAsync_RecordsWinsAndLosses()
     {
         var games = new List<Game>
         {
@@ -78,7 +83,7 @@ public class RatingModuleTests
         var seasonData = new SeasonData
         {
             Season = 2024,
-            Week = 2,
+            Week = 6,
             Teams = new Dictionary<string, TeamInfo>
             {
                 ["Team A"] = new TeamInfo { Name = "Team A", Wins = 2, Losses = 0, Games = games },
@@ -88,7 +93,7 @@ public class RatingModuleTests
             Games = games
         };
 
-        var ratings = _ratingModule.RateTeams(seasonData);
+        var ratings = await _ratingModule.RateTeamsAsync(seasonData);
 
         Assert.Equal(2, ratings["Team A"].Wins);
         Assert.Equal(0, ratings["Team A"].Losses);
@@ -97,7 +102,7 @@ public class RatingModuleTests
     }
 
     [Fact]
-    public void RateTeams_IgnoresGamesWithNullPoints()
+    public async Task RateTeamsAsync_IgnoresGamesWithNullPoints()
     {
         var gamesA = new List<Game>
         {
@@ -108,7 +113,7 @@ public class RatingModuleTests
         var seasonData = new SeasonData
         {
             Season = 2024,
-            Week = 2,
+            Week = 6,
             Teams = new Dictionary<string, TeamInfo>
             {
                 ["Team A"] = new TeamInfo { Name = "Team A", Wins = 1, Losses = 0, Games = gamesA },
@@ -118,20 +123,20 @@ public class RatingModuleTests
             Games = gamesA
         };
 
-        var ratings = _ratingModule.RateTeams(seasonData);
+        var ratings = await _ratingModule.RateTeamsAsync(seasonData);
 
         Assert.Equal(0.0, ratings["Team A"].StrengthOfSchedule);
     }
 
     [Fact]
-    public void RateTeams_CalculatesSOSForAwayTeam()
+    public async Task RateTeamsAsync_CalculatesSOSForAwayTeam()
     {
         var game = new Game { HomeTeam = "Team B", AwayTeam = "Team A", HomePoints = 14, AwayPoints = 28, Week = 1 };
 
         var seasonData = new SeasonData
         {
             Season = 2024,
-            Week = 1,
+            Week = 6,
             Teams = new Dictionary<string, TeamInfo>
             {
                 ["Team A"] = new TeamInfo { Name = "Team A", Wins = 1, Losses = 0, Games = [game] },
@@ -140,14 +145,14 @@ public class RatingModuleTests
             Games = [game]
         };
 
-        var ratings = _ratingModule.RateTeams(seasonData);
+        var ratings = await _ratingModule.RateTeamsAsync(seasonData);
 
         Assert.Equal(0.0, ratings["Team A"].StrengthOfSchedule);
         Assert.Equal(1.0, ratings["Team B"].StrengthOfSchedule);
     }
 
     [Fact]
-    public void RateTeams_CalculatesWeightedSOSWithMultipleLevels()
+    public async Task RateTeamsAsync_CalculatesWeightedSOSWithMultipleLevels()
     {
         var gameAB = new Game { HomeTeam = "Team A", AwayTeam = "Team B", HomePoints = 28, AwayPoints = 14, Week = 1 };
         var gameBC = new Game { HomeTeam = "Team B", AwayTeam = "Team C", HomePoints = 21, AwayPoints = 14, Week = 2 };
@@ -156,7 +161,7 @@ public class RatingModuleTests
         var seasonData = new SeasonData
         {
             Season = 2024,
-            Week = 3,
+            Week = 6,
             Teams = new Dictionary<string, TeamInfo>
             {
                 ["Team A"] = new TeamInfo { Name = "Team A", Wins = 1, Losses = 0, Games = [gameAB] },
@@ -167,21 +172,21 @@ public class RatingModuleTests
             Games = [gameAB, gameBC, gameCD]
         };
 
-        var ratings = _ratingModule.RateTeams(seasonData);
+        var ratings = await _ratingModule.RateTeamsAsync(seasonData);
 
         Assert.True(ratings["Team A"].WeightedStrengthOfSchedule >= 0);
         Assert.True(ratings["Team A"].WeightedStrengthOfSchedule <= 1);
     }
 
     [Fact]
-    public void RateTeams_HandlesOpponentNotInTeamsDictionary()
+    public async Task RateTeamsAsync_HandlesOpponentNotInTeamsDictionary()
     {
         var game = new Game { HomeTeam = "Team A", AwayTeam = "Unknown Team", HomePoints = 28, AwayPoints = 14, Week = 1 };
 
         var seasonData = new SeasonData
         {
             Season = 2024,
-            Week = 1,
+            Week = 6,
             Teams = new Dictionary<string, TeamInfo>
             {
                 ["Team A"] = new TeamInfo { Name = "Team A", Wins = 1, Losses = 0, Games = [game] }
@@ -189,7 +194,7 @@ public class RatingModuleTests
             Games = [game]
         };
 
-        var ratings = _ratingModule.RateTeams(seasonData);
+        var ratings = await _ratingModule.RateTeamsAsync(seasonData);
 
         Assert.Single(ratings);
         Assert.Equal(0.0, ratings["Team A"].StrengthOfSchedule);
