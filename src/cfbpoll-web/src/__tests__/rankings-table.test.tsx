@@ -6,8 +6,8 @@ import type { RankedTeam } from '../types';
 
 const createMockTeam = (overrides: Partial<RankedTeam> = {}): RankedTeam => ({
   rank: 1,
-  teamName: 'Oregon',
-  logoURL: 'https://example.com/oregon.png',
+  teamName: 'USC',
+  logoURL: 'https://example.com/usc.png',
   conference: 'Big Ten',
   division: '',
   wins: 11,
@@ -32,7 +32,7 @@ const createMockTeam = (overrides: Partial<RankedTeam> = {}): RankedTeam => ({
 const mockRankings: RankedTeam[] = [
   createMockTeam({
     rank: 1,
-    teamName: 'Oregon',
+    teamName: 'USC',
     conference: 'Big Ten',
     rating: 165.42,
     sosRanking: 15,
@@ -99,7 +99,7 @@ describe('RankingsTable', () => {
     it('displays team data', () => {
       renderTable();
 
-      expect(screen.getByText('Oregon')).toBeInTheDocument();
+      expect(screen.getByText('USC')).toBeInTheDocument();
       expect(screen.getByText('Ohio State')).toBeInTheDocument();
       expect(screen.getByText('Texas')).toBeInTheDocument();
       expect(screen.getByText('11-0')).toBeInTheDocument();
@@ -138,7 +138,7 @@ describe('RankingsTable', () => {
     it('filters teams by selected conference', () => {
       renderTable({ selectedConference: 'Big Ten' });
 
-      expect(screen.getByText('Oregon')).toBeInTheDocument();
+      expect(screen.getByText('USC')).toBeInTheDocument();
       expect(screen.getByText('Ohio State')).toBeInTheDocument();
       expect(screen.queryByText('Texas')).not.toBeInTheDocument();
     });
@@ -160,7 +160,7 @@ describe('RankingsTable', () => {
     it('shows all teams when no conference is selected', () => {
       renderTable();
 
-      expect(screen.getByText('Oregon')).toBeInTheDocument();
+      expect(screen.getByText('USC')).toBeInTheDocument();
       expect(screen.getByText('Ohio State')).toBeInTheDocument();
       expect(screen.getByText('Texas')).toBeInTheDocument();
     });
@@ -191,7 +191,7 @@ describe('RankingsTable', () => {
     it('renders team logos', () => {
       renderTable();
 
-      expect(screen.getByAltText('Oregon logo')).toBeInTheDocument();
+      expect(screen.getByAltText('USC logo')).toBeInTheDocument();
       expect(screen.getByAltText('Ohio State logo')).toBeInTheDocument();
     });
   });
@@ -200,17 +200,17 @@ describe('RankingsTable', () => {
     it('renders team name as link to team details', () => {
       renderTable();
 
-      const oregonLink = screen.getByText('Oregon').closest('a');
-      expect(oregonLink).toBeInTheDocument();
-      expect(oregonLink).toHaveAttribute('href', '/team-details?team=Oregon&season=2024&week=12');
+      const uscLink = screen.getByText('USC').closest('a');
+      expect(uscLink).toBeInTheDocument();
+      expect(uscLink).toHaveAttribute('href', '/team-details?team=USC&season=2024&week=12');
     });
 
     it('renders link without season/week when not provided', () => {
       renderTable({ selectedSeason: null, selectedWeek: null });
 
-      const oregonLink = screen.getByText('Oregon').closest('a');
-      expect(oregonLink).toBeInTheDocument();
-      expect(oregonLink).toHaveAttribute('href', '/team-details?team=Oregon');
+      const uscLink = screen.getByText('USC').closest('a');
+      expect(uscLink).toBeInTheDocument();
+      expect(uscLink).toHaveAttribute('href', '/team-details?team=USC');
     });
   });
 });

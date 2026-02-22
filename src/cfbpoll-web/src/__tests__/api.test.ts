@@ -97,22 +97,22 @@ describe('API service', () => {
             vsRank101Plus: { wins: 3, losses: 0 },
           },
           division: '',
-          logoURL: 'https://example.com/oregon.png',
+          logoURL: 'https://example.com/usc.png',
           rank: 1,
           rating: 165.42,
           record: '11-0',
           schedule: [],
           sosRanking: 15,
-          teamName: 'Oregon',
+          teamName: 'USC',
           weightedSOS: 0.582,
         }),
     });
     vi.stubGlobal('fetch', mockFetch);
 
-    await fetchTeamDetail(2024, 12, 'Oregon');
+    await fetchTeamDetail(2024, 12, 'USC');
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/v1/teams/Oregon?season=2024&week=12'),
+      expect.stringContaining('/api/v1/teams/USC?season=2024&week=12'),
       undefined
     );
   });

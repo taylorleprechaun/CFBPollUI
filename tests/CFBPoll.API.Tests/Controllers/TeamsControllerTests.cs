@@ -52,11 +52,11 @@ public class TeamsControllerTests
             {
                 new RankedTeam
                 {
-                    TeamName = "Georgia",
+                    TeamName = "Florida",
                     Rank = 1,
                     Conference = "SEC",
                     Division = "East",
-                    LogoURL = "https://example.com/georgia.png",
+                    LogoURL = "https://example.com/florida.png",
                     Wins = 5,
                     Losses = 0,
                     Rating = 70.0,
@@ -69,8 +69,8 @@ public class TeamsControllerTests
             {
                 new ScheduleGame
                 {
-                    HomeTeam = "Georgia",
-                    AwayTeam = "Oregon",
+                    HomeTeam = "Florida",
+                    AwayTeam = "USC",
                     Week = 1,
                     SeasonType = "regular",
                     Completed = true,
@@ -81,11 +81,11 @@ public class TeamsControllerTests
             },
             RankedTeam = new RankedTeam
             {
-                TeamName = "Georgia",
+                TeamName = "Florida",
                 Rank = 1,
                 Conference = "SEC",
                 Division = "East",
-                LogoURL = "https://example.com/georgia.png",
+                LogoURL = "https://example.com/florida.png",
                 Wins = 5,
                 Losses = 0,
                 Rating = 70.0,
@@ -95,14 +95,14 @@ public class TeamsControllerTests
             },
             Teams = new Dictionary<string, TeamInfo>
             {
-                ["Georgia"] = new TeamInfo
+                ["Florida"] = new TeamInfo
                 {
-                    Name = "Georgia",
+                    Name = "Florida",
                     Color = "#BA0C2F",
                     AltColor = "#000000",
                     Conference = "SEC",
                     Division = "East",
-                    LogoURL = "https://example.com/georgia.png",
+                    LogoURL = "https://example.com/florida.png",
                     Wins = 5,
                     Losses = 0,
                     Games = []
@@ -111,14 +111,14 @@ public class TeamsControllerTests
         };
 
         _mockTeamsModule
-            .Setup(x => x.GetTeamDetailAsync("Georgia", 2023, 5))
+            .Setup(x => x.GetTeamDetailAsync("Florida", 2023, 5))
             .ReturnsAsync(teamDetailResult);
 
-        var result = await _controller.GetTeamDetail("Georgia", 2023, 5);
+        var result = await _controller.GetTeamDetail("Florida", 2023, 5);
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var response = Assert.IsType<TeamDetailResponseDTO>(okResult.Value);
-        Assert.Equal("Georgia", response.TeamName);
+        Assert.Equal("Florida", response.TeamName);
         Assert.Equal(1, response.Rank);
         Assert.Equal(70.0, response.Rating);
         Assert.Equal("SEC", response.Conference);

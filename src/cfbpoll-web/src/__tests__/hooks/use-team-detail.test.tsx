@@ -32,12 +32,12 @@ describe('useTeamDetail', () => {
   });
 
   it('does not fetch when season is null', () => {
-    renderHook(() => useTeamDetail(null, 5, 'Oregon'), { wrapper: createWrapper() });
+    renderHook(() => useTeamDetail(null, 5, 'USC'), { wrapper: createWrapper() });
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it('does not fetch when week is null', () => {
-    renderHook(() => useTeamDetail(2024, null, 'Oregon'), { wrapper: createWrapper() });
+    renderHook(() => useTeamDetail(2024, null, 'USC'), { wrapper: createWrapper() });
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
@@ -62,13 +62,13 @@ describe('useTeamDetail', () => {
         vsRank101Plus: { wins: 3, losses: 0 },
       },
       division: '',
-      logoURL: 'https://example.com/oregon.png',
+      logoURL: 'https://example.com/usc.png',
       rank: 1,
       rating: 165.42,
       record: '11-0',
       schedule: [],
       sosRanking: 15,
-      teamName: 'Oregon',
+      teamName: 'USC',
       weightedSOS: 0.582,
     };
 
@@ -77,7 +77,7 @@ describe('useTeamDetail', () => {
       json: () => Promise.resolve(mockResponse),
     } as Response);
 
-    const { result } = renderHook(() => useTeamDetail(2024, 5, 'Oregon'), {
+    const { result } = renderHook(() => useTeamDetail(2024, 5, 'USC'), {
       wrapper: createWrapper(),
     });
 
@@ -102,13 +102,13 @@ describe('useTeamDetail', () => {
         vsRank101Plus: { wins: 3, losses: 0 },
       },
       division: '',
-      logoURL: 'https://example.com/oregon.png',
+      logoURL: 'https://example.com/usc.png',
       rank: 1,
       rating: 165.42,
       record: '11-0',
       schedule: [],
       sosRanking: 15,
-      teamName: 'Oregon',
+      teamName: 'USC',
       weightedSOS: 0.582,
     };
 
@@ -117,14 +117,14 @@ describe('useTeamDetail', () => {
       json: () => Promise.resolve(mockResponse),
     } as Response);
 
-    const { result } = renderHook(() => useTeamDetail(2024, 5, 'Oregon'), {
+    const { result } = renderHook(() => useTeamDetail(2024, 5, 'USC'), {
       wrapper: createWrapper(),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/v1/teams/Oregon?season=2024&week=5'),
+      expect.stringContaining('/api/v1/teams/USC?season=2024&week=5'),
       undefined
     );
   });
@@ -136,7 +136,7 @@ describe('useTeamDetail', () => {
       json: () => Promise.resolve({ message: 'Server error' }),
     } as Response);
 
-    const { result } = renderHook(() => useTeamDetail(2024, 5, 'Oregon'), {
+    const { result } = renderHook(() => useTeamDetail(2024, 5, 'USC'), {
       wrapper: createWrapper(),
     });
 
@@ -160,13 +160,13 @@ describe('useTeamDetail', () => {
         vsRank101Plus: { wins: 3, losses: 0 },
       },
       division: '',
-      logoURL: 'https://example.com/oregon.png',
+      logoURL: 'https://example.com/usc.png',
       rank: 1,
       rating: 165.42,
       record: '11-0',
       schedule: [],
       sosRanking: 15,
-      teamName: 'Oregon',
+      teamName: 'USC',
       weightedSOS: 0.582,
     };
 
@@ -175,14 +175,177 @@ describe('useTeamDetail', () => {
       json: () => Promise.resolve(mockResponse),
     } as Response);
 
-    const { result } = renderHook(() => useTeamDetail(2024, 5, 'Oregon'), {
+    const { result } = renderHook(() => useTeamDetail(2024, 5, 'USC'), {
       wrapper: createWrapper(),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.teamName).toBe('Oregon');
+    expect(result.current.data?.teamName).toBe('USC');
     expect(result.current.data?.rank).toBe(1);
     expect(result.current.data?.rating).toBe(165.42);
     expect(result.current.data?.conference).toBe('Big Ten');
   });
+
+  it('refetch after error succeeds', async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({ message: 'Server error' }),
+    } as Response);
+
+    const { result } = renderHook(() => useTeamDetail(2024, 5, 'USC'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(createMockTeamDetailResponse('USC')),
+    } as Response);
+
+    await result.current.refetch();
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.teamName).toBe('USC');
+  });
+
+  it('changing teamName triggers new fetch', async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(createMockTeamDetailResponse('USC')),
+    } as Response);
+
+    const { result, rerender } = renderHook(
+      ({
+        season,
+        week,
+        teamName,
+      }: {
+        season: number;
+        week: number;
+        teamName: string;
+      }) => useTeamDetail(season, week, teamName),
+      {
+        wrapper: createWrapper(),
+        initialProps: { season: 2024, week: 5, teamName: 'USC' },
+      }
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(createMockTeamDetailResponse('Florida')),
+    } as Response);
+
+    rerender({ season: 2024, week: 5, teamName: 'Florida' });
+
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/teams/Florida'),
+        undefined
+      )
+    );
+  });
+
+  it('changing season triggers new fetch', async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(createMockTeamDetailResponse('USC')),
+    } as Response);
+
+    const { result, rerender } = renderHook(
+      ({
+        season,
+        week,
+        teamName,
+      }: {
+        season: number;
+        week: number;
+        teamName: string;
+      }) => useTeamDetail(season, week, teamName),
+      {
+        wrapper: createWrapper(),
+        initialProps: { season: 2024, week: 5, teamName: 'USC' },
+      }
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(createMockTeamDetailResponse('USC')),
+    } as Response);
+
+    rerender({ season: 2023, week: 5, teamName: 'USC' });
+
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('season=2023'),
+        undefined
+      )
+    );
+  });
+
+  it('transitioning from partial to complete params triggers fetch', async () => {
+    const { result, rerender } = renderHook(
+      ({
+        season,
+        week,
+        teamName,
+      }: {
+        season: number | null;
+        week: number | null;
+        teamName: string | null;
+      }) => useTeamDetail(season, week, teamName),
+      {
+        wrapper: createWrapper(),
+        initialProps: {
+          season: 2024 as number | null,
+          week: null as number | null,
+          teamName: 'USC' as string | null,
+        },
+      }
+    );
+
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(createMockTeamDetailResponse('USC')),
+    } as Response);
+
+    rerender({ season: 2024, week: 5, teamName: 'USC' });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(global.fetch).toHaveBeenCalled();
+  });
 });
+
+function createMockTeamDetailResponse(teamName: string) {
+  return {
+    altColor: '#FFD700',
+    color: '#006400',
+    conference: 'Big Ten',
+    details: {
+      home: { wins: 6, losses: 0 },
+      away: { wins: 4, losses: 0 },
+      neutral: { wins: 1, losses: 0 },
+      vsRank1To10: { wins: 2, losses: 0 },
+      vsRank11To25: { wins: 3, losses: 0 },
+      vsRank26To50: { wins: 1, losses: 0 },
+      vsRank51To100: { wins: 2, losses: 0 },
+      vsRank101Plus: { wins: 3, losses: 0 },
+    },
+    division: '',
+    logoURL: `https://example.com/${teamName.toLowerCase()}.png`,
+    rank: 1,
+    rating: 165.42,
+    record: '11-0',
+    schedule: [],
+    sosRanking: 15,
+    teamName,
+    weightedSOS: 0.582,
+  };
+}

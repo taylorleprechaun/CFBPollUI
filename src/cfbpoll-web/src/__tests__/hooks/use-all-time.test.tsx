@@ -75,13 +75,13 @@ describe('useAllTime', () => {
       bestTeams: [
         {
           allTimeRank: 1,
-          logoURL: 'https://example.com/georgia.png',
+          logoURL: 'https://example.com/florida.png',
           losses: 0,
           rank: 1,
           rating: 55.0,
           record: '12-0',
           season: 2023,
-          teamName: 'Georgia',
+          teamName: 'Florida',
           weightedSOS: 0.8,
           week: 5,
           wins: 12,
@@ -102,6 +102,35 @@ describe('useAllTime', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.bestTeams).toHaveLength(1);
-    expect(result.current.data?.bestTeams[0].teamName).toBe('Georgia');
+    expect(result.current.data?.bestTeams[0].teamName).toBe('Florida');
+  });
+
+  it('refetch after error succeeds', async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({ message: 'Server error' }),
+    } as Response);
+
+    const { result } = renderHook(() => useAllTime(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          bestTeams: [],
+          hardestSchedules: [],
+          worstTeams: [],
+        }),
+    } as Response);
+
+    await result.current.refetch();
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.bestTeams).toHaveLength(0);
   });
 });

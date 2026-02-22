@@ -94,7 +94,7 @@ public class RankingsMapperTests
             Rank = 1,
             Rating = 95.5,
             SOSRanking = 5,
-            TeamName = "Georgia",
+            TeamName = "Florida",
             WeightedSOS = 0.75,
             Wins = 11
         };
@@ -108,7 +108,7 @@ public class RankingsMapperTests
         Assert.Equal(1, result.Rank);
         Assert.Equal(95.5, result.Rating);
         Assert.Equal(5, result.SOSRanking);
-        Assert.Equal("Georgia", result.TeamName);
+        Assert.Equal("Florida", result.TeamName);
         Assert.Equal(0.75, result.WeightedSOS);
         Assert.Equal(11, result.Wins);
     }
@@ -179,7 +179,7 @@ public class RankingsMapperTests
             Week = 12,
             Rankings = new List<RankedTeam>
             {
-                new() { Rank = 1, TeamName = "Georgia", Wins = 11, Losses = 0, Details = new TeamDetails() },
+                new() { Rank = 1, TeamName = "Florida", Wins = 11, Losses = 0, Details = new TeamDetails() },
                 new() { Rank = 2, TeamName = "Michigan", Wins = 11, Losses = 0, Details = new TeamDetails() }
             }
         };
@@ -190,7 +190,7 @@ public class RankingsMapperTests
         Assert.Equal(12, dto.Week);
         var rankings = dto.Rankings.ToList();
         Assert.Equal(2, rankings.Count);
-        Assert.Equal("Georgia", rankings[0].TeamName);
+        Assert.Equal("Florida", rankings[0].TeamName);
         Assert.Equal("Michigan", rankings[1].TeamName);
     }
 
@@ -227,7 +227,7 @@ public class RankingsMapperTests
             Rankings = new List<RankedTeam>
             {
                 new() { Rank = 3, TeamName = "Texas", Details = new TeamDetails() },
-                new() { Rank = 1, TeamName = "Georgia", Details = new TeamDetails() },
+                new() { Rank = 1, TeamName = "Florida", Details = new TeamDetails() },
                 new() { Rank = 2, TeamName = "Michigan", Details = new TeamDetails() }
             }
         };
@@ -236,7 +236,7 @@ public class RankingsMapperTests
 
         var rankings = dto.Rankings.ToList();
         Assert.Equal("Texas", rankings[0].TeamName);
-        Assert.Equal("Georgia", rankings[1].TeamName);
+        Assert.Equal("Florida", rankings[1].TeamName);
         Assert.Equal("Michigan", rankings[2].TeamName);
     }
 }

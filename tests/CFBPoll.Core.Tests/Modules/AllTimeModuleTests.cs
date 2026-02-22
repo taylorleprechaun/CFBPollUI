@@ -522,6 +522,184 @@ public class AllTimeModuleTests
         Assert.Equal("Worse Team", result.WorstTeams.First().TeamName);
     }
 
+    [Theory]
+    [InlineData(39.9, false)]
+    [InlineData(40.0, true)]
+    [InlineData(40.1, true)]
+    public async Task GetAllTimeRankingsAsync_BestTeamsThresholdBoundary_IncludesOrExcludesCorrectly(
+        double boundaryRating, bool shouldBeIncluded)
+    {
+        // 24 teams above threshold + 1 filler just below threshold + boundary team = 26 total
+        // When boundary >= 40.0: 25 candidates, threshold path, all 25 returned, boundary included
+        // When boundary < 40.0: 24 candidates, fallback top 25, filler pushes boundary out
+        var teams = Enumerable.Range(1, 24)
+            .Select(i => CreateTeam($"Good {i}", 40.0 + i, 10, 0, i, 0.8))
+            .ToList();
+        teams.Add(CreateTeam("Filler", 39.95, 7, 3, 25, 0.4));
+        teams.Add(CreateTeam("Boundary Team", boundaryRating, 8, 2, 26, 0.5));
+
+        SetupSingleSeason(2023, "postseason", teams.ToArray());
+
+        var result = await _module.GetAllTimeRankingsAsync();
+
+        if (shouldBeIncluded)
+            Assert.Contains(result.BestTeams, e => e.TeamName == "Boundary Team");
+        else
+            Assert.DoesNotContain(result.BestTeams, e => e.TeamName == "Boundary Team");
+    }
+
+    [Theory]
+    [InlineData(15.9, true)]
+    [InlineData(16.0, true)]
+    [InlineData(16.1, false)]
+    public async Task GetAllTimeRankingsAsync_WorstTeamsThresholdBoundary_IncludesOrExcludesCorrectly(
+        double boundaryRating, bool shouldBeIncluded)
+    {
+        // 24 teams below threshold + 1 filler just above threshold + boundary team = 26 total
+        // When boundary <= 16.0: 25 candidates, threshold path, all 25 returned, boundary included
+        // When boundary > 16.0: 24 candidates, fallback bottom 25, filler pushes boundary out
+        var teams = Enumerable.Range(1, 24)
+            .Select(i => CreateTeam($"Bad {i}", i * 0.5, 1, 9, 130 - i, 0.2))
+            .ToList();
+        teams.Add(CreateTeam("Filler", 16.05, 3, 7, 100, 0.3));
+        teams.Add(CreateTeam("Boundary Team", boundaryRating, 2, 8, 99, 0.3));
+
+        SetupSingleSeason(2023, "postseason", teams.ToArray());
+
+        var result = await _module.GetAllTimeRankingsAsync();
+
+        if (shouldBeIncluded)
+            Assert.Contains(result.WorstTeams, e => e.TeamName == "Boundary Team");
+        else
+            Assert.DoesNotContain(result.WorstTeams, e => e.TeamName == "Boundary Team");
+    }
+
+    [Theory]
+    [InlineData(24, true)]
+    [InlineData(25, false)]
+    [InlineData(26, false)]
+    public async Task GetAllTimeRankingsAsync_BestTeamsCandidateCount_FallbackBehaviorAtListSizeBoundary(
+        int candidateCount, bool fallbackIncludesLowRatedTeam)
+    {
+        var teams = Enumerable.Range(1, candidateCount)
+            .Select(i => CreateTeam($"Good {i}", 40.0 + i, 10, 0, i, 0.8))
+            .ToList();
+        teams.Add(CreateTeam("Low Team", 35.0, 5, 5, candidateCount + 1, 0.4));
+
+        SetupSingleSeason(2023, "postseason", teams.ToArray());
+
+        var result = await _module.GetAllTimeRankingsAsync();
+
+        if (fallbackIncludesLowRatedTeam)
+            Assert.Contains(result.BestTeams, e => e.TeamName == "Low Team");
+        else
+            Assert.DoesNotContain(result.BestTeams, e => e.TeamName == "Low Team");
+    }
+
+    [Fact]
+    public async Task GetAllTimeRankingsAsync_GetPersistedWeeksThrows_PropagatesException()
+    {
+        _mockRankingsModule
+            .Setup(x => x.GetPersistedWeeksAsync())
+            .ThrowsAsync(new InvalidOperationException("Database unavailable"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _module.GetAllTimeRankingsAsync());
+    }
+
+    [Fact]
+    public async Task GetAllTimeRankingsAsync_GetCalendarAsyncThrows_PropagatesException()
+    {
+        _mockRankingsModule
+            .Setup(x => x.GetPersistedWeeksAsync())
+            .ReturnsAsync(new List<PersistedWeekSummary>
+            {
+                new() { Season = 2023, Week = 5, Published = true }
+            });
+
+        _mockDataService
+            .Setup(x => x.GetCalendarAsync(2023))
+            .ThrowsAsync(new InvalidOperationException("API unavailable"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _module.GetAllTimeRankingsAsync());
+    }
+
+    [Fact]
+    public async Task GetAllTimeRankingsAsync_GetPublishedSnapshotAsyncThrows_PropagatesException()
+    {
+        _mockRankingsModule
+            .Setup(x => x.GetPersistedWeeksAsync())
+            .ReturnsAsync(new List<PersistedWeekSummary>
+            {
+                new() { Season = 2023, Week = 5, Published = true }
+            });
+
+        _mockDataService
+            .Setup(x => x.GetCalendarAsync(2023))
+            .ReturnsAsync(new List<CalendarWeek>
+            {
+                new() { Week = 5, SeasonType = "postseason" }
+            });
+
+        _mockRankingsModule
+            .Setup(x => x.GetPublishedSnapshotAsync(2023, 5))
+            .ThrowsAsync(new InvalidOperationException("Snapshot corrupted"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _module.GetAllTimeRankingsAsync());
+    }
+
+    [Fact]
+    public async Task GetAllTimeRankingsAsync_MultipleSeasonsWithDuplicateWeeks_CallsGetCalendarOncePerSeason()
+    {
+        _mockRankingsModule
+            .Setup(x => x.GetPersistedWeeksAsync())
+            .ReturnsAsync(new List<PersistedWeekSummary>
+            {
+                new() { Season = 2022, Week = 3, Published = true },
+                new() { Season = 2022, Week = 5, Published = true },
+                new() { Season = 2023, Week = 6, Published = true }
+            });
+
+        _mockDataService
+            .Setup(x => x.GetCalendarAsync(2022))
+            .ReturnsAsync(new List<CalendarWeek>
+            {
+                new() { Week = 5, SeasonType = "postseason" }
+            });
+
+        _mockDataService
+            .Setup(x => x.GetCalendarAsync(2023))
+            .ReturnsAsync(new List<CalendarWeek>
+            {
+                new() { Week = 6, SeasonType = "postseason" }
+            });
+
+        _mockRankingsModule
+            .Setup(x => x.GetPublishedSnapshotAsync(2022, 5))
+            .ReturnsAsync(new RankingsResult
+            {
+                Season = 2022,
+                Week = 5,
+                Rankings = new List<RankedTeam> { CreateTeam("Team 2022", 50.0, 10, 0, 1, 0.8) }
+            });
+
+        _mockRankingsModule
+            .Setup(x => x.GetPublishedSnapshotAsync(2023, 6))
+            .ReturnsAsync(new RankingsResult
+            {
+                Season = 2023,
+                Week = 6,
+                Rankings = new List<RankedTeam> { CreateTeam("Team 2023", 55.0, 11, 0, 1, 0.9) }
+            });
+
+        await _module.GetAllTimeRankingsAsync();
+
+        _mockDataService.Verify(x => x.GetCalendarAsync(2022), Times.Once);
+        _mockDataService.Verify(x => x.GetCalendarAsync(2023), Times.Once);
+    }
+
     private void SetupSingleSeason(int season, string seasonType, params RankedTeam[] teams)
     {
         _mockRankingsModule

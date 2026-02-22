@@ -25,12 +25,12 @@ public class TeamDetailMapperTests
                 VsRank101Plus = new Record { Wins = 1, Losses = 0 }
             },
             Division = "East",
-            LogoURL = "https://example.com/georgia.png",
+            LogoURL = "https://example.com/florida.png",
             Losses = 1,
             Rank = 1,
             Rating = 95.5,
             SOSRanking = 3,
-            TeamName = "Georgia",
+            TeamName = "Florida",
             WeightedSOS = 0.75,
             Wins = 9
         };
@@ -45,9 +45,9 @@ public class TeamDetailMapperTests
             Conference = "SEC",
             Division = "East",
             Games = [],
-            LogoURL = "https://example.com/georgia.png",
+            LogoURL = "https://example.com/florida.png",
             Losses = 1,
-            Name = "Georgia",
+            Name = "Florida",
             Wins = 9
         };
     }
@@ -56,8 +56,8 @@ public class TeamDetailMapperTests
     {
         return
         [
-            new RankedTeam { Rank = 1, TeamName = "Georgia" },
-            new RankedTeam { Rank = 5, TeamName = "Oregon" }
+            new RankedTeam { Rank = 1, TeamName = "Florida" },
+            new RankedTeam { Rank = 5, TeamName = "USC" }
         ];
     }
 
@@ -68,11 +68,11 @@ public class TeamDetailMapperTests
             new ScheduleGame
             {
                 AwayPoints = 21,
-                AwayTeam = "Oregon",
+                AwayTeam = "USC",
                 Completed = true,
                 GameID = 1,
                 HomePoints = 35,
-                HomeTeam = "Georgia",
+                HomeTeam = "Florida",
                 NeutralSite = false,
                 SeasonType = "regular",
                 StartDate = new DateTime(2023, 9, 2),
@@ -87,17 +87,17 @@ public class TeamDetailMapperTests
     {
         return new Dictionary<string, TeamInfo>
         {
-            ["Georgia"] = CreateDefaultTeamInfo(),
-            ["Oregon"] = new TeamInfo
+            ["Florida"] = CreateDefaultTeamInfo(),
+            ["USC"] = new TeamInfo
             {
                 AltColor = "#FFFFFF",
                 Color = "#154733",
                 Conference = "Big Ten",
                 Division = "",
                 Games = [],
-                LogoURL = "https://example.com/oregon.png",
+                LogoURL = "https://example.com/usc.png",
                 Losses = 2,
-                Name = "Oregon",
+                Name = "USC",
                 Wins = 8
             }
         };
@@ -114,12 +114,12 @@ public class TeamDetailMapperTests
 
         var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
 
-        Assert.Equal("Georgia", result.TeamName);
+        Assert.Equal("Florida", result.TeamName);
         Assert.Equal(1, result.Rank);
         Assert.Equal(95.5, result.Rating);
         Assert.Equal("SEC", result.Conference);
         Assert.Equal("East", result.Division);
-        Assert.Equal("https://example.com/georgia.png", result.LogoURL);
+        Assert.Equal("https://example.com/florida.png", result.LogoURL);
         Assert.Equal(3, result.SOSRanking);
         Assert.Equal(0.75, result.WeightedSOS);
     }
@@ -166,7 +166,7 @@ public class TeamDetailMapperTests
 
         var games = result.Schedule.ToList();
         Assert.Single(games);
-        Assert.Equal("Oregon", games[0].OpponentName);
+        Assert.Equal("USC", games[0].OpponentName);
         Assert.Equal(1, games[0].Week);
         Assert.Equal("regular", games[0].SeasonType);
         Assert.Equal("Sanford Stadium", games[0].Venue);
@@ -185,8 +185,8 @@ public class TeamDetailMapperTests
         {
             new ScheduleGame
             {
-                HomeTeam = "Georgia",
-                AwayTeam = "Oregon",
+                HomeTeam = "Florida",
+                AwayTeam = "USC",
                 Completed = true,
                 HomePoints = 35,
                 AwayPoints = 21,
@@ -195,8 +195,8 @@ public class TeamDetailMapperTests
             },
             new ScheduleGame
             {
-                HomeTeam = "Oregon",
-                AwayTeam = "Georgia",
+                HomeTeam = "USC",
+                AwayTeam = "Florida",
                 Completed = true,
                 HomePoints = 28,
                 AwayPoints = 31,
@@ -225,8 +225,8 @@ public class TeamDetailMapperTests
         {
             new ScheduleGame
             {
-                HomeTeam = "Georgia",
-                AwayTeam = "Oregon",
+                HomeTeam = "Florida",
+                AwayTeam = "USC",
                 Completed = true,
                 HomePoints = 35,
                 AwayPoints = 21,
@@ -235,8 +235,8 @@ public class TeamDetailMapperTests
             },
             new ScheduleGame
             {
-                HomeTeam = "Oregon",
-                AwayTeam = "Georgia",
+                HomeTeam = "USC",
+                AwayTeam = "Florida",
                 Completed = true,
                 HomePoints = 42,
                 AwayPoints = 17,
@@ -264,8 +264,8 @@ public class TeamDetailMapperTests
         {
             new ScheduleGame
             {
-                HomeTeam = "Georgia",
-                AwayTeam = "Oregon",
+                HomeTeam = "Florida",
+                AwayTeam = "USC",
                 Completed = false,
                 HomePoints = null,
                 AwayPoints = null,
@@ -294,7 +294,7 @@ public class TeamDetailMapperTests
 
         var games = result.Schedule.ToList();
         Assert.Single(games);
-        Assert.Equal("https://example.com/oregon.png", games[0].OpponentLogoURL);
+        Assert.Equal("https://example.com/usc.png", games[0].OpponentLogoURL);
         Assert.Equal("8-2", games[0].OpponentRecord);
     }
 
@@ -341,7 +341,7 @@ public class TeamDetailMapperTests
                 AwayTeam = "FCS Team",
                 Completed = true,
                 HomePoints = 52,
-                HomeTeam = "Georgia",
+                HomeTeam = "Florida",
                 SeasonType = "regular",
                 Week = 2
             }
@@ -427,8 +427,8 @@ public class TeamDetailMapperTests
         {
             new ScheduleGame
             {
-                HomeTeam = "Georgia",
-                AwayTeam = "Oregon",
+                HomeTeam = "Florida",
+                AwayTeam = "USC",
                 Completed = true,
                 HomePoints = 31,
                 AwayPoints = 24,
@@ -438,8 +438,8 @@ public class TeamDetailMapperTests
             },
             new ScheduleGame
             {
-                HomeTeam = "Georgia",
-                AwayTeam = "Oregon",
+                HomeTeam = "Florida",
+                AwayTeam = "USC",
                 Completed = true,
                 HomePoints = 42,
                 AwayPoints = 10,
@@ -449,8 +449,8 @@ public class TeamDetailMapperTests
             },
             new ScheduleGame
             {
-                HomeTeam = "Oregon",
-                AwayTeam = "Georgia",
+                HomeTeam = "USC",
+                AwayTeam = "Florida",
                 Completed = true,
                 HomePoints = 14,
                 AwayPoints = 38,

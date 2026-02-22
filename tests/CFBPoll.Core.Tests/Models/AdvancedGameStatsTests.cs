@@ -15,7 +15,7 @@ public class AdvancedGameStatsTests
         {
             GameID = 12345,
             Team = "Alabama",
-            Opponent = "Georgia",
+            Opponent = "Florida",
             Week = 5,
             Offense = offense,
             Defense = defense
@@ -23,7 +23,7 @@ public class AdvancedGameStatsTests
 
         Assert.Equal(12345, stats.GameID);
         Assert.Equal("Alabama", stats.Team);
-        Assert.Equal("Georgia", stats.Opponent);
+        Assert.Equal("Florida", stats.Opponent);
         Assert.Equal(5, stats.Week);
         Assert.Same(offense, stats.Offense);
         Assert.Same(defense, stats.Defense);

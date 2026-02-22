@@ -93,4 +93,28 @@ describe('useSeasons', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.seasons).toEqual([]);
   });
+
+  it('refetch after error succeeds', async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({ message: 'Server error' }),
+    } as Response);
+
+    const { result } = renderHook(() => useSeasons(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ seasons: [2024, 2023] }),
+    } as Response);
+
+    await result.current.refetch();
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.seasons).toEqual([2024, 2023]);
+  });
 });

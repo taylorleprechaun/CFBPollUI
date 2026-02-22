@@ -81,17 +81,17 @@ public class CFBDataServiceTests
                 Week = 1,
                 Teams = new Dictionary<string, TeamInfo>
                 {
-                    ["Oregon"] = new TeamInfo
+                    ["USC"] = new TeamInfo
                     {
-                        Name = "Oregon",
+                        Name = "USC",
                         Conference = "Big Ten",
-                        LogoURL = "https://example.com/oregon.png"
+                        LogoURL = "https://example.com/usc.png"
                     }
                 }
             });
 
         var result = await mockService.Object.GetSeasonDataAsync(2024, 1);
 
-        Assert.NotEmpty(result.Teams["Oregon"].LogoURL);
+        Assert.NotEmpty(result.Teams["USC"].LogoURL);
     }
 }

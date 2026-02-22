@@ -84,7 +84,7 @@ describe('useRankings', () => {
     const mockRankings = [
       {
         rank: 1,
-        teamName: 'Georgia',
+        teamName: 'Florida',
         logoURL: 'https://example.com/logo.png',
         conference: 'SEC',
         division: 'East',
@@ -113,6 +113,129 @@ describe('useRankings', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.rankings).toHaveLength(1);
-    expect(result.current.data?.rankings[0].teamName).toBe('Georgia');
+    expect(result.current.data?.rankings[0].teamName).toBe('Florida');
+  });
+
+  it('refetch after error succeeds', async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({ message: 'Server error' }),
+    } as Response);
+
+    const { result } = renderHook(() => useRankings(2024, 5), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({ season: 2024, week: 5, rankings: [] }),
+    } as Response);
+
+    await result.current.refetch();
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.rankings).toHaveLength(0);
+  });
+
+  it('changing season triggers new fetch', async () => {
+    const mockResponse = { season: 2024, week: 5, rankings: [] };
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockResponse),
+    } as Response);
+
+    const { result, rerender } = renderHook(
+      ({ season, week }: { season: number; week: number }) =>
+        useRankings(season, week),
+      {
+        wrapper: createWrapper(),
+        initialProps: { season: 2024, week: 5 },
+      }
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({ season: 2023, week: 5, rankings: [] }),
+    } as Response);
+
+    rerender({ season: 2023, week: 5 });
+
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('season=2023'),
+        undefined
+      )
+    );
+  });
+
+  it('changing week triggers new fetch', async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({ season: 2024, week: 5, rankings: [] }),
+    } as Response);
+
+    const { result, rerender } = renderHook(
+      ({ season, week }: { season: number; week: number }) =>
+        useRankings(season, week),
+      {
+        wrapper: createWrapper(),
+        initialProps: { season: 2024, week: 5 },
+      }
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({ season: 2024, week: 3, rankings: [] }),
+    } as Response);
+
+    rerender({ season: 2024, week: 3 });
+
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('week=3'),
+        undefined
+      )
+    );
+  });
+
+  it('transitioning season from null to valid triggers fetch', async () => {
+    const { result, rerender } = renderHook(
+      ({
+        season,
+        week,
+      }: {
+        season: number | null;
+        week: number | null;
+      }) => useRankings(season, week),
+      {
+        wrapper: createWrapper(),
+        initialProps: { season: null as number | null, week: 5 as number | null },
+      }
+    );
+
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({ season: 2024, week: 5, rankings: [] }),
+    } as Response);
+
+    rerender({ season: 2024, week: 5 });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(global.fetch).toHaveBeenCalled();
   });
 });

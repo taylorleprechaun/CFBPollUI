@@ -26,13 +26,13 @@ const defaultColumns = [
 const mockEntries: AllTimeEntry[] = [
   {
     allTimeRank: 1,
-    logoURL: 'https://example.com/georgia.png',
+    logoURL: 'https://example.com/florida.png',
     losses: 0,
     rank: 1,
     rating: 55.1234,
     record: '13-0',
     season: 2023,
-    teamName: 'Georgia',
+    teamName: 'Florida',
     weightedSOS: 0.8456,
     week: 5,
     wins: 13,
@@ -83,7 +83,7 @@ describe('AllTimeTable', () => {
   it('renders entry data', () => {
     renderTable();
 
-    expect(screen.getByText('Georgia')).toBeInTheDocument();
+    expect(screen.getByText('Florida')).toBeInTheDocument();
     expect(screen.getByText('Alabama')).toBeInTheDocument();
     expect(screen.getByText('13-0')).toBeInTheDocument();
     expect(screen.getByText('12-1')).toBeInTheDocument();
@@ -108,10 +108,10 @@ describe('AllTimeTable', () => {
   it('renders team name as link with correct URL', () => {
     renderTable();
 
-    const georgiaLink = screen.getByRole('link', { name: 'Georgia' });
-    expect(georgiaLink).toHaveAttribute(
+    const floridaLink = screen.getByRole('link', { name: 'Florida' });
+    expect(floridaLink).toHaveAttribute(
       'href',
-      '/team-details?team=Georgia&season=2023&week=5'
+      '/team-details?team=Florida&season=2023&week=5'
     );
 
     const alabamaLink = screen.getByRole('link', { name: 'Alabama' });
@@ -126,8 +126,8 @@ describe('AllTimeTable', () => {
 
     const images = screen.getAllByRole('img');
     expect(images).toHaveLength(2);
-    expect(images[0]).toHaveAttribute('src', 'https://example.com/georgia.png');
-    expect(images[0]).toHaveAttribute('alt', 'Georgia logo');
+    expect(images[0]).toHaveAttribute('src', 'https://example.com/florida.png');
+    expect(images[0]).toHaveAttribute('alt', 'Florida logo');
     expect(images[1]).toHaveAttribute('src', 'https://example.com/alabama.png');
     expect(images[1]).toHaveAttribute('alt', 'Alabama logo');
   });
@@ -142,7 +142,7 @@ describe('AllTimeTable', () => {
         rating: 50.0,
         record: '12-0',
         season: 2023,
-        teamName: 'San Jos\u00e9 State',
+        teamName: 'Iowa',
         weightedSOS: 0.5,
         week: 5,
         wins: 12,
@@ -151,10 +151,10 @@ describe('AllTimeTable', () => {
 
     renderTable({ entries });
 
-    const link = screen.getByRole('link', { name: 'San Jos\u00e9 State' });
+    const link = screen.getByRole('link', { name: 'Iowa' });
     expect(link).toHaveAttribute(
       'href',
-      `/team-details?team=${encodeURIComponent('San Jos\u00e9 State')}&season=2023&week=5`
+      `/team-details?team=${encodeURIComponent('Iowa')}&season=2023&week=5`
     );
   });
 

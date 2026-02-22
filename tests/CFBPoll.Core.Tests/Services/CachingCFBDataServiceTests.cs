@@ -267,7 +267,7 @@ public class CachingCFBDataServiceTests
     {
         var cachedData = new List<Game>
         {
-            new Game { GameID = 1, HomeTeam = "Alabama", AwayTeam = "Georgia", HomePoints = 28, AwayPoints = 24 }
+            new Game { GameID = 1, HomeTeam = "Alabama", AwayTeam = "Florida", HomePoints = 28, AwayPoints = 24 }
         };
 
         _mockCache.Setup(x => x.GetAsync<List<Game>>("games_2024_regular"))
@@ -395,7 +395,7 @@ public class CachingCFBDataServiceTests
         var teams = new List<FBSTeam> { new FBSTeam { Name = "Alabama" } };
         var regularGames = new List<Game>
         {
-            new Game { GameID = 1, Week = 1, HomeTeam = "Alabama", AwayTeam = "Georgia", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" }
+            new Game { GameID = 1, Week = 1, HomeTeam = "Alabama", AwayTeam = "Florida", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" }
         };
         var postseasonGames = new List<Game>
         {
@@ -430,11 +430,11 @@ public class CachingCFBDataServiceTests
         var teams = new List<FBSTeam>
         {
             new FBSTeam { Name = "Alabama", Conference = "SEC", Color = "#9E1B32" },
-            new FBSTeam { Name = "Georgia", Conference = "SEC", Color = "#BA0C2F" }
+            new FBSTeam { Name = "Florida", Conference = "SEC", Color = "#BA0C2F" }
         };
         var regularGames = new List<Game>
         {
-            new Game { GameID = 1, Week = 1, HomeTeam = "Alabama", AwayTeam = "Georgia", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" }
+            new Game { GameID = 1, Week = 1, HomeTeam = "Alabama", AwayTeam = "Florida", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" }
         };
 
         SetupCacheMiss();
@@ -448,7 +448,7 @@ public class CachingCFBDataServiceTests
 
         Assert.Equal(2, result.Teams.Count);
         Assert.Equal(1, result.Teams["Alabama"].Wins);
-        Assert.Equal(1, result.Teams["Georgia"].Losses);
+        Assert.Equal(1, result.Teams["Florida"].Losses);
     }
 
     [Fact]
@@ -462,7 +462,7 @@ public class CachingCFBDataServiceTests
                 Week = 1,
                 SeasonType = "regular",
                 HomeTeam = "Alabama",
-                AwayTeam = "Georgia",
+                AwayTeam = "Florida",
                 HomePoints = 28,
                 AwayPoints = 24,
                 Completed = true
@@ -563,7 +563,7 @@ public class CachingCFBDataServiceTests
             {
                 GameID = 12345,
                 Team = "Alabama",
-                Opponent = "Georgia",
+                Opponent = "Florida",
                 Week = 5,
                 Offense = new AdvancedGameStatsUnit { Plays = 70, PPA = 0.25 },
                 Defense = new AdvancedGameStatsUnit { Plays = 65, PPA = -0.15 }
@@ -683,7 +683,7 @@ public class CachingCFBDataServiceTests
         var teams = new List<FBSTeam> { new FBSTeam { Name = "Alabama", Conference = "SEC" } };
         var regularGames = new List<Game>
         {
-            new Game { GameID = 1, Week = 1, HomeTeam = "Alabama", AwayTeam = "Georgia", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" },
+            new Game { GameID = 1, Week = 1, HomeTeam = "Alabama", AwayTeam = "Florida", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" },
             new Game { GameID = 2, Week = 10, HomeTeam = "Alabama", AwayTeam = "LSU", HomePoints = 35, AwayPoints = 21, SeasonType = "regular" }
         };
         var postseasonGames = new List<Game>();

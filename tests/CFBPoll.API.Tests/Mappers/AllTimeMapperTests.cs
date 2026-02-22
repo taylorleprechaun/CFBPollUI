@@ -12,12 +12,12 @@ public class AllTimeMapperTests
         var entry = new AllTimeEntry
         {
             AllTimeRank = 1,
-            LogoURL = "https://example.com/georgia.png",
+            LogoURL = "https://example.com/florida.png",
             Losses = 2,
             Rank = 3,
             Rating = 55.1234,
             Season = 2023,
-            TeamName = "Georgia",
+            TeamName = "Florida",
             WeightedSOS = 0.7890,
             Week = 5,
             Wins = 11
@@ -26,12 +26,12 @@ public class AllTimeMapperTests
         var result = AllTimeMapper.ToDTO(entry);
 
         Assert.Equal(1, result.AllTimeRank);
-        Assert.Equal("https://example.com/georgia.png", result.LogoURL);
+        Assert.Equal("https://example.com/florida.png", result.LogoURL);
         Assert.Equal(2, result.Losses);
         Assert.Equal(3, result.Rank);
         Assert.Equal(55.1234, result.Rating);
         Assert.Equal(2023, result.Season);
-        Assert.Equal("Georgia", result.TeamName);
+        Assert.Equal("Florida", result.TeamName);
         Assert.Equal(0.7890, result.WeightedSOS);
         Assert.Equal(5, result.Week);
         Assert.Equal(11, result.Wins);
