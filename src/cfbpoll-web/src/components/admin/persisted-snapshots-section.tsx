@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
+
 import { getWeekLabel } from '../../lib/week-utils';
 import { ChevronIcon } from '../ui/chevron-icon';
 import { SuccessCheckmark } from './success-checkmark';
-import type { PersistedWeek } from '../../schemas/admin';
 import type { ActionFeedback } from './types';
+import type { PersistedWeek } from '../../schemas/admin';
 
 interface PersistedSnapshotsSectionProps {
   actionFeedback: ActionFeedback | null;
@@ -78,12 +79,15 @@ export function PersistedSnapshotsSection({
         <div className="space-y-2">
           {groupedPersistedWeeks.map((group) => {
             const isCollapsed = collapsedSeasons.has(group.season);
+            const contentId = `snapshots-season-${group.season}`;
             return (
               <div key={group.season} className="border border-gray-200 rounded-lg overflow-hidden">
                 <button
                   type="button"
                   onClick={() => onToggleSeason(group.season)}
                   className="w-full flex items-center gap-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 text-left font-medium text-gray-900"
+                  aria-expanded={!isCollapsed}
+                  aria-controls={contentId}
                 >
                   <ChevronIcon open={!isCollapsed} size="w-4 h-4" />
                   <span>{group.season} Season</span>
@@ -92,6 +96,7 @@ export function PersistedSnapshotsSection({
                   </span>
                 </button>
                 <div
+                  id={contentId}
                   className="grid transition-[grid-template-rows] duration-300 ease-in-out"
                   style={{ gridTemplateRows: isCollapsed ? '0fr' : '1fr' }}
                 >

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { CalculateSection } from '../../../components/admin';
 
 const defaultProps = {
@@ -32,11 +33,11 @@ describe('CalculateSection', () => {
     expect(screen.getByLabelText('Week')).toBeInTheDocument();
   });
 
-  it('calls onCalculate when button is clicked', () => {
+  it('calls onCalculate when button is clicked', async () => {
     const onCalculate = vi.fn();
     render(<CalculateSection {...defaultProps} onCalculate={onCalculate} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     expect(onCalculate).toHaveBeenCalled();
   });
@@ -59,22 +60,22 @@ describe('CalculateSection', () => {
     expect(screen.getByRole('button', { name: 'Calculate' })).toBeDisabled();
   });
 
-  it('calls onSeasonChange and onWeekChange when season changes', () => {
+  it('calls onSeasonChange and onWeekChange when season changes', async () => {
     const onSeasonChange = vi.fn();
     const onWeekChange = vi.fn();
     render(<CalculateSection {...defaultProps} onSeasonChange={onSeasonChange} onWeekChange={onWeekChange} />);
 
-    fireEvent.change(screen.getByLabelText('Season'), { target: { value: '2023' } });
+    await userEvent.selectOptions(screen.getByLabelText('Season'), '2023');
 
     expect(onSeasonChange).toHaveBeenCalledWith(2023);
     expect(onWeekChange).toHaveBeenCalledWith(null);
   });
 
-  it('calls onWeekChange when week changes', () => {
+  it('calls onWeekChange when week changes', async () => {
     const onWeekChange = vi.fn();
     render(<CalculateSection {...defaultProps} onWeekChange={onWeekChange} />);
 
-    fireEvent.change(screen.getByLabelText('Week'), { target: { value: '1' } });
+    await userEvent.selectOptions(screen.getByLabelText('Week'), '1');
 
     expect(onWeekChange).toHaveBeenCalledWith(1);
   });

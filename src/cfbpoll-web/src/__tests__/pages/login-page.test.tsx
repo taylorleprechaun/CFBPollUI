@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { LoginPage } from '../../pages/login-page';
 
@@ -51,9 +52,9 @@ describe('LoginPage', () => {
     mockLogin.mockResolvedValue(undefined);
     renderLoginPage();
 
-    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'admin' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secret' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Log In' }));
+    await userEvent.type(screen.getByLabelText('Username'), 'admin');
+    await userEvent.type(screen.getByLabelText('Password'), 'secret');
+    await userEvent.click(screen.getByRole('button', { name: 'Log In' }));
 
     await waitFor(() => {
       expect(mockLogin).toHaveBeenCalledWith('admin', 'secret');
@@ -64,12 +65,25 @@ describe('LoginPage', () => {
     mockLogin.mockRejectedValue(new Error('Invalid credentials'));
     renderLoginPage();
 
-    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'admin' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'wrong' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Log In' }));
+    await userEvent.type(screen.getByLabelText('Username'), 'admin');
+    await userEvent.type(screen.getByLabelText('Password'), 'wrong');
+    await userEvent.click(screen.getByRole('button', { name: 'Log In' }));
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent('Invalid credentials');
+    });
+  });
+
+  it('shows generic error message when login throws a non-Error value', async () => {
+    mockLogin.mockRejectedValue('some string');
+    renderLoginPage();
+
+    await userEvent.type(screen.getByLabelText('Username'), 'admin');
+    await userEvent.type(screen.getByLabelText('Password'), 'wrong');
+    await userEvent.click(screen.getByRole('button', { name: 'Log In' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent('Login failed');
     });
   });
 
@@ -77,9 +91,9 @@ describe('LoginPage', () => {
     mockLogin.mockResolvedValue(undefined);
     renderLoginPage();
 
-    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'admin' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secret' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Log In' }));
+    await userEvent.type(screen.getByLabelText('Username'), 'admin');
+    await userEvent.type(screen.getByLabelText('Password'), 'secret');
+    await userEvent.click(screen.getByRole('button', { name: 'Log In' }));
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/admin');
@@ -90,9 +104,9 @@ describe('LoginPage', () => {
     mockLogin.mockImplementation(() => new Promise(() => {}));
     renderLoginPage();
 
-    fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'admin' } });
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secret' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Log In' }));
+    await userEvent.type(screen.getByLabelText('Username'), 'admin');
+    await userEvent.type(screen.getByLabelText('Password'), 'secret');
+    await userEvent.click(screen.getByRole('button', { name: 'Log In' }));
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Logging in...' })).toBeDisabled();

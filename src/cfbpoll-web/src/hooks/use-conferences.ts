@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
+import { STALE_TIME_CONFERENCES } from '../lib/query-config';
 import { fetchConferences } from '../services/api';
 
 export function useConferences() {
   return useQuery({
     queryKey: ['conferences'],
     queryFn: fetchConferences,
-    staleTime: 1000 * 60 * 60 * 24, // 24 hours
+    staleTime: STALE_TIME_CONFERENCES,
   });
 }

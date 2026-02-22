@@ -1,6 +1,8 @@
 import { API_BASE_URL } from '../lib/config';
+import { triggerBlobDownload } from '../lib/download-utils';
 import { parseResponse } from '../lib/parse-response';
 import { safeFetch } from '../lib/safe-fetch';
+
 import {
   CalculateResponseSchema,
   LoginResponseSchema,
@@ -91,12 +93,5 @@ export async function downloadExport(
   );
 
   const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `Rankings_${season}_Week${week}.xlsx`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  triggerBlobDownload(blob, `Rankings_${season}_Week${week}.xlsx`);
 }

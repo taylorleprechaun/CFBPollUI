@@ -1,3 +1,5 @@
+import { useId } from 'react';
+
 interface SeasonSelectorProps {
   seasons: number[];
   selectedSeason: number | null;
@@ -11,13 +13,15 @@ export function SeasonSelector({
   onSeasonChange,
   isLoading,
 }: SeasonSelectorProps) {
+  const id = useId();
+
   return (
     <div className="flex items-center space-x-2">
-      <label htmlFor="season-select" className="font-medium text-gray-700">
+      <label htmlFor={id} className="font-medium text-gray-700">
         Season:
       </label>
       <select
-        id="season-select"
+        id={id}
         value={selectedSeason ?? ''}
         onChange={(e) => onSeasonChange(Number(e.target.value))}
         disabled={isLoading}

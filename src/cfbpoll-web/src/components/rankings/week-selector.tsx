@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { Week } from '../../types';
 
 interface WeekSelectorProps {
@@ -13,13 +14,15 @@ export function WeekSelector({
   onWeekChange,
   isLoading,
 }: WeekSelectorProps) {
+  const id = useId();
+
   return (
     <div className="flex items-center space-x-2">
-      <label htmlFor="week-select" className="font-medium text-gray-700">
+      <label htmlFor={id} className="font-medium text-gray-700">
         Week:
       </label>
       <select
-        id="week-select"
+        id={id}
         value={selectedWeek ?? ''}
         onChange={(e) => onWeekChange(Number(e.target.value))}
         disabled={isLoading || weeks.length === 0}

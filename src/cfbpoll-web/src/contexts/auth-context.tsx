@@ -59,14 +59,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     expiryTimerRef.current = setTimeout(logout, remainingMs);
   }, [clearExpiryTimer, logout]);
 
-  useEffect(() => {
-    const stored = getStoredToken();
-    if (stored) {
-      scheduleExpiry(stored.expiryMs);
-    }
-    return clearExpiryTimer;
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   const login = useCallback(async (username: string, password: string) => {
     const response = await loginUser(username, password);
     const expiryMs = Date.now() + response.expiresIn * 1000;
@@ -82,6 +74,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout,
     token,
   }), [login, logout, token]);
+
+  useEffect(() => {
+    const stored = getStoredToken();
+    if (stored) {
+      scheduleExpiry(stored.expiryMs);
+    }
+    return clearExpiryTimer;
+  }, [clearExpiryTimer, scheduleExpiry]);
 
   return (
     <AuthContext.Provider value={value}>

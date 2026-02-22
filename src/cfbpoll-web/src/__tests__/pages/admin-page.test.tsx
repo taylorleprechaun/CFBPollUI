@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, waitForElementToBeRemoved } from '@testing-library/react';
+import { render, screen, waitFor, waitForElementToBeRemoved } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AdminPage } from '../../pages/admin-page';
@@ -73,11 +74,14 @@ vi.mock('../../hooks/use-admin-mutations', () => ({
 let mockPersistedWeeksData: { season: number; week: number; published: boolean; createdAt: string }[] | undefined = [];
 let mockPersistedWeeksError: Error | null = null;
 
+const mockRefetchPersistedWeeks = vi.fn();
+
 vi.mock('../../hooks/use-persisted-weeks', () => ({
   usePersistedWeeks: () => ({
     data: mockPersistedWeeksData,
     error: mockPersistedWeeksError,
     isLoading: false,
+    refetch: mockRefetchPersistedWeeks,
   }),
 }));
 
@@ -132,7 +136,7 @@ describe('AdminPage', () => {
     });
 
     renderAdminPage();
-    fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
       expect(mockCalculateMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
@@ -146,7 +150,7 @@ describe('AdminPage', () => {
     });
 
     renderAdminPage();
-    fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
       expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
@@ -160,7 +164,7 @@ describe('AdminPage', () => {
     });
 
     renderAdminPage();
-    fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
       expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
@@ -169,10 +173,10 @@ describe('AdminPage', () => {
     const previewButton = screen.getByText(/Preview: 2024 Week 6/).closest('button')!;
     const chevron = () => previewButton.querySelector('svg')!;
 
-    fireEvent.click(screen.getByText(/Preview: 2024 Week 6/));
+    await userEvent.click(screen.getByText(/Preview: 2024 Week 6/));
     expect(chevron().classList.toString()).toContain('-rotate-90');
 
-    fireEvent.click(screen.getByText(/Preview: 2024 Week 6/));
+    await userEvent.click(screen.getByText(/Preview: 2024 Week 6/));
     expect(chevron().classList.toString()).not.toContain('-rotate-90');
   });
 
@@ -183,7 +187,7 @@ describe('AdminPage', () => {
     });
 
     renderAdminPage();
-    fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
       expect(screen.getByText(/Rankings were not persisted/)).toBeInTheDocument();
@@ -222,7 +226,7 @@ describe('AdminPage', () => {
     expect(chevron.classList.toString()).toContain('-rotate-90');
   });
 
-  it('expands and collapses season groups on click', () => {
+  it('expands and collapses season groups on click', async () => {
     mockPersistedWeeksData = [
       { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
     ];
@@ -232,14 +236,14 @@ describe('AdminPage', () => {
     const seasonButton = screen.getByText('2024 Season').closest('button')!;
     const chevron = () => seasonButton.querySelector('svg')!;
 
-    fireEvent.click(screen.getByText('2024 Season'));
+    await userEvent.click(screen.getByText('2024 Season'));
     expect(chevron().classList.toString()).not.toContain('-rotate-90');
 
-    fireEvent.click(screen.getByText('2024 Season'));
+    await userEvent.click(screen.getByText('2024 Season'));
     expect(chevron().classList.toString()).toContain('-rotate-90');
   });
 
-  it('expand all and collapse all buttons work', () => {
+  it('expand all and collapse all buttons work', async () => {
     mockPersistedWeeksData = [
       { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
       { season: 2023, week: 1, published: true, createdAt: '2023-09-01T00:00:00Z' },
@@ -255,20 +259,20 @@ describe('AdminPage', () => {
     expect(chevron2024().classList.toString()).toContain('-rotate-90');
     expect(chevron2023().classList.toString()).toContain('-rotate-90');
 
-    fireEvent.click(screen.getByText('Expand All'));
+    await userEvent.click(screen.getByText('Expand All'));
 
     expect(chevron2024().classList.toString()).not.toContain('-rotate-90');
     expect(chevron2023().classList.toString()).not.toContain('-rotate-90');
 
-    fireEvent.click(screen.getByText('Collapse All'));
+    await userEvent.click(screen.getByText('Collapse All'));
 
     expect(chevron2024().classList.toString()).toContain('-rotate-90');
     expect(chevron2023().classList.toString()).toContain('-rotate-90');
   });
 
-  it('calls logout when Log Out is clicked', () => {
+  it('calls logout when Log Out is clicked', async () => {
     renderAdminPage();
-    fireEvent.click(screen.getByText('Log Out'));
+    await userEvent.click(screen.getByText('Log Out'));
     expect(mockLogout).toHaveBeenCalled();
   });
 
@@ -281,9 +285,9 @@ describe('AdminPage', () => {
     renderAdminPage();
 
     // Expand to see Delete button
-    fireEvent.click(screen.getByText('2024 Season'));
+    await userEvent.click(screen.getByText('2024 Season'));
 
-    fireEvent.click(screen.getByText('Delete'));
+    await userEvent.click(screen.getByText('Delete'));
 
     await waitFor(() => {
       expect(mockDeleteMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 1 });
@@ -299,9 +303,9 @@ describe('AdminPage', () => {
     renderAdminPage();
 
     // Expand to see Delete button
-    fireEvent.click(screen.getByText('2024 Season'));
+    await userEvent.click(screen.getByText('2024 Season'));
 
-    fireEvent.click(screen.getByText('Delete'));
+    await userEvent.click(screen.getByText('Delete'));
 
     // Confirm modal should appear
     const dialog = screen.getByRole('dialog');
@@ -312,14 +316,14 @@ describe('AdminPage', () => {
     const modalDeleteButton = screen.getAllByText('Delete').find(
       (btn) => btn.closest('[role="dialog"]') !== null
     )!;
-    fireEvent.click(modalDeleteButton);
+    await userEvent.click(modalDeleteButton);
 
     await waitFor(() => {
       expect(mockDeleteMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 1 });
     });
   });
 
-  it('does not delete when confirm modal is cancelled', () => {
+  it('does not delete when confirm modal is cancelled', async () => {
     mockPersistedWeeksData = [
       { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
     ];
@@ -327,15 +331,15 @@ describe('AdminPage', () => {
     renderAdminPage();
 
     // Expand to see Delete button
-    fireEvent.click(screen.getByText('2024 Season'));
+    await userEvent.click(screen.getByText('2024 Season'));
 
-    fireEvent.click(screen.getByText('Delete'));
+    await userEvent.click(screen.getByText('Delete'));
 
     // Confirm modal should appear
     expect(screen.getByRole('dialog')).toBeInTheDocument();
 
     // Click "Cancel" in the modal
-    fireEvent.click(screen.getByText('Cancel'));
+    await userEvent.click(screen.getByText('Cancel'));
 
     // Modal should be dismissed and delete should not have been called
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -351,9 +355,9 @@ describe('AdminPage', () => {
     renderAdminPage();
 
     // Expand to see Publish button
-    fireEvent.click(screen.getByText('2024 Season'));
+    await userEvent.click(screen.getByText('2024 Season'));
 
-    fireEvent.click(screen.getByText('Publish'));
+    await userEvent.click(screen.getByText('Publish'));
 
     await waitFor(() => {
       expect(mockPublishMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 1 });
@@ -369,9 +373,9 @@ describe('AdminPage', () => {
     renderAdminPage();
 
     // Expand to see Publish button
-    fireEvent.click(screen.getByText('2024 Season'));
+    await userEvent.click(screen.getByText('2024 Season'));
 
-    fireEvent.click(screen.getByText('Publish'));
+    await userEvent.click(screen.getByText('Publish'));
 
     await waitFor(() => {
       expect(screen.getByLabelText('Success')).toBeInTheDocument();
@@ -387,9 +391,9 @@ describe('AdminPage', () => {
     renderAdminPage();
 
     // Expand to see Publish button
-    fireEvent.click(screen.getByText('2024 Season'));
+    await userEvent.click(screen.getByText('2024 Season'));
 
-    fireEvent.click(screen.getByText('Publish'));
+    await userEvent.click(screen.getByText('Publish'));
 
     await waitFor(() => {
       expect(screen.getByText('Snapshot not found')).toBeInTheDocument();
@@ -404,14 +408,14 @@ describe('AdminPage', () => {
     mockPublishMutateAsync.mockResolvedValue(undefined);
 
     renderAdminPage();
-    fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
       expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
     });
 
     const publishButtons = screen.getAllByText('Publish');
-    fireEvent.click(publishButtons[0]);
+    await userEvent.click(publishButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByLabelText('Success')).toBeInTheDocument();
@@ -426,14 +430,14 @@ describe('AdminPage', () => {
     mockPublishMutateAsync.mockRejectedValue(new Error('Server error'));
 
     renderAdminPage();
-    fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
       expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
     });
 
     const publishButtons = screen.getAllByText('Publish');
-    fireEvent.click(publishButtons[0]);
+    await userEvent.click(publishButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByText('Server error')).toBeInTheDocument();
@@ -449,9 +453,9 @@ describe('AdminPage', () => {
     renderAdminPage();
 
     // Expand to see Publish button
-    fireEvent.click(screen.getByText('2024 Season'));
+    await userEvent.click(screen.getByText('2024 Season'));
 
-    fireEvent.click(screen.getByText('Publish'));
+    await userEvent.click(screen.getByText('Publish'));
 
     await waitFor(() => {
       expect(screen.getByLabelText('Success')).toBeInTheDocument();
@@ -471,9 +475,9 @@ describe('AdminPage', () => {
     renderAdminPage();
 
     // Expand to see Export button
-    fireEvent.click(screen.getByText('2024 Season'));
+    await userEvent.click(screen.getByText('2024 Season'));
 
-    fireEvent.click(screen.getByText('Export'));
+    await userEvent.click(screen.getByText('Export'));
 
     await waitFor(() => {
       expect(mockExportMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 1 });
@@ -484,27 +488,27 @@ describe('AdminPage', () => {
     mockCalculateMutateAsync.mockRejectedValue(new Error('Network error'));
 
     renderAdminPage();
-    fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
       expect(screen.getByText(/Network error/)).toBeInTheDocument();
     });
   });
 
-  it('changes season on season dropdown change', () => {
+  it('changes season on season dropdown change', async () => {
     renderAdminPage();
 
     const seasonSelect = screen.getByLabelText('Season');
-    fireEvent.change(seasonSelect, { target: { value: '2023' } });
+    await userEvent.selectOptions(seasonSelect, '2023');
 
     expect(mockSetSelectedSeason).toHaveBeenCalledWith(2023);
   });
 
-  it('changes week on week dropdown change', () => {
+  it('changes week on week dropdown change', async () => {
     renderAdminPage();
 
     const weekSelect = screen.getByLabelText('Week');
-    fireEvent.change(weekSelect, { target: { value: '1' } });
+    await userEvent.selectOptions(weekSelect, '1');
 
     expect((weekSelect as HTMLSelectElement).value).toBe('1');
   });
@@ -518,9 +522,9 @@ describe('AdminPage', () => {
     renderAdminPage();
 
     // Expand to see Delete button
-    fireEvent.click(screen.getByText('2024 Season'));
+    await userEvent.click(screen.getByText('2024 Season'));
 
-    fireEvent.click(screen.getByText('Delete'));
+    await userEvent.click(screen.getByText('Delete'));
 
     await waitFor(() => {
       expect(screen.getByText(/Delete failed/)).toBeInTheDocument();
@@ -536,9 +540,9 @@ describe('AdminPage', () => {
     renderAdminPage();
 
     // Expand to see Export button
-    fireEvent.click(screen.getByText('2024 Season'));
+    await userEvent.click(screen.getByText('2024 Season'));
 
-    fireEvent.click(screen.getByText('Export'));
+    await userEvent.click(screen.getByText('Export'));
 
     await waitFor(() => {
       expect(screen.getByText(/Export failed/)).toBeInTheDocument();
@@ -553,13 +557,13 @@ describe('AdminPage', () => {
     mockExportMutateAsync.mockResolvedValue(undefined);
 
     renderAdminPage();
-    fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
       expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('Download Excel'));
+    await userEvent.click(screen.getByText('Download Excel'));
 
     await waitFor(() => {
       expect(mockExportMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
@@ -578,16 +582,16 @@ describe('AdminPage', () => {
 
     renderAdminPage();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
       expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
     });
 
     // Expand to see Delete button
-    fireEvent.click(screen.getByText('2024 Season'));
+    await userEvent.click(screen.getByText('2024 Season'));
 
-    fireEvent.click(screen.getByText('Delete'));
+    await userEvent.click(screen.getByText('Delete'));
 
     await waitFor(() => {
       expect(mockDeleteMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
@@ -607,13 +611,13 @@ describe('AdminPage', () => {
 
     renderAdminPage();
 
-    fireEvent.click(screen.getByText('2024 Season'));
+    await userEvent.click(screen.getByText('2024 Season'));
     const seasonButton = screen.getByText('2024 Season').closest('button')!;
     const chevron = () => seasonButton.querySelector('svg')!;
     expect(chevron().classList.toString()).not.toContain('-rotate-90');
 
     const publishButtons = screen.getAllByText('Publish');
-    fireEvent.click(publishButtons[0]);
+    await userEvent.click(publishButtons[0]);
 
     await waitFor(() => {
       expect(mockPublishMutateAsync).toHaveBeenCalled();
@@ -642,16 +646,16 @@ describe('AdminPage', () => {
 
     renderAdminPage();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
       expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('2024 Season'));
+    await userEvent.click(screen.getByText('2024 Season'));
 
     const publishButtons = screen.getAllByText('Publish');
-    fireEvent.click(publishButtons[0]);
+    await userEvent.click(publishButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByLabelText('Success')).toBeInTheDocument();
@@ -662,5 +666,31 @@ describe('AdminPage', () => {
 
     const previewSection = screen.getByText(/Preview: 2024 Week 6/).closest('div.bg-white');
     expect(previewSection?.querySelector('[aria-label="Success"]')).toBeInTheDocument();
+  });
+
+  it('calls refetchPersistedWeeks when retry is clicked on a persisted weeks error', async () => {
+    mockPersistedWeeksError = new Error('Server unavailable');
+
+    renderAdminPage();
+
+    await userEvent.click(screen.getByText('Retry'));
+
+    expect(mockRefetchPersistedWeeks).toHaveBeenCalled();
+  });
+
+  it('does not call refetchPersistedWeeks when retry is clicked on an operation error', async () => {
+    mockCalculateMutateAsync.mockRejectedValue(new Error('Network error'));
+
+    renderAdminPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Network error/)).toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByText('Retry'));
+
+    expect(mockRefetchPersistedWeeks).not.toHaveBeenCalled();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });

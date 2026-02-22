@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+
 import { ErrorAlert } from '../components/error';
 import { SeasonSelector } from '../components/rankings/season-selector';
 import { RecordRow, ScheduleRow } from '../components/team-details';
@@ -27,7 +28,12 @@ export function TeamDetailsPage() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedTeam = searchParams.get('team') || null;
+  const teamSelectId = useId();
+  const [logoErrorTeam, setLogoErrorTeam] = useState<string | null>(null);
+
   const initialSeasonApplied = useRef(false);
+  const locationCardRef = useRef<HTMLDivElement>(null);
+  const rankCardRef = useRef<HTMLDivElement>(null);
 
   const {
     seasons,
@@ -37,18 +43,6 @@ export function TeamDetailsPage() {
     selectedSeason,
     setSelectedSeason,
   } = useSeason();
-
-  useEffect(() => {
-    if (initialSeasonApplied.current) return;
-    const param = searchParams.get('season');
-    if (param) {
-      const parsed = Number(param);
-      if (!Number.isNaN(parsed) && parsed !== selectedSeason) {
-        setSelectedSeason(parsed);
-      }
-    }
-    initialSeasonApplied.current = true;
-  }, [searchParams, selectedSeason, setSelectedSeason]);
 
   const {
     data: weeksData,
@@ -82,6 +76,38 @@ export function TeamDetailsPage() {
     return new Set(rankingsData.rankings.map((t) => t.teamName));
   }, [rankingsData?.rankings]);
 
+  const handleTeamChange = useCallback((teamName: string) => {
+    const params: Record<string, string> = {};
+    if (selectedSeason !== null) params.season = String(selectedSeason);
+    if (teamName) params.team = teamName;
+    setSearchParams(params);
+  }, [selectedSeason, setSearchParams]);
+
+  const handleLogoError = useCallback(
+    () => setLogoErrorTeam(selectedTeam),
+    [selectedTeam]
+  );
+
+  useEffect(() => {
+    if (initialSeasonApplied.current) return;
+    const param = searchParams.get('season');
+    if (param) {
+      const parsed = Number(param);
+      if (!Number.isNaN(parsed) && parsed !== selectedSeason) {
+        setSelectedSeason(parsed);
+      }
+    }
+    initialSeasonApplied.current = true;
+  }, [searchParams, selectedSeason, setSelectedSeason]);
+
+  useEffect(() => {
+    if (selectedTeam && fbsTeamNames.size > 0 && !fbsTeamNames.has(selectedTeam)) {
+      handleTeamChange('');
+    }
+  }, [fbsTeamNames, selectedTeam, handleTeamChange]);
+
+  const logoError = logoErrorTeam === selectedTeam;
+
   const handleSeasonChange = (season: number) => {
     setSelectedSeason(season);
     setSelectedWeek(null);
@@ -90,19 +116,6 @@ export function TeamDetailsPage() {
     setSearchParams(params, { replace: true });
   };
 
-  const handleTeamChange = useCallback((teamName: string) => {
-    const params: Record<string, string> = {};
-    if (selectedSeason !== null) params.season = String(selectedSeason);
-    if (teamName) params.team = teamName;
-    setSearchParams(params);
-  }, [selectedSeason, setSearchParams]);
-
-  useEffect(() => {
-    if (selectedTeam && fbsTeamNames.size > 0 && !fbsTeamNames.has(selectedTeam)) {
-      handleTeamChange('');
-    }
-  }, [fbsTeamNames, selectedTeam, handleTeamChange]);
-
   const error = seasonsError || weeksError || rankingsError || teamDetailError;
   const handleRetry = () => {
     if (seasonsError) refetchSeasons();
@@ -110,17 +123,6 @@ export function TeamDetailsPage() {
     if (rankingsError) refetchRankings();
     if (teamDetailError) refetchTeamDetail();
   };
-
-  const [logoErrorTeam, setLogoErrorTeam] = useState<string | null>(null);
-  const logoError = logoErrorTeam === selectedTeam;
-
-  const handleLogoError = useCallback(
-    () => setLogoErrorTeam(selectedTeam),
-    [selectedTeam]
-  );
-
-  const locationCardRef = useRef<HTMLDivElement>(null);
-  const rankCardRef = useRef<HTMLDivElement>(null);
 
   const bgColor = teamDetail?.color || '#6B7280';
   const textColor = getContrastTextColor(bgColor);
@@ -137,11 +139,11 @@ export function TeamDetailsPage() {
             isLoading={seasonsLoading}
           />
           <div className="flex items-center space-x-2">
-            <label htmlFor="team-select" className="font-medium text-gray-700">
+            <label htmlFor={teamSelectId} className="font-medium text-gray-700">
               Team:
             </label>
             <select
-              id="team-select"
+              id={teamSelectId}
               value={selectedTeam ?? ''}
               onChange={(e) => handleTeamChange(e.target.value)}
               disabled={rankingsLoading || teamOptions.length === 0}

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/auth-context';
 import { useDocumentTitle } from '../hooks/use-document-title';
@@ -8,6 +8,9 @@ export function LoginPage() {
 
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  const usernameId = useId();
+  const passwordId = useId();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -35,11 +38,11 @@ export function LoginPage() {
         <h1 className="text-2xl font-bold text-gray-900 mb-6 text-center">Admin Login</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor={usernameId} className="block text-sm font-medium text-gray-700 mb-1">
               Username
             </label>
             <input
-              id="username"
+              id={usernameId}
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
@@ -49,11 +52,11 @@ export function LoginPage() {
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor={passwordId} className="block text-sm font-medium text-gray-700 mb-1">
               Password
             </label>
             <input
-              id="password"
+              id={passwordId}
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { Week } from '../../types';
 
 interface CalculateSectionProps {
@@ -25,16 +26,19 @@ export function CalculateSection({
   weeks,
   weeksLoading,
 }: CalculateSectionProps) {
+  const seasonId = useId();
+  const weekId = useId();
+
   return (
     <div className="bg-white shadow rounded-lg p-6">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Calculate Rankings</h2>
       <div className="flex flex-wrap gap-4 items-end">
         <div>
-          <label htmlFor="admin-season" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor={seasonId} className="block text-sm font-medium text-gray-700 mb-1">
             Season
           </label>
           <select
-            id="admin-season"
+            id={seasonId}
             value={selectedSeason ?? ''}
             onChange={(e) => {
               onSeasonChange(Number(e.target.value));
@@ -49,11 +53,11 @@ export function CalculateSection({
           </select>
         </div>
         <div>
-          <label htmlFor="admin-week" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor={weekId} className="block text-sm font-medium text-gray-700 mb-1">
             Week
           </label>
           <select
-            id="admin-week"
+            id={weekId}
             value={selectedWeek ?? ''}
             onChange={(e) => onWeekChange(Number(e.target.value))}
             disabled={weeksLoading}

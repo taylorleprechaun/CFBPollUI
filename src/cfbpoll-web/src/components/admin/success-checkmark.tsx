@@ -1,6 +1,10 @@
 import { useEffect } from 'react';
 
-export function SuccessCheckmark({ onDone }: { onDone: () => void }) {
+interface SuccessCheckmarkProps {
+  onDone: () => void;
+}
+
+export function SuccessCheckmark({ onDone }: SuccessCheckmarkProps) {
   useEffect(() => {
     const timer = setTimeout(onDone, 2000);
     return () => clearTimeout(timer);

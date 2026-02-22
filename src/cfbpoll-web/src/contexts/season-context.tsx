@@ -35,14 +35,6 @@ export function SeasonProvider({ children }: { children: ReactNode }) {
 
   const [selectedSeason, setSelectedSeasonState] = useState<number | null>(() => readStoredSeason());
 
-  useEffect(() => {
-    if (seasonsData?.seasons?.length && selectedSeason === null) {
-      const season = seasonsData.seasons[0];
-      setSelectedSeasonState(season);
-      sessionStorage.setItem(STORAGE_KEY, String(season));
-    }
-  }, [seasonsData, selectedSeason]);
-
   const setSelectedSeason = useCallback((season: number) => {
     setSelectedSeasonState(season);
     sessionStorage.setItem(STORAGE_KEY, String(season));
@@ -56,6 +48,14 @@ export function SeasonProvider({ children }: { children: ReactNode }) {
     selectedSeason,
     setSelectedSeason,
   }), [refetchSeasons, seasonsData, seasonsError, seasonsLoading, selectedSeason, setSelectedSeason]);
+
+  useEffect(() => {
+    if (seasonsData?.seasons?.length && selectedSeason === null) {
+      const season = seasonsData.seasons[0];
+      setSelectedSeasonState(season);
+      sessionStorage.setItem(STORAGE_KEY, String(season));
+    }
+  }, [seasonsData, selectedSeason]);
 
   return (
     <SeasonContext.Provider value={value}>

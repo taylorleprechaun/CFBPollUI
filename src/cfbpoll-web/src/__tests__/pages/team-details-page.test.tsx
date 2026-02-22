@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { TeamDetailsPage } from '../../pages/team-details-page';
 
@@ -431,39 +432,39 @@ describe('TeamDetailsPage', () => {
       expect(neutralRow?.textContent).toContain('-');
     });
 
-    it('expands record row on click to show individual games', () => {
+    it('expands record row on click to show individual games', async () => {
       setupMocks({ teamDetailData: mockTeamDetail });
       renderPage('/team-details?team=USC&season=2024&week=12');
 
       const homeRow = screen.getByText('Home').closest('button');
       expect(homeRow).toBeInTheDocument();
-      fireEvent.click(homeRow!);
+      await userEvent.click(homeRow!);
 
       const expandedContent = document.querySelector('.ml-4');
       expect(expandedContent).toBeInTheDocument();
       expect(expandedContent!.textContent).toContain('Idaho');
     });
 
-    it('shows colored result in expanded game list', () => {
+    it('shows colored result in expanded game list', async () => {
       setupMocks({ teamDetailData: mockTeamDetail });
       renderPage('/team-details?team=USC&season=2024&week=12');
 
       const homeRow = screen.getByText('Home').closest('button');
-      fireEvent.click(homeRow!);
+      await userEvent.click(homeRow!);
 
       const winResult = screen.getByText('W 42-14', { selector: '.ml-4 span' });
       expect(winResult).toHaveClass('text-green-600');
     });
 
-    it('collapses record row on second click', () => {
+    it('collapses record row on second click', async () => {
       setupMocks({ teamDetailData: mockTeamDetail });
       renderPage('/team-details?team=USC&season=2024&week=12');
 
       const homeRow = screen.getByText('Home').closest('button');
-      fireEvent.click(homeRow!);
+      await userEvent.click(homeRow!);
       expect(document.querySelector('.ml-4')).toBeInTheDocument();
 
-      fireEvent.click(homeRow!);
+      await userEvent.click(homeRow!);
       expect(document.querySelector('.ml-4')).not.toBeInTheDocument();
     });
 
@@ -476,23 +477,23 @@ describe('TeamDetailsPage', () => {
       expect(neutralRow).not.toHaveAttribute('role', 'button');
     });
 
-    it('shows opponent rank in expanded game list', () => {
+    it('shows opponent rank in expanded game list', async () => {
       setupMocks({ teamDetailData: mockTeamDetail });
       renderPage('/team-details?team=USC&season=2024&week=12');
 
       const homeRow = screen.getByText('Home').closest('button');
-      fireEvent.click(homeRow!);
+      await userEvent.click(homeRow!);
 
       expect(screen.getByText(/^#120/)).toBeInTheDocument();
     });
 
-    it('includes FCS opponents with null rank in vs #101+ expanded list', () => {
+    it('includes FCS opponents with null rank in vs #101+ expanded list', async () => {
       setupMocks({ teamDetailData: mockTeamDetail });
       renderPage('/team-details?team=USC&season=2024&week=12');
 
       const rank101Row = screen.getByText('vs #101+').closest('button');
       expect(rank101Row).toBeInTheDocument();
-      fireEvent.click(rank101Row!);
+      await userEvent.click(rank101Row!);
 
       const expandedContent = rank101Row!.parentElement!.querySelector('.ml-4');
       expect(expandedContent).toBeInTheDocument();
@@ -522,12 +523,12 @@ describe('TeamDetailsPage', () => {
       expect(teamOptions).toEqual(['Florida', 'USC']);
     });
 
-    it('handles team selection change', () => {
+    it('handles team selection change', async () => {
       setupMocks();
       renderPage();
 
       const teamSelect = screen.getByLabelText('Team:');
-      fireEvent.change(teamSelect, { target: { value: 'USC' } });
+      await userEvent.selectOptions(teamSelect, 'USC');
 
       expect(vi.mocked(useTeamDetail)).toHaveBeenCalled();
     });
@@ -551,12 +552,12 @@ describe('TeamDetailsPage', () => {
   });
 
   describe('season change', () => {
-    it('preserves team selection when season changes', () => {
+    it('preserves team selection when season changes', async () => {
       setupMocks({ teamDetailData: mockTeamDetail });
       renderPage('/team-details?team=USC&season=2024&week=12');
 
       const seasonSelect = screen.getByLabelText('Season:') as HTMLSelectElement;
-      fireEvent.change(seasonSelect, { target: { value: '2023' } });
+      await userEvent.selectOptions(seasonSelect, '2023');
 
       expect(mockSetSelectedSeason).toHaveBeenCalledWith(2023);
       const teamSelect = screen.getByLabelText('Team:') as HTMLSelectElement;
@@ -603,7 +604,7 @@ describe('TeamDetailsPage', () => {
       expect(screen.getByText(/Weeks failed/)).toBeInTheDocument();
     });
 
-    it('calls refetch when retry is clicked for error', () => {
+    it('calls refetch when retry is clicked for error', async () => {
       const refetch = vi.fn();
       vi.mocked(useWeeks).mockReturnValue({
         data: undefined,
@@ -626,7 +627,7 @@ describe('TeamDetailsPage', () => {
 
       renderPage();
 
-      fireEvent.click(screen.getByText('Retry'));
+      await userEvent.click(screen.getByText('Retry'));
       expect(refetch).toHaveBeenCalled();
     });
 
@@ -639,12 +640,12 @@ describe('TeamDetailsPage', () => {
   });
 
   describe('schedule interactions', () => {
-    it('navigates when clicking opponent link', () => {
+    it('navigates when clicking opponent link', async () => {
       setupMocks({ teamDetailData: mockTeamDetail });
       renderPage('/team-details?team=USC&season=2024&week=12');
 
       const floridaLink = screen.getByRole('link', { name: /Florida/ });
-      fireEvent.click(floridaLink);
+      await userEvent.click(floridaLink);
 
       expect(vi.mocked(useTeamDetail)).toHaveBeenCalled();
     });
