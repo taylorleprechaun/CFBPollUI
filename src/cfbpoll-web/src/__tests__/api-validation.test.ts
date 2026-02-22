@@ -149,7 +149,7 @@ describe('API Functions with Validation', () => {
         rankings: [
           {
             rank: 1,
-            teamName: 'Georgia',
+            teamName: 'Florida',
             logoURL: 'https://example.com/logo.png',
             conference: 'SEC',
             division: 'East',

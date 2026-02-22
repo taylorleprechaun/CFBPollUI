@@ -224,26 +224,26 @@ The frontend runs at `http://localhost:5173`.
 
 ## Testing
 
-The project includes 786 unit and integration tests across backend and frontend.
+The project includes 841 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (428 tests)
+# Backend tests (470 tests)
 dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (358 tests)
+# Frontend tests (371 tests)
 cd src/cfbpoll-web
 npm test
 ```
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-428-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-358-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-470-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-371-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
 ![Web Coverage](https://img.shields.io/badge/Web_Coverage-98%25-brightgreen)

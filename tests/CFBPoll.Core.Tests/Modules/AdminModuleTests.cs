@@ -168,4 +168,87 @@ public class AdminModuleTests
         Assert.Null(result);
         _mockExcelExportModule.Verify(x => x.GenerateRankingsWorkbook(It.IsAny<RankingsResult>()), Times.Never);
     }
+
+    [Fact]
+    public async Task CalculateRankingsAsync_GetSeasonDataAsyncThrows_PropagatesException()
+    {
+        _mockDataService
+            .Setup(x => x.GetSeasonDataAsync(2024, 5))
+            .ThrowsAsync(new InvalidOperationException("API unavailable"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _adminModule.CalculateRankingsAsync(2024, 5));
+    }
+
+    [Fact]
+    public async Task CalculateRankingsAsync_RateTeamsAsyncThrows_PropagatesException()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule
+            .Setup(x => x.RateTeamsAsync(seasonData))
+            .ThrowsAsync(new InvalidOperationException("Rating calculation failed"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _adminModule.CalculateRankingsAsync(2024, 5));
+    }
+
+    [Fact]
+    public async Task CalculateRankingsAsync_GenerateRankingsAsyncThrows_PropagatesException()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockRankingsModule
+            .Setup(x => x.GenerateRankingsAsync(seasonData, ratings))
+            .ThrowsAsync(new InvalidOperationException("Rankings generation failed"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _adminModule.CalculateRankingsAsync(2024, 5));
+    }
+
+    [Fact]
+    public async Task PublishSnapshotAsync_RankingsModuleThrows_PropagatesException()
+    {
+        _mockRankingsModule
+            .Setup(x => x.PublishSnapshotAsync(2024, 5))
+            .ThrowsAsync(new InvalidOperationException("Publish failed"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _adminModule.PublishSnapshotAsync(2024, 5));
+    }
+
+    [Fact]
+    public async Task DeleteSnapshotAsync_RankingsModuleThrows_PropagatesException()
+    {
+        _mockRankingsModule
+            .Setup(x => x.DeleteSnapshotAsync(2024, 5))
+            .ThrowsAsync(new InvalidOperationException("Delete failed"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _adminModule.DeleteSnapshotAsync(2024, 5));
+    }
+
+    [Fact]
+    public async Task ExportRankingsAsync_SnapshotExists_CallsGetSnapshotThenGenerateWorkbook()
+    {
+        var snapshot = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+        var expectedBytes = new byte[] { 1, 2, 3 };
+        var callOrder = new List<string>();
+
+        _mockRankingsModule.Setup(x => x.GetSnapshotAsync(2024, 5))
+            .Callback(() => callOrder.Add("get_snapshot"))
+            .ReturnsAsync(snapshot);
+        _mockExcelExportModule.Setup(x => x.GenerateRankingsWorkbook(snapshot))
+            .Callback(() => callOrder.Add("generate_workbook"))
+            .Returns(expectedBytes);
+
+        await _adminModule.ExportRankingsAsync(2024, 5);
+
+        Assert.Equal(2, callOrder.Count);
+        Assert.True(callOrder.IndexOf("get_snapshot") < callOrder.IndexOf("generate_workbook"));
+    }
 }

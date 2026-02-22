@@ -760,6 +760,102 @@ public class RankingsModuleTests
         return await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
     }
 
+    [Theory]
+    [InlineData(85.12344, 85.1234)]
+    [InlineData(85.12345, 85.1234)]
+    [InlineData(85.12346, 85.1235)]
+    [InlineData(0.0, 0.0)]
+    [InlineData(99.99999, 100.0)]
+    public async Task GenerateRankingsAsync_RatingRoundingBoundary_RoundsCorrectly(
+        double inputRating, double expectedRating)
+    {
+        var seasonData = CreateSeasonDataWithTeams("Team A");
+        var ratings = new Dictionary<string, RatingDetails>
+        {
+            ["Team A"] = CreateRatingDetails(rating: inputRating)
+        };
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        Assert.Equal(expectedRating, result.Rankings.First().Rating);
+    }
+
+    [Theory]
+    [InlineData(0.56784, 0.5678)]
+    [InlineData(0.56785, 0.5678)]
+    [InlineData(0.56786, 0.5679)]
+    [InlineData(0.0, 0.0)]
+    public async Task GenerateRankingsAsync_WeightedSOSRoundingBoundary_RoundsCorrectly(
+        double inputSOS, double expectedSOS)
+    {
+        var seasonData = CreateSeasonDataWithTeams("Team A");
+        var ratings = new Dictionary<string, RatingDetails>
+        {
+            ["Team A"] = CreateRatingDetails(rating: 80.0, weightedSOS: inputSOS)
+        };
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        Assert.Equal(expectedSOS, result.Rankings.First().WeightedSOS);
+    }
+
+    [Theory]
+    [InlineData(10)]
+    [InlineData(11)]
+    [InlineData(25)]
+    [InlineData(26)]
+    [InlineData(50)]
+    [InlineData(51)]
+    [InlineData(100)]
+    [InlineData(101)]
+    public async Task GenerateRankingsAsync_OpponentAtTierBoundary_OnlyIncrementsBoundaryTier(int opponentRank)
+    {
+        var result = await GenerateRankingsWithOpponentAtRankAsync(opponentRank, isWin: true);
+
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", StringComparison.OrdinalIgnoreCase));
+
+        var expectedTier1 = opponentRank <= 10 ? 1 : 0;
+        var expectedTier2 = opponentRank > 10 && opponentRank <= 25 ? 1 : 0;
+        var expectedTier3 = opponentRank > 25 && opponentRank <= 50 ? 1 : 0;
+        var expectedTier4 = opponentRank > 50 && opponentRank <= 100 ? 1 : 0;
+        var expectedTier5 = opponentRank > 100 ? 1 : 0;
+
+        Assert.Equal(expectedTier1, teamA.Details.VsRank1To10.Wins);
+        Assert.Equal(expectedTier2, teamA.Details.VsRank11To25.Wins);
+        Assert.Equal(expectedTier3, teamA.Details.VsRank26To50.Wins);
+        Assert.Equal(expectedTier4, teamA.Details.VsRank51To100.Wins);
+        Assert.Equal(expectedTier5, teamA.Details.VsRank101Plus.Wins);
+    }
+
+    [Fact]
+    public async Task GetAvailableWeeksAsync_GetPublishedWeekNumbersAsyncThrows_PropagatesException()
+    {
+        _mockRankingsData
+            .Setup(x => x.GetPublishedWeekNumbersAsync(2024))
+            .ThrowsAsync(new InvalidOperationException("Database unavailable"));
+
+        var calendarWeeks = new List<CalendarWeek>
+        {
+            new CalendarWeek { Week = 1, SeasonType = "regular" }
+        };
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _rankingsModule.GetAvailableWeeksAsync(2024, calendarWeeks));
+    }
+
+    [Fact]
+    public async Task SaveSnapshotAsync_DataLayerThrows_PropagatesException()
+    {
+        var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+
+        _mockRankingsData
+            .Setup(x => x.SaveSnapshotAsync(rankings))
+            .ThrowsAsync(new InvalidOperationException("Database write failed"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _rankingsModule.SaveSnapshotAsync(rankings));
+    }
+
     [Fact]
     public async Task GenerateRankingsAsync_NullSeasonData_ThrowsArgumentNullException()
     {

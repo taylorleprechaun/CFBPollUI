@@ -70,7 +70,7 @@ describe('Zod Schemas', () => {
     it('validates valid ranked team', () => {
       const data = {
         rank: 1,
-        teamName: 'Georgia',
+        teamName: 'Florida',
         logoURL: 'https://example.com/logo.png',
         conference: 'SEC',
         division: 'East',
@@ -88,7 +88,7 @@ describe('Zod Schemas', () => {
     it('rejects team with missing required fields', () => {
       const data = {
         rank: 1,
-        teamName: 'Georgia',
+        teamName: 'Florida',
       };
       const result = RankedTeamSchema.safeParse(data);
       expect(result.success).toBe(false);
@@ -103,7 +103,7 @@ describe('Zod Schemas', () => {
         rankings: [
           {
             rank: 1,
-            teamName: 'Georgia',
+            teamName: 'Florida',
             logoURL: 'https://example.com/logo.png',
             conference: 'SEC',
             division: 'East',
@@ -149,7 +149,7 @@ describe('Zod Schemas', () => {
         isWin: true,
         neutralSite: false,
         opponentLogoURL: 'https://example.com/logo.png',
-        opponentName: 'Oregon',
+        opponentName: 'USC',
         opponentRecord: '8-2',
         opponentScore: 21,
         seasonType: 'regular',
@@ -206,13 +206,13 @@ describe('Zod Schemas', () => {
           vsRank101Plus: { wins: 3, losses: 0 },
         },
         division: '',
-        logoURL: 'https://example.com/oregon.png',
+        logoURL: 'https://example.com/usc.png',
         rank: 1,
         rating: 165.42,
         record: '11-0',
         schedule: [],
         sosRanking: 15,
-        teamName: 'Oregon',
+        teamName: 'USC',
         weightedSOS: 0.582,
       };
       const result = TeamDetailResponseSchema.safeParse(data);
@@ -220,7 +220,7 @@ describe('Zod Schemas', () => {
     });
 
     it('rejects response with missing required fields', () => {
-      const data = { teamName: 'Oregon' };
+      const data = { teamName: 'USC' };
       const result = TeamDetailResponseSchema.safeParse(data);
       expect(result.success).toBe(false);
     });

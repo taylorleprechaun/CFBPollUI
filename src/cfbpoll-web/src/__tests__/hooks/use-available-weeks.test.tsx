@@ -99,4 +99,97 @@ describe('useAvailableWeeks', () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error).toBeDefined();
   });
+
+  it('refetch after error succeeds', async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({ message: 'Server error' }),
+    } as Response);
+
+    const { result } = renderHook(() => useAvailableWeeks(2024), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          season: 2024,
+          weeks: [{ weekNumber: 1, label: 'Week 1' }],
+        }),
+    } as Response);
+
+    await result.current.refetch();
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.weeks).toHaveLength(1);
+  });
+
+  it('changing season triggers new fetch', async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          season: 2024,
+          weeks: [{ weekNumber: 1, label: 'Week 1' }],
+        }),
+    } as Response);
+
+    const { result, rerender } = renderHook(
+      ({ season }: { season: number }) => useAvailableWeeks(season),
+      {
+        wrapper: createWrapper(),
+        initialProps: { season: 2024 },
+      }
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          season: 2023,
+          weeks: [{ weekNumber: 1, label: 'Week 1' }],
+        }),
+    } as Response);
+
+    rerender({ season: 2023 });
+
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('season=2023'),
+        undefined
+      )
+    );
+  });
+
+  it('transitioning season from null to valid triggers fetch', async () => {
+    const { result, rerender } = renderHook(
+      ({ season }: { season: number | null }) => useAvailableWeeks(season),
+      {
+        wrapper: createWrapper(),
+        initialProps: { season: null as number | null },
+      }
+    );
+
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          season: 2024,
+          weeks: [{ weekNumber: 1, label: 'Week 1' }],
+        }),
+    } as Response);
+
+    rerender({ season: 2024 });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(global.fetch).toHaveBeenCalled();
+  });
 });

@@ -14,13 +14,13 @@ const mockAllTimeData = {
   bestTeams: [
     {
       allTimeRank: 1,
-      logoURL: 'https://example.com/georgia.png',
+      logoURL: 'https://example.com/florida.png',
       losses: 0,
       rank: 1,
       rating: 55.0,
       record: '13-0',
       season: 2023,
-      teamName: 'Georgia',
+      teamName: 'Florida',
       weightedSOS: 0.85,
       week: 5,
       wins: 13,
@@ -29,13 +29,13 @@ const mockAllTimeData = {
   worstTeams: [
     {
       allTimeRank: 1,
-      logoURL: 'https://example.com/uconn.png',
+      logoURL: 'https://example.com/nebraska.png',
       losses: 12,
       rank: 130,
       rating: 5.0,
       record: '0-12',
       season: 2022,
-      teamName: 'UConn',
+      teamName: 'Nebraska',
       weightedSOS: 0.3,
       week: 5,
       wins: 0,
@@ -44,13 +44,13 @@ const mockAllTimeData = {
   hardestSchedules: [
     {
       allTimeRank: 1,
-      logoURL: 'https://example.com/auburn.png',
+      logoURL: 'https://example.com/notre-dame.png',
       losses: 4,
       rank: 15,
       rating: 35.0,
       record: '8-4',
       season: 2021,
-      teamName: 'Auburn',
+      teamName: 'Notre Dame',
       weightedSOS: 0.95,
       week: 5,
       wins: 8,
@@ -113,9 +113,9 @@ describe('AllTimePage', () => {
 
     renderPage();
 
-    expect(screen.getByText('Georgia')).toBeInTheDocument();
-    expect(screen.getByText('UConn')).toBeInTheDocument();
-    expect(screen.getByText('Auburn')).toBeInTheDocument();
+    expect(screen.getByText('Florida')).toBeInTheDocument();
+    expect(screen.getByText('Nebraska')).toBeInTheDocument();
+    expect(screen.getByText('Notre Dame')).toBeInTheDocument();
   });
 
   it('renders team names as links to team details', () => {
@@ -128,10 +128,10 @@ describe('AllTimePage', () => {
 
     renderPage();
 
-    const georgiaLink = screen.getByRole('link', { name: 'Georgia' });
-    expect(georgiaLink).toHaveAttribute(
+    const floridaLink = screen.getByRole('link', { name: 'Florida' });
+    expect(floridaLink).toHaveAttribute(
       'href',
-      '/team-details?team=Georgia&season=2023&week=5'
+      '/team-details?team=Florida&season=2023&week=5'
     );
   });
 
@@ -216,12 +216,12 @@ describe('AllTimePage', () => {
     renderPage();
 
     const bestTeamsButton = screen.getByRole('button', { name: /Best Teams/ });
-    expect(screen.getByText('Georgia')).toBeInTheDocument();
+    expect(screen.getByText('Florida')).toBeInTheDocument();
 
     await userEvent.click(bestTeamsButton);
 
     expect(bestTeamsButton).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByText('Georgia')).not.toBeInTheDocument();
+    expect(screen.queryByText('Florida')).not.toBeInTheDocument();
   });
 
   it('collapses worst teams section when header is clicked', async () => {
@@ -235,12 +235,12 @@ describe('AllTimePage', () => {
     renderPage();
 
     const worstTeamsButton = screen.getByRole('button', { name: /Worst Teams/ });
-    expect(screen.getByText('UConn')).toBeInTheDocument();
+    expect(screen.getByText('Nebraska')).toBeInTheDocument();
 
     await userEvent.click(worstTeamsButton);
 
     expect(worstTeamsButton).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByText('UConn')).not.toBeInTheDocument();
+    expect(screen.queryByText('Nebraska')).not.toBeInTheDocument();
   });
 
   it('collapses hardest schedules section when header is clicked', async () => {
@@ -254,12 +254,12 @@ describe('AllTimePage', () => {
     renderPage();
 
     const hardestButton = screen.getByRole('button', { name: /Hardest Schedules/ });
-    expect(screen.getByText('Auburn')).toBeInTheDocument();
+    expect(screen.getByText('Notre Dame')).toBeInTheDocument();
 
     await userEvent.click(hardestButton);
 
     expect(hardestButton).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByText('Auburn')).not.toBeInTheDocument();
+    expect(screen.queryByText('Notre Dame')).not.toBeInTheDocument();
   });
 
   it('re-expands section when header is clicked again', async () => {
@@ -275,10 +275,10 @@ describe('AllTimePage', () => {
     const bestTeamsButton = screen.getByRole('button', { name: /Best Teams/ });
 
     await userEvent.click(bestTeamsButton);
-    expect(screen.queryByText('Georgia')).not.toBeInTheDocument();
+    expect(screen.queryByText('Florida')).not.toBeInTheDocument();
 
     await userEvent.click(bestTeamsButton);
     expect(bestTeamsButton).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText('Georgia')).toBeInTheDocument();
+    expect(screen.getByText('Florida')).toBeInTheDocument();
   });
 });

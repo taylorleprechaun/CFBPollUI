@@ -4,18 +4,18 @@ import { TeamLogo } from '../../components/rankings/team-logo';
 
 describe('TeamLogo', () => {
   it('renders image when logoURL is provided', () => {
-    render(<TeamLogo logoURL="https://example.com/logo.png" teamName="Oregon" />);
+    render(<TeamLogo logoURL="https://example.com/logo.png" teamName="USC" />);
 
-    const img = screen.getByAltText('Oregon logo');
+    const img = screen.getByAltText('USC logo');
     expect(img).toBeInTheDocument();
     expect(img).toHaveAttribute('src', 'https://example.com/logo.png');
   });
 
   it('renders fallback with first letter when logoURL is empty', () => {
-    render(<TeamLogo logoURL="" teamName="Oregon" />);
+    render(<TeamLogo logoURL="" teamName="USC" />);
 
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
-    expect(screen.getByText('O')).toBeInTheDocument();
+    expect(screen.getByText('U')).toBeInTheDocument();
   });
 
   it('renders fallback with first letter when image fails to load', () => {

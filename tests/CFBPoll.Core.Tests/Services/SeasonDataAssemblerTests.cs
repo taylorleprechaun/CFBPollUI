@@ -74,12 +74,12 @@ public class SeasonDataAssemblerTests
     {
         var games = new List<Game>
         {
-            new Game { GameID = 100, Week = 1, HomeTeam = "Alabama", AwayTeam = "Georgia", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" }
+            new Game { GameID = 100, Week = 1, HomeTeam = "Alabama", AwayTeam = "Florida", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" }
         };
         var regularStats = new List<AdvancedGameStats>
         {
             new AdvancedGameStats { GameID = 100, Team = "Alabama", Offense = new AdvancedGameStatsUnit { PPA = 0.25 } },
-            new AdvancedGameStats { GameID = 100, Team = "Georgia", Defense = new AdvancedGameStatsUnit { PPA = -0.15 } }
+            new AdvancedGameStats { GameID = 100, Team = "Florida", Defense = new AdvancedGameStatsUnit { PPA = -0.15 } }
         };
 
         var result = SeasonDataAssembler.AttachAdvancedStats(games, regularStats, [], 1, 15).ToList();
@@ -94,7 +94,7 @@ public class SeasonDataAssemblerTests
     [Fact]
     public void AttachAdvancedStats_DoesNotMutateInputGames()
     {
-        var originalGame = new Game { GameID = 100, Week = 1, HomeTeam = "Alabama", AwayTeam = "Georgia", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" };
+        var originalGame = new Game { GameID = 100, Week = 1, HomeTeam = "Alabama", AwayTeam = "Florida", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" };
         var games = new List<Game> { originalGame };
         var regularStats = new List<AdvancedGameStats>
         {
@@ -111,7 +111,7 @@ public class SeasonDataAssemblerTests
     {
         var games = new List<Game>
         {
-            new Game { GameID = 100, Week = 1, HomeTeam = "Alabama", AwayTeam = "Georgia", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" }
+            new Game { GameID = 100, Week = 1, HomeTeam = "Alabama", AwayTeam = "Florida", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" }
         };
 
         var result = SeasonDataAssembler.AttachAdvancedStats(games, [], [], 1, 15).ToList();
@@ -126,7 +126,7 @@ public class SeasonDataAssemblerTests
     {
         var games = new List<Game>
         {
-            new Game { GameID = null, Week = 1, HomeTeam = "Alabama", AwayTeam = "Georgia", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" }
+            new Game { GameID = null, Week = 1, HomeTeam = "Alabama", AwayTeam = "Florida", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" }
         };
         var regularStats = new List<AdvancedGameStats>
         {
@@ -145,11 +145,11 @@ public class SeasonDataAssemblerTests
         var teams = new List<FBSTeam>
         {
             new FBSTeam { Name = "Alabama", Conference = "SEC", Color = "#9E1B32" },
-            new FBSTeam { Name = "Georgia", Conference = "SEC", Color = "#BA0C2F" }
+            new FBSTeam { Name = "Florida", Conference = "SEC", Color = "#BA0C2F" }
         };
         var games = new List<Game>
         {
-            new Game { GameID = 1, HomeTeam = "Alabama", AwayTeam = "Georgia", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" }
+            new Game { GameID = 1, HomeTeam = "Alabama", AwayTeam = "Florida", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" }
         };
         var stats = new Dictionary<string, IEnumerable<TeamStat>>();
 
@@ -158,8 +158,8 @@ public class SeasonDataAssemblerTests
         Assert.Equal(2, result.Count);
         Assert.Equal(1, result["Alabama"].Wins);
         Assert.Equal(0, result["Alabama"].Losses);
-        Assert.Equal(0, result["Georgia"].Wins);
-        Assert.Equal(1, result["Georgia"].Losses);
+        Assert.Equal(0, result["Florida"].Wins);
+        Assert.Equal(1, result["Florida"].Losses);
     }
 
     [Fact]
@@ -219,12 +219,12 @@ public class SeasonDataAssemblerTests
         var teams = new List<FBSTeam>
         {
             new FBSTeam { Name = "Alabama", Conference = "SEC" },
-            new FBSTeam { Name = "Georgia", Conference = "SEC" }
+            new FBSTeam { Name = "Florida", Conference = "SEC" }
         };
         var regularGames = new List<Game>
         {
-            new Game { GameID = 1, Week = 1, HomeTeam = "Alabama", AwayTeam = "Georgia", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" },
-            new Game { GameID = 2, Week = 5, HomeTeam = "Georgia", AwayTeam = "Alabama", HomePoints = 35, AwayPoints = 31, SeasonType = "regular" }
+            new Game { GameID = 1, Week = 1, HomeTeam = "Alabama", AwayTeam = "Florida", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" },
+            new Game { GameID = 2, Week = 5, HomeTeam = "Florida", AwayTeam = "Alabama", HomePoints = 35, AwayPoints = 31, SeasonType = "regular" }
         };
         var postseasonGames = new List<Game>();
         var regularAdvancedStats = new List<AdvancedGameStats>();
@@ -249,15 +249,15 @@ public class SeasonDataAssemblerTests
         var teams = new List<FBSTeam>
         {
             new FBSTeam { Name = "Alabama" },
-            new FBSTeam { Name = "Georgia" }
+            new FBSTeam { Name = "Florida" }
         };
         var regularGames = new List<Game>
         {
-            new Game { GameID = 1, Week = 1, HomeTeam = "Alabama", AwayTeam = "Georgia", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" }
+            new Game { GameID = 1, Week = 1, HomeTeam = "Alabama", AwayTeam = "Florida", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" }
         };
         var postseasonGames = new List<Game>
         {
-            new Game { GameID = 2, Week = 16, HomeTeam = "Georgia", AwayTeam = "Alabama", HomePoints = 35, AwayPoints = 31, SeasonType = "postseason" }
+            new Game { GameID = 2, Week = 16, HomeTeam = "Florida", AwayTeam = "Alabama", HomePoints = 35, AwayPoints = 31, SeasonType = "postseason" }
         };
 
         var result = SeasonDataAssembler.Assemble(
