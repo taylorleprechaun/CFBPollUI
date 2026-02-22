@@ -116,3 +116,55 @@ describe('useExportSnapshot', () => {
     expect(downloadExport).toHaveBeenCalledWith('test-token', 2024, 5);
   });
 });
+
+describe('null token guard', () => {
+  beforeEach(() => vi.resetAllMocks());
+
+  it('useCalculateRankings rejects with Authentication required when token is null', async () => {
+    const { result } = renderHook(() => useCalculateRankings(null), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(
+      act(() => result.current.mutateAsync({ season: 2024, week: 5 }))
+    ).rejects.toThrow('Authentication required');
+
+    expect(calculateRankings).not.toHaveBeenCalled();
+  });
+
+  it('usePublishSnapshot rejects with Authentication required when token is null', async () => {
+    const { result } = renderHook(() => usePublishSnapshot(null), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(
+      act(() => result.current.mutateAsync({ season: 2024, week: 5 }))
+    ).rejects.toThrow('Authentication required');
+
+    expect(publishSnapshot).not.toHaveBeenCalled();
+  });
+
+  it('useDeleteSnapshot rejects with Authentication required when token is null', async () => {
+    const { result } = renderHook(() => useDeleteSnapshot(null), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(
+      act(() => result.current.mutateAsync({ season: 2024, week: 5 }))
+    ).rejects.toThrow('Authentication required');
+
+    expect(deleteSnapshot).not.toHaveBeenCalled();
+  });
+
+  it('useExportSnapshot rejects with Authentication required when token is null', async () => {
+    const { result } = renderHook(() => useExportSnapshot(null), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(
+      act(() => result.current.mutateAsync({ season: 2024, week: 5 }))
+    ).rejects.toThrow('Authentication required');
+
+    expect(downloadExport).not.toHaveBeenCalled();
+  });
+});

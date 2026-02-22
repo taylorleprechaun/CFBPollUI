@@ -1,4 +1,8 @@
-export function ErrorCircleIcon({ className }: { className?: string }) {
+interface ErrorCircleIconProps {
+  className?: string;
+}
+
+export function ErrorCircleIcon({ className }: ErrorCircleIconProps) {
   return (
     <svg
       className={className}
@@ -16,7 +20,11 @@ export function ErrorCircleIcon({ className }: { className?: string }) {
   );
 }
 
-export function WarningTriangleIcon({ className }: { className?: string }) {
+interface WarningTriangleIconProps {
+  className?: string;
+}
+
+export function WarningTriangleIcon({ className }: WarningTriangleIconProps) {
   return (
     <svg
       className={className}

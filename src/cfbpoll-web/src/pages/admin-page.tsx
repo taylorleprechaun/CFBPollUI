@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+
 import { useAuth } from '../contexts/auth-context';
 import { useSeason } from '../contexts/season-context';
 import {
@@ -40,6 +41,7 @@ export function AdminPage() {
   const {
     data: persistedWeeks,
     error: persistedWeeksError,
+    refetch: refetchPersistedWeeks,
   } = usePersistedWeeks(token);
 
   const calculateMutation = useCalculateRankings(token);
@@ -48,11 +50,20 @@ export function AdminPage() {
   const exportMutation = useExportSnapshot(token);
 
   const [calculatedResult, setCalculatedResult] = useState<CalculateResponse | null>(null);
-  const [error, setError] = useState<Error | null>(null);
+  const [operationError, setOperationError] = useState<Error | null>(null);
   const [actionFeedback, setActionFeedback] = useState<ActionFeedback | null>(null);
   const [collapsedSeasons, setCollapsedSeasons] = useState<Set<number>>(new Set());
   const [initialCollapseApplied, setInitialCollapseApplied] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ season: number; week: number } | null>(null);
+
+  const normalizedPersistedError = persistedWeeksError instanceof Error
+    ? persistedWeeksError
+    : persistedWeeksError ? new Error('Failed to load persisted weeks') : null;
+  const error = operationError ?? normalizedPersistedError;
+
+  const isActionPending = calculateMutation.isPending || publishMutation.isPending || deleteMutation.isPending || exportMutation.isPending;
+
+  const clearFeedback = useCallback(() => setActionFeedback(null), []);
 
   useEffect(() => {
     if (persistedWeeks?.length && !initialCollapseApplied) {
@@ -61,31 +72,21 @@ export function AdminPage() {
     }
   }, [persistedWeeks, initialCollapseApplied]);
 
-  useEffect(() => {
-    if (persistedWeeksError) {
-      setError(persistedWeeksError instanceof Error ? persistedWeeksError : new Error('Failed to load persisted weeks'));
-    }
-  }, [persistedWeeksError]);
-
-  const isActionPending = calculateMutation.isPending || publishMutation.isPending || deleteMutation.isPending || exportMutation.isPending;
-
-  const clearFeedback = useCallback(() => setActionFeedback(null), []);
-
   const handleCalculate = async () => {
     if (selectedSeason === null || selectedWeek === null) return;
-    setError(null);
+    setOperationError(null);
     setCalculatedResult(null);
 
     try {
       const result = await calculateMutation.mutateAsync({ season: selectedSeason, week: selectedWeek });
       setCalculatedResult(result);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Calculation failed'));
+      setOperationError(err instanceof Error ? err : new Error('Calculation failed'));
     }
   };
 
   const handlePublish = async (season: number, week: number, source: 'preview' | 'snapshot') => {
-    setError(null);
+    setOperationError(null);
     setActionFeedback(null);
     const feedbackKey = `${source}-publish-${season}-${week}`;
 
@@ -107,7 +108,7 @@ export function AdminPage() {
   };
 
   const executeDelete = async (season: number, week: number) => {
-    setError(null);
+    setOperationError(null);
     setDeleteConfirm(null);
 
     try {
@@ -116,17 +117,17 @@ export function AdminPage() {
         setCalculatedResult(null);
       }
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Delete failed'));
+      setOperationError(err instanceof Error ? err : new Error('Delete failed'));
     }
   };
 
   const handleExport = async (season: number, week: number) => {
-    setError(null);
+    setOperationError(null);
 
     try {
       await exportMutation.mutateAsync({ season, week });
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Export failed'));
+      setOperationError(err instanceof Error ? err : new Error('Export failed'));
     }
   };
 
@@ -161,7 +162,10 @@ export function AdminPage() {
         </button>
       </div>
 
-      {error && <ErrorAlert error={error} onRetry={() => setError(null)} />}
+      {error && <ErrorAlert error={error} onRetry={() => {
+        setOperationError(null);
+        if (normalizedPersistedError) refetchPersistedWeeks();
+      }} />}
 
       <CalculateSection
         isCalculating={calculateMutation.isPending}

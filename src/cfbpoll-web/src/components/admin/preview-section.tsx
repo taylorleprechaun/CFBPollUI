@@ -1,10 +1,11 @@
 import { useState } from 'react';
+
 import { getWeekLabel } from '../../lib/week-utils';
 import { RankingsTable } from '../rankings/rankings-table';
 import { ChevronIcon } from '../ui/chevron-icon';
 import { SuccessCheckmark } from './success-checkmark';
-import type { CalculateResponse } from '../../schemas/admin';
 import type { ActionFeedback } from './types';
+import type { CalculateResponse } from '../../schemas/admin';
 
 interface PreviewSectionProps {
   calculatedResult: CalculateResponse;

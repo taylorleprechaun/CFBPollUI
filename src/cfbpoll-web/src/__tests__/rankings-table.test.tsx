@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { RankingsTable } from '../components/rankings/rankings-table';
 import type { RankedTeam } from '../types';
@@ -167,23 +168,36 @@ describe('RankingsTable', () => {
   });
 
   describe('sorting', () => {
-    it('allows clicking column headers to sort', () => {
+    it('allows clicking column headers to sort', async () => {
       renderTable();
 
       const ratingHeader = screen.getByText('Rating');
-      fireEvent.click(ratingHeader);
+      await userEvent.click(ratingHeader);
 
       expect(ratingHeader.closest('th')).toBeInTheDocument();
     });
 
-    it('shows sort indicator when column is sorted', () => {
+    it('shows descending indicator when numeric column is sorted first', async () => {
       renderTable();
 
       const rankHeader = screen.getByText('Rank');
-      fireEvent.click(rankHeader);
+      await userEvent.click(rankHeader);
 
-      const headerContainer = rankHeader.closest('div');
-      expect(headerContainer).toBeInTheDocument();
+      const th = rankHeader.closest('th')!;
+      expect(th).toHaveAttribute('aria-sort', 'descending');
+      expect(th.textContent).toContain('\u25BC');
+    });
+
+    it('shows ascending indicator when numeric column is sorted twice', async () => {
+      renderTable();
+
+      const rankHeader = screen.getByText('Rank');
+      await userEvent.click(rankHeader);
+      await userEvent.click(rankHeader);
+
+      const th = rankHeader.closest('th')!;
+      expect(th).toHaveAttribute('aria-sort', 'ascending');
+      expect(th.textContent).toContain('\u25B2');
     });
   });
 

@@ -1,22 +1,53 @@
 import { useEffect, useRef } from 'react';
 
 interface ConfirmModalProps {
+  confirmLabel?: string;
   message: string;
   onCancel: () => void;
   onConfirm: () => void;
   title: string;
 }
 
-export function ConfirmModal({ message, onCancel, onConfirm, title }: ConfirmModalProps) {
+export function ConfirmModal({ confirmLabel = 'Delete', message, onCancel, onConfirm, title }: ConfirmModalProps) {
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  const previouslyFocusedRef = useRef<Element | null>(null);
 
   useEffect(() => {
+    previouslyFocusedRef.current = document.activeElement;
     cancelRef.current?.focus();
+
+    return () => {
+      const el = previouslyFocusedRef.current;
+      if (el instanceof HTMLElement) {
+        el.focus();
+      }
+    };
   }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel();
+      if (e.key === 'Escape') {
+        onCancel();
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          if (document.activeElement === cancelRef.current) {
+            confirmRef.current?.focus();
+          } else {
+            cancelRef.current?.focus();
+          }
+        } else {
+          if (document.activeElement === confirmRef.current) {
+            cancelRef.current?.focus();
+          } else {
+            confirmRef.current?.focus();
+          }
+        }
+      }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
@@ -47,10 +78,11 @@ export function ConfirmModal({ message, onCancel, onConfirm, title }: ConfirmMod
             Cancel
           </button>
           <button
+            ref={confirmRef}
             onClick={onConfirm}
             className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
           >
-            Delete
+            {confirmLabel}
           </button>
         </div>
       </div>

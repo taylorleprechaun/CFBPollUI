@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { STALE_TIME_SEASONS } from '../lib/query-config';
 import { fetchWeeks } from '../services/api';
 
 export function useWeeks(season: number | null) {
@@ -6,6 +7,6 @@ export function useWeeks(season: number | null) {
     queryKey: ['weeks', season],
     queryFn: () => fetchWeeks(season!),
     enabled: season !== null,
-    staleTime: 1000 * 60 * 60, // 1 hour
+    staleTime: STALE_TIME_SEASONS,
   });
 }

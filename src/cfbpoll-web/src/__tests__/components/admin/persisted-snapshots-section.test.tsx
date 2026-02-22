@@ -229,4 +229,36 @@ describe('PersistedSnapshotsSection', () => {
     const chevron = seasonButton.querySelector('svg')!;
     expect(chevron.classList.toString()).toContain('-rotate-90');
   });
+
+  it('sets aria-expanded to true when season is expanded', () => {
+    render(
+      <PersistedSnapshotsSection
+        {...defaultProps}
+        collapsedSeasons={new Set()}
+        persistedWeeks={[
+          { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
+        ]}
+      />
+    );
+
+    const seasonButton = screen.getByText('2024 Season').closest('button')!;
+    expect(seasonButton).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('sets aria-controls pointing to content container', () => {
+    render(
+      <PersistedSnapshotsSection
+        {...defaultProps}
+        collapsedSeasons={new Set([2024])}
+        persistedWeeks={[
+          { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
+        ]}
+      />
+    );
+
+    const seasonButton = screen.getByText('2024 Season').closest('button')!;
+    expect(seasonButton).toHaveAttribute('aria-expanded', 'false');
+    const controlsId = seasonButton.getAttribute('aria-controls')!;
+    expect(document.getElementById(controlsId)).toBeInTheDocument();
+  });
 });
