@@ -36,7 +36,7 @@ public class CacheDataTests
         {
             await data.InitializeAsync();
 
-            await using var connection = new SqliteConnection($"Data Source={tempPath}");
+            await using var connection = new SqliteConnection($"Data Source={tempPath};Pooling=false");
             await connection.OpenAsync();
             await using var command = connection.CreateCommand();
             command.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='CacheEntry'";
@@ -324,7 +324,7 @@ public class CacheDataTests
         var options = new Mock<IOptions<CacheOptions>>();
         options.Setup(x => x.Value).Returns(new CacheOptions
         {
-            ConnectionString = $"Data Source={tempPath}"
+            ConnectionString = $"Data Source={tempPath};Pooling=false"
         });
 
         var logger = new Mock<ILogger<CacheData>>();

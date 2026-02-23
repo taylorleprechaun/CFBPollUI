@@ -1,9 +1,11 @@
 import { Link, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/auth-context';
+import { usePageVisibility } from '../../hooks/use-page-visibility';
 import { LockIcon, UnlockIcon } from '../ui/icons';
 
 export function Layout() {
   const { isAuthenticated } = useAuth();
+  const { allTimeEnabled, pollLeadersEnabled } = usePageVisibility();
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -34,12 +36,22 @@ export function Layout() {
                   >
                     Team Details
                   </Link>
-                  <Link
-                    to="/all-time"
-                    className="hover:bg-blue-800 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    All-Time
-                  </Link>
+                  {allTimeEnabled && (
+                    <Link
+                      to="/all-time"
+                      className="hover:bg-blue-800 px-3 py-2 rounded-md text-sm font-medium"
+                    >
+                      All-Time
+                    </Link>
+                  )}
+                  {pollLeadersEnabled && (
+                    <Link
+                      to="/poll-leaders"
+                      className="hover:bg-blue-800 px-3 py-2 rounded-md text-sm font-medium"
+                    >
+                      Leaders
+                    </Link>
+                  )}
                 </div>
               </div>
               <Link

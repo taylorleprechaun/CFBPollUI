@@ -6,6 +6,7 @@ import {
   deleteSnapshot,
   downloadExport,
   fetchPersistedWeeks,
+  updatePageVisibility,
 } from '../../services/admin-api';
 
 describe('Admin API service', () => {
@@ -331,6 +332,63 @@ describe('Admin API service', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await expect(downloadExport('token', 2024, 5)).rejects.toThrow('Not found');
+    });
+  });
+
+  describe('updatePageVisibility', () => {
+    it('sends PUT with auth header and JSON body', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ allTimeEnabled: true, pollLeadersEnabled: true }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await updatePageVisibility('my-token', {
+        allTimeEnabled: true,
+        pollLeadersEnabled: true,
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/page-visibility'),
+        expect.objectContaining({
+          method: 'PUT',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+            'Content-Type': 'application/json',
+          }),
+          body: JSON.stringify({ allTimeEnabled: true, pollLeadersEnabled: true }),
+        })
+      );
+      expect(result.allTimeEnabled).toBe(true);
+      expect(result.pollLeadersEnabled).toBe(true);
+    });
+
+    it('validates response against PageVisibilitySchema', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ allTimeEnabled: false, pollLeadersEnabled: false }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await updatePageVisibility('my-token', {
+        allTimeEnabled: false,
+        pollLeadersEnabled: false,
+      });
+
+      expect(result).toEqual({ allTimeEnabled: false, pollLeadersEnabled: false });
+    });
+
+    it('throws on HTTP error', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        json: () => Promise.resolve({ message: 'Forbidden' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(
+        updatePageVisibility('bad-token', { allTimeEnabled: true, pollLeadersEnabled: true })
+      ).rejects.toThrow('Forbidden');
     });
   });
 });

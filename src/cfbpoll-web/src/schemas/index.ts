@@ -123,11 +123,36 @@ export const AllTimeResponseSchema = z.object({
   worstTeams: z.array(AllTimeEntrySchema),
 });
 
+// Page visibility schemas
+export const PageVisibilitySchema = z.object({
+  allTimeEnabled: z.boolean(),
+  pollLeadersEnabled: z.boolean(),
+});
+
+// Poll leaders schemas
+export const PollLeaderEntrySchema = z.object({
+  logoURL: z.string(),
+  teamName: z.string(),
+  top5Count: z.number(),
+  top10Count: z.number(),
+  top25Count: z.number(),
+});
+
+export const PollLeadersResponseSchema = z.object({
+  allWeeks: z.array(PollLeaderEntrySchema),
+  finalWeeksOnly: z.array(PollLeaderEntrySchema),
+  maxAvailableSeason: z.number(),
+  minAvailableSeason: z.number(),
+});
+
 // Type exports inferred from schemas
 export type AllTimeEntry = z.infer<typeof AllTimeEntrySchema>;
 export type AllTimeResponse = z.infer<typeof AllTimeResponseSchema>;
 export type Conference = z.infer<typeof ConferenceSchema>;
 export type ConferencesResponse = z.infer<typeof ConferencesResponseSchema>;
+export type PageVisibility = z.infer<typeof PageVisibilitySchema>;
+export type PollLeaderEntry = z.infer<typeof PollLeaderEntrySchema>;
+export type PollLeadersResponse = z.infer<typeof PollLeadersResponseSchema>;
 export type RankedTeam = z.infer<typeof RankedTeamSchema>;
 export type RankingsResponse = z.infer<typeof RankingsResponseSchema>;
 export type TeamRecord = z.infer<typeof RecordSchema>;

@@ -1,12 +1,14 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { RequireAuth, RequireGuest } from './components/auth';
+import { RequireAuth, RequireGuest, RequirePageEnabled } from './components/auth';
 import { Layout } from './components/layout/layout';
+import { usePageVisibility } from './hooks/use-page-visibility';
 
 const AdminPage = lazy(() => import('./pages/admin-page').then(m => ({ default: m.AdminPage })));
 const AllTimePage = lazy(() => import('./pages/all-time-page').then(m => ({ default: m.AllTimePage })));
 const HomePage = lazy(() => import('./pages/home-page').then(m => ({ default: m.HomePage })));
 const LoginPage = lazy(() => import('./pages/login-page').then(m => ({ default: m.LoginPage })));
+const PollLeadersPage = lazy(() => import('./pages/poll-leaders-page').then(m => ({ default: m.PollLeadersPage })));
 const RankingsPage = lazy(() => import('./pages/rankings-page').then(m => ({ default: m.RankingsPage })));
 const TeamDetailsPage = lazy(() => import('./pages/team-details-page').then(m => ({ default: m.TeamDetailsPage })));
 
@@ -19,6 +21,8 @@ function PageLoader() {
 }
 
 function App() {
+  const { allTimeEnabled, pollLeadersEnabled } = usePageVisibility();
+
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
@@ -38,9 +42,18 @@ function App() {
           </Suspense>
         } />
         <Route path="all-time" element={
-          <Suspense fallback={<PageLoader />}>
-            <AllTimePage />
-          </Suspense>
+          <RequirePageEnabled enabled={allTimeEnabled}>
+            <Suspense fallback={<PageLoader />}>
+              <AllTimePage />
+            </Suspense>
+          </RequirePageEnabled>
+        } />
+        <Route path="poll-leaders" element={
+          <RequirePageEnabled enabled={pollLeadersEnabled}>
+            <Suspense fallback={<PageLoader />}>
+              <PollLeadersPage />
+            </Suspense>
+          </RequirePageEnabled>
         } />
         <Route element={<RequireGuest />}>
           <Route path="login" element={

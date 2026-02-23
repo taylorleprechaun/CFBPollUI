@@ -4,6 +4,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { Layout } from '../../components/layout/layout';
 
 let mockIsAuthenticated = false;
+let mockAllTimeEnabled = true;
+let mockPollLeadersEnabled = true;
 
 vi.mock('../../contexts/auth-context', () => ({
   useAuth: () => ({
@@ -11,6 +13,14 @@ vi.mock('../../contexts/auth-context', () => ({
     login: vi.fn(),
     logout: vi.fn(),
     token: mockIsAuthenticated ? 'test-token' : null,
+  }),
+}));
+
+vi.mock('../../hooks/use-page-visibility', () => ({
+  usePageVisibility: () => ({
+    allTimeEnabled: mockAllTimeEnabled,
+    isLoading: false,
+    pollLeadersEnabled: mockPollLeadersEnabled,
   }),
 }));
 
@@ -38,6 +48,31 @@ describe('Layout', () => {
 
     const allTimeLink = screen.getByText('All-Time');
     expect(allTimeLink).toHaveAttribute('href', '/all-time');
+  });
+
+  it('hides All-Time link when allTimeEnabled is false', () => {
+    mockAllTimeEnabled = false;
+    mockPollLeadersEnabled = true;
+    renderLayout();
+
+    expect(screen.queryByText('All-Time')).not.toBeInTheDocument();
+  });
+
+  it('hides Leaders link when pollLeadersEnabled is false', () => {
+    mockAllTimeEnabled = true;
+    mockPollLeadersEnabled = false;
+    renderLayout();
+
+    expect(screen.queryByText('Leaders')).not.toBeInTheDocument();
+  });
+
+  it('shows Leaders link when pollLeadersEnabled is true', () => {
+    mockAllTimeEnabled = true;
+    mockPollLeadersEnabled = true;
+    renderLayout();
+
+    const leadersLink = screen.getByText('Leaders');
+    expect(leadersLink).toHaveAttribute('href', '/poll-leaders');
   });
 
   it('shows lock icon linking to login when not authenticated', () => {

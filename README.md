@@ -18,16 +18,17 @@ This was created using Claude Code with a lot of guidelines to follow my code st
 
 ## TODO
 
-Last Updated 2/21/2026
+Last Updated 2/22/2026
 - I have only recently started to learn React and this application uses it for the UI. I had Claude create it all following the best practices that I could find online, but I don't know for certain that everything is correct. As I learn more I know I will end up refactoring that code.
 - Finish back-filling rankings. My original repo started mid-2018 and has gone since then. Any season before that never had "official" rankings, and the algorithm has changed a bit over time so I need to publish real rankings back-dated to 2002 (the start of the data being used here).
-- Add a page with my own version of [The Chart](http://cfbcomparer.com/ap-poll-leaders).
 
 ## Features
 
 - **Custom Ranking Algorithm**: Evaluates teams based on wins, strength of schedule, and margin of victory
 - **Team Details**: Drill into individual teams to see schedule with opponent rankings, clickable opponent links, and expandable record breakdowns by location and opponent tier
 - **All-Time Rankings**: View the best teams, worst teams, and hardest schedules across all seasons with sortable tables
+- **Poll Leaders**: Scatter chart showing how frequently teams have been ranked, with team logos as data points, year range filtering, and toggleable all-weeks vs. final-only modes
+- **Page Visibility Controls**: Admin toggles to enable/disable the All-Time and Poll Leaders pages, with deep-link blocking for disabled pages
 - **Historical Data**: Access rankings from 2002 to present
 - **Interactive UI**: Sortable rankings table with team logos and colors
 - **Admin Dashboard**: JWT-authenticated admin panel to calculate, preview, and publish rankings with a two-step draft/publish workflow
@@ -53,6 +54,7 @@ Last Updated 2/21/2026
 - TanStack Table for sortable tables
 - Tailwind CSS for styling
 - React Router for navigation
+- Recharts for scatter chart visualization
 - Zod for runtime response validation
 
 ## Project Structure
@@ -90,6 +92,14 @@ AllTimeController                  AllTimeModule
 AuthController                     AuthModule
   -> IAuthModule                     -> IOptions<AuthOptions>
 
+PageVisibilityController           PageVisibilityModule
+  -> IPageVisibilityModule           -> IPageVisibilityData           PageVisibilityData
+                                                                       -> SQLite
+
+PollLeadersController              PollLeadersModule
+  -> IPollLeadersModule              -> ICFBDataService
+                                     -> IRankingsModule
+
                                    CacheModule (IPersistentCache)    CacheData
                                      -> ICacheData                     -> SQLite
                                      
@@ -104,7 +114,7 @@ TeamsController                    TeamsModule
                                      -> IRatingModule
 ```
 
-Only `RankingsModule` has a direct dependency on `IRankingsData`, and only `CacheModule` has a direct dependency on `ICacheData`. Controllers never reference data-layer interfaces.
+Only `RankingsModule` has a direct dependency on `IRankingsData`, only `CacheModule` has a direct dependency on `ICacheData`, and only `PageVisibilityModule` has a direct dependency on `IPageVisibilityData`. Controllers never reference data-layer interfaces.
 
 ## Prerequisites
 
@@ -200,6 +210,8 @@ The frontend runs at `http://localhost:5173`.
 |----------|-------------|
 | `GET /api/v1/all-time` | Returns all-time rankings: best teams, worst teams, and hardest schedules |
 | `GET /api/v1/conferences` | Returns FBS conferences |
+| `GET /api/v1/page-visibility` | Returns current page visibility settings |
+| `GET /api/v1/poll-leaders?minSeason={min}&maxSeason={max}` | Returns per-team ranking appearance counts across published snapshots |
 | `GET /api/v1/rankings?season={s}&week={w}` | Returns ranked teams for the specified week |
 | `GET /api/v1/rankings/available-weeks?season={s}` | Returns published weeks for a season |
 | `GET /api/v1/seasons` | Returns available seasons (2002 to present) |
@@ -221,37 +233,38 @@ The frontend runs at `http://localhost:5173`.
 | `DELETE /api/v1/admin/snapshots/{season}/{week}` | Delete a snapshot |
 | `GET /api/v1/admin/persisted-weeks` | List all persisted snapshots |
 | `GET /api/v1/admin/export?season={s}&week={w}` | Download rankings as Excel |
+| `PUT /api/v1/page-visibility` | Update page visibility settings |
 
 ## Testing
 
-The project includes 880 unit and integration tests across backend and frontend.
+The project includes 1035 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (470 tests)
+# Backend tests (542 tests)
 dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (410 tests)
+# Frontend tests (493 tests)
 cd src/cfbpoll-web
 npm test
 ```
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-470-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-410-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-542-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-493-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
 ![Web Coverage](https://img.shields.io/badge/Web_Coverage-99%25-brightgreen)
 
 | Project | Line Coverage | Branch Coverage |
 |---------|---------------|-----------------|
-| CFBPoll.Core | 99% | 90% |
-| CFBPoll.API | 100% | 94% |
+| CFBPoll.Core | 99% | 91% |
+| CFBPoll.API | 100% | 95% |
 | cfbpoll-web | 99% | 93% |
 
 **Excluded from coverage:**

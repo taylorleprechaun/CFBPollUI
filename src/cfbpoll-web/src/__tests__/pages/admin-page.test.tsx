@@ -85,6 +85,23 @@ vi.mock('../../hooks/use-persisted-weeks', () => ({
   }),
 }));
 
+let mockAllTimeEnabled = true;
+let mockPollLeadersEnabled = true;
+
+vi.mock('../../hooks/use-page-visibility', () => ({
+  usePageVisibility: () => ({
+    allTimeEnabled: mockAllTimeEnabled,
+    isLoading: false,
+    pollLeadersEnabled: mockPollLeadersEnabled,
+  }),
+}));
+
+const mockUpdatePageVisibility = vi.fn();
+
+vi.mock('../../services/admin-api', () => ({
+  updatePageVisibility: (...args: unknown[]) => mockUpdatePageVisibility(...args),
+}));
+
 function renderAdminPage() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -109,6 +126,8 @@ describe('AdminPage', () => {
     mockPublishIsPending = false;
     mockDeleteIsPending = false;
     mockExportIsPending = false;
+    mockAllTimeEnabled = true;
+    mockPollLeadersEnabled = true;
   });
 
   it('renders admin dashboard when authenticated', () => {
@@ -692,5 +711,74 @@ describe('AdminPage', () => {
 
     expect(mockRefetchPersistedWeeks).not.toHaveBeenCalled();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('renders page visibility toggles', () => {
+    renderAdminPage();
+
+    expect(screen.getByText('Page Visibility')).toBeInTheDocument();
+    expect(screen.getByText('All-Time Rankings')).toBeInTheDocument();
+    expect(screen.getByText('Poll Leaders')).toBeInTheDocument();
+  });
+
+  it('renders page visibility checkboxes with correct checked state', () => {
+    mockAllTimeEnabled = true;
+    mockPollLeadersEnabled = false;
+
+    renderAdminPage();
+
+    const allTimeCheckbox = screen.getByLabelText('All-Time Rankings') as HTMLInputElement;
+    const pollLeadersCheckbox = screen.getByLabelText('Poll Leaders') as HTMLInputElement;
+
+    expect(allTimeCheckbox.checked).toBe(true);
+    expect(pollLeadersCheckbox.checked).toBe(false);
+  });
+
+  it('calls updatePageVisibility when toggle is changed', async () => {
+    mockAllTimeEnabled = true;
+    mockPollLeadersEnabled = true;
+    mockUpdatePageVisibility.mockResolvedValue({
+      allTimeEnabled: false,
+      pollLeadersEnabled: true,
+    });
+
+    renderAdminPage();
+
+    const allTimeCheckbox = screen.getByLabelText('All-Time Rankings');
+    await userEvent.click(allTimeCheckbox);
+
+    await waitFor(() => {
+      expect(mockUpdatePageVisibility).toHaveBeenCalledWith(
+        'test-token',
+        { allTimeEnabled: false, pollLeadersEnabled: true }
+      );
+    });
+  });
+
+  it('shows success feedback after visibility update', async () => {
+    mockUpdatePageVisibility.mockResolvedValue({
+      allTimeEnabled: false,
+      pollLeadersEnabled: true,
+    });
+
+    renderAdminPage();
+
+    await userEvent.click(screen.getByLabelText('All-Time Rankings'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Page visibility updated')).toBeInTheDocument();
+    });
+  });
+
+  it('shows error feedback when visibility update fails', async () => {
+    mockUpdatePageVisibility.mockRejectedValue(new Error('Update failed'));
+
+    renderAdminPage();
+
+    await userEvent.click(screen.getByLabelText('Poll Leaders'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to update page visibility')).toBeInTheDocument();
+    });
   });
 });

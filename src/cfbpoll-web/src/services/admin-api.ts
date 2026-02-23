@@ -4,6 +4,11 @@ import { parseResponse } from '../lib/parse-response';
 import { safeFetch } from '../lib/safe-fetch';
 
 import {
+  PageVisibilitySchema,
+  type PageVisibility,
+} from '../schemas';
+
+import {
   CalculateResponseSchema,
   LoginResponseSchema,
   PersistedWeeksResponseSchema,
@@ -94,4 +99,19 @@ export async function downloadExport(
 
   const blob = await response.blob();
   triggerBlobDownload(blob, `Rankings_${season}_Week${week}.xlsx`);
+}
+
+export async function updatePageVisibility(
+  token: string,
+  visibility: PageVisibility
+): Promise<PageVisibility> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/page-visibility`,
+    withAuth(token, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(visibility),
+    })
+  );
+  return parseResponse(response, PageVisibilitySchema);
 }

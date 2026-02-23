@@ -5,12 +5,16 @@ import { safeFetch } from '../lib/safe-fetch';
 import {
   AllTimeResponseSchema,
   ConferencesResponseSchema,
+  PageVisibilitySchema,
+  PollLeadersResponseSchema,
   RankingsResponseSchema,
   SeasonsResponseSchema,
   TeamDetailResponseSchema,
   WeeksResponseSchema,
   type AllTimeResponse,
   type ConferencesResponse,
+  type PageVisibility,
+  type PollLeadersResponse,
   type RankingsResponse,
   type SeasonsResponse,
   type TeamDetailResponse,
@@ -61,4 +65,22 @@ export async function fetchTeamDetail(
     `${API_BASE_URL}/api/v1/teams/${encodeURIComponent(teamName)}?season=${season}&week=${week}`
   );
   return parseResponse(response, TeamDetailResponseSchema);
+}
+
+export async function fetchPageVisibility(): Promise<PageVisibility> {
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/page-visibility`);
+  return parseResponse(response, PageVisibilitySchema);
+}
+
+export async function fetchPollLeaders(
+  minSeason?: number,
+  maxSeason?: number
+): Promise<PollLeadersResponse> {
+  const params = new URLSearchParams();
+  if (minSeason !== undefined) params.set('minSeason', String(minSeason));
+  if (maxSeason !== undefined) params.set('maxSeason', String(maxSeason));
+  const query = params.toString();
+  const url = `${API_BASE_URL}/api/v1/poll-leaders${query ? `?${query}` : ''}`;
+  const response = await safeFetch(url);
+  return parseResponse(response, PollLeadersResponseSchema);
 }

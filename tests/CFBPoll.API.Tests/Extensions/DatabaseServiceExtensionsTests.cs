@@ -30,6 +30,22 @@ public class DatabaseServiceExtensionsTests
     }
 
     [Fact]
+    public void AddDatabase_RegistersIPageVisibilityData()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration();
+
+        services.AddDatabase(configuration);
+
+        var provider = services.BuildServiceProvider();
+        var data = provider.GetService<IPageVisibilityData>();
+
+        Assert.NotNull(data);
+        Assert.IsType<PageVisibilityData>(data);
+    }
+
+    [Fact]
     public void AddDatabase_RegistersIRankingsData()
     {
         var services = new ServiceCollection();
@@ -75,17 +91,22 @@ public class DatabaseServiceExtensionsTests
     }
 
     [Fact]
-    public async Task InitializeDatabaseAsync_CallsInitializeOnRankingsData()
+    public async Task InitializeDatabaseAsync_CallsInitializeOnBothDataLayers()
     {
+        var mockPageVisibilityData = new Mock<IPageVisibilityData>();
+        mockPageVisibilityData.Setup(x => x.InitializeAsync()).ReturnsAsync(true);
+
         var mockRankingsData = new Mock<IRankingsData>();
         mockRankingsData.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
         var builder = WebApplication.CreateBuilder();
+        builder.Services.AddSingleton(mockPageVisibilityData.Object);
         builder.Services.AddSingleton(mockRankingsData.Object);
         var app = builder.Build();
 
         await app.InitializeDatabaseAsync();
 
+        mockPageVisibilityData.Verify(x => x.InitializeAsync(), Times.Once);
         mockRankingsData.Verify(x => x.InitializeAsync(), Times.Once);
     }
 
