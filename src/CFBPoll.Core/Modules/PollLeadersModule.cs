@@ -58,10 +58,36 @@ public class PollLeadersModule : IPollLeadersModule
         };
     }
 
+    private void AggregateSnapshot(
+        IDictionary<string, PollLeaderEntry> counts,
+        RankingsResult snapshot)
+    {
+        foreach (var team in snapshot.Rankings)
+        {
+            if (!counts.TryGetValue(team.TeamName, out var entry))
+            {
+                entry = new PollLeaderEntry
+                {
+                    LogoURL = team.LogoURL,
+                    TeamName = team.TeamName
+                };
+                counts[team.TeamName] = entry;
+            }
+
+            if (string.IsNullOrEmpty(entry.LogoURL) && !string.IsNullOrEmpty(team.LogoURL))
+                entry.LogoURL = team.LogoURL;
+
+            if (team.Rank <= 25) entry.Top25Count++;
+            if (team.Rank <= 10) entry.Top10Count++;
+            if (team.Rank <= 5) entry.Top5Count++;
+        }
+    }
+
     private async Task<IReadOnlyList<PollLeaderEntry>> BuildAllWeeksEntriesAsync(
         IReadOnlyList<PersistedWeekSummary> publishedWeeks)
     {
         var counts = new Dictionary<string, PollLeaderEntry>(StringComparer.OrdinalIgnoreCase);
+        var aggregatedCount = 0;
 
         foreach (var week in publishedWeeks)
         {
@@ -72,9 +98,10 @@ public class PollLeadersModule : IPollLeadersModule
                 continue;
 
             AggregateSnapshot(counts, snapshot);
+            aggregatedCount++;
         }
 
-        _logger.LogInformation("All-weeks mode: aggregated {Count} snapshots", publishedWeeks.Count);
+        _logger.LogInformation("All-weeks mode: aggregated {Count} snapshots", aggregatedCount);
 
         return SortAndFilter(counts);
     }
@@ -89,6 +116,7 @@ public class PollLeadersModule : IPollLeadersModule
             .ToList();
 
         var counts = new Dictionary<string, PollLeaderEntry>(StringComparer.OrdinalIgnoreCase);
+        var aggregatedCount = 0;
 
         foreach (var season in seasons)
         {
@@ -113,15 +141,16 @@ public class PollLeadersModule : IPollLeadersModule
             }
 
             AggregateSnapshot(counts, snapshot);
+            aggregatedCount++;
         }
 
-        _logger.LogInformation("Final-weeks mode: aggregated snapshots for {Count} seasons", seasons.Count);
+        _logger.LogInformation("Final-weeks mode: aggregated {Count} postseason snapshots", aggregatedCount);
 
         return SortAndFilter(counts);
     }
 
     private IReadOnlyList<PollLeaderEntry> SortAndFilter(
-        Dictionary<string, PollLeaderEntry> counts)
+        IDictionary<string, PollLeaderEntry> counts)
     {
         return counts.Values
             .Where(e => e.Top25Count > 0)
@@ -129,30 +158,5 @@ public class PollLeadersModule : IPollLeadersModule
             .ThenByDescending(e => e.Top10Count)
             .ThenByDescending(e => e.Top5Count)
             .ToList();
-    }
-
-    private static void AggregateSnapshot(
-        Dictionary<string, PollLeaderEntry> counts,
-        RankingsResult snapshot)
-    {
-        foreach (var team in snapshot.Rankings)
-        {
-            if (!counts.TryGetValue(team.TeamName, out var entry))
-            {
-                entry = new PollLeaderEntry
-                {
-                    LogoURL = team.LogoURL,
-                    TeamName = team.TeamName
-                };
-                counts[team.TeamName] = entry;
-            }
-
-            if (string.IsNullOrEmpty(entry.LogoURL) && !string.IsNullOrEmpty(team.LogoURL))
-                entry.LogoURL = team.LogoURL;
-
-            if (team.Rank <= 25) entry.Top25Count++;
-            if (team.Rank <= 10) entry.Top10Count++;
-            if (team.Rank <= 5) entry.Top5Count++;
-        }
     }
 }

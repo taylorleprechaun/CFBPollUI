@@ -4,17 +4,19 @@ import { createPortal } from 'react-dom';
 import type { ChartDataPoint } from './types';
 
 export const PROXIMITY_RADIUS = 30;
+const NORMALIZATION_SCALE = 300;
 
 export interface ClusterTooltipProps {
   active?: boolean;
   allPoints: ChartDataPoint[];
   containerRef: React.RefObject<HTMLDivElement | null>;
   coordinate?: { x: number; y: number };
+  minTop?: number;
   payload?: Array<{ payload: ChartDataPoint }>;
   topN: '5' | '10';
 }
 
-export function ClusterTooltip({ active, coordinate, payload, allPoints, containerRef, topN }: ClusterTooltipProps) {
+export function ClusterTooltip({ active, coordinate, payload, allPoints, containerRef, minTop = 0, topN }: ClusterTooltipProps) {
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
@@ -31,12 +33,8 @@ export function ClusterTooltip({ active, coordinate, payload, allPoints, contain
     const left = svgRect.left + coordinate.x + 10;
     let top = svgRect.top + coordinate.y - tooltipHeight;
 
-    const header = document.querySelector('header');
-    if (header) {
-      const headerBottom = header.getBoundingClientRect().bottom;
-      if (top < headerBottom) {
-        top = headerBottom;
-      }
+    if (top < minTop) {
+      top = minTop;
     }
 
     el.style.left = `${left}px`;
@@ -51,8 +49,8 @@ export function ClusterTooltip({ active, coordinate, payload, allPoints, contain
   const maxY = Math.max(...allPoints.map((pt) => pt.y)) || 1;
 
   const nearby = allPoints.filter((p) => {
-    const normalizedDx = ((p.x - hoveredPoint.x) / maxX) * 300;
-    const normalizedDy = ((p.y - hoveredPoint.y) / maxY) * 300;
+    const normalizedDx = ((p.x - hoveredPoint.x) / maxX) * NORMALIZATION_SCALE;
+    const normalizedDy = ((p.y - hoveredPoint.y) / maxY) * NORMALIZATION_SCALE;
     return Math.sqrt(normalizedDx * normalizedDx + normalizedDy * normalizedDy) < PROXIMITY_RADIUS;
   });
 

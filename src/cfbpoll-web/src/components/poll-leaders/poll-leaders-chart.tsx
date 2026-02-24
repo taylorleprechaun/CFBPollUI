@@ -19,6 +19,7 @@ interface PollLeadersChartProps {
   mode: 'all' | 'final';
   onModeChange: (mode: 'all' | 'final') => void;
   onTopNChange: (topN: '5' | '10') => void;
+  tooltipMinTop?: number;
   topN: '5' | '10';
 }
 
@@ -46,6 +47,7 @@ export function PollLeadersChart({
   mode,
   onModeChange,
   onTopNChange,
+  tooltipMinTop,
   topN,
 }: PollLeadersChartProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -152,6 +154,7 @@ export function PollLeadersChart({
                 <ClusterTooltip
                   allPoints={chartData}
                   containerRef={containerRef}
+                  minTop={tooltipMinTop}
                   topN={topN}
                 />
               }

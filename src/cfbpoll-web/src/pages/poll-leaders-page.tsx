@@ -8,6 +8,7 @@ import { useDebouncedValue } from '../hooks/use-debounced-value';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { usePollLeaders } from '../hooks/use-poll-leaders';
 
+const HEADER_HEIGHT = 64;
 const SLIDER_DEBOUNCE_MS = 300;
 
 export function PollLeadersPage() {
@@ -41,37 +42,18 @@ export function PollLeadersPage() {
     }
   }, [data, minSeasonParam, maxSeasonParam, setSearchParams]);
 
-  const handleMinSeasonChange = (season: number) => {
+  const updateParam = (key: string, value: string) => {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
-      next.set('minSeason', String(season));
+      next.set(key, value);
       return next;
     });
   };
 
-  const handleMaxSeasonChange = (season: number) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.set('maxSeason', String(season));
-      return next;
-    });
-  };
-
-  const handleModeChange = (mode: 'all' | 'final') => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.set('mode', mode);
-      return next;
-    });
-  };
-
-  const handleTopNChange = (topN: '5' | '10') => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.set('topN', topN);
-      return next;
-    });
-  };
+  const handleMinSeasonChange = (season: number) => updateParam('minSeason', String(season));
+  const handleMaxSeasonChange = (season: number) => updateParam('maxSeason', String(season));
+  const handleModeChange = (mode: 'all' | 'final') => updateParam('mode', mode);
+  const handleTopNChange = (topN: '5' | '10') => updateParam('topN', topN);
 
   const activeData = data
     ? modeParam === 'final'
@@ -97,6 +79,7 @@ export function PollLeadersPage() {
           mode={modeParam}
           onModeChange={handleModeChange}
           onTopNChange={handleTopNChange}
+          tooltipMinTop={HEADER_HEIGHT}
           topN={topNParam}
         >
           <YearRangeSelector
