@@ -103,6 +103,24 @@ public class CacheData : ICacheData
         return rowsAffected > 0;
     }
 
+    public async Task<int> RemoveByPrefixAsync(string prefix)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(prefix);
+
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "DELETE FROM CacheEntry WHERE CacheKey LIKE @Prefix";
+        command.Parameters.AddWithValue("@Prefix", prefix + "%");
+
+        var rowsAffected = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
+
+        _logger.LogDebug("Removed {Count} cache entries with prefix {Prefix}", rowsAffected, prefix);
+
+        return rowsAffected;
+    }
+
     public async Task<bool> SetEntryAsync(CacheDataEntry entry)
     {
         ArgumentNullException.ThrowIfNull(entry);

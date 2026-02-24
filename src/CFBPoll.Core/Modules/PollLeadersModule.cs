@@ -1,24 +1,41 @@
+using CFBPoll.Core.Caching;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
+using CFBPoll.Core.Options;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace CFBPoll.Core.Modules;
 
 public class PollLeadersModule : IPollLeadersModule
 {
+    public const string CACHE_KEY_PREFIX = "poll-leaders_";
+
+    private readonly IPersistentCache _cache;
+    private readonly CacheOptions _cacheOptions;
     private readonly ICFBDataService _dataService;
     private readonly ILogger<PollLeadersModule> _logger;
     private readonly IRankingsModule _rankingsModule;
     private readonly StringComparison _scoic = StringComparison.OrdinalIgnoreCase;
 
     public PollLeadersModule(
+        IPersistentCache cache,
+        IOptions<CacheOptions> cacheOptions,
         ICFBDataService dataService,
-        IRankingsModule rankingsModule,
-        ILogger<PollLeadersModule> logger)
+        ILogger<PollLeadersModule> logger,
+        IRankingsModule rankingsModule)
     {
+        _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+        _cacheOptions = cacheOptions?.Value ?? throw new ArgumentNullException(nameof(cacheOptions));
         _dataService = dataService ?? throw new ArgumentNullException(nameof(dataService));
-        _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
+    }
+
+    public async Task InvalidateCacheAsync()
+    {
+        var count = await _cache.RemoveByPrefixAsync(CACHE_KEY_PREFIX).ConfigureAwait(false);
+        _logger.LogDebug("Invalidated {Count} poll leaders cache entries", count);
     }
 
     public async Task<PollLeadersResult> GetPollLeadersAsync(int? minSeason, int? maxSeason)
@@ -38,6 +55,15 @@ public class PollLeadersModule : IPollLeadersModule
         var effectiveMin = minSeason ?? minAvailable;
         var effectiveMax = maxSeason ?? maxAvailable;
 
+        var cacheKey = $"{CACHE_KEY_PREFIX}{effectiveMin}_{effectiveMax}";
+        var cached = await _cache.GetAsync<PollLeadersResult>(cacheKey).ConfigureAwait(false);
+
+        if (cached is not null)
+        {
+            _logger.LogDebug("Cache hit for poll leaders {MinSeason} to {MaxSeason}", effectiveMin, effectiveMax);
+            return cached;
+        }
+
         _logger.LogInformation(
             "Computing poll leaders for seasons {MinSeason} to {MaxSeason}",
             effectiveMin, effectiveMax);
@@ -46,16 +72,27 @@ public class PollLeadersModule : IPollLeadersModule
             .Where(pw => pw.Season >= effectiveMin && pw.Season <= effectiveMax)
             .ToList();
 
-        var allWeeksEntries = await BuildAllWeeksEntriesAsync(filteredWeeks).ConfigureAwait(false);
-        var finalWeeksEntries = await BuildFinalWeeksEntriesAsync(filteredWeeks).ConfigureAwait(false);
+        var allSnapshots = (await _rankingsModule
+            .GetPublishedSnapshotsBySeasonRangeAsync(effectiveMin, effectiveMax)
+            .ConfigureAwait(false))
+            .ToList();
 
-        return new PollLeadersResult
+        var allWeeksEntries = BuildAllWeeksEntries(allSnapshots);
+        var finalWeeksEntries = await BuildFinalWeeksEntriesAsync(filteredWeeks, allSnapshots)
+            .ConfigureAwait(false);
+
+        var result = new PollLeadersResult
         {
             AllWeeks = allWeeksEntries,
             FinalWeeksOnly = finalWeeksEntries,
             MaxAvailableSeason = maxAvailable,
             MinAvailableSeason = minAvailable
         };
+
+        var expiresAt = DateTime.UtcNow.AddHours(_cacheOptions.PollLeadersExpirationHours);
+        await _cache.SetAsync(cacheKey, result, expiresAt).ConfigureAwait(false);
+
+        return result;
     }
 
     private void AggregateSnapshot(
@@ -83,20 +120,14 @@ public class PollLeadersModule : IPollLeadersModule
         }
     }
 
-    private async Task<IReadOnlyList<PollLeaderEntry>> BuildAllWeeksEntriesAsync(
-        IReadOnlyList<PersistedWeekSummary> publishedWeeks)
+    private IReadOnlyList<PollLeaderEntry> BuildAllWeeksEntries(
+        IReadOnlyList<RankingsResult> snapshots)
     {
         var counts = new Dictionary<string, PollLeaderEntry>(StringComparer.OrdinalIgnoreCase);
         var aggregatedCount = 0;
 
-        foreach (var week in publishedWeeks)
+        foreach (var snapshot in snapshots)
         {
-            var snapshot = await _rankingsModule.GetPublishedSnapshotAsync(week.Season, week.Week)
-                .ConfigureAwait(false);
-
-            if (snapshot is null)
-                continue;
-
             AggregateSnapshot(counts, snapshot);
             aggregatedCount++;
         }
@@ -107,8 +138,12 @@ public class PollLeadersModule : IPollLeadersModule
     }
 
     private async Task<IReadOnlyList<PollLeaderEntry>> BuildFinalWeeksEntriesAsync(
-        IReadOnlyList<PersistedWeekSummary> publishedWeeks)
+        IReadOnlyList<PersistedWeekSummary> publishedWeeks,
+        IReadOnlyList<RankingsResult> allSnapshots)
     {
+        var snapshotLookup = allSnapshots
+            .ToDictionary(s => (s.Season, s.Week));
+
         var seasons = publishedWeeks
             .Select(pw => pw.Season)
             .Distinct()
@@ -130,10 +165,7 @@ public class PollLeadersModule : IPollLeadersModule
                 continue;
             }
 
-            var snapshot = await _rankingsModule.GetPublishedSnapshotAsync(season, postseasonWeek.Week)
-                .ConfigureAwait(false);
-
-            if (snapshot is null)
+            if (!snapshotLookup.TryGetValue((season, postseasonWeek.Week), out var snapshot))
             {
                 _logger.LogDebug("No published postseason snapshot for season {Season}, week {Week}",
                     season, postseasonWeek.Week);

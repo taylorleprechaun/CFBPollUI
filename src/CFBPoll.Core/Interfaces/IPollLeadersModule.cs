@@ -12,4 +12,9 @@ public interface IPollLeadersModule
     /// all-weeks and final-weeks-only aggregations.
     /// </summary>
     Task<PollLeadersResult> GetPollLeadersAsync(int? minSeason, int? maxSeason);
+
+    /// <summary>
+    /// Removes all cached poll leaders data.
+    /// </summary>
+    Task InvalidateCacheAsync();
 }

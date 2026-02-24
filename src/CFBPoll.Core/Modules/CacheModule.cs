@@ -61,6 +61,18 @@ public class CacheModule : IPersistentCache
         return await _cacheData.RemoveAsync(key).ConfigureAwait(false);
     }
 
+    public async Task<int> RemoveByPrefixAsync(string prefix)
+    {
+        if (string.IsNullOrWhiteSpace(prefix))
+        {
+            throw new ArgumentException("Cache prefix cannot be null or empty", nameof(prefix));
+        }
+
+        var count = await _cacheData.RemoveByPrefixAsync(prefix).ConfigureAwait(false);
+        _logger.LogDebug("Removed {Count} cache entries with prefix: {Prefix}", count, prefix);
+        return count;
+    }
+
     public async Task<bool> SetAsync<T>(string key, T data, DateTime expiresAt) where T : class
     {
         if (string.IsNullOrWhiteSpace(key))

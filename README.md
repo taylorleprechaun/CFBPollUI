@@ -18,9 +18,11 @@ This was created using Claude Code with a lot of guidelines to follow my code st
 
 ## TODO
 
-Last Updated 2/22/2026
+Last Updated 2/24/2026
 - I have only recently started to learn React and this application uses it for the UI. I had Claude create it all following the best practices that I could find online, but I don't know for certain that everything is correct. As I learn more I know I will end up refactoring that code.
 - Finish back-filling rankings. My original repo started mid-2018 and has gone since then. Any season before that never had "official" rankings, and the algorithm has changed a bit over time so I need to publish real rankings back-dated to 2002 (the start of the data being used here).
+- Add a page to view a team's history to see season results and rankings over time.
+- Add a page to see ranking trends during a season (like a chart with a column per week showing the logos of the top 25 teams at each week).
 
 ## Features
 
@@ -82,6 +84,7 @@ AdminController                    AdminModule
   -> IAdminModule                    -> ICFBDataService
                                      -> IExcelExportModule
                                      -> IPersistentCache
+                                     -> IPollLeadersModule
                                      -> IRankingsModule
                                      -> IRatingModule
 
@@ -98,6 +101,7 @@ PageVisibilityController           PageVisibilityModule
 
 PollLeadersController              PollLeadersModule
   -> IPollLeadersModule              -> ICFBDataService
+                                     -> IPersistentCache
                                      -> IRankingsModule
 
                                    CacheModule (IPersistentCache)    CacheData
@@ -237,12 +241,12 @@ The frontend runs at `http://localhost:5173`.
 
 ## Testing
 
-The project includes 1049 unit and integration tests across backend and frontend.
+The project includes 1074 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (542 tests)
+# Backend tests (567 tests)
 dotnet test
 
 # Run with coverage
@@ -255,7 +259,7 @@ npm test
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-542-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-567-blue)
 ![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-507-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
@@ -265,7 +269,7 @@ npm test
 |---------|---------------|-----------------|
 | CFBPoll.Core | 99% | 91% |
 | CFBPoll.API | 100% | 95% |
-| cfbpoll-web | 98% | 93% |
+| cfbpoll-web | 98% | 94% |
 
 **Excluded from coverage:**
 - `RatingModule` - Proprietary rating algorithm, not included in the repository. Tests are maintained locally.

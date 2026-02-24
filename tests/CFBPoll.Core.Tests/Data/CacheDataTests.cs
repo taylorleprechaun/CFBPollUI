@@ -286,6 +286,129 @@ public class CacheDataTests
     }
 
     [Fact]
+    public async Task RemoveByPrefixAsync_RemovesMatchingEntries()
+    {
+        var (data, tempPath) = CreateCacheDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SetEntryAsync(new CacheDataEntry
+            {
+                CacheKey = "poll-leaders_2020_2023",
+                CachedAt = DateTime.UtcNow,
+                Data = [1, 2, 3],
+                ExpiresAt = DateTime.UtcNow.AddHours(1)
+            });
+            await data.SetEntryAsync(new CacheDataEntry
+            {
+                CacheKey = "poll-leaders_2021_2024",
+                CachedAt = DateTime.UtcNow,
+                Data = [4, 5, 6],
+                ExpiresAt = DateTime.UtcNow.AddHours(1)
+            });
+            await data.SetEntryAsync(new CacheDataEntry
+            {
+                CacheKey = "teams_2024",
+                CachedAt = DateTime.UtcNow,
+                Data = [7, 8, 9],
+                ExpiresAt = DateTime.UtcNow.AddHours(1)
+            });
+
+            var removed = await data.RemoveByPrefixAsync("poll-leaders_");
+
+            Assert.Equal(2, removed);
+
+            Assert.Null(await data.GetEntryAsync("poll-leaders_2020_2023"));
+            Assert.Null(await data.GetEntryAsync("poll-leaders_2021_2024"));
+            Assert.NotNull(await data.GetEntryAsync("teams_2024"));
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task RemoveByPrefixAsync_ReturnsZero_WhenNoneMatch()
+    {
+        var (data, tempPath) = CreateCacheDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SetEntryAsync(new CacheDataEntry
+            {
+                CacheKey = "teams_2024",
+                CachedAt = DateTime.UtcNow,
+                Data = [1, 2, 3],
+                ExpiresAt = DateTime.UtcNow.AddHours(1)
+            });
+
+            var removed = await data.RemoveByPrefixAsync("poll-leaders_");
+
+            Assert.Equal(0, removed);
+
+            Assert.NotNull(await data.GetEntryAsync("teams_2024"));
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task RemoveByPrefixAsync_ThrowsOnNullPrefix()
+    {
+        var (data, tempPath) = CreateCacheDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await Assert.ThrowsAsync<ArgumentNullException>(() =>
+                data.RemoveByPrefixAsync(null!));
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task RemoveByPrefixAsync_ThrowsOnEmptyPrefix()
+    {
+        var (data, tempPath) = CreateCacheDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                data.RemoveByPrefixAsync(""));
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task RemoveByPrefixAsync_ThrowsOnWhitespacePrefix()
+    {
+        var (data, tempPath) = CreateCacheDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await Assert.ThrowsAsync<ArgumentException>(() =>
+                data.RemoveByPrefixAsync("   "));
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
     public async Task GetEntryAsync_PreservesDateTimes()
     {
         var (data, tempPath) = CreateCacheDataWithFile();

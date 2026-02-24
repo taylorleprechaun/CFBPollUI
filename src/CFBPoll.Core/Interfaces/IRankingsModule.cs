@@ -39,6 +39,11 @@ public interface IRankingsModule
     Task<RankingsResult?> GetPublishedSnapshotAsync(int season, int week);
 
     /// <summary>
+    /// Retrieves all published snapshots within the given season range.
+    /// </summary>
+    Task<IEnumerable<RankingsResult>> GetPublishedSnapshotsBySeasonRangeAsync(int minSeason, int maxSeason);
+
+    /// <summary>
     /// Retrieves a snapshot for the given season and week regardless of published status.
     /// </summary>
     Task<RankingsResult?> GetSnapshotAsync(int season, int week);
