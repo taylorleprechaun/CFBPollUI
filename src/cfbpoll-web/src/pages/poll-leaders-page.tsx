@@ -9,7 +9,7 @@ import { useDocumentTitle } from '../hooks/use-document-title';
 import { usePollLeaders } from '../hooks/use-poll-leaders';
 
 const HEADER_HEIGHT = 64;
-const SLIDER_DEBOUNCE_MS = 300;
+const SLIDER_DEBOUNCE_MS = 150;
 
 export function PollLeadersPage() {
   useDocumentTitle('Taylor Steinberg - Poll Leaders');

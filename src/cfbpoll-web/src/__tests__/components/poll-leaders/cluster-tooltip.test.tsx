@@ -173,6 +173,73 @@ describe('ClusterTooltip', () => {
     expect(logo).toHaveAttribute('src', 'https://example.com/ohio-state.png');
   });
 
+  it('uses single-column grid for a single team', () => {
+    const singlePoint: ChartDataPoint[] = [
+      { logoURL: 'https://example.com/alabama.png', teamName: 'Alabama', top5Count: 7, top10Count: 10, top25Count: 18, x: 18, y: 10 },
+    ];
+    const containerRef = createContainerRef();
+
+    render(
+      <ClusterTooltip
+        active={true}
+        allPoints={singlePoint}
+        containerRef={containerRef}
+        coordinate={{ x: 100, y: 100 }}
+        payload={[{ payload: singlePoint[0] }]}
+        topN="10"
+      />
+    );
+
+    const tooltip = screen.getByText('Alabama').closest('.grid');
+    expect(tooltip).toHaveClass('grid-cols-1');
+    expect(tooltip).not.toHaveClass('grid-cols-2');
+  });
+
+  it('uses two-column grid for multiple teams', () => {
+    const closePoints: ChartDataPoint[] = [
+      { logoURL: 'https://example.com/alabama.png', teamName: 'Alabama', top5Count: 7, top10Count: 10, top25Count: 100, x: 100, y: 100 },
+      { logoURL: 'https://example.com/texas.png', teamName: 'Texas', top5Count: 3, top10Count: 6, top25Count: 100, x: 100, y: 101 },
+    ];
+    const containerRef = createContainerRef();
+
+    render(
+      <ClusterTooltip
+        active={true}
+        allPoints={closePoints}
+        containerRef={containerRef}
+        coordinate={{ x: 100, y: 100 }}
+        payload={[{ payload: closePoints[0] }]}
+        topN="10"
+      />
+    );
+
+    const tooltip = screen.getByText('Alabama').closest('.grid');
+    expect(tooltip).toHaveClass('grid-cols-2');
+    expect(tooltip).not.toHaveClass('grid-cols-1');
+  });
+
+  it('clamps tooltip top to minTop when tooltip would render above it', () => {
+    const singlePoint: ChartDataPoint[] = [
+      { logoURL: 'https://example.com/alabama.png', teamName: 'Alabama', top5Count: 7, top10Count: 10, top25Count: 18, x: 18, y: 10 },
+    ];
+    const containerRef = createContainerRef();
+
+    render(
+      <ClusterTooltip
+        active={true}
+        allPoints={singlePoint}
+        containerRef={containerRef}
+        coordinate={{ x: 100, y: 50 }}
+        minTop={200}
+        payload={[{ payload: singlePoint[0] }]}
+        topN="10"
+      />
+    );
+
+    const tooltip = screen.getByText('Alabama').closest('.grid') as HTMLElement;
+    expect(tooltip.style.top).toBe('200px');
+  });
+
   it('filters out distant points based on proximity', () => {
     const spreadPoints: ChartDataPoint[] = [
       { logoURL: 'https://example.com/alabama.png', teamName: 'Alabama', top5Count: 7, top10Count: 10, top25Count: 18, x: 0, y: 0 },

@@ -52,7 +52,8 @@ describe('YearRangeSelector', () => {
     expect(maxSlider.value).toBe('2020');
   });
 
-  it('min slider cannot exceed max value', () => {
+  it('min slider clamps value to max season', () => {
+    const handleMinChange = vi.fn();
     render(
       <YearRangeSelector
         maxAvailable={2024}
@@ -60,28 +61,31 @@ describe('YearRangeSelector', () => {
         minAvailable={2002}
         minSeason={2002}
         onMaxSeasonChange={vi.fn()}
-        onMinSeasonChange={vi.fn()}
+        onMinSeasonChange={handleMinChange}
       />
     );
 
-    const minSlider = screen.getByLabelText('Minimum year') as HTMLInputElement;
-    expect(minSlider.max).toBe('2010');
+    fireEvent.change(screen.getByLabelText('Minimum year'), { target: { value: '2015' } });
+
+    expect(handleMinChange).toHaveBeenCalledWith(2010);
   });
 
-  it('max slider cannot go below min value', () => {
+  it('max slider clamps value to min season', () => {
+    const handleMaxChange = vi.fn();
     render(
       <YearRangeSelector
         maxAvailable={2024}
         maxSeason={2024}
         minAvailable={2002}
         minSeason={2015}
-        onMaxSeasonChange={vi.fn()}
+        onMaxSeasonChange={handleMaxChange}
         onMinSeasonChange={vi.fn()}
       />
     );
 
-    const maxSlider = screen.getByLabelText('Maximum year') as HTMLInputElement;
-    expect(maxSlider.min).toBe('2015');
+    fireEvent.change(screen.getByLabelText('Maximum year'), { target: { value: '2010' } });
+
+    expect(handleMaxChange).toHaveBeenCalledWith(2015);
   });
 
   it('calls onMinSeasonChange with correct value', () => {

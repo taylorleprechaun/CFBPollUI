@@ -37,9 +37,9 @@ export function YearRangeSelector({
           aria-valuemin={minAvailable}
           aria-valuenow={minSeason}
           className="dual-range-thumb absolute inset-0 w-full appearance-none bg-transparent pointer-events-none"
-          max={maxSeason}
+          max={maxAvailable}
           min={minAvailable}
-          onChange={(e) => onMinSeasonChange(Number(e.target.value))}
+          onChange={(e) => onMinSeasonChange(Math.min(Number(e.target.value), maxSeason))}
           step={1}
           type="range"
           value={minSeason}
@@ -51,8 +51,8 @@ export function YearRangeSelector({
           aria-valuenow={maxSeason}
           className="dual-range-thumb absolute inset-0 w-full appearance-none bg-transparent pointer-events-none"
           max={maxAvailable}
-          min={minSeason}
-          onChange={(e) => onMaxSeasonChange(Number(e.target.value))}
+          min={minAvailable}
+          onChange={(e) => onMaxSeasonChange(Math.max(Number(e.target.value), minSeason))}
           step={1}
           type="range"
           value={maxSeason}

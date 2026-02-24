@@ -39,7 +39,7 @@ export function ClusterTooltip({ active, coordinate, payload, allPoints, contain
 
     el.style.left = `${left}px`;
     el.style.top = `${top}px`;
-  }, [coordinate, containerRef]);
+  }, [active, coordinate, containerRef, minTop]);
 
   if (!active || !payload?.length || !coordinate) return null;
 
@@ -55,11 +55,12 @@ export function ClusterTooltip({ active, coordinate, payload, allPoints, contain
   });
 
   const sorted = [...nearby].sort((a, b) => a.teamName.localeCompare(b.teamName));
+  const gridCols = sorted.length === 1 ? 'grid-cols-1' : 'grid-cols-2';
 
   return createPortal(
     <div
       ref={tooltipRef}
-      className="fixed bg-white border border-gray-200 rounded-lg shadow-lg p-2 text-xs grid grid-cols-2 gap-x-3 z-50"
+      className={`pointer-events-none fixed bg-white border border-gray-200 rounded-lg shadow-lg p-2 text-xs grid ${gridCols} gap-x-3 z-50`}
       style={{ left: -9999, top: -9999 }}
     >
       {sorted.map((point) => (

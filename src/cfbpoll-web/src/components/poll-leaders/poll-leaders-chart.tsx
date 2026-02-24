@@ -1,10 +1,14 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CartesianGrid,
+  getNiceTickValues,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
   Tooltip,
+  usePlotArea,
+  useXAxisDomain,
+  useYAxisDomain,
   XAxis,
   YAxis,
 } from 'recharts';
@@ -24,20 +28,107 @@ interface PollLeadersChartProps {
 }
 
 const LOGO_SIZE = 24;
+const TICK_COUNT = 5;
 
-function CustomShape(props: { cx?: number; cy?: number; payload?: ChartDataPoint }) {
-  const { cx, cy, payload } = props;
-  if (cx === undefined || cy === undefined || !payload) return null;
+function getNiceDomain(domain: [number, number]): [number, number] {
+  const niceTicks = getNiceTickValues(domain, TICK_COUNT, false);
+  if (niceTicks.length === 0) return domain;
+  return [
+    Math.min(domain[0], niceTicks[0]),
+    Math.max(domain[1], niceTicks[niceTicks.length - 1]),
+  ];
+}
 
+function projectToPixel(value: number, min: number, range: number, origin: number, size: number): number {
+  const normalized = range === 0 ? 0.5 : (value - min) / range;
+  return origin + normalized * size;
+}
+
+interface HitTargetProps {
+  cx?: number;
+  cy?: number;
+}
+
+export function HitTarget({ cx, cy }: HitTargetProps) {
+  if (cx === undefined || cy === undefined) return null;
   return (
-    <image
+    <rect
       x={cx - LOGO_SIZE / 2}
       y={cy - LOGO_SIZE / 2}
       width={LOGO_SIZE}
       height={LOGO_SIZE}
-      href={payload.logoURL}
-      aria-label={payload.teamName}
+      fill="transparent"
     />
+  );
+}
+
+interface LogoOverlayProps {
+  data: ChartDataPoint[];
+}
+
+function LogoOverlay({ data }: LogoOverlayProps) {
+  const [fadingIn, setFadingIn] = useState<Set<string>>(new Set());
+
+  const prevTeamsRef = useRef<Set<string> | null>(null);
+
+  const plotArea = usePlotArea();
+  const xDomain = useXAxisDomain();
+  const yDomain = useYAxisDomain();
+
+  const currentTeams = useMemo(() => new Set(data.map((p) => p.teamName)), [data]);
+
+  useEffect(() => {
+    if (prevTeamsRef.current === null) {
+      prevTeamsRef.current = currentTeams;
+      return;
+    }
+
+    const newTeams = new Set<string>();
+    for (const team of currentTeams) {
+      if (!prevTeamsRef.current.has(team)) {
+        newTeams.add(team);
+      }
+    }
+    prevTeamsRef.current = currentTeams;
+
+    if (newTeams.size === 0) return;
+
+    setFadingIn(newTeams);
+    const frameId = requestAnimationFrame(() => {
+      setFadingIn(new Set());
+    });
+    return () => cancelAnimationFrame(frameId);
+  }, [currentTeams]);
+
+  if (!plotArea || !xDomain || !yDomain) return null;
+
+  const [xMin, xMax] = getNiceDomain(xDomain as [number, number]);
+  const [yMin, yMax] = getNiceDomain(yDomain as [number, number]);
+  const xRange = xMax - xMin;
+  const yRange = yMax - yMin;
+
+  return (
+    <g>
+      {data.map((point) => {
+        const cx = projectToPixel(point.x, xMin, xRange, plotArea.x, plotArea.width);
+        const cy = plotArea.y + plotArea.height - projectToPixel(point.y, yMin, yRange, 0, plotArea.height);
+        return (
+          <image
+            key={point.teamName}
+            width={LOGO_SIZE}
+            height={LOGO_SIZE}
+            href={point.logoURL}
+            aria-label={point.teamName}
+            pointerEvents="none"
+            style={{
+              opacity: fadingIn.has(point.teamName) ? 0 : 1,
+              transform: `translate(${cx - LOGO_SIZE / 2}px, ${cy - LOGO_SIZE / 2}px)`,
+              transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in',
+            }}
+          />
+        );
+      })}
+    </g>
   );
 }
 
@@ -54,15 +145,17 @@ export function PollLeadersChart({
 
   const chartData = useMemo<ChartDataPoint[]>(
     () =>
-      data.map((entry) => ({
-        logoURL: entry.logoURL,
-        teamName: entry.teamName,
-        top5Count: entry.top5Count,
-        top10Count: entry.top10Count,
-        top25Count: entry.top25Count,
-        x: entry.top25Count,
-        y: topN === '5' ? entry.top5Count : entry.top10Count,
-      })),
+      data
+        .map((entry) => ({
+          logoURL: entry.logoURL,
+          teamName: entry.teamName,
+          top5Count: entry.top5Count,
+          top10Count: entry.top10Count,
+          top25Count: entry.top25Count,
+          x: entry.top25Count,
+          y: topN === '5' ? entry.top5Count : entry.top10Count,
+        }))
+        .sort((a, b) => a.teamName.localeCompare(b.teamName)),
     [data, topN]
   );
 
@@ -163,8 +256,10 @@ export function PollLeadersChart({
             />
             <Scatter
               data={chartData}
-              shape={<CustomShape />}
+              isAnimationActive={false}
+              shape={<HitTarget />}
             />
+            <LogoOverlay data={chartData} />
           </ScatterChart>
         </ResponsiveContainer>
       </div>

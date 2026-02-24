@@ -2,19 +2,12 @@ import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import type { ReactNode } from 'react';
+
+import { rechartsMock } from '../mocks/recharts';
+
+vi.mock('recharts', () => rechartsMock);
 
 import { PollLeadersPage } from '../../pages/poll-leaders-page';
-
-vi.mock('recharts', () => ({
-  CartesianGrid: () => null,
-  ResponsiveContainer: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  Scatter: () => null,
-  ScatterChart: ({ children }: { children: ReactNode }) => <div data-testid="scatter-chart">{children}</div>,
-  Tooltip: () => null,
-  XAxis: () => null,
-  YAxis: () => null,
-}));
 
 vi.mock('../../hooks/use-poll-leaders', () => ({
   usePollLeaders: vi.fn(),
