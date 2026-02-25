@@ -11,6 +11,7 @@ public class AdminModule : IAdminModule
     private readonly ICFBDataService _dataService;
     private readonly IExcelExportModule _excelExportModule;
     private readonly ILogger<AdminModule> _logger;
+    private readonly IPollLeadersModule _pollLeadersModule;
     private readonly IRankingsModule _rankingsModule;
     private readonly IRatingModule _ratingModule;
 
@@ -18,6 +19,7 @@ public class AdminModule : IAdminModule
         ICFBDataService dataService,
         IExcelExportModule excelExportModule,
         IPersistentCache cache,
+        IPollLeadersModule pollLeadersModule,
         IRankingsModule rankingsModule,
         IRatingModule ratingModule,
         ILogger<AdminModule> logger)
@@ -25,9 +27,10 @@ public class AdminModule : IAdminModule
         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
         _dataService = dataService ?? throw new ArgumentNullException(nameof(dataService));
         _excelExportModule = excelExportModule ?? throw new ArgumentNullException(nameof(excelExportModule));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _pollLeadersModule = pollLeadersModule ?? throw new ArgumentNullException(nameof(pollLeadersModule));
         _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
         _ratingModule = ratingModule ?? throw new ArgumentNullException(nameof(ratingModule));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<CalculateRankingsResult> CalculateRankingsAsync(int season, int week)
@@ -46,6 +49,8 @@ public class AdminModule : IAdminModule
         {
             await _rankingsModule.SaveSnapshotAsync(rankings).ConfigureAwait(false);
             _logger.LogInformation("Saved draft snapshot for season {Season}, week {Week}", season, week);
+
+            await _pollLeadersModule.InvalidateCacheAsync().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -63,7 +68,13 @@ public class AdminModule : IAdminModule
     public async Task<bool> DeleteSnapshotAsync(int season, int week)
     {
         _logger.LogInformation("Deleting snapshot for season {Season}, week {Week}", season, week);
-        return await _rankingsModule.DeleteSnapshotAsync(season, week).ConfigureAwait(false);
+
+        var result = await _rankingsModule.DeleteSnapshotAsync(season, week).ConfigureAwait(false);
+
+        if (result)
+            await _pollLeadersModule.InvalidateCacheAsync().ConfigureAwait(false);
+
+        return result;
     }
 
     public async Task<byte[]?> ExportRankingsAsync(int season, int week)
@@ -86,7 +97,13 @@ public class AdminModule : IAdminModule
     public async Task<bool> PublishSnapshotAsync(int season, int week)
     {
         _logger.LogInformation("Publishing snapshot for season {Season}, week {Week}", season, week);
-        return await _rankingsModule.PublishSnapshotAsync(season, week).ConfigureAwait(false);
+
+        var result = await _rankingsModule.PublishSnapshotAsync(season, week).ConfigureAwait(false);
+
+        if (result)
+            await _pollLeadersModule.InvalidateCacheAsync().ConfigureAwait(false);
+
+        return result;
     }
 
     private async Task ClearSeasonCacheAsync(int season, int week)

@@ -194,6 +194,38 @@ public class CacheModuleTests
     }
 
     [Fact]
+    public async Task RemoveByPrefixAsync_DelegatesToCacheData()
+    {
+        _mockCacheData.Setup(x => x.RemoveByPrefixAsync("poll-leaders_")).ReturnsAsync(3);
+
+        var result = await _cacheModule.RemoveByPrefixAsync("poll-leaders_");
+
+        Assert.Equal(3, result);
+        _mockCacheData.Verify(x => x.RemoveByPrefixAsync("poll-leaders_"), Times.Once);
+    }
+
+    [Fact]
+    public async Task RemoveByPrefixAsync_ThrowsOnNullPrefix()
+    {
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _cacheModule.RemoveByPrefixAsync(null!));
+    }
+
+    [Fact]
+    public async Task RemoveByPrefixAsync_ThrowsOnEmptyPrefix()
+    {
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _cacheModule.RemoveByPrefixAsync(""));
+    }
+
+    [Fact]
+    public async Task RemoveByPrefixAsync_ThrowsOnWhitespacePrefix()
+    {
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _cacheModule.RemoveByPrefixAsync("   "));
+    }
+
+    [Fact]
     public async Task CleanupExpiredAsync_DelegatesToCacheData()
     {
         _mockCacheData.Setup(x => x.DeleteExpiredAsync(It.IsAny<DateTime>()))

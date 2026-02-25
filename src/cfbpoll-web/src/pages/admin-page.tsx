@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '../contexts/auth-context';
 import { useSeason } from '../contexts/season-context';
+import { usePageVisibility } from '../hooks/use-page-visibility';
 import {
   CalculateSection,
   PersistedSnapshotsSection,
@@ -22,11 +24,43 @@ import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
 import { getWeekLabel } from '../lib/week-utils';
 import type { CalculateResponse } from '../schemas/admin';
+import { updatePageVisibility } from '../services/admin-api';
 
 export function AdminPage() {
   useDocumentTitle('Admin - CFB Poll');
 
   const { token, logout } = useAuth();
+  const { allTimeEnabled, pollLeadersEnabled } = usePageVisibility();
+  const queryClient = useQueryClient();
+  const allTimeToggleId = useId();
+  const pollLeadersToggleId = useId();
+
+  const [visibilityFeedback, setVisibilityFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const visibilityMutation = useMutation({
+    mutationFn: (visibility: { allTimeEnabled: boolean; pollLeadersEnabled: boolean }) => {
+      if (!token) throw new Error('Authentication required');
+      return updatePageVisibility(token, visibility);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['page-visibility'] });
+    },
+  });
+
+  const handleToggle = async (field: 'allTimeEnabled' | 'pollLeadersEnabled', value: boolean) => {
+    setVisibilityFeedback(null);
+    const updated = {
+      allTimeEnabled,
+      pollLeadersEnabled,
+      [field]: value,
+    };
+    try {
+      await visibilityMutation.mutateAsync(updated);
+      setVisibilityFeedback({ type: 'success', message: 'Page visibility updated' });
+    } catch {
+      setVisibilityFeedback({ type: 'error', message: 'Failed to update page visibility' });
+    }
+  };
 
   const {
     seasons,
@@ -166,6 +200,45 @@ export function AdminPage() {
         setOperationError(null);
         if (normalizedPersistedError) refetchPersistedWeeks();
       }} />}
+
+      <div className="bg-white shadow rounded-lg p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Page Visibility</h2>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <label htmlFor={allTimeToggleId} className="text-sm font-medium text-gray-700">
+              All-Time Rankings
+            </label>
+            <input
+              id={allTimeToggleId}
+              type="checkbox"
+              role="switch"
+              checked={allTimeEnabled}
+              onChange={(e) => handleToggle('allTimeEnabled', e.target.checked)}
+              disabled={visibilityMutation.isPending}
+              className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <label htmlFor={pollLeadersToggleId} className="text-sm font-medium text-gray-700">
+              Poll Leaders
+            </label>
+            <input
+              id={pollLeadersToggleId}
+              type="checkbox"
+              role="switch"
+              checked={pollLeadersEnabled}
+              onChange={(e) => handleToggle('pollLeadersEnabled', e.target.checked)}
+              disabled={visibilityMutation.isPending}
+              className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+        {visibilityFeedback && (
+          <p className={`mt-3 text-sm ${visibilityFeedback.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>
+            {visibilityFeedback.message}
+          </p>
+        )}
+      </div>
 
       <CalculateSection
         isCalculating={calculateMutation.isPending}

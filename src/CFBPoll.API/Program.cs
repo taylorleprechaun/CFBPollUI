@@ -52,6 +52,8 @@ try
     builder.Services.AddSingleton<IAllTimeModule, AllTimeModule>();
     builder.Services.AddSingleton<IAuthModule, AuthModule>();
     builder.Services.AddSingleton<IExcelExportModule, ExcelExportModule>();
+    builder.Services.AddSingleton<IPageVisibilityModule, PageVisibilityModule>();
+    builder.Services.AddSingleton<IPollLeadersModule, PollLeadersModule>();
     builder.Services.AddSingleton<ITeamsModule, TeamsModule>();
     builder.Services.AddJwtAuthentication(builder.Configuration);
 

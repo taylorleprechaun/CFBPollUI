@@ -31,6 +31,13 @@ public interface IPersistentCache
     Task<bool> RemoveAsync(string key);
 
     /// <summary>
+    /// Removes all cached items whose key starts with the given prefix.
+    /// </summary>
+    /// <param name="prefix">The key prefix to match.</param>
+    /// <returns>The number of entries removed.</returns>
+    Task<int> RemoveByPrefixAsync(string prefix);
+
+    /// <summary>
     /// Removes all expired cache entries from storage.
     /// </summary>
     /// <returns>The number of expired entries that were removed.</returns>

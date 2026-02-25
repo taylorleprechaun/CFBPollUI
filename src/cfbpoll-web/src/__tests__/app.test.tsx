@@ -35,6 +35,14 @@ vi.mock('../hooks/use-seasons', () => ({
   }),
 }));
 
+vi.mock('../hooks/use-page-visibility', () => ({
+  usePageVisibility: () => ({
+    allTimeEnabled: true,
+    isLoading: false,
+    pollLeadersEnabled: true,
+  }),
+}));
+
 afterEach(() => {
   sessionStorage.clear();
 });

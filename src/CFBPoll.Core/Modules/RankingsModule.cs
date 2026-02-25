@@ -100,6 +100,11 @@ public class RankingsModule : IRankingsModule
         return await _rankingsData.GetPublishedSnapshotAsync(season, week).ConfigureAwait(false);
     }
 
+    public async Task<IEnumerable<RankingsResult>> GetPublishedSnapshotsBySeasonRangeAsync(int minSeason, int maxSeason)
+    {
+        return await _rankingsData.GetPublishedSnapshotsBySeasonRangeAsync(minSeason, maxSeason).ConfigureAwait(false);
+    }
+
     public async Task<RankingsResult?> GetSnapshotAsync(int season, int week)
     {
         return await _rankingsData.GetSnapshotAsync(season, week).ConfigureAwait(false);

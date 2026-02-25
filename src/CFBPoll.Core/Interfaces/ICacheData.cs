@@ -28,6 +28,11 @@ public interface ICacheData
     Task<bool> RemoveAsync(string key);
 
     /// <summary>
+    /// Removes all cache entries whose key starts with the given prefix.
+    /// </summary>
+    Task<int> RemoveByPrefixAsync(string prefix);
+
+    /// <summary>
     /// Inserts or replaces a cache entry.
     /// </summary>
     Task<bool> SetEntryAsync(CacheDataEntry entry);

@@ -19,7 +19,7 @@ public class RankingsDataTests
         {
             await data.InitializeAsync();
 
-            await using var connection = new SqliteConnection($"Data Source={tempPath}");
+            await using var connection = new SqliteConnection($"Data Source={tempPath};Pooling=false");
             await connection.OpenAsync();
             await using var command = connection.CreateCommand();
             command.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='RankingsSnapshot'";
@@ -323,6 +323,103 @@ public class RankingsDataTests
     }
 
     [Fact]
+    public async Task GetPublishedSnapshotsBySeasonRangeAsync_ReturnsPublishedInRange()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveSnapshotAsync(CreateRankingsResult(2022, 1, "Alabama"));
+            await data.PublishSnapshotAsync(2022, 1);
+            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 3, "Ohio State"));
+            await data.PublishSnapshotAsync(2023, 3);
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 5, "Michigan"));
+            await data.PublishSnapshotAsync(2024, 5);
+
+            var results = (await data.GetPublishedSnapshotsBySeasonRangeAsync(2022, 2024)).ToList();
+
+            Assert.Equal(3, results.Count);
+            Assert.Equal(2022, results[0].Season);
+            Assert.Equal(2023, results[1].Season);
+            Assert.Equal(2024, results[2].Season);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetPublishedSnapshotsBySeasonRangeAsync_ExcludesDrafts()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 1, "Alabama"));
+            await data.PublishSnapshotAsync(2023, 1);
+            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 2, "Ohio State"));
+
+            var results = (await data.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2023)).ToList();
+
+            Assert.Single(results);
+            Assert.Equal(1, results[0].Week);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetPublishedSnapshotsBySeasonRangeAsync_ReturnsEmpty_WhenNonePublished()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 1));
+
+            var results = (await data.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2023)).ToList();
+
+            Assert.Empty(results);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetPublishedSnapshotsBySeasonRangeAsync_FiltersOutOfRangeSeasons()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveSnapshotAsync(CreateRankingsResult(2021, 1, "Alabama"));
+            await data.PublishSnapshotAsync(2021, 1);
+            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 1, "Ohio State"));
+            await data.PublishSnapshotAsync(2023, 1);
+            await data.SaveSnapshotAsync(CreateRankingsResult(2025, 1, "Michigan"));
+            await data.PublishSnapshotAsync(2025, 1);
+
+            var results = (await data.GetPublishedSnapshotsBySeasonRangeAsync(2022, 2024)).ToList();
+
+            Assert.Single(results);
+            Assert.Equal(2023, results[0].Season);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
     public void Constructor_ThrowsOnNullOptions()
     {
         Assert.Throws<ArgumentNullException>(() =>
@@ -361,7 +458,7 @@ public class RankingsDataTests
         var options = new Mock<IOptions<DatabaseOptions>>();
         options.Setup(x => x.Value).Returns(new DatabaseOptions
         {
-            ConnectionString = $"Data Source={tempPath}"
+            ConnectionString = $"Data Source={tempPath};Pooling=false"
         });
 
         var logger = new Mock<ILogger<RankingsData>>();

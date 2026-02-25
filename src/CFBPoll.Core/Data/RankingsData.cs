@@ -101,6 +101,39 @@ public class RankingsData : IRankingsData
         return JsonSerializer.Deserialize<RankingsResult>(json);
     }
 
+    public async Task<IEnumerable<RankingsResult>> GetPublishedSnapshotsBySeasonRangeAsync(int minSeason, int maxSeason)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT RankingsJson FROM RankingsSnapshot
+            WHERE Published = 1 AND Season >= @MinSeason AND Season <= @MaxSeason
+            ORDER BY Season, Week
+            """;
+        command.Parameters.AddWithValue("@MinSeason", minSeason);
+        command.Parameters.AddWithValue("@MaxSeason", maxSeason);
+
+        await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
+        List<RankingsResult> results = [];
+
+        while (await reader.ReadAsync().ConfigureAwait(false))
+        {
+            var json = reader.GetString(0);
+            var result = JsonSerializer.Deserialize<RankingsResult>(json);
+
+            if (result is not null)
+                results.Add(result);
+        }
+
+        _logger.LogDebug(
+            "Fetched {Count} published snapshots for seasons {MinSeason} to {MaxSeason}",
+            results.Count, minSeason, maxSeason);
+
+        return results;
+    }
+
     public async Task<RankingsResult?> GetSnapshotAsync(int season, int week)
     {
         await using var connection = new SqliteConnection(_connectionString);

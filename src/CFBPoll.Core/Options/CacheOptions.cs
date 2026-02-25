@@ -8,5 +8,6 @@ public class CacheOptions
     public int ConferenceExpirationHours { get; set; } = 720;
     public string ConnectionString { get; set; } = "Data Source=data/cache.db";
     public int MaxSeasonYearExpirationHours { get; set; } = 24;
+    public int PollLeadersExpirationHours { get; set; } = 24;
     public int SeasonDataExpirationHours { get; set; } = 144;
 }

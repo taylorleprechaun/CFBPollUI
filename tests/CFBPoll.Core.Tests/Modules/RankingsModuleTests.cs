@@ -606,6 +606,22 @@ public class RankingsModuleTests
     }
 
     [Fact]
+    public async Task GetPublishedSnapshotsBySeasonRangeAsync_DelegatesToRankingsData()
+    {
+        var snapshots = new List<RankingsResult>
+        {
+            new RankingsResult { Season = 2023, Week = 1, Rankings = [] },
+            new RankingsResult { Season = 2024, Week = 5, Rankings = [] }
+        };
+        _mockRankingsData.Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2024)).ReturnsAsync(snapshots);
+
+        var result = (await _rankingsModule.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2024)).ToList();
+
+        Assert.Equal(2, result.Count);
+        _mockRankingsData.Verify(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2024), Times.Once);
+    }
+
+    [Fact]
     public async Task GetAvailableWeeksAsync_ReturnsPublishedWeeksOnly()
     {
         _mockRankingsData
