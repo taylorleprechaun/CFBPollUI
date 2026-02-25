@@ -13,11 +13,19 @@ import { ErrorAlert } from '../components/error';
 import { CollapsibleSection } from '../components/ui/collapsible-section';
 import { useAllTime } from '../hooks/use-all-time';
 import { useDocumentTitle } from '../hooks/use-document-title';
+import { usePreloadImages } from '../hooks/use-preload-images';
+import { collectLogoUrls } from '../lib/logo-utils';
 
 export function AllTimePage() {
   useDocumentTitle('Taylor Steinberg - All-Time Rankings');
 
   const { data, isLoading, error, refetch } = useAllTime();
+
+  const allTimeLogoUrls = useMemo(
+    () => data ? collectLogoUrls(data.bestTeams, data.worstTeams, data.hardestSchedules) : [],
+    [data]
+  );
+  usePreloadImages(allTimeLogoUrls);
 
   const defaultColumns = useMemo(
     () => [allTimeRankColumn, teamNameColumn, seasonColumn, recordColumn, rankColumn, ratingColumn, weightedSOSColumn],

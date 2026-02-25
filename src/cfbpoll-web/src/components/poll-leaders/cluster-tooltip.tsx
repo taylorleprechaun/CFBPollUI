@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 import type { ChartDataPoint } from './types';
@@ -18,6 +18,11 @@ export interface ClusterTooltipProps {
 
 export function ClusterTooltip({ active, coordinate, payload, allPoints, containerRef, minTop = 0, topN }: ClusterTooltipProps) {
   const tooltipRef = useRef<HTMLDivElement>(null);
+
+  const { maxX, maxY } = useMemo(() => ({
+    maxX: Math.max(...allPoints.map((pt) => pt.x)) || 1,
+    maxY: Math.max(...allPoints.map((pt) => pt.y)) || 1,
+  }), [allPoints]);
 
   useLayoutEffect(() => {
     const el = tooltipRef.current;
@@ -44,9 +49,6 @@ export function ClusterTooltip({ active, coordinate, payload, allPoints, contain
   if (!active || !payload?.length || !coordinate) return null;
 
   const hoveredPoint = payload[0].payload;
-
-  const maxX = Math.max(...allPoints.map((pt) => pt.x)) || 1;
-  const maxY = Math.max(...allPoints.map((pt) => pt.y)) || 1;
 
   const nearby = allPoints.filter((p) => {
     const normalizedDx = ((p.x - hoveredPoint.x) / maxX) * NORMALIZATION_SCALE;

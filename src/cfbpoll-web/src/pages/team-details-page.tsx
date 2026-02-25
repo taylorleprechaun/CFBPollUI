@@ -7,6 +7,7 @@ import { RecordRow, ScheduleRow } from '../components/team-details';
 import { LoadingSpinner } from '../components/ui/loading-spinner';
 import { useSeason } from '../contexts/season-context';
 import { useDocumentTitle } from '../hooks/use-document-title';
+import { usePreloadImages } from '../hooks/use-preload-images';
 import { useRankings } from '../hooks/use-rankings';
 import { useTeamDetail } from '../hooks/use-team-detail';
 import { useWeekSelection } from '../hooks/use-week-selection';
@@ -64,6 +65,14 @@ export function TeamDetailsPage() {
     error: teamDetailError,
     refetch: refetchTeamDetail,
   } = useTeamDetail(selectedSeason, selectedWeek, selectedTeam);
+
+  const teamDetailLogoUrls = useMemo(() => {
+    if (!teamDetail) return [];
+    const urls = [teamDetail.logoURL];
+    for (const game of teamDetail.schedule) urls.push(game.opponentLogoURL);
+    return urls;
+  }, [teamDetail]);
+  usePreloadImages(teamDetailLogoUrls);
 
   const teamOptions = useMemo(() => {
     if (!rankingsData?.rankings) return [];

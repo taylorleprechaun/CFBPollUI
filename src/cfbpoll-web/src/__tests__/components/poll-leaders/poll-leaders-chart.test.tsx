@@ -426,6 +426,37 @@ describe('PollLeadersChart', () => {
     expect(rect).toHaveAttribute('fill', 'transparent');
   });
 
+  it('applies opacity-60 class when isFetching is true', () => {
+    render(
+      <PollLeadersChart
+        data={mockData}
+        isFetching={true}
+        mode="all"
+        onModeChange={vi.fn()}
+        onTopNChange={vi.fn()}
+        topN="10"
+      />
+    );
+
+    const chartContainer = screen.getByTestId('scatter-chart').closest('.bg-white');
+    expect(chartContainer).toHaveClass('opacity-60');
+  });
+
+  it('does not apply opacity-60 class when isFetching is not set', () => {
+    render(
+      <PollLeadersChart
+        data={mockData}
+        mode="all"
+        onModeChange={vi.fn()}
+        onTopNChange={vi.fn()}
+        topN="10"
+      />
+    );
+
+    const chartContainer = screen.getByTestId('scatter-chart').closest('.bg-white');
+    expect(chartContainer).not.toHaveClass('opacity-60');
+  });
+
   it('centers logos when all points share the same coordinates', () => {
     mockUseXAxisDomain.mockReturnValue([5, 5]);
     mockUseYAxisDomain.mockReturnValue([3, 3]);

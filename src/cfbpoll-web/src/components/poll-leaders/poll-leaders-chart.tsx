@@ -20,6 +20,7 @@ import type { ChartDataPoint } from './types';
 interface PollLeadersChartProps {
   children?: React.ReactNode;
   data: PollLeaderEntry[];
+  isFetching?: boolean;
   mode: 'all' | 'final';
   onModeChange: (mode: 'all' | 'final') => void;
   onTopNChange: (topN: '5' | '10') => void;
@@ -135,6 +136,7 @@ function LogoOverlay({ data }: LogoOverlayProps) {
 export function PollLeadersChart({
   children,
   data,
+  isFetching,
   mode,
   onModeChange,
   onTopNChange,
@@ -222,7 +224,12 @@ export function PollLeadersChart({
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-4" ref={containerRef}>
+      <div
+        className={`bg-white rounded-lg shadow p-4 transition-opacity duration-200 ${
+          isFetching ? 'opacity-60' : ''
+        }`}
+        ref={containerRef}
+      >
         <ResponsiveContainer width="100%" height={500}>
           <ScatterChart
             margin={{ top: 20, right: 30, bottom: 20, left: 20 }}

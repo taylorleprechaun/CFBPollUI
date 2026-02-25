@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { ErrorAlert } from '../components/error';
@@ -7,6 +7,8 @@ import { YearRangeSelector } from '../components/poll-leaders/year-range-selecto
 import { useDebouncedValue } from '../hooks/use-debounced-value';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { usePollLeaders } from '../hooks/use-poll-leaders';
+import { usePreloadImages } from '../hooks/use-preload-images';
+import { collectLogoUrls } from '../lib/logo-utils';
 
 const HEADER_HEIGHT = 64;
 const SLIDER_DEBOUNCE_MS = 300;
@@ -29,7 +31,13 @@ export function PollLeadersPage() {
   const debouncedMinSeason = useDebouncedValue(minSeason, SLIDER_DEBOUNCE_MS);
   const debouncedMaxSeason = useDebouncedValue(maxSeason, SLIDER_DEBOUNCE_MS);
 
-  const { data, isLoading, error, refetch } = usePollLeaders(debouncedMinSeason, debouncedMaxSeason);
+  const { data, isFetching, isLoading, error, refetch } = usePollLeaders(debouncedMinSeason, debouncedMaxSeason);
+
+  const logoUrls = useMemo(
+    () => data ? collectLogoUrls(data.allWeeks, data.finalWeeksOnly) : [],
+    [data]
+  );
+  usePreloadImages(logoUrls);
 
   useEffect(() => {
     if (data && !minSeasonParam && !maxSeasonParam) {
@@ -76,6 +84,7 @@ export function PollLeadersPage() {
       {data && (
         <PollLeadersChart
           data={activeData}
+          isFetching={isFetching && !isLoading}
           mode={modeParam}
           onModeChange={handleModeChange}
           onTopNChange={handleTopNChange}

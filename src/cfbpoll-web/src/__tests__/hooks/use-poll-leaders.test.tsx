@@ -13,11 +13,13 @@ const createWrapper = () => {
     },
   });
 
-  return function Wrapper({ children }: { children: ReactNode }) {
+  function Wrapper({ children }: { children: ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     );
-  };
+  }
+
+  return { Wrapper, queryClient };
 };
 
 describe('usePollLeaders', () => {
@@ -44,8 +46,9 @@ describe('usePollLeaders', () => {
       json: () => Promise.resolve(mockResponse),
     } as Response);
 
+    const { Wrapper } = createWrapper();
     const { result } = renderHook(() => usePollLeaders(2002, 2024), {
-      wrapper: createWrapper(),
+      wrapper: Wrapper,
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -69,8 +72,9 @@ describe('usePollLeaders', () => {
       json: () => Promise.resolve(mockResponse),
     } as Response);
 
+    const { Wrapper } = createWrapper();
     const { result } = renderHook(() => usePollLeaders(2010, 2020), {
-      wrapper: createWrapper(),
+      wrapper: Wrapper,
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -93,8 +97,9 @@ describe('usePollLeaders', () => {
       json: () => Promise.resolve(mockResponse),
     } as Response);
 
+    const { Wrapper } = createWrapper();
     const { result } = renderHook(() => usePollLeaders(undefined, undefined), {
-      wrapper: createWrapper(),
+      wrapper: Wrapper,
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -102,8 +107,9 @@ describe('usePollLeaders', () => {
   });
 
   it('does not fetch when only one param is provided', () => {
+    const { Wrapper } = createWrapper();
     const { result } = renderHook(() => usePollLeaders(2002, undefined), {
-      wrapper: createWrapper(),
+      wrapper: Wrapper,
     });
 
     expect(result.current.fetchStatus).toBe('idle');
@@ -117,8 +123,9 @@ describe('usePollLeaders', () => {
       json: () => Promise.resolve({ message: 'Server error' }),
     } as Response);
 
+    const { Wrapper } = createWrapper();
     const { result } = renderHook(() => usePollLeaders(2002, 2024), {
-      wrapper: createWrapper(),
+      wrapper: Wrapper,
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
@@ -140,12 +147,37 @@ describe('usePollLeaders', () => {
       json: () => Promise.resolve(mockResponse),
     } as Response);
 
+    const { Wrapper } = createWrapper();
     const { result } = renderHook(() => usePollLeaders(2002, 2024), {
-      wrapper: createWrapper(),
+      wrapper: Wrapper,
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.allWeeks).toHaveLength(1);
     expect(result.current.data?.allWeeks[0].teamName).toBe('Ohio State');
+  });
+
+  it('seeds query cache for specific season range after parameterless fetch', async () => {
+    const mockResponse = {
+      allWeeks: [],
+      finalWeeksOnly: [],
+      minAvailableSeason: 2002,
+      maxAvailableSeason: 2024,
+    };
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockResponse),
+    } as Response);
+
+    const { Wrapper, queryClient } = createWrapper();
+    const { result } = renderHook(() => usePollLeaders(undefined, undefined), {
+      wrapper: Wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const seededData = queryClient.getQueryData(['poll-leaders', 2002, 2024]);
+    expect(seededData).toEqual(mockResponse);
   });
 });

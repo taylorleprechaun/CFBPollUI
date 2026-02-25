@@ -315,4 +315,34 @@ describe('PollLeadersPage', () => {
     const maxSlider = screen.getByLabelText('Maximum year') as HTMLInputElement;
     expect(maxSlider.value).toBe('2020');
   });
+
+  it('applies reduced opacity on chart container while refetching', () => {
+    vi.mocked(usePollLeaders).mockReturnValue({
+      data: mockData,
+      isFetching: true,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as ReturnType<typeof usePollLeaders>);
+
+    renderPage(['/poll-leaders?minSeason=2002&maxSeason=2024']);
+
+    const chartContainer = screen.getByTestId('scatter-chart').closest('.bg-white');
+    expect(chartContainer).toHaveClass('opacity-60');
+  });
+
+  it('does not apply reduced opacity when not refetching', () => {
+    vi.mocked(usePollLeaders).mockReturnValue({
+      data: mockData,
+      isFetching: false,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as ReturnType<typeof usePollLeaders>);
+
+    renderPage(['/poll-leaders?minSeason=2002&maxSeason=2024']);
+
+    const chartContainer = screen.getByTestId('scatter-chart').closest('.bg-white');
+    expect(chartContainer).not.toHaveClass('opacity-60');
+  });
 });

@@ -2,15 +2,17 @@ import { useMemo, useState } from 'react';
 
 import { useSeason } from '../contexts/season-context';
 import { useAvailableWeeks } from '../hooks/use-available-weeks';
-import { useRankings } from '../hooks/use-rankings';
-import { useWeekSelection } from '../hooks/use-week-selection';
 import { useConferences } from '../hooks/use-conferences';
 import { useDocumentTitle } from '../hooks/use-document-title';
-import { SeasonSelector } from '../components/rankings/season-selector';
-import { WeekSelector } from '../components/rankings/week-selector';
+import { usePreloadImages } from '../hooks/use-preload-images';
+import { useRankings } from '../hooks/use-rankings';
+import { useWeekSelection } from '../hooks/use-week-selection';
+import { ErrorAlert } from '../components/error';
 import { ConferenceFilter } from '../components/rankings/conference-filter';
 import { RankingsTable } from '../components/rankings/rankings-table';
-import { ErrorAlert } from '../components/error';
+import { SeasonSelector } from '../components/rankings/season-selector';
+import { WeekSelector } from '../components/rankings/week-selector';
+import { collectLogoUrls } from '../lib/logo-utils';
 import { getWeekLabel } from '../lib/week-utils';
 
 export function RankingsPage() {
@@ -47,6 +49,12 @@ export function RankingsPage() {
     error: rankingsError,
     refetch: refetchRankings,
   } = useRankings(selectedSeason, selectedWeek);
+
+  const rankingsLogoUrls = useMemo(
+    () => rankingsData?.rankings ? collectLogoUrls(rankingsData.rankings) : [],
+    [rankingsData?.rankings]
+  );
+  usePreloadImages(rankingsLogoUrls);
 
   const handleSeasonChange = (season: number) => {
     setSelectedSeason(season);
