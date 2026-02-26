@@ -65,7 +65,7 @@ describe('useWeekSelection', () => {
 
     const { result, rerender } = renderHook(
       ({ w }: { w: Week[] | undefined }) => useWeekSelection(w),
-      { initialProps: { w: undefined } }
+      { initialProps: { w: undefined as Week[] | undefined } }
     );
 
     expect(result.current.selectedWeek).toBeNull();

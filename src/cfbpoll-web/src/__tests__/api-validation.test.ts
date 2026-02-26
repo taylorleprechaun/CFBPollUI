@@ -58,7 +58,7 @@ describe('API Error Classes', () => {
         {
           code: 'invalid_type',
           expected: 'number',
-          received: 'string',
+          input: 'string',
           path: ['seasons', 0],
           message: 'Expected number, received string',
         },

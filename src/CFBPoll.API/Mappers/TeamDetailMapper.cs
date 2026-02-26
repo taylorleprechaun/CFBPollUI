@@ -5,6 +5,8 @@ namespace CFBPoll.API.Mappers;
 
 public static class TeamDetailMapper
 {
+    private static readonly StringComparison _scoic = StringComparison.OrdinalIgnoreCase;
+
     public static TeamDetailResponseDTO ToResponseDTO(
         RankedTeam rankedTeam,
         TeamInfo teamInfo,
@@ -19,14 +21,16 @@ public static class TeamDetailMapper
         ArgumentNullException.ThrowIfNull(rankings);
 
         var teamName = rankedTeam.TeamName;
-        var scoic = StringComparison.OrdinalIgnoreCase;
+
+        var rankingsLookup = rankings.ToDictionary(
+            r => r.TeamName, r => r, StringComparer.OrdinalIgnoreCase);
 
         var teamSchedule = scheduleGames
-            .Where(g => teamName.Equals(g.HomeTeam, scoic) || teamName.Equals(g.AwayTeam, scoic))
+            .Where(g => teamName.Equals(g.HomeTeam, _scoic) || teamName.Equals(g.AwayTeam, _scoic))
             .OrderBy(g => g.SeasonType == "regular" ? 0 : 1)
             .ThenBy(g => g.Week)
             .ThenBy(g => g.StartDate)
-            .Select(g => MapScheduleGame(g, teamName, allTeams, rankings));
+            .Select(g => MapScheduleGame(g, teamName, allTeams, rankingsLookup));
 
         return new TeamDetailResponseDTO
         {
@@ -50,10 +54,9 @@ public static class TeamDetailMapper
         ScheduleGame game,
         string teamName,
         IDictionary<string, TeamInfo> allTeams,
-        IEnumerable<RankedTeam> rankings)
+        IDictionary<string, RankedTeam> rankingsLookup)
     {
-        var scoic = StringComparison.OrdinalIgnoreCase;
-        var isHome = teamName.Equals(game.HomeTeam, scoic);
+        var isHome = teamName.Equals(game.HomeTeam, _scoic);
         var opponentName = isHome ? game.AwayTeam ?? string.Empty : game.HomeTeam ?? string.Empty;
 
         var teamScore = isHome ? game.HomePoints : game.AwayPoints;
@@ -73,8 +76,7 @@ public static class TeamDetailMapper
             opponentRecord = $"{opponentInfo.Wins}-{opponentInfo.Losses}";
         }
 
-        var opponentRanked = rankings.FirstOrDefault(
-            r => r.TeamName.Equals(opponentName, scoic));
+        rankingsLookup.TryGetValue(opponentName, out var opponentRanked);
         int? opponentRank = opponentRanked?.Rank;
 
         return new ScheduleGameDTO

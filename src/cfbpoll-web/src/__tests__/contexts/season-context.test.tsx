@@ -52,7 +52,7 @@ describe('SeasonContext', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof useSeasons>);
+    } as unknown as ReturnType<typeof useSeasons>);
 
     renderWithProvider();
 
@@ -66,7 +66,7 @@ describe('SeasonContext', () => {
       isLoading: true,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof useSeasons>);
+    } as unknown as ReturnType<typeof useSeasons>);
 
     renderWithProvider();
 
@@ -80,7 +80,7 @@ describe('SeasonContext', () => {
       isLoading: false,
       error: new Error('Fetch failed'),
       refetch: vi.fn(),
-    } as ReturnType<typeof useSeasons>);
+    } as unknown as ReturnType<typeof useSeasons>);
 
     renderWithProvider();
 
@@ -95,7 +95,7 @@ describe('SeasonContext', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof useSeasons>);
+    } as unknown as ReturnType<typeof useSeasons>);
 
     renderWithProvider();
 
@@ -108,7 +108,7 @@ describe('SeasonContext', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof useSeasons>);
+    } as unknown as ReturnType<typeof useSeasons>);
 
     renderWithProvider();
 
@@ -128,7 +128,7 @@ describe('SeasonContext', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof useSeasons>);
+    } as unknown as ReturnType<typeof useSeasons>);
 
     renderWithProvider();
 
@@ -151,7 +151,7 @@ describe('SeasonContext', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof useSeasons>);
+    } as unknown as ReturnType<typeof useSeasons>);
 
     renderWithProvider();
 
@@ -164,7 +164,7 @@ describe('SeasonContext', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof useSeasons>);
+    } as unknown as ReturnType<typeof useSeasons>);
 
     renderWithProvider();
 

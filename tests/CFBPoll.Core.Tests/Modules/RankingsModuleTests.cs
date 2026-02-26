@@ -11,6 +11,7 @@ public class RankingsModuleTests
     private readonly Mock<IRankingsData> _mockRankingsData;
     private readonly Mock<ISeasonModule> _mockSeasonModule;
     private readonly RankingsModule _rankingsModule;
+    private readonly StringComparison _scoic = StringComparison.OrdinalIgnoreCase;
 
     public RankingsModuleTests()
     {
@@ -174,9 +175,9 @@ public class RankingsModuleTests
 
         var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
 
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", StringComparison.OrdinalIgnoreCase));
-        var teamB = result.Rankings.First(t => t.TeamName.Equals("Team B", StringComparison.OrdinalIgnoreCase));
-        var teamC = result.Rankings.First(t => t.TeamName.Equals("Team C", StringComparison.OrdinalIgnoreCase));
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
+        var teamB = result.Rankings.First(t => t.TeamName.Equals("Team B", _scoic));
+        var teamC = result.Rankings.First(t => t.TeamName.Equals("Team C", _scoic));
 
         Assert.Equal(1, teamB.SOSRanking);
         Assert.Equal(2, teamA.SOSRanking);
@@ -192,7 +193,7 @@ public class RankingsModuleTests
 
         var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
 
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", StringComparison.OrdinalIgnoreCase));
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
         Assert.Equal(1, teamA.Details.Home.Wins);
         Assert.Equal(0, teamA.Details.Home.Losses);
     }
@@ -206,7 +207,7 @@ public class RankingsModuleTests
 
         var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
 
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", StringComparison.OrdinalIgnoreCase));
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
         Assert.Equal(0, teamA.Details.Home.Wins);
         Assert.Equal(1, teamA.Details.Home.Losses);
     }
@@ -220,7 +221,7 @@ public class RankingsModuleTests
 
         var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
 
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", StringComparison.OrdinalIgnoreCase));
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
         Assert.Equal(1, teamA.Details.Away.Wins);
         Assert.Equal(0, teamA.Details.Away.Losses);
     }
@@ -234,7 +235,7 @@ public class RankingsModuleTests
 
         var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
 
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", StringComparison.OrdinalIgnoreCase));
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
         Assert.Equal(0, teamA.Details.Away.Wins);
         Assert.Equal(1, teamA.Details.Away.Losses);
     }
@@ -248,7 +249,7 @@ public class RankingsModuleTests
 
         var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
 
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", StringComparison.OrdinalIgnoreCase));
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
         Assert.Equal(1, teamA.Details.Neutral.Wins);
         Assert.Equal(0, teamA.Details.Neutral.Losses);
         Assert.Equal(0, teamA.Details.Home.Wins);
@@ -263,7 +264,7 @@ public class RankingsModuleTests
 
         var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
 
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", StringComparison.OrdinalIgnoreCase));
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
         Assert.Equal(0, teamA.Details.Neutral.Wins);
         Assert.Equal(1, teamA.Details.Neutral.Losses);
     }
@@ -277,7 +278,7 @@ public class RankingsModuleTests
 
         var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
 
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", StringComparison.OrdinalIgnoreCase));
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
         Assert.Equal(0, teamA.Details.Home.Wins);
         Assert.Equal(0, teamA.Details.Home.Losses);
     }
@@ -291,7 +292,7 @@ public class RankingsModuleTests
 
         var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
 
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", StringComparison.OrdinalIgnoreCase));
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
         Assert.Equal(0, teamA.Details.Home.Wins);
         Assert.Equal(0, teamA.Details.Home.Losses);
     }
@@ -314,7 +315,7 @@ public class RankingsModuleTests
 
         var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
 
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", StringComparison.OrdinalIgnoreCase));
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
         Assert.Equal(1, teamA.Details.Home.Wins);
     }
 
@@ -326,7 +327,7 @@ public class RankingsModuleTests
     {
         var result = await GenerateRankingsWithOpponentAtRankAsync(opponentRank, isWin: true);
 
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", StringComparison.OrdinalIgnoreCase));
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
         Assert.Equal(1, teamA.Details.VsRank1To10.Wins);
         Assert.Equal(0, teamA.Details.VsRank1To10.Losses);
     }
@@ -338,7 +339,7 @@ public class RankingsModuleTests
     {
         var result = await GenerateRankingsWithOpponentAtRankAsync(opponentRank, isWin: false);
 
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", StringComparison.OrdinalIgnoreCase));
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
         Assert.Equal(0, teamA.Details.VsRank1To10.Wins);
         Assert.Equal(1, teamA.Details.VsRank1To10.Losses);
     }
@@ -351,7 +352,7 @@ public class RankingsModuleTests
     {
         var result = await GenerateRankingsWithOpponentAtRankAsync(opponentRank, isWin: true);
 
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", StringComparison.OrdinalIgnoreCase));
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
         Assert.Equal(1, teamA.Details.VsRank11To25.Wins);
         Assert.Equal(0, teamA.Details.VsRank11To25.Losses);
     }
@@ -364,7 +365,7 @@ public class RankingsModuleTests
     {
         var result = await GenerateRankingsWithOpponentAtRankAsync(opponentRank, isWin: true);
 
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", StringComparison.OrdinalIgnoreCase));
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
         Assert.Equal(1, teamA.Details.VsRank26To50.Wins);
         Assert.Equal(0, teamA.Details.VsRank26To50.Losses);
     }
@@ -377,7 +378,7 @@ public class RankingsModuleTests
     {
         var result = await GenerateRankingsWithOpponentAtRankAsync(opponentRank, isWin: true);
 
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", StringComparison.OrdinalIgnoreCase));
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
         Assert.Equal(1, teamA.Details.VsRank51To100.Wins);
         Assert.Equal(0, teamA.Details.VsRank51To100.Losses);
     }
@@ -390,7 +391,7 @@ public class RankingsModuleTests
     {
         var result = await GenerateRankingsWithOpponentAtRankAsync(opponentRank, isWin: true);
 
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", StringComparison.OrdinalIgnoreCase));
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
         Assert.Equal(1, teamA.Details.VsRank101Plus.Wins);
         Assert.Equal(0, teamA.Details.VsRank101Plus.Losses);
     }
@@ -523,7 +524,7 @@ public class RankingsModuleTests
 
         var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
 
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", StringComparison.OrdinalIgnoreCase));
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
         Assert.Equal(1, teamA.Details.Home.Wins);
         Assert.Equal(0, teamA.Details.Home.Losses);
         Assert.Equal(1, teamA.Details.Away.Wins);
@@ -828,7 +829,7 @@ public class RankingsModuleTests
     {
         var result = await GenerateRankingsWithOpponentAtRankAsync(opponentRank, isWin: true);
 
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", StringComparison.OrdinalIgnoreCase));
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
 
         var expectedTier1 = opponentRank <= 10 ? 1 : 0;
         var expectedTier2 = opponentRank > 10 && opponentRank <= 25 ? 1 : 0;

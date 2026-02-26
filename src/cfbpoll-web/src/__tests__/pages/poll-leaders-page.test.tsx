@@ -54,7 +54,7 @@ describe('PollLeadersPage', () => {
       isLoading: true,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof usePollLeaders>);
+    } as unknown as ReturnType<typeof usePollLeaders>);
 
     renderPage();
 
@@ -67,7 +67,7 @@ describe('PollLeadersPage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof usePollLeaders>);
+    } as unknown as ReturnType<typeof usePollLeaders>);
 
     renderPage();
 
@@ -82,7 +82,7 @@ describe('PollLeadersPage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof usePollLeaders>);
+    } as unknown as ReturnType<typeof usePollLeaders>);
 
     renderPage();
 
@@ -96,7 +96,7 @@ describe('PollLeadersPage', () => {
       isLoading: false,
       error: new Error('Something went wrong'),
       refetch: vi.fn(),
-    } as ReturnType<typeof usePollLeaders>);
+    } as unknown as ReturnType<typeof usePollLeaders>);
 
     renderPage();
 
@@ -111,7 +111,7 @@ describe('PollLeadersPage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof usePollLeaders>);
+    } as unknown as ReturnType<typeof usePollLeaders>);
 
     renderPage();
 
@@ -126,7 +126,7 @@ describe('PollLeadersPage', () => {
       isLoading: false,
       error: new Error('Network error'),
       refetch: mockRefetch,
-    } as ReturnType<typeof usePollLeaders>);
+    } as unknown as ReturnType<typeof usePollLeaders>);
 
     renderPage();
 
@@ -141,7 +141,7 @@ describe('PollLeadersPage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof usePollLeaders>);
+    } as unknown as ReturnType<typeof usePollLeaders>);
 
     renderPage();
 
@@ -155,7 +155,7 @@ describe('PollLeadersPage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof usePollLeaders>);
+    } as unknown as ReturnType<typeof usePollLeaders>);
 
     renderPage();
 
@@ -169,7 +169,7 @@ describe('PollLeadersPage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof usePollLeaders>);
+    } as unknown as ReturnType<typeof usePollLeaders>);
 
     renderPage(['/poll-leaders?mode=final']);
 
@@ -183,7 +183,7 @@ describe('PollLeadersPage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof usePollLeaders>);
+    } as unknown as ReturnType<typeof usePollLeaders>);
 
     renderPage(['/poll-leaders?topN=5']);
 
@@ -197,7 +197,7 @@ describe('PollLeadersPage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof usePollLeaders>);
+    } as unknown as ReturnType<typeof usePollLeaders>);
 
     renderPage();
 
@@ -212,7 +212,7 @@ describe('PollLeadersPage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof usePollLeaders>);
+    } as unknown as ReturnType<typeof usePollLeaders>);
 
     renderPage();
 
@@ -227,7 +227,7 @@ describe('PollLeadersPage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof usePollLeaders>);
+    } as unknown as ReturnType<typeof usePollLeaders>);
 
     renderPage();
 
@@ -246,7 +246,7 @@ describe('PollLeadersPage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof usePollLeaders>);
+    } as unknown as ReturnType<typeof usePollLeaders>);
 
     renderPage(['/poll-leaders?minSeason=2010&maxSeason=2020']);
 
@@ -262,7 +262,7 @@ describe('PollLeadersPage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof usePollLeaders>);
+    } as unknown as ReturnType<typeof usePollLeaders>);
 
     renderPage(['/poll-leaders?mode=invalid']);
 
@@ -276,7 +276,7 @@ describe('PollLeadersPage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof usePollLeaders>);
+    } as unknown as ReturnType<typeof usePollLeaders>);
 
     renderPage(['/poll-leaders?topN=garbage']);
 
@@ -290,7 +290,7 @@ describe('PollLeadersPage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof usePollLeaders>);
+    } as unknown as ReturnType<typeof usePollLeaders>);
 
     renderPage(['/poll-leaders?minSeason=2002&maxSeason=2024']);
 
@@ -306,7 +306,7 @@ describe('PollLeadersPage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof usePollLeaders>);
+    } as unknown as ReturnType<typeof usePollLeaders>);
 
     renderPage(['/poll-leaders?minSeason=2002&maxSeason=2024']);
 
@@ -323,7 +323,7 @@ describe('PollLeadersPage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof usePollLeaders>);
+    } as unknown as ReturnType<typeof usePollLeaders>);
 
     renderPage(['/poll-leaders?minSeason=2002&maxSeason=2024']);
 
@@ -338,7 +338,7 @@ describe('PollLeadersPage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof usePollLeaders>);
+    } as unknown as ReturnType<typeof usePollLeaders>);
 
     renderPage(['/poll-leaders?minSeason=2002&maxSeason=2024']);
 

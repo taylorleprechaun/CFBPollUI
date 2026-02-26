@@ -1,7 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { createContext } from 'react';
-
 import type { PageVisibilityContextValue } from '../../contexts/page-visibility-context';
 
 vi.mock('../../contexts/page-visibility-context', async () => {

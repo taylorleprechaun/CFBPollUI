@@ -321,6 +321,20 @@ describe('useTeamDetail', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(global.fetch).toHaveBeenCalled();
   });
+
+  it('accepts optional maxSeason parameter', async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(createMockTeamDetailResponse('USC')),
+    } as Response);
+
+    const { result } = renderHook(() => useTeamDetail(2023, 5, 'USC', 2024), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(global.fetch).toHaveBeenCalled();
+  });
 });
 
 function createMockTeamDetailResponse(teamName: string) {

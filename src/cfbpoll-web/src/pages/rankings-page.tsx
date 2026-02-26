@@ -43,12 +43,14 @@ export function RankingsPage() {
 
   const { selectedWeek, setSelectedWeek } = useWeekSelection(weeksData?.weeks);
 
+  const maxSeason = seasons.length > 0 ? seasons[0] : null;
+
   const {
     data: rankingsData,
     isLoading: rankingsLoading,
     error: rankingsError,
     refetch: refetchRankings,
-  } = useRankings(selectedSeason, selectedWeek);
+  } = useRankings(selectedSeason, selectedWeek, maxSeason);
 
   const rankingsLogoUrls = useMemo(
     () => rankingsData?.rankings ? collectLogoUrls(rankingsData.rankings) : [],

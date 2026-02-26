@@ -182,19 +182,19 @@ function setupMocks(overrides: {
     isLoading: overrides.weeksLoading ?? false,
     error: null,
     refetch,
-  } as ReturnType<typeof useWeeks>);
+  } as unknown as ReturnType<typeof useWeeks>);
   vi.mocked(useRankings).mockReturnValue({
     data: overrides.rankingsData ?? mockRankingsData,
     isLoading: overrides.rankingsLoading ?? false,
     error: null,
     refetch,
-  } as ReturnType<typeof useRankings>);
+  } as unknown as ReturnType<typeof useRankings>);
   vi.mocked(useTeamDetail).mockReturnValue({
     data: overrides.teamDetailData ?? undefined,
     isLoading: overrides.teamDetailLoading ?? false,
     error: overrides.teamDetailError ?? null,
     refetch,
-  } as ReturnType<typeof useTeamDetail>);
+  } as unknown as ReturnType<typeof useTeamDetail>);
 }
 
 function renderPage(initialRoute = '/team-details') {
@@ -585,19 +585,19 @@ describe('TeamDetailsPage', () => {
         isLoading: false,
         error: new Error('Weeks failed'),
         refetch,
-      } as ReturnType<typeof useWeeks>);
+      } as unknown as ReturnType<typeof useWeeks>);
       vi.mocked(useRankings).mockReturnValue({
         data: undefined,
         isLoading: false,
         error: null,
         refetch,
-      } as ReturnType<typeof useRankings>);
+      } as unknown as ReturnType<typeof useRankings>);
       vi.mocked(useTeamDetail).mockReturnValue({
         data: undefined,
         isLoading: false,
         error: null,
         refetch,
-      } as ReturnType<typeof useTeamDetail>);
+      } as unknown as ReturnType<typeof useTeamDetail>);
 
       renderPage();
 
@@ -611,19 +611,19 @@ describe('TeamDetailsPage', () => {
         isLoading: false,
         error: new Error('Weeks failed'),
         refetch,
-      } as ReturnType<typeof useWeeks>);
+      } as unknown as ReturnType<typeof useWeeks>);
       vi.mocked(useRankings).mockReturnValue({
         data: undefined,
         isLoading: false,
         error: null,
         refetch,
-      } as ReturnType<typeof useRankings>);
+      } as unknown as ReturnType<typeof useRankings>);
       vi.mocked(useTeamDetail).mockReturnValue({
         data: undefined,
         isLoading: false,
         error: null,
         refetch,
-      } as ReturnType<typeof useTeamDetail>);
+      } as unknown as ReturnType<typeof useTeamDetail>);
 
       renderPage();
 
@@ -681,7 +681,7 @@ describe('TeamDetailsPage', () => {
         ],
       };
 
-      setupMocks({ teamDetailData: detailWithTbdGame });
+      setupMocks({ teamDetailData: detailWithTbdGame as unknown as typeof mockTeamDetail });
       renderPage('/team-details?team=USC&season=2024&week=12');
 
       expect(screen.getByText('TBD')).toBeInTheDocument();
@@ -710,7 +710,7 @@ describe('TeamDetailsPage', () => {
         ],
       };
 
-      setupMocks({ teamDetailData: detailWithLoss });
+      setupMocks({ teamDetailData: detailWithLoss as unknown as typeof mockTeamDetail });
       renderPage('/team-details?team=USC&season=2024&week=12');
 
       const lossResult = screen.getByText('L 21-35');
