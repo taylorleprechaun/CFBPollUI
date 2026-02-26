@@ -65,7 +65,7 @@ describe('ErrorAlert', () => {
         {
           code: 'invalid_type',
           expected: 'number',
-          received: 'string',
+          input: 'string',
           path: ['field'],
           message: 'Expected number',
         },

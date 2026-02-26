@@ -71,7 +71,7 @@ describe('ErrorBoundary', () => {
   });
 
   it('displays generic message when error has no message', () => {
-    function ThrowEmptyError() {
+    function ThrowEmptyError(): never {
       throw new Error();
     }
 

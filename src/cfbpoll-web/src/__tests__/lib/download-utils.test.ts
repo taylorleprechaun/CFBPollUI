@@ -13,8 +13,8 @@ describe('triggerBlobDownload', () => {
     vi.spyOn(document, 'createElement').mockReturnValue(mockAnchor as unknown as HTMLElement);
     createObjectURLSpy = vi.fn().mockReturnValue('blob:mock-url');
     revokeObjectURLSpy = vi.fn();
-    URL.createObjectURL = createObjectURLSpy;
-    URL.revokeObjectURL = revokeObjectURLSpy;
+    URL.createObjectURL = createObjectURLSpy as unknown as typeof URL.createObjectURL;
+    URL.revokeObjectURL = revokeObjectURLSpy as unknown as typeof URL.revokeObjectURL;
     appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation((node) => node);
     removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation((node) => node);
   });
@@ -39,9 +39,9 @@ describe('triggerBlobDownload', () => {
   it('appends anchor to body, clicks it, then removes it', () => {
     const blob = new Blob(['test']);
     const callOrder: string[] = [];
-    appendChildSpy.mockImplementation((node) => { callOrder.push('append'); return node; });
+    appendChildSpy.mockImplementation((node: Node) => { callOrder.push('append'); return node; });
     mockAnchor.click.mockImplementation(() => callOrder.push('click'));
-    removeChildSpy.mockImplementation((node) => { callOrder.push('remove'); return node; });
+    removeChildSpy.mockImplementation((node: Node) => { callOrder.push('remove'); return node; });
 
     triggerBlobDownload(blob, 'file.xlsx');
 

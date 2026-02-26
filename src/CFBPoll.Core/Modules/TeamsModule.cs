@@ -10,6 +10,7 @@ public class TeamsModule : ITeamsModule
     private readonly ILogger<TeamsModule> _logger;
     private readonly IRankingsModule _rankingsModule;
     private readonly IRatingModule _ratingModule;
+    private readonly StringComparison _scoic = StringComparison.OrdinalIgnoreCase;
 
     public TeamsModule(
         ICFBDataService dataService,
@@ -27,6 +28,51 @@ public class TeamsModule : ITeamsModule
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(teamName);
 
+        var publishedSnapshot = await _rankingsModule.GetPublishedSnapshotAsync(season, week).ConfigureAwait(false);
+
+        if (publishedSnapshot is not null)
+        {
+            return await BuildPublishedTeamDetailAsync(teamName, season, publishedSnapshot).ConfigureAwait(false);
+        }
+
+        return await BuildCalculatedTeamDetailAsync(teamName, season, week).ConfigureAwait(false);
+    }
+
+    private IDictionary<string, TeamInfo> BuildTeamsFromMetadata(
+        IEnumerable<FBSTeam> fbsTeams,
+        IEnumerable<RankedTeam> rankings)
+    {
+        var rankingsLookup = rankings.ToDictionary(
+            r => r.TeamName, r => r, StringComparer.OrdinalIgnoreCase);
+
+        var teams = new Dictionary<string, TeamInfo>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var fbs in fbsTeams)
+        {
+            var teamInfo = new TeamInfo
+            {
+                AltColor = fbs.AltColor,
+                Color = fbs.Color,
+                Conference = fbs.Conference,
+                Division = fbs.Division,
+                LogoURL = fbs.LogoURL,
+                Name = fbs.Name
+            };
+
+            if (rankingsLookup.TryGetValue(fbs.Name, out var ranked))
+            {
+                teamInfo.Losses = ranked.Losses;
+                teamInfo.Wins = ranked.Wins;
+            }
+
+            teams[fbs.Name] = teamInfo;
+        }
+
+        return teams;
+    }
+
+    private async Task<TeamDetailResult?> BuildCalculatedTeamDetailAsync(string teamName, int season, int week)
+    {
         var seasonData = await _dataService.GetSeasonDataAsync(season, week).ConfigureAwait(false);
 
         if (!seasonData.Teams.ContainsKey(teamName))
@@ -36,16 +82,13 @@ public class TeamsModule : ITeamsModule
             return null;
         }
 
-        var rankingsResult = await _rankingsModule.GetPublishedSnapshotAsync(season, week).ConfigureAwait(false);
+        var fullScheduleTask = _dataService.GetFullSeasonScheduleAsync(season);
 
-        if (rankingsResult is null)
-        {
-            var ratings = await _ratingModule.RateTeamsAsync(seasonData).ConfigureAwait(false);
-            rankingsResult = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings).ConfigureAwait(false);
-        }
+        var ratings = await _ratingModule.RateTeamsAsync(seasonData).ConfigureAwait(false);
+        var rankingsResult = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings).ConfigureAwait(false);
 
         var rankedTeam = rankingsResult.Rankings.FirstOrDefault(
-            r => r.TeamName.Equals(teamName, StringComparison.OrdinalIgnoreCase));
+            r => r.TeamName.Equals(teamName, _scoic));
 
         if (rankedTeam is null)
         {
@@ -54,7 +97,7 @@ public class TeamsModule : ITeamsModule
             return null;
         }
 
-        var fullSchedule = await _dataService.GetFullSeasonScheduleAsync(season).ConfigureAwait(false);
+        var fullSchedule = await fullScheduleTask.ConfigureAwait(false);
 
         return new TeamDetailResult
         {
@@ -62,6 +105,37 @@ public class TeamsModule : ITeamsModule
             FullSchedule = fullSchedule,
             RankedTeam = rankedTeam,
             Teams = seasonData.Teams
+        };
+    }
+
+    private async Task<TeamDetailResult?> BuildPublishedTeamDetailAsync(
+        string teamName,
+        int season,
+        RankingsResult publishedSnapshot)
+    {
+        var rankedTeam = publishedSnapshot.Rankings.FirstOrDefault(
+            r => r.TeamName.Equals(teamName, _scoic));
+
+        if (rankedTeam is null)
+        {
+            _logger.LogDebug("Team {TeamName} not found in published rankings for season {Season}, week {Week}",
+                teamName, season, publishedSnapshot.Week);
+            return null;
+        }
+
+        var fbsTeamsTask = _dataService.GetFBSTeamsAsync(season);
+        var fullScheduleTask = _dataService.GetFullSeasonScheduleAsync(season);
+
+        await Task.WhenAll(fbsTeamsTask, fullScheduleTask).ConfigureAwait(false);
+
+        var teams = BuildTeamsFromMetadata(fbsTeamsTask.Result, publishedSnapshot.Rankings);
+
+        return new TeamDetailResult
+        {
+            AllRankings = publishedSnapshot.Rankings,
+            FullSchedule = fullScheduleTask.Result,
+            RankedTeam = rankedTeam,
+            Teams = teams
         };
     }
 }

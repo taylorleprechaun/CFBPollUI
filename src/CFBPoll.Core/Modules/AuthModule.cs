@@ -12,6 +12,7 @@ namespace CFBPoll.Core.Modules;
 public class AuthModule : IAuthModule
 {
     private readonly AuthOptions _options;
+    private readonly StringComparison _scoic = StringComparison.OrdinalIgnoreCase;
 
     public AuthModule(IOptions<AuthOptions> options)
     {
@@ -23,7 +24,7 @@ public class AuthModule : IAuthModule
         ArgumentException.ThrowIfNullOrWhiteSpace(username);
         ArgumentException.ThrowIfNullOrWhiteSpace(password);
 
-        if (!username.Equals(_options.Username, StringComparison.OrdinalIgnoreCase))
+        if (!username.Equals(_options.Username, _scoic))
             return new LoginResult { Success = false };
 
         if (!BCrypt.Net.BCrypt.Verify(password, _options.PasswordHash))

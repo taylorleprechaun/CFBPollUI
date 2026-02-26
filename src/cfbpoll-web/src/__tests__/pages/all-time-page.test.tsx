@@ -73,7 +73,7 @@ describe('AllTimePage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof useAllTime>);
+    } as unknown as ReturnType<typeof useAllTime>);
 
     renderPage();
 
@@ -88,7 +88,7 @@ describe('AllTimePage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof useAllTime>);
+    } as unknown as ReturnType<typeof useAllTime>);
 
     renderPage();
 
@@ -109,7 +109,7 @@ describe('AllTimePage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof useAllTime>);
+    } as unknown as ReturnType<typeof useAllTime>);
 
     renderPage();
 
@@ -124,7 +124,7 @@ describe('AllTimePage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof useAllTime>);
+    } as unknown as ReturnType<typeof useAllTime>);
 
     renderPage();
 
@@ -141,7 +141,7 @@ describe('AllTimePage', () => {
       isLoading: true,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof useAllTime>);
+    } as unknown as ReturnType<typeof useAllTime>);
 
     renderPage();
 
@@ -155,7 +155,7 @@ describe('AllTimePage', () => {
       isLoading: false,
       error: new Error('Something went wrong'),
       refetch: vi.fn(),
-    } as ReturnType<typeof useAllTime>);
+    } as unknown as ReturnType<typeof useAllTime>);
 
     renderPage();
 
@@ -170,7 +170,7 @@ describe('AllTimePage', () => {
       isLoading: false,
       error: new Error('Something went wrong'),
       refetch: mockRefetch,
-    } as ReturnType<typeof useAllTime>);
+    } as unknown as ReturnType<typeof useAllTime>);
 
     renderPage();
 
@@ -183,7 +183,7 @@ describe('AllTimePage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof useAllTime>);
+    } as unknown as ReturnType<typeof useAllTime>);
 
     renderPage();
 
@@ -197,7 +197,7 @@ describe('AllTimePage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof useAllTime>);
+    } as unknown as ReturnType<typeof useAllTime>);
 
     renderPage();
 
@@ -211,7 +211,7 @@ describe('AllTimePage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof useAllTime>);
+    } as unknown as ReturnType<typeof useAllTime>);
 
     renderPage();
 
@@ -230,7 +230,7 @@ describe('AllTimePage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof useAllTime>);
+    } as unknown as ReturnType<typeof useAllTime>);
 
     renderPage();
 
@@ -249,7 +249,7 @@ describe('AllTimePage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof useAllTime>);
+    } as unknown as ReturnType<typeof useAllTime>);
 
     renderPage();
 
@@ -268,7 +268,7 @@ describe('AllTimePage', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    } as ReturnType<typeof useAllTime>);
+    } as unknown as ReturnType<typeof useAllTime>);
 
     renderPage();
 

@@ -238,4 +238,19 @@ describe('useRankings', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(global.fetch).toHaveBeenCalled();
   });
+
+  it('accepts optional maxSeason parameter', async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({ season: 2023, week: 5, rankings: [] }),
+    } as Response);
+
+    const { result } = renderHook(() => useRankings(2023, 5, 2024), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(global.fetch).toHaveBeenCalled();
+  });
 });
