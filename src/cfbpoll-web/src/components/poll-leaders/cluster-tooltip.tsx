@@ -33,11 +33,18 @@ export function ClusterTooltip({ active, coordinate, payload, allPoints, contain
     if (!svg) return;
 
     const svgRect = svg.getBoundingClientRect();
+    const tooltipWidth = el.offsetWidth;
     const tooltipHeight = el.offsetHeight;
 
-    const left = svgRect.left + coordinate.x + 10;
+    let left = svgRect.left + coordinate.x + 10;
     let top = svgRect.top + coordinate.y - tooltipHeight;
 
+    if (left + tooltipWidth > window.innerWidth) {
+      left = svgRect.left + coordinate.x - tooltipWidth - 10;
+    }
+    if (left < 4) {
+      left = 4;
+    }
     if (top < minTop) {
       top = minTop;
     }

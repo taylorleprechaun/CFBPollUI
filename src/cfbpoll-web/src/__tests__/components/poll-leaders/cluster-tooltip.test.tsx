@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { createRef } from 'react';
 
@@ -238,6 +238,63 @@ describe('ClusterTooltip', () => {
 
     const tooltip = screen.getByText('Alabama').closest('.grid') as HTMLElement;
     expect(tooltip.style.top).toBe('200px');
+  });
+
+  it('flips tooltip to left side when it would overflow viewport right edge', () => {
+    const originalInnerWidth = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', { value: 200, writable: true, configurable: true });
+    const widthSpy = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(100);
+
+    const singlePoint: ChartDataPoint[] = [
+      { logoURL: 'https://example.com/alabama.png', teamName: 'Alabama', top5Count: 7, top10Count: 10, top25Count: 18, x: 18, y: 10 },
+    ];
+    const containerRef = createContainerRef();
+
+    render(
+      <ClusterTooltip
+        active={true}
+        allPoints={singlePoint}
+        containerRef={containerRef}
+        coordinate={{ x: 300, y: 100 }}
+        payload={[{ payload: singlePoint[0] }]}
+        topN="10"
+      />
+    );
+
+    const tooltip = screen.getByText('Alabama').closest('.grid') as HTMLElement;
+    const left = parseInt(tooltip.style.left, 10);
+    expect(left).toBeLessThanOrEqual(200);
+
+    widthSpy.mockRestore();
+    Object.defineProperty(window, 'innerWidth', { value: originalInnerWidth, writable: true, configurable: true });
+  });
+
+  it('clamps tooltip left to 4px when flipping would go negative', () => {
+    const originalInnerWidth = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', { value: 10, writable: true, configurable: true });
+    const widthSpy = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(100);
+
+    const singlePoint: ChartDataPoint[] = [
+      { logoURL: 'https://example.com/alabama.png', teamName: 'Alabama', top5Count: 7, top10Count: 10, top25Count: 18, x: 18, y: 10 },
+    ];
+    const containerRef = createContainerRef();
+
+    render(
+      <ClusterTooltip
+        active={true}
+        allPoints={singlePoint}
+        containerRef={containerRef}
+        coordinate={{ x: 5, y: 100 }}
+        payload={[{ payload: singlePoint[0] }]}
+        topN="10"
+      />
+    );
+
+    const tooltip = screen.getByText('Alabama').closest('.grid') as HTMLElement;
+    expect(tooltip.style.left).toBe('4px');
+
+    widthSpy.mockRestore();
+    Object.defineProperty(window, 'innerWidth', { value: originalInnerWidth, writable: true, configurable: true });
   });
 
   it('filters out distant points based on proximity', () => {
