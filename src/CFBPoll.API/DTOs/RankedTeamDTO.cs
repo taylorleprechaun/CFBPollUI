@@ -8,6 +8,7 @@ public class RankedTeamDTO
     public string LogoURL { get; set; } = string.Empty;
     public int Losses { get; set; }
     public int Rank { get; set; }
+    public int? RankDelta { get; set; }
     public double Rating { get; set; }
     public string Record { get; set; } = string.Empty;
     public int SOSRanking { get; set; }

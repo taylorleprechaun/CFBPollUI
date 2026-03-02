@@ -420,6 +420,124 @@ public class RankingsDataTests
     }
 
     [Fact]
+    public async Task GetPreviousPublishedSnapshotAsync_ReturnsPreviousPublished()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1, "Nebraska"));
+            await data.PublishSnapshotAsync(2024, 1);
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 2, "Oklahoma"));
+            await data.PublishSnapshotAsync(2024, 2);
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 3, "Texas"));
+            await data.PublishSnapshotAsync(2024, 3);
+
+            var result = await data.GetPreviousPublishedSnapshotAsync(2024, 3);
+
+            Assert.NotNull(result);
+            Assert.Equal(2024, result.Season);
+            Assert.Equal(2, result.Week);
+            Assert.Equal("Oklahoma", result.Rankings.First().TeamName);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetPreviousPublishedSnapshotAsync_SkipsUnpublishedWeeks()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1, "Iowa"));
+            await data.PublishSnapshotAsync(2024, 1);
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 2, "Michigan"));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 3, "Ohio State"));
+            await data.PublishSnapshotAsync(2024, 3);
+
+            var result = await data.GetPreviousPublishedSnapshotAsync(2024, 3);
+
+            Assert.NotNull(result);
+            Assert.Equal(1, result.Week);
+            Assert.Equal("Iowa", result.Rankings.First().TeamName);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetPreviousPublishedSnapshotAsync_ReturnsNull_WhenNoPreviousExists()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1, "USC"));
+            await data.PublishSnapshotAsync(2024, 1);
+
+            var result = await data.GetPreviousPublishedSnapshotAsync(2024, 1);
+
+            Assert.Null(result);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetPreviousPublishedSnapshotAsync_ReturnsNull_WhenNonePublished()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1, "Notre Dame"));
+
+            var result = await data.GetPreviousPublishedSnapshotAsync(2024, 2);
+
+            Assert.Null(result);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetPreviousPublishedSnapshotAsync_DoesNotCrossSeason()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 15, "Alabama"));
+            await data.PublishSnapshotAsync(2023, 15);
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1, "Florida"));
+            await data.PublishSnapshotAsync(2024, 1);
+
+            var result = await data.GetPreviousPublishedSnapshotAsync(2024, 1);
+
+            Assert.Null(result);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
     public void Constructor_ThrowsOnNullOptions()
     {
         Assert.Throws<ArgumentNullException>(() =>

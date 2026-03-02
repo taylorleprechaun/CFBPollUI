@@ -84,6 +84,7 @@ describe('useRankings', () => {
     const mockRankings = [
       {
         rank: 1,
+        rankDelta: null,
         teamName: 'Florida',
         logoURL: 'https://example.com/logo.png',
         conference: 'SEC',

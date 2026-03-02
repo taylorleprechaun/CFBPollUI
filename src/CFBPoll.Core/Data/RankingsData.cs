@@ -83,6 +83,28 @@ public class RankingsData : IRankingsData
         return weeks;
     }
 
+    public async Task<RankingsResult?> GetPreviousPublishedSnapshotAsync(int season, int week)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT RankingsJson FROM RankingsSnapshot
+            WHERE Season = @Season AND Week < @Week AND Published = 1
+            ORDER BY Week DESC LIMIT 1
+            """;
+        command.Parameters.AddWithValue("@Season", season);
+        command.Parameters.AddWithValue("@Week", week);
+
+        var result = await command.ExecuteScalarAsync().ConfigureAwait(false);
+
+        if (result is not string json)
+            return null;
+
+        return JsonSerializer.Deserialize<RankingsResult>(json);
+    }
+
     public async Task<RankingsResult?> GetPublishedSnapshotAsync(int season, int week)
     {
         await using var connection = new SqliteConnection(_connectionString);

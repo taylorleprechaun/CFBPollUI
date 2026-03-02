@@ -18,6 +18,11 @@ public interface IRankingsData
     Task<IEnumerable<PersistedWeekSummary>> GetPersistedWeeksAsync();
 
     /// <summary>
+    /// Retrieves the most recent published snapshot before the given week in the same season.
+    /// </summary>
+    Task<RankingsResult?> GetPreviousPublishedSnapshotAsync(int season, int week);
+
+    /// <summary>
     /// Retrieves the published week numbers for the given season.
     /// </summary>
     Task<IEnumerable<int>> GetPublishedWeekNumbersAsync(int season);

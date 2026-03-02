@@ -7,6 +7,7 @@ import type { RankedTeam } from '../types';
 
 const createMockTeam = (overrides: Partial<RankedTeam> = {}): RankedTeam => ({
   rank: 1,
+  rankDelta: null,
   teamName: 'USC',
   logoURL: 'https://example.com/usc.png',
   conference: 'Big Ten',
@@ -33,6 +34,7 @@ const createMockTeam = (overrides: Partial<RankedTeam> = {}): RankedTeam => ({
 const mockRankings: RankedTeam[] = [
   createMockTeam({
     rank: 1,
+    rankDelta: 3,
     teamName: 'USC',
     conference: 'Big Ten',
     rating: 165.42,
@@ -40,6 +42,7 @@ const mockRankings: RankedTeam[] = [
   }),
   createMockTeam({
     rank: 2,
+    rankDelta: -2,
     teamName: 'Ohio State',
     logoURL: 'https://example.com/ohio-state.png',
     conference: 'Big Ten',
@@ -52,6 +55,7 @@ const mockRankings: RankedTeam[] = [
   }),
   createMockTeam({
     rank: 3,
+    rankDelta: 0,
     teamName: 'Texas',
     logoURL: 'https://example.com/texas.png',
     conference: 'SEC',
@@ -95,6 +99,7 @@ describe('RankingsTable', () => {
       expect(screen.getByText('Rating')).toBeInTheDocument();
       expect(screen.getByText('Weighted SOS')).toBeInTheDocument();
       expect(screen.getByText('SOS Rank')).toBeInTheDocument();
+      expect(screen.getByText('\u0394')).toBeInTheDocument();
     });
 
     it('displays team data', () => {
@@ -225,6 +230,74 @@ describe('RankingsTable', () => {
       const uscLink = screen.getByText('USC').closest('a');
       expect(uscLink).toBeInTheDocument();
       expect(uscLink).toHaveAttribute('href', '/team-details?team=USC');
+    });
+  });
+
+  describe('rank delta column', () => {
+    it('shows green up arrow for positive delta', () => {
+      renderTable();
+
+      const upCell = screen.getByText((content, element) =>
+        element?.tagName === 'SPAN' &&
+        element.classList.contains('text-green-600') &&
+        content.includes('3')
+      );
+      expect(upCell).toBeInTheDocument();
+      expect(upCell.querySelector('svg')).toBeInTheDocument();
+    });
+
+    it('shows red down arrow for negative delta', () => {
+      renderTable();
+
+      const downCell = screen.getByText((content, element) =>
+        element?.tagName === 'SPAN' &&
+        element.classList.contains('text-red-600') &&
+        content.includes('2')
+      );
+      expect(downCell).toBeInTheDocument();
+      expect(downCell.querySelector('svg')).toBeInTheDocument();
+    });
+
+    it('does not show negative sign for negative delta', () => {
+      renderTable();
+
+      const downCell = screen.getByText((_content, element) =>
+        element?.tagName === 'SPAN' &&
+        element.classList.contains('text-red-600') &&
+        element.querySelector('svg') !== null
+      );
+      expect(downCell.textContent).not.toContain('-');
+    });
+
+    it('shows gray hyphen for zero delta', () => {
+      renderTable();
+
+      const cells = screen.getAllByText('-');
+      const grayHyphen = cells.find(
+        (el) => el.tagName === 'SPAN' && el.classList.contains('text-gray-500')
+      );
+      expect(grayHyphen).toBeInTheDocument();
+    });
+
+    it('shows gray hyphen for null delta', () => {
+      const rankings = [createMockTeam({ rank: 1, rankDelta: null, teamName: 'Nebraska' })];
+      renderTable({ rankings });
+
+      const cells = screen.getAllByText('-');
+      const grayHyphen = cells.find(
+        (el) => el.tagName === 'SPAN' && el.classList.contains('text-gray-500')
+      );
+      expect(grayHyphen).toBeInTheDocument();
+    });
+
+    it('delta column is sortable', async () => {
+      renderTable();
+
+      const deltaHeader = screen.getByText('\u0394');
+      await userEvent.click(deltaHeader);
+
+      const th = deltaHeader.closest('th')!;
+      expect(th).toHaveAttribute('aria-sort');
     });
   });
 });

@@ -54,6 +54,10 @@ public class RankingsControllerTests
             .Setup(x => x.GetPublishedSnapshotAsync(2023, 5))
             .ReturnsAsync(persistedResult);
 
+        _mockRankingsModule
+            .Setup(x => x.GetRankDeltasAsync(2023, 5, persistedResult.Rankings))
+            .ReturnsAsync(new Dictionary<string, int?> { ["Team A"] = null });
+
         var result = await _controller.GetRankings(2023, 5);
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
@@ -110,6 +114,10 @@ public class RankingsControllerTests
         _mockRankingsModule
             .Setup(x => x.GenerateRankingsAsync(seasonData, ratings))
             .ReturnsAsync(rankingsResult);
+
+        _mockRankingsModule
+            .Setup(x => x.GetRankDeltasAsync(2023, 5, rankingsResult.Rankings))
+            .ReturnsAsync(new Dictionary<string, int?> { ["Team A"] = null });
 
         var result = await _controller.GetRankings(2023, 5);
 
@@ -196,11 +204,109 @@ public class RankingsControllerTests
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2023, 5)).ReturnsAsync(seasonData);
         _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
         _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankingsResult);
+        _mockRankingsModule
+            .Setup(x => x.GetRankDeltasAsync(2023, 5, rankingsResult.Rankings))
+            .ReturnsAsync(new Dictionary<string, int?>());
 
         await _controller.GetRankings(2023, 5);
 
         _mockRankingsModule.Verify(x => x.SaveSnapshotAsync(It.IsAny<RankingsResult>()), Times.Never);
         _mockRankingsModule.Verify(x => x.PublishSnapshotAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetRankings_PersistedSnapshot_IncludesRankDeltas()
+    {
+        var persistedResult = new RankingsResult
+        {
+            Season = 2024, Week = 5,
+            Rankings = new List<RankedTeam>
+            {
+                new RankedTeam { TeamName = "Florida", Rank = 1, Rating = 90, Details = new TeamDetails() },
+                new RankedTeam { TeamName = "Alabama", Rank = 2, Rating = 85, Details = new TeamDetails() }
+            }
+        };
+
+        _mockRankingsModule
+            .Setup(x => x.GetPublishedSnapshotAsync(2024, 5))
+            .ReturnsAsync(persistedResult);
+
+        _mockRankingsModule
+            .Setup(x => x.GetRankDeltasAsync(2024, 5, persistedResult.Rankings))
+            .ReturnsAsync(new Dictionary<string, int?> { ["Florida"] = 3, ["Alabama"] = -1 });
+
+        var result = await _controller.GetRankings(2024, 5);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<RankingsResponseDTO>(okResult.Value);
+        var rankings = response.Rankings.ToList();
+        Assert.Equal(3, rankings[0].RankDelta);
+        Assert.Equal(-1, rankings[1].RankDelta);
+    }
+
+    [Fact]
+    public async Task GetRankings_LiveCalculation_IncludesRankDeltas()
+    {
+        _mockRankingsModule
+            .Setup(x => x.GetPublishedSnapshotAsync(2024, 5))
+            .ReturnsAsync((RankingsResult?)null);
+
+        var seasonData = new SeasonData
+        {
+            Season = 2024, Week = 5,
+            Teams = new Dictionary<string, TeamInfo>
+            {
+                ["Texas"] = new TeamInfo { Name = "Texas", Games = [] }
+            },
+            Games = []
+        };
+        var ratings = new Dictionary<string, RatingDetails>
+        {
+            ["Texas"] = new RatingDetails { Wins = 8, Losses = 1, RatingComponents = new Dictionary<string, double>() }
+        };
+        var rankingsResult = new RankingsResult
+        {
+            Season = 2024, Week = 5,
+            Rankings = new List<RankedTeam>
+            {
+                new RankedTeam { TeamName = "Texas", Rank = 1, Rating = 92, Details = new TeamDetails() }
+            }
+        };
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankingsResult);
+        _mockRankingsModule
+            .Setup(x => x.GetRankDeltasAsync(2024, 5, rankingsResult.Rankings))
+            .ReturnsAsync(new Dictionary<string, int?> { ["Texas"] = 2 });
+
+        var result = await _controller.GetRankings(2024, 5);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<RankingsResponseDTO>(okResult.Value);
+        Assert.Equal(2, response.Rankings.First().RankDelta);
+    }
+
+    [Fact]
+    public async Task GetRankings_PersistedSnapshot_CallsGetRankDeltasAsync()
+    {
+        var persistedResult = new RankingsResult
+        {
+            Season = 2024, Week = 3,
+            Rankings = new List<RankedTeam>
+            {
+                new RankedTeam { TeamName = "Notre Dame", Rank = 1, Details = new TeamDetails() }
+            }
+        };
+
+        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotAsync(2024, 3)).ReturnsAsync(persistedResult);
+        _mockRankingsModule
+            .Setup(x => x.GetRankDeltasAsync(2024, 3, persistedResult.Rankings))
+            .ReturnsAsync(new Dictionary<string, int?> { ["Notre Dame"] = 0 });
+
+        await _controller.GetRankings(2024, 3);
+
+        _mockRankingsModule.Verify(x => x.GetRankDeltasAsync(2024, 3, persistedResult.Rankings), Times.Once);
     }
 
     [Fact]

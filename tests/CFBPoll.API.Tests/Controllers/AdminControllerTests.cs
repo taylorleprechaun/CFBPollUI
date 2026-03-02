@@ -13,19 +13,22 @@ public class AdminControllerTests
 {
     private readonly Mock<IAdminModule> _mockAdminModule;
     private readonly Mock<ILogger<AdminController>> _mockLogger;
+    private readonly Mock<IRankingsModule> _mockRankingsModule;
     private readonly AdminController _controller;
 
     public AdminControllerTests()
     {
         _mockAdminModule = new Mock<IAdminModule>();
         _mockLogger = new Mock<ILogger<AdminController>>();
+        _mockRankingsModule = new Mock<IRankingsModule>();
 
-        _controller = new AdminController(_mockAdminModule.Object, _mockLogger.Object);
+        _controller = new AdminController(_mockAdminModule.Object, _mockLogger.Object, _mockRankingsModule.Object);
     }
 
     [Fact]
-    public async Task Calculate_ReturnsRankings()
+    public async Task Calculate_ReturnsRankingsWithDeltas()
     {
+        var rankedTeam = new RankedTeam { TeamName = "Ohio State", Rank = 1, Rating = 90, Details = new TeamDetails() };
         var calculateResult = new CalculateRankingsResult
         {
             Persisted = true,
@@ -33,16 +36,19 @@ public class AdminControllerTests
             {
                 Season = 2024,
                 Week = 5,
-                Rankings =
-                [
-                    new RankedTeam { TeamName = "Team A", Rank = 1, Rating = 90, Details = new TeamDetails() }
-                ]
+                Rankings = [rankedTeam]
             }
         };
+
+        var deltas = new Dictionary<string, int?> { { "Ohio State", 2 } };
 
         _mockAdminModule
             .Setup(x => x.CalculateRankingsAsync(2024, 5))
             .ReturnsAsync(calculateResult);
+
+        _mockRankingsModule
+            .Setup(x => x.GetRankDeltasAsync(2024, 5, It.IsAny<IEnumerable<RankedTeam>>()))
+            .ReturnsAsync(deltas);
 
         var request = new CalculateRequestDTO { Season = 2024, Week = 5 };
         var result = await _controller.Calculate(request);
@@ -51,7 +57,8 @@ public class AdminControllerTests
         var response = Assert.IsType<CalculateResponseDTO>(okResult.Value);
         Assert.True(response.Persisted);
         Assert.Equal(2024, response.Rankings.Season);
-        Assert.Single(response.Rankings.Rankings);
+        var team = Assert.Single(response.Rankings.Rankings);
+        Assert.Equal(2, team.RankDelta);
     }
 
     [Fact]
@@ -142,13 +149,20 @@ public class AdminControllerTests
     public void Constructor_NullAdminModule_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
-            () => new AdminController(null!, new Mock<ILogger<AdminController>>().Object));
+            () => new AdminController(null!, new Mock<ILogger<AdminController>>().Object, new Mock<IRankingsModule>().Object));
     }
 
     [Fact]
     public void Constructor_NullLogger_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
-            () => new AdminController(new Mock<IAdminModule>().Object, null!));
+            () => new AdminController(new Mock<IAdminModule>().Object, null!, new Mock<IRankingsModule>().Object));
+    }
+
+    [Fact]
+    public void Constructor_NullRankingsModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminController(new Mock<IAdminModule>().Object, new Mock<ILogger<AdminController>>().Object, null!));
     }
 }
