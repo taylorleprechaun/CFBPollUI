@@ -261,7 +261,7 @@ describe('RankingsTable', () => {
     it('does not show negative sign for negative delta', () => {
       renderTable();
 
-      const downCell = screen.getByText((content, element) =>
+      const downCell = screen.getByText((_content, element) =>
         element?.tagName === 'SPAN' &&
         element.classList.contains('text-red-600') &&
         element.querySelector('svg') !== null
