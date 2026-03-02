@@ -43,14 +43,16 @@ public class RankingsController : ControllerBase
         if (persisted is not null)
         {
             _logger.LogDebug("Returning persisted rankings for season {Season}, week {Week}", season, week);
-            return Ok(RankingsMapper.ToResponseDTO(persisted));
+            var deltas = await _rankingsModule.GetRankDeltasAsync(season, week, persisted.Rankings);
+            return Ok(RankingsMapper.ToResponseDTO(persisted, deltas));
         }
 
         var seasonData = await _dataService.GetSeasonDataAsync(season, week);
         var ratings = await _ratingModule.RateTeamsAsync(seasonData);
         var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
 
-        return Ok(RankingsMapper.ToResponseDTO(result));
+        var liveDeltas = await _rankingsModule.GetRankDeltasAsync(season, week, result.Rankings);
+        return Ok(RankingsMapper.ToResponseDTO(result, liveDeltas));
     }
 
     /// <summary>

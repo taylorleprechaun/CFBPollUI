@@ -48,6 +48,7 @@ export const TeamDetailsSchema = z.object({
 // Rankings schemas
 export const RankedTeamSchema = z.object({
   rank: z.number(),
+  rankDelta: z.number().nullable(),
   teamName: z.string(),
   logoURL: z.string(),
   conference: z.string(),

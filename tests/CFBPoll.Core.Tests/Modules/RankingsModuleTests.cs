@@ -623,6 +623,180 @@ public class RankingsModuleTests
     }
 
     [Fact]
+    public async Task GetRankDeltasAsync_NoPreviousSnapshot_ReturnsNullDeltas()
+    {
+        _mockRankingsData
+            .Setup(x => x.GetPreviousPublishedSnapshotAsync(2024, 1))
+            .ReturnsAsync((RankingsResult?)null);
+
+        var currentRankings = new List<RankedTeam>
+        {
+            new RankedTeam { TeamName = "Nebraska", Rank = 1, Details = new TeamDetails() },
+            new RankedTeam { TeamName = "Oklahoma", Rank = 2, Details = new TeamDetails() }
+        };
+
+        var result = await _rankingsModule.GetRankDeltasAsync(2024, 1, currentRankings);
+
+        Assert.Equal(2, result.Count);
+        Assert.Null(result["Nebraska"]);
+        Assert.Null(result["Oklahoma"]);
+    }
+
+    [Fact]
+    public async Task GetRankDeltasAsync_TeamMovedUp_ReturnsPositiveDelta()
+    {
+        var previousSnapshot = new RankingsResult
+        {
+            Season = 2024, Week = 4,
+            Rankings = new List<RankedTeam>
+            {
+                new RankedTeam { TeamName = "Ohio State", Rank = 5, Details = new TeamDetails() }
+            }
+        };
+
+        _mockRankingsData
+            .Setup(x => x.GetPreviousPublishedSnapshotAsync(2024, 5))
+            .ReturnsAsync(previousSnapshot);
+
+        var currentRankings = new List<RankedTeam>
+        {
+            new RankedTeam { TeamName = "Ohio State", Rank = 3, Details = new TeamDetails() }
+        };
+
+        var result = await _rankingsModule.GetRankDeltasAsync(2024, 5, currentRankings);
+
+        Assert.Equal(2, result["Ohio State"]);
+    }
+
+    [Fact]
+    public async Task GetRankDeltasAsync_TeamMovedDown_ReturnsNegativeDelta()
+    {
+        var previousSnapshot = new RankingsResult
+        {
+            Season = 2024, Week = 4,
+            Rankings = new List<RankedTeam>
+            {
+                new RankedTeam { TeamName = "Michigan", Rank = 2, Details = new TeamDetails() }
+            }
+        };
+
+        _mockRankingsData
+            .Setup(x => x.GetPreviousPublishedSnapshotAsync(2024, 5))
+            .ReturnsAsync(previousSnapshot);
+
+        var currentRankings = new List<RankedTeam>
+        {
+            new RankedTeam { TeamName = "Michigan", Rank = 5, Details = new TeamDetails() }
+        };
+
+        var result = await _rankingsModule.GetRankDeltasAsync(2024, 5, currentRankings);
+
+        Assert.Equal(-3, result["Michigan"]);
+    }
+
+    [Fact]
+    public async Task GetRankDeltasAsync_TeamUnchanged_ReturnsZero()
+    {
+        var previousSnapshot = new RankingsResult
+        {
+            Season = 2024, Week = 4,
+            Rankings = new List<RankedTeam>
+            {
+                new RankedTeam { TeamName = "Texas", Rank = 1, Details = new TeamDetails() }
+            }
+        };
+
+        _mockRankingsData
+            .Setup(x => x.GetPreviousPublishedSnapshotAsync(2024, 5))
+            .ReturnsAsync(previousSnapshot);
+
+        var currentRankings = new List<RankedTeam>
+        {
+            new RankedTeam { TeamName = "Texas", Rank = 1, Details = new TeamDetails() }
+        };
+
+        var result = await _rankingsModule.GetRankDeltasAsync(2024, 5, currentRankings);
+
+        Assert.Equal(0, result["Texas"]);
+    }
+
+    [Fact]
+    public async Task GetRankDeltasAsync_NewTeamNotInPrevious_ReturnsNullDelta()
+    {
+        var previousSnapshot = new RankingsResult
+        {
+            Season = 2024, Week = 4,
+            Rankings = new List<RankedTeam>
+            {
+                new RankedTeam { TeamName = "Iowa", Rank = 1, Details = new TeamDetails() }
+            }
+        };
+
+        _mockRankingsData
+            .Setup(x => x.GetPreviousPublishedSnapshotAsync(2024, 5))
+            .ReturnsAsync(previousSnapshot);
+
+        var currentRankings = new List<RankedTeam>
+        {
+            new RankedTeam { TeamName = "USC", Rank = 1, Details = new TeamDetails() }
+        };
+
+        var result = await _rankingsModule.GetRankDeltasAsync(2024, 5, currentRankings);
+
+        Assert.Null(result["USC"]);
+    }
+
+    [Fact]
+    public async Task GetRankDeltasAsync_NullCurrentRankings_ThrowsArgumentNullException()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => _rankingsModule.GetRankDeltasAsync(2024, 5, null!));
+    }
+
+    [Fact]
+    public async Task GetRankDeltasAsync_CaseInsensitiveTeamNameMatching()
+    {
+        var previousSnapshot = new RankingsResult
+        {
+            Season = 2024, Week = 4,
+            Rankings = new List<RankedTeam>
+            {
+                new RankedTeam { TeamName = "ALABAMA", Rank = 3, Details = new TeamDetails() }
+            }
+        };
+
+        _mockRankingsData
+            .Setup(x => x.GetPreviousPublishedSnapshotAsync(2024, 5))
+            .ReturnsAsync(previousSnapshot);
+
+        var currentRankings = new List<RankedTeam>
+        {
+            new RankedTeam { TeamName = "Alabama", Rank = 1, Details = new TeamDetails() }
+        };
+
+        var result = await _rankingsModule.GetRankDeltasAsync(2024, 5, currentRankings);
+
+        Assert.Equal(2, result["Alabama"]);
+    }
+
+    [Fact]
+    public async Task GetRankDeltasAsync_DelegatesToRankingsData()
+    {
+        _mockRankingsData
+            .Setup(x => x.GetPreviousPublishedSnapshotAsync(2024, 5))
+            .ReturnsAsync((RankingsResult?)null);
+
+        var currentRankings = new List<RankedTeam>
+        {
+            new RankedTeam { TeamName = "Notre Dame", Rank = 1, Details = new TeamDetails() }
+        };
+
+        await _rankingsModule.GetRankDeltasAsync(2024, 5, currentRankings);
+
+        _mockRankingsData.Verify(x => x.GetPreviousPublishedSnapshotAsync(2024, 5), Times.Once);
+    }
+
+    [Fact]
     public async Task GetAvailableWeeksAsync_ReturnsPublishedWeeksOnly()
     {
         _mockRankingsData

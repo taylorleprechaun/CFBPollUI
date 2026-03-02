@@ -18,6 +18,8 @@ interface DisplayRankedTeam extends RankedTeam {
   conferenceSosRank: number | null;
 }
 
+const DELTA_ARROW_PATH = "M11.96 24.231l8.344-8.49-0.893-0.916-6.801 6.897v-18.677h-1.302v18.677l-6.801-6.897-0.917 0.916z";
+
 const columnHelper = createColumnHelper<DisplayRankedTeam>();
 
 export function RankingsTable({ rankings, isLoading, selectedConference, selectedSeason, selectedWeek }: RankingsTableProps) {
@@ -105,6 +107,38 @@ export function RankingsTable({ rankings, isLoading, selectedConference, selecte
           );
         }
         return info.getValue();
+      },
+    }),
+    columnHelper.accessor('rankDelta', {
+      header: '\u0394',
+      cell: (info) => {
+        const value = info.getValue();
+        if (value !== null && value !== undefined && value > 0) {
+          return (
+            <span className="inline-flex items-center gap-0.5 text-green-600">
+              <svg width="12" height="14" viewBox="0 0 24 27" aria-hidden="true">
+                <path d={DELTA_ARROW_PATH} fill="currentColor" transform="rotate(180 12 13.5)" />
+              </svg>
+              {value}
+            </span>
+          );
+        }
+        if (value !== null && value !== undefined && value < 0) {
+          return (
+            <span className="inline-flex items-center gap-0.5 text-red-600">
+              <svg width="12" height="14" viewBox="0 0 24 27" aria-hidden="true">
+                <path d={DELTA_ARROW_PATH} fill="currentColor" />
+              </svg>
+              {Math.abs(value)}
+            </span>
+          );
+        }
+        return <span className="text-gray-500">-</span>;
+      },
+      sortingFn: (rowA, rowB) => {
+        const a = rowA.original.rankDelta ?? 0;
+        const b = rowB.original.rankDelta ?? 0;
+        return a - b;
       },
     }),
   ], [selectedSeason, selectedWeek]);

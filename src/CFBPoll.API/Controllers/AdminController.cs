@@ -13,11 +13,13 @@ public class AdminController : ControllerBase
 {
     private readonly IAdminModule _adminModule;
     private readonly ILogger<AdminController> _logger;
+    private readonly IRankingsModule _rankingsModule;
 
-    public AdminController(IAdminModule adminModule, ILogger<AdminController> logger)
+    public AdminController(IAdminModule adminModule, ILogger<AdminController> logger, IRankingsModule rankingsModule)
     {
         _adminModule = adminModule ?? throw new ArgumentNullException(nameof(adminModule));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
     }
 
     /// <summary>
@@ -30,11 +32,12 @@ public class AdminController : ControllerBase
             request.Season, request.Week);
 
         var result = await _adminModule.CalculateRankingsAsync(request.Season, request.Week);
+        var deltas = await _rankingsModule.GetRankDeltasAsync(request.Season, request.Week, result.Rankings.Rankings);
 
         return Ok(new CalculateResponseDTO
         {
             Persisted = result.Persisted,
-            Rankings = RankingsMapper.ToResponseDTO(result.Rankings)
+            Rankings = RankingsMapper.ToResponseDTO(result.Rankings, deltas)
         });
     }
 

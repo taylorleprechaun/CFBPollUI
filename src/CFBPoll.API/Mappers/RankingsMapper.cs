@@ -17,6 +17,19 @@ public static class RankingsMapper
         };
     }
 
+    public static RankingsResponseDTO ToResponseDTO(RankingsResult result, IDictionary<string, int?> rankDeltas)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        ArgumentNullException.ThrowIfNull(rankDeltas);
+
+        return new RankingsResponseDTO
+        {
+            Rankings = result.Rankings.Select(team => ToDTO(team, rankDeltas)),
+            Season = result.Season,
+            Week = result.Week
+        };
+    }
+
     public static RankedTeamDTO ToDTO(RankedTeam team)
     {
         ArgumentNullException.ThrowIfNull(team);
@@ -36,6 +49,16 @@ public static class RankingsMapper
             WeightedSOS = team.WeightedSOS,
             Wins = team.Wins
         };
+    }
+
+    public static RankedTeamDTO ToDTO(RankedTeam team, IDictionary<string, int?> rankDeltas)
+    {
+        ArgumentNullException.ThrowIfNull(team);
+        ArgumentNullException.ThrowIfNull(rankDeltas);
+
+        var dto = ToDTO(team);
+        dto.RankDelta = rankDeltas.TryGetValue(team.TeamName, out var delta) ? delta : null;
+        return dto;
     }
 
     public static TeamDetailsDTO ToDTO(TeamDetails details)

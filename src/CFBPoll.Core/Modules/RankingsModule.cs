@@ -78,6 +78,37 @@ public class RankingsModule : IRankingsModule
         });
     }
 
+    public async Task<IDictionary<string, int?>> GetRankDeltasAsync(
+        int season, int week, IEnumerable<RankedTeam> currentRankings)
+    {
+        ArgumentNullException.ThrowIfNull(currentRankings);
+
+        var previousSnapshot = await _rankingsData
+            .GetPreviousPublishedSnapshotAsync(season, week)
+            .ConfigureAwait(false);
+
+        if (previousSnapshot is null)
+        {
+            return currentRankings.ToDictionary(
+                t => t.TeamName,
+                _ => (int?)null,
+                StringComparer.OrdinalIgnoreCase);
+        }
+
+        var previousRanks = previousSnapshot.Rankings
+            .ToDictionary(
+                t => t.TeamName,
+                t => t.Rank,
+                StringComparer.OrdinalIgnoreCase);
+
+        return currentRankings.ToDictionary(
+            t => t.TeamName,
+            t => previousRanks.TryGetValue(t.TeamName, out var prevRank)
+                ? (int?)(prevRank - t.Rank)
+                : null,
+            StringComparer.OrdinalIgnoreCase);
+    }
+
     public async Task<IEnumerable<WeekInfo>> GetAvailableWeeksAsync(int season, IEnumerable<CalendarWeek> calendarWeeks)
     {
         ArgumentNullException.ThrowIfNull(calendarWeeks);

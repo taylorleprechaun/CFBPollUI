@@ -83,6 +83,7 @@ Controllers (Presentation)         Modules (Business Logic)          Data Layer
 -----------------------------      --------------------------        ----------
 AdminController                    AdminModule
   -> IAdminModule                    -> ICFBDataService
+  -> IRankingsModule
                                      -> IExcelExportModule
                                      -> IPersistentCache
                                      -> IPollLeadersModule
@@ -242,33 +243,33 @@ The frontend runs at `http://localhost:5173`.
 
 ## Testing
 
-The project includes 1114 unit and integration tests across backend and frontend.
+The project includes 1148 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (574 tests)
+# Backend tests (601 tests)
 dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (540 tests)
+# Frontend tests (547 tests)
 cd src/cfbpoll-web
 npm test
 ```
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-574-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-540-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-601-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-547-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
 ![Web Coverage](https://img.shields.io/badge/Web_Coverage-99%25-brightgreen)
 
 | Project | Line Coverage | Branch Coverage |
 |---------|---------------|-----------------|
-| CFBPoll.Core | 99% | 91% |
+| CFBPoll.Core | 99% | 92% |
 | CFBPoll.API | 100% | 95% |
 | cfbpoll-web | 99% | 94% |
 

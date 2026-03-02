@@ -34,6 +34,12 @@ public interface IRankingsModule
     Task<IEnumerable<PersistedWeekSummary>> GetPersistedWeeksAsync();
 
     /// <summary>
+    /// Computes rank deltas by comparing current rankings against the previous published snapshot.
+    /// Returns null for all teams when no previous published snapshot exists for the season.
+    /// </summary>
+    Task<IDictionary<string, int?>> GetRankDeltasAsync(int season, int week, IEnumerable<RankedTeam> currentRankings);
+
+    /// <summary>
     /// Retrieves a published snapshot for the given season and week.
     /// </summary>
     Task<RankingsResult?> GetPublishedSnapshotAsync(int season, int week);

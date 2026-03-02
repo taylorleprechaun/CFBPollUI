@@ -70,6 +70,7 @@ describe('Zod Schemas', () => {
     it('validates valid ranked team', () => {
       const data = {
         rank: 1,
+        rankDelta: 2,
         teamName: 'Florida',
         logoURL: 'https://example.com/logo.png',
         conference: 'SEC',
@@ -80,6 +81,25 @@ describe('Zod Schemas', () => {
         rating: 85.5,
         weightedSOS: 0.65,
         sosRanking: 5,
+      };
+      const result = RankedTeamSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('validates ranked team with null rankDelta', () => {
+      const data = {
+        rank: 1,
+        rankDelta: null,
+        teamName: 'Nebraska',
+        logoURL: 'https://example.com/logo.png',
+        conference: 'Big Ten',
+        division: '',
+        wins: 8,
+        losses: 3,
+        record: '8-3',
+        rating: 75.0,
+        weightedSOS: 0.55,
+        sosRanking: 20,
       };
       const result = RankedTeamSchema.safeParse(data);
       expect(result.success).toBe(true);
@@ -103,6 +123,7 @@ describe('Zod Schemas', () => {
         rankings: [
           {
             rank: 1,
+            rankDelta: 3,
             teamName: 'Florida',
             logoURL: 'https://example.com/logo.png',
             conference: 'SEC',
