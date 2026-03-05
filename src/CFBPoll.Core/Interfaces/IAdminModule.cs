@@ -26,7 +26,7 @@ public interface IAdminModule
     /// <summary>
     /// Gets all persisted week summaries.
     /// </summary>
-    Task<IEnumerable<PersistedWeekSummary>> GetPersistedWeeksAsync();
+    Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync();
 
     /// <summary>
     /// Publishes a snapshot for the given season and week.

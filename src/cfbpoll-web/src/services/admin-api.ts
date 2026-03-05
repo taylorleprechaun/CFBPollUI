@@ -11,10 +11,10 @@ import {
 import {
   CalculateResponseSchema,
   LoginResponseSchema,
-  PersistedWeeksResponseSchema,
+  SnapshotsResponseSchema,
   type CalculateResponse,
   type LoginResponse,
-  type PersistedWeek,
+  type Snapshot,
 } from '../schemas/admin';
 
 function withAuth(token: string, options: RequestInit = {}): RequestInit {
@@ -45,12 +45,8 @@ export async function calculateRankings(
   week: number
 ): Promise<CalculateResponse> {
   const response = await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/calculate`,
-    withAuth(token, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ season, week }),
-    })
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/snapshot`,
+    withAuth(token, { method: 'POST' })
   );
   return parseResponse(response, CalculateResponseSchema);
 }
@@ -61,8 +57,12 @@ export async function publishSnapshot(
   week: number
 ): Promise<void> {
   await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/snapshots/${season}/${week}/publish`,
-    withAuth(token, { method: 'POST' })
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/snapshot`,
+    withAuth(token, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isPublished: true }),
+    })
   );
 }
 
@@ -72,19 +72,19 @@ export async function deleteSnapshot(
   week: number
 ): Promise<void> {
   await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/snapshots/${season}/${week}`,
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/snapshot`,
     withAuth(token, { method: 'DELETE' })
   );
 }
 
-export async function fetchPersistedWeeks(
+export async function fetchSnapshots(
   token: string
-): Promise<PersistedWeek[]> {
+): Promise<Snapshot[]> {
   const response = await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/persisted-weeks`,
+    `${API_BASE_URL}/api/v1/admin/snapshots`,
     withAuth(token)
   );
-  return parseResponse(response, PersistedWeeksResponseSchema);
+  return parseResponse(response, SnapshotsResponseSchema);
 }
 
 export async function downloadExport(
@@ -93,7 +93,7 @@ export async function downloadExport(
   week: number
 ): Promise<void> {
   const response = await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/export?season=${season}&week=${week}`,
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/snapshot/export`,
     withAuth(token)
   );
 

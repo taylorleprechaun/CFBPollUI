@@ -1,6 +1,6 @@
 namespace CFBPoll.Core.Models;
 
-public class PersistedWeekSummary
+public class SnapshotSummary
 {
     public DateTime CreatedAt { get; set; }
     public bool Published { get; set; }

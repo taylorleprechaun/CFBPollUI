@@ -13,8 +13,8 @@ const defaultProps = {
   selectedSeason: 2024,
   selectedWeek: 5,
   weeks: [
-    { weekNumber: 1, label: 'Week 1' },
-    { weekNumber: 5, label: 'Week 5' },
+    { weekNumber: 1, label: 'Week 1', rankingsPublished: true },
+    { weekNumber: 5, label: 'Week 5', rankingsPublished: false },
   ],
   weeksLoading: false,
 };

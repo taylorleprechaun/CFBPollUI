@@ -11,15 +11,15 @@ export const CalculateResponseSchema = z.object({
   rankings: RankingsResponseSchema,
 });
 
-export const PersistedWeekSchema = z.object({
+export const SnapshotSchema = z.object({
   createdAt: z.string(),
-  published: z.boolean(),
+  isPublished: z.boolean(),
   season: z.number(),
   week: z.number(),
 });
 
-export const PersistedWeeksResponseSchema = z.array(PersistedWeekSchema);
+export const SnapshotsResponseSchema = z.array(SnapshotSchema);
 
 export type CalculateResponse = z.infer<typeof CalculateResponseSchema>;
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
-export type PersistedWeek = z.infer<typeof PersistedWeekSchema>;
+export type Snapshot = z.infer<typeof SnapshotSchema>;

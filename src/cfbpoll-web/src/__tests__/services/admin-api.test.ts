@@ -5,7 +5,7 @@ import {
   publishSnapshot,
   deleteSnapshot,
   downloadExport,
-  fetchPersistedWeeks,
+  fetchSnapshots,
   updatePageVisibility,
 } from '../../services/admin-api';
 
@@ -62,7 +62,7 @@ describe('Admin API service', () => {
       await calculateRankings('my-token', 2024, 5);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/admin/calculate'),
+        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/snapshot'),
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
@@ -74,7 +74,7 @@ describe('Admin API service', () => {
   });
 
   describe('publishSnapshot', () => {
-    it('sends POST to publish endpoint with auth header', async () => {
+    it('sends PATCH to snapshot endpoint with auth header and body', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({}),
@@ -84,12 +84,14 @@ describe('Admin API service', () => {
       await publishSnapshot('my-token', 2024, 5);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/admin/snapshots/2024/5/publish'),
+        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/snapshot'),
         expect.objectContaining({
-          method: 'POST',
+          method: 'PATCH',
           headers: expect.objectContaining({
             Authorization: 'Bearer my-token',
+            'Content-Type': 'application/json',
           }),
+          body: JSON.stringify({ isPublished: true }),
         })
       );
     });
@@ -106,7 +108,7 @@ describe('Admin API service', () => {
       await deleteSnapshot('my-token', 2024, 5);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/admin/snapshots/2024/5'),
+        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/snapshot'),
         expect.objectContaining({
           method: 'DELETE',
           headers: expect.objectContaining({
@@ -117,21 +119,21 @@ describe('Admin API service', () => {
     });
   });
 
-  describe('fetchPersistedWeeks', () => {
-    it('sends GET to persisted-weeks with auth header', async () => {
+  describe('fetchSnapshots', () => {
+    it('sends GET to snapshots with auth header', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () =>
           Promise.resolve([
-            { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
+            { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
           ]),
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      const result = await fetchPersistedWeeks('my-token');
+      const result = await fetchSnapshots('my-token');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/admin/persisted-weeks'),
+        expect.stringContaining('/api/v1/admin/snapshots'),
         expect.objectContaining({
           headers: expect.objectContaining({
             Authorization: 'Bearer my-token',
@@ -265,7 +267,7 @@ describe('Admin API service', () => {
     });
   });
 
-  describe('fetchPersistedWeeks - error paths', () => {
+  describe('fetchSnapshots - error paths', () => {
     it('throws on failed fetch', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: false,
@@ -274,14 +276,14 @@ describe('Admin API service', () => {
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      await expect(fetchPersistedWeeks('token')).rejects.toThrow('DB error');
+      await expect(fetchSnapshots('token')).rejects.toThrow('DB error');
     });
 
     it('throws on network failure', async () => {
       const mockFetch = vi.fn().mockRejectedValue(new Error('Timeout'));
       vi.stubGlobal('fetch', mockFetch);
 
-      await expect(fetchPersistedWeeks('token')).rejects.toThrow('Timeout');
+      await expect(fetchSnapshots('token')).rejects.toThrow('Timeout');
     });
   });
 
@@ -310,7 +312,7 @@ describe('Admin API service', () => {
       await downloadExport('my-token', 2024, 5);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/admin/export?season=2024&week=5'),
+        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/snapshot/export'),
         expect.objectContaining({
           headers: expect.objectContaining({
             Authorization: 'Bearer my-token',

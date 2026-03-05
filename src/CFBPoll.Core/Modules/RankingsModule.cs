@@ -6,13 +6,11 @@ namespace CFBPoll.Core.Modules;
 public class RankingsModule : IRankingsModule
 {
     private readonly IRankingsData _rankingsData;
-    private readonly ISeasonModule _seasonModule;
     private readonly StringComparison _scoic = StringComparison.OrdinalIgnoreCase;
 
-    public RankingsModule(IRankingsData rankingsData, ISeasonModule seasonModule)
+    public RankingsModule(IRankingsData rankingsData)
     {
         _rankingsData = rankingsData ?? throw new ArgumentNullException(nameof(rankingsData));
-        _seasonModule = seasonModule ?? throw new ArgumentNullException(nameof(seasonModule));
     }
 
     public async Task<bool> DeleteSnapshotAsync(int season, int week)
@@ -109,21 +107,14 @@ public class RankingsModule : IRankingsModule
             StringComparer.OrdinalIgnoreCase);
     }
 
-    public async Task<IEnumerable<WeekInfo>> GetAvailableWeeksAsync(int season, IEnumerable<CalendarWeek> calendarWeeks)
+    public async Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync()
     {
-        ArgumentNullException.ThrowIfNull(calendarWeeks);
-
-        var publishedWeeks = await _rankingsData.GetPublishedWeekNumbersAsync(season).ConfigureAwait(false);
-        var publishedWeekSet = publishedWeeks.ToHashSet();
-
-        var weekLabels = _seasonModule.GetWeekLabels(calendarWeeks);
-
-        return weekLabels.Where(w => publishedWeekSet.Contains(w.WeekNumber));
+        return await _rankingsData.GetSnapshotsAsync().ConfigureAwait(false);
     }
 
-    public async Task<IEnumerable<PersistedWeekSummary>> GetPersistedWeeksAsync()
+    public async Task<IEnumerable<int>> GetPublishedWeekNumbersAsync(int season)
     {
-        return await _rankingsData.GetPersistedWeeksAsync().ConfigureAwait(false);
+        return await _rankingsData.GetPublishedWeekNumbersAsync(season).ConfigureAwait(false);
     }
 
     public async Task<RankingsResult?> GetPublishedSnapshotAsync(int season, int week)

@@ -40,8 +40,8 @@ public class PollLeadersModule : IPollLeadersModule
 
     public async Task<PollLeadersResult> GetPollLeadersAsync(int? minSeason, int? maxSeason)
     {
-        var persistedWeeks = await _rankingsModule.GetPersistedWeeksAsync().ConfigureAwait(false);
-        var publishedWeeks = persistedWeeks.Where(pw => pw.Published).ToList();
+        var snapshots = await _rankingsModule.GetSnapshotsAsync().ConfigureAwait(false);
+        var publishedWeeks = snapshots.Where(pw => pw.Published).ToList();
 
         if (publishedWeeks.Count == 0)
         {
@@ -138,7 +138,7 @@ public class PollLeadersModule : IPollLeadersModule
     }
 
     private async Task<IReadOnlyList<PollLeaderEntry>> BuildFinalWeeksEntriesAsync(
-        IReadOnlyList<PersistedWeekSummary> publishedWeeks,
+        IReadOnlyList<SnapshotSummary> publishedWeeks,
         IReadOnlyList<RankingsResult> allSnapshots)
     {
         var snapshotLookup = allSnapshots

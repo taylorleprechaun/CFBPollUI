@@ -18,8 +18,8 @@ describe('useWeekSelection', () => {
 
   it('auto-selects last week when weeks are available', () => {
     const weeks: Week[] = [
-      { weekNumber: 1, label: 'Week 1' },
-      { weekNumber: 5, label: 'Week 5' },
+      { weekNumber: 1, label: 'Week 1', rankingsPublished: true },
+      { weekNumber: 5, label: 'Week 5', rankingsPublished: false },
     ];
 
     const { result } = renderHook(() => useWeekSelection(weeks));
@@ -29,8 +29,8 @@ describe('useWeekSelection', () => {
 
   it('preserves manual selection', () => {
     const weeks: Week[] = [
-      { weekNumber: 1, label: 'Week 1' },
-      { weekNumber: 5, label: 'Week 5' },
+      { weekNumber: 1, label: 'Week 1', rankingsPublished: true },
+      { weekNumber: 5, label: 'Week 5', rankingsPublished: false },
     ];
 
     const { result } = renderHook(() => useWeekSelection(weeks));
@@ -44,8 +44,8 @@ describe('useWeekSelection', () => {
 
   it('auto-selects when reset to null', () => {
     const weeks: Week[] = [
-      { weekNumber: 1, label: 'Week 1' },
-      { weekNumber: 5, label: 'Week 5' },
+      { weekNumber: 1, label: 'Week 1', rankingsPublished: true },
+      { weekNumber: 5, label: 'Week 5', rankingsPublished: false },
     ];
 
     const { result } = renderHook(() => useWeekSelection(weeks));
@@ -59,8 +59,8 @@ describe('useWeekSelection', () => {
 
   it('auto-selects when weeks data arrives later', () => {
     const weeks: Week[] = [
-      { weekNumber: 1, label: 'Week 1' },
-      { weekNumber: 3, label: 'Week 3' },
+      { weekNumber: 1, label: 'Week 1', rankingsPublished: true },
+      { weekNumber: 3, label: 'Week 3', rankingsPublished: true },
     ];
 
     const { result, rerender } = renderHook(

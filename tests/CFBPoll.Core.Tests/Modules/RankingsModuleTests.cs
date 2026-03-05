@@ -9,16 +9,14 @@ namespace CFBPoll.Core.Tests.Modules;
 public class RankingsModuleTests
 {
     private readonly Mock<IRankingsData> _mockRankingsData;
-    private readonly Mock<ISeasonModule> _mockSeasonModule;
     private readonly RankingsModule _rankingsModule;
     private readonly StringComparison _scoic = StringComparison.OrdinalIgnoreCase;
 
     public RankingsModuleTests()
     {
         _mockRankingsData = new Mock<IRankingsData>();
-        _mockSeasonModule = new Mock<ISeasonModule>();
 
-        _rankingsModule = new RankingsModule(_mockRankingsData.Object, _mockSeasonModule.Object);
+        _rankingsModule = new RankingsModule(_mockRankingsData.Object);
     }
 
     [Fact]
@@ -592,18 +590,30 @@ public class RankingsModuleTests
     }
 
     [Fact]
-    public async Task GetPersistedWeeksAsync_DelegatesToRankingsData()
+    public async Task GetSnapshotsAsync_DelegatesToRankingsData()
     {
-        var weeks = new List<PersistedWeekSummary>
+        var weeks = new List<SnapshotSummary>
         {
-            new PersistedWeekSummary { Season = 2024, Week = 1, Published = true }
+            new SnapshotSummary { Season = 2024, Week = 1, Published = true }
         };
-        _mockRankingsData.Setup(x => x.GetPersistedWeeksAsync()).ReturnsAsync(weeks);
+        _mockRankingsData.Setup(x => x.GetSnapshotsAsync()).ReturnsAsync(weeks);
 
-        var result = await _rankingsModule.GetPersistedWeeksAsync();
+        var result = await _rankingsModule.GetSnapshotsAsync();
 
         Assert.Single(result);
-        _mockRankingsData.Verify(x => x.GetPersistedWeeksAsync(), Times.Once);
+        _mockRankingsData.Verify(x => x.GetSnapshotsAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetPublishedWeekNumbersAsync_DelegatesToRankingsData()
+    {
+        var weekNumbers = new List<int> { 1, 3, 5 };
+        _mockRankingsData.Setup(x => x.GetPublishedWeekNumbersAsync(2024)).ReturnsAsync(weekNumbers);
+
+        var result = await _rankingsModule.GetPublishedWeekNumbersAsync(2024);
+
+        Assert.Equal(3, result.Count());
+        _mockRankingsData.Verify(x => x.GetPublishedWeekNumbersAsync(2024), Times.Once);
     }
 
     [Fact]
@@ -796,65 +806,6 @@ public class RankingsModuleTests
         _mockRankingsData.Verify(x => x.GetPreviousPublishedSnapshotAsync(2024, 5), Times.Once);
     }
 
-    [Fact]
-    public async Task GetAvailableWeeksAsync_ReturnsPublishedWeeksOnly()
-    {
-        _mockRankingsData
-            .Setup(x => x.GetPublishedWeekNumbersAsync(2024))
-            .ReturnsAsync(new List<int> { 1, 3, 5 });
-
-        var calendarWeeks = new List<CalendarWeek>
-        {
-            new CalendarWeek { Week = 1, SeasonType = "regular" },
-            new CalendarWeek { Week = 2, SeasonType = "regular" },
-            new CalendarWeek { Week = 3, SeasonType = "regular" },
-            new CalendarWeek { Week = 4, SeasonType = "regular" },
-            new CalendarWeek { Week = 5, SeasonType = "regular" }
-        };
-
-        _mockSeasonModule
-            .Setup(x => x.GetWeekLabels(calendarWeeks))
-            .Returns(new List<WeekInfo>
-            {
-                new WeekInfo { WeekNumber = 1, Label = "Week 1" },
-                new WeekInfo { WeekNumber = 2, Label = "Week 2" },
-                new WeekInfo { WeekNumber = 3, Label = "Week 3" },
-                new WeekInfo { WeekNumber = 4, Label = "Week 4" },
-                new WeekInfo { WeekNumber = 5, Label = "Week 5" }
-            });
-
-        var result = (await _rankingsModule.GetAvailableWeeksAsync(2024, calendarWeeks)).ToList();
-
-        Assert.Equal(3, result.Count);
-        Assert.Contains(result, w => w.WeekNumber == 1);
-        Assert.Contains(result, w => w.WeekNumber == 3);
-        Assert.Contains(result, w => w.WeekNumber == 5);
-    }
-
-    [Fact]
-    public async Task GetAvailableWeeksAsync_NoPublishedWeeks_ReturnsEmpty()
-    {
-        _mockRankingsData
-            .Setup(x => x.GetPublishedWeekNumbersAsync(2024))
-            .ReturnsAsync(new List<int>());
-
-        var calendarWeeks = new List<CalendarWeek>
-        {
-            new CalendarWeek { Week = 1, SeasonType = "regular" }
-        };
-
-        _mockSeasonModule
-            .Setup(x => x.GetWeekLabels(calendarWeeks))
-            .Returns(new List<WeekInfo>
-            {
-                new WeekInfo { WeekNumber = 1, Label = "Week 1" }
-            });
-
-        var result = await _rankingsModule.GetAvailableWeeksAsync(2024, calendarWeeks);
-
-        Assert.Empty(result);
-    }
-
     private static RatingDetails CreateRatingDetails(
         double rating = 0.0,
         int wins = 0,
@@ -1019,22 +970,6 @@ public class RankingsModuleTests
     }
 
     [Fact]
-    public async Task GetAvailableWeeksAsync_GetPublishedWeekNumbersAsyncThrows_PropagatesException()
-    {
-        _mockRankingsData
-            .Setup(x => x.GetPublishedWeekNumbersAsync(2024))
-            .ThrowsAsync(new InvalidOperationException("Database unavailable"));
-
-        var calendarWeeks = new List<CalendarWeek>
-        {
-            new CalendarWeek { Week = 1, SeasonType = "regular" }
-        };
-
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _rankingsModule.GetAvailableWeeksAsync(2024, calendarWeeks));
-    }
-
-    [Fact]
     public async Task SaveSnapshotAsync_DataLayerThrows_PropagatesException()
     {
         var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
@@ -1063,13 +998,6 @@ public class RankingsModuleTests
 
         await Assert.ThrowsAsync<ArgumentNullException>(
             () => _rankingsModule.GenerateRankingsAsync(seasonData, null!));
-    }
-
-    [Fact]
-    public async Task GetAvailableWeeksAsync_NullCalendarWeeks_ThrowsArgumentNullException()
-    {
-        await Assert.ThrowsAsync<ArgumentNullException>(
-            () => _rankingsModule.GetAvailableWeeksAsync(2024, null!));
     }
 
     [Fact]

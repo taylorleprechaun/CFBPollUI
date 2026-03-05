@@ -132,19 +132,19 @@ public class AdminModuleTests
     }
 
     [Fact]
-    public async Task GetPersistedWeeksAsync_DelegatesToRankingsModule()
+    public async Task GetSnapshotsAsync_DelegatesToRankingsModule()
     {
-        var weeks = new List<PersistedWeekSummary>
+        var weeks = new List<SnapshotSummary>
         {
-            new PersistedWeekSummary { Season = 2024, Week = 1, Published = true }
+            new SnapshotSummary { Season = 2024, Week = 1, Published = true }
         };
 
-        _mockRankingsModule.Setup(x => x.GetPersistedWeeksAsync()).ReturnsAsync(weeks);
+        _mockRankingsModule.Setup(x => x.GetSnapshotsAsync()).ReturnsAsync(weeks);
 
-        var result = await _adminModule.GetPersistedWeeksAsync();
+        var result = await _adminModule.GetSnapshotsAsync();
 
         Assert.Single(result);
-        _mockRankingsModule.Verify(x => x.GetPersistedWeeksAsync(), Times.Once);
+        _mockRankingsModule.Verify(x => x.GetSnapshotsAsync(), Times.Once);
     }
 
     [Fact]

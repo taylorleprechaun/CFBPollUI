@@ -11,6 +11,8 @@ namespace CFBPoll.API.Controllers;
 [Route("api/v1/[controller]")]
 public class AdminController : ControllerBase
 {
+    private const string SNAPSHOT_NOT_FOUND = "Snapshot not found";
+
     private readonly IAdminModule _adminModule;
     private readonly ILogger<AdminController> _logger;
     private readonly IRankingsModule _rankingsModule;
@@ -25,14 +27,14 @@ public class AdminController : ControllerBase
     /// <summary>
     /// Calculates rankings for the specified season and week and saves as a draft.
     /// </summary>
-    [HttpPost("calculate")]
-    public async Task<ActionResult<CalculateResponseDTO>> Calculate([FromBody] CalculateRequestDTO request)
+    [HttpPost("seasons/{season}/weeks/{week}/snapshot")]
+    public async Task<ActionResult<CalculateResponseDTO>> Calculate(int season, int week)
     {
         _logger.LogInformation("Admin calculating rankings for season {Season}, week {Week}",
-            request.Season, request.Week);
+            season, week);
 
-        var result = await _adminModule.CalculateRankingsAsync(request.Season, request.Week);
-        var deltas = await _rankingsModule.GetRankDeltasAsync(request.Season, request.Week, result.Rankings.Rankings);
+        var result = await _adminModule.CalculateRankingsAsync(season, week);
+        var deltas = await _rankingsModule.GetRankDeltasAsync(season, week, result.Rankings.Rankings);
 
         return Ok(new CalculateResponseDTO
         {
@@ -42,17 +44,22 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Publishes a draft snapshot for public visibility.
+    /// Updates a snapshot for the specified season and week. Currently supports publishing.
     /// </summary>
-    [HttpPost("snapshots/{season}/{week}/publish")]
-    public async Task<ActionResult> Publish(int season, int week)
+    [HttpPatch("seasons/{season}/weeks/{week}/snapshot")]
+    public async Task<ActionResult> UpdateSnapshot(int season, int week, [FromBody] UpdateSnapshotDTO request)
     {
-        _logger.LogInformation("Admin publishing snapshot for season {Season}, week {Week}", season, week);
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (!request.IsPublished)
+            return BadRequest(new ErrorResponseDTO { Message = "Only publishing (isPublished: true) is currently supported", StatusCode = 400 });
+
+        _logger.LogInformation("Admin updating snapshot for season {Season}, week {Week}", season, week);
 
         var published = await _adminModule.PublishSnapshotAsync(season, week);
 
         if (!published)
-            return NotFound(new ErrorResponseDTO { Message = "Snapshot not found", StatusCode = 404 });
+            return NotFound(new ErrorResponseDTO { Message = SNAPSHOT_NOT_FOUND, StatusCode = 404 });
 
         return Ok();
     }
@@ -60,7 +67,7 @@ public class AdminController : ControllerBase
     /// <summary>
     /// Deletes a snapshot for the specified season and week.
     /// </summary>
-    [HttpDelete("snapshots/{season}/{week}")]
+    [HttpDelete("seasons/{season}/weeks/{week}/snapshot")]
     public async Task<ActionResult> Delete(int season, int week)
     {
         _logger.LogInformation("Admin deleting snapshot for season {Season}, week {Week}", season, week);
@@ -68,42 +75,34 @@ public class AdminController : ControllerBase
         var deleted = await _adminModule.DeleteSnapshotAsync(season, week);
 
         if (!deleted)
-            return NotFound(new ErrorResponseDTO { Message = "Snapshot not found", StatusCode = 404 });
+            return NotFound(new ErrorResponseDTO { Message = SNAPSHOT_NOT_FOUND, StatusCode = 404 });
 
         return Ok();
     }
 
     /// <summary>
-    /// Gets all persisted week summaries including draft and published.
+    /// Gets all persisted snapshots including draft and published.
     /// </summary>
-    [HttpGet("persisted-weeks")]
-    public async Task<ActionResult<IEnumerable<PersistedWeekDTO>>> GetPersistedWeeks()
+    [HttpGet("snapshots")]
+    public async Task<ActionResult<IEnumerable<SnapshotDTO>>> GetSnapshots()
     {
-        var weeks = await _adminModule.GetPersistedWeeksAsync();
+        var snapshots = await _adminModule.GetSnapshotsAsync();
 
-        var dtos = weeks.Select(w => new PersistedWeekDTO
-        {
-            CreatedAt = w.CreatedAt,
-            Published = w.Published,
-            Season = w.Season,
-            Week = w.Week
-        });
-
-        return Ok(dtos);
+        return Ok(snapshots.Select(SnapshotMapper.ToDTO));
     }
 
     /// <summary>
     /// Downloads an Excel export of the rankings for the specified season and week.
     /// </summary>
-    [HttpGet("export")]
-    public async Task<ActionResult> Export([FromQuery] int season, [FromQuery] int week)
+    [HttpGet("seasons/{season}/weeks/{week}/snapshot/export")]
+    public async Task<ActionResult> Export(int season, int week)
     {
         _logger.LogInformation("Admin exporting rankings for season {Season}, week {Week}", season, week);
 
         var bytes = await _adminModule.ExportRankingsAsync(season, week);
 
         if (bytes is null)
-            return NotFound(new ErrorResponseDTO { Message = "Snapshot not found", StatusCode = 404 });
+            return NotFound(new ErrorResponseDTO { Message = SNAPSHOT_NOT_FOUND, StatusCode = 404 });
 
         return File(bytes,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

@@ -15,7 +15,7 @@ public interface IRankingsData
     /// <summary>
     /// Retrieves all persisted week summaries including draft and published.
     /// </summary>
-    Task<IEnumerable<PersistedWeekSummary>> GetPersistedWeeksAsync();
+    Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync();
 
     /// <summary>
     /// Retrieves the most recent published snapshot before the given week in the same season.

@@ -71,17 +71,17 @@ vi.mock('../../hooks/use-admin-mutations', () => ({
   }),
 }));
 
-let mockPersistedWeeksData: { season: number; week: number; published: boolean; createdAt: string }[] | undefined = [];
-let mockPersistedWeeksError: Error | null = null;
+let mockSnapshotsData: { season: number; week: number; isPublished: boolean; createdAt: string }[] | undefined = [];
+let mockSnapshotsError: Error | null = null;
 
-const mockRefetchPersistedWeeks = vi.fn();
+const mockRefetchSnapshots = vi.fn();
 
-vi.mock('../../hooks/use-persisted-weeks', () => ({
-  usePersistedWeeks: () => ({
-    data: mockPersistedWeeksData,
-    error: mockPersistedWeeksError,
+vi.mock('../../hooks/use-snapshots', () => ({
+  useSnapshots: () => ({
+    data: mockSnapshotsData,
+    error: mockSnapshotsError,
     isLoading: false,
-    refetch: mockRefetchPersistedWeeks,
+    refetch: mockRefetchSnapshots,
   }),
 }));
 
@@ -120,8 +120,8 @@ describe('AdminPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockToken = 'test-token';
-    mockPersistedWeeksData = [];
-    mockPersistedWeeksError = null;
+    mockSnapshotsData = [];
+    mockSnapshotsError = null;
     mockCalculateIsPending = false;
     mockPublishIsPending = false;
     mockDeleteIsPending = false;
@@ -219,10 +219,10 @@ describe('AdminPage', () => {
   });
 
   it('renders persisted weeks grouped by season', () => {
-    mockPersistedWeeksData = [
-      { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
-      { season: 2024, week: 2, published: false, createdAt: '2024-09-08T00:00:00Z' },
-      { season: 2023, week: 1, published: true, createdAt: '2023-09-01T00:00:00Z' },
+    mockSnapshotsData = [
+      { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+      { season: 2024, week: 2, isPublished: false, createdAt: '2024-09-08T00:00:00Z' },
+      { season: 2023, week: 1, isPublished: true, createdAt: '2023-09-01T00:00:00Z' },
     ];
 
     renderAdminPage();
@@ -234,8 +234,8 @@ describe('AdminPage', () => {
   });
 
   it('seasons start collapsed by default', () => {
-    mockPersistedWeeksData = [
-      { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
+    mockSnapshotsData = [
+      { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
     ];
 
     renderAdminPage();
@@ -246,8 +246,8 @@ describe('AdminPage', () => {
   });
 
   it('expands and collapses season groups on click', async () => {
-    mockPersistedWeeksData = [
-      { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
+    mockSnapshotsData = [
+      { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
     ];
 
     renderAdminPage();
@@ -263,9 +263,9 @@ describe('AdminPage', () => {
   });
 
   it('expand all and collapse all buttons work', async () => {
-    mockPersistedWeeksData = [
-      { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
-      { season: 2023, week: 1, published: true, createdAt: '2023-09-01T00:00:00Z' },
+    mockSnapshotsData = [
+      { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+      { season: 2023, week: 1, isPublished: true, createdAt: '2023-09-01T00:00:00Z' },
     ];
 
     renderAdminPage();
@@ -296,8 +296,8 @@ describe('AdminPage', () => {
   });
 
   it('calls deleteSnapshot when delete is clicked on draft', async () => {
-    mockPersistedWeeksData = [
-      { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
+    mockSnapshotsData = [
+      { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockDeleteMutateAsync.mockResolvedValue(undefined);
 
@@ -314,8 +314,8 @@ describe('AdminPage', () => {
   });
 
   it('shows confirm modal when deleting published snapshot', async () => {
-    mockPersistedWeeksData = [
-      { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
+    mockSnapshotsData = [
+      { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockDeleteMutateAsync.mockResolvedValue(undefined);
 
@@ -343,8 +343,8 @@ describe('AdminPage', () => {
   });
 
   it('does not delete when confirm modal is cancelled', async () => {
-    mockPersistedWeeksData = [
-      { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
+    mockSnapshotsData = [
+      { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
     ];
 
     renderAdminPage();
@@ -366,8 +366,8 @@ describe('AdminPage', () => {
   });
 
   it('calls publishSnapshot when publish is clicked on draft', async () => {
-    mockPersistedWeeksData = [
-      { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
+    mockSnapshotsData = [
+      { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockPublishMutateAsync.mockResolvedValue(undefined);
 
@@ -384,8 +384,8 @@ describe('AdminPage', () => {
   });
 
   it('shows success checkmark after publish succeeds', async () => {
-    mockPersistedWeeksData = [
-      { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
+    mockSnapshotsData = [
+      { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockPublishMutateAsync.mockResolvedValue(undefined);
 
@@ -402,8 +402,8 @@ describe('AdminPage', () => {
   });
 
   it('shows error message after publish fails', async () => {
-    mockPersistedWeeksData = [
-      { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
+    mockSnapshotsData = [
+      { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockPublishMutateAsync.mockRejectedValue(new Error('Snapshot not found'));
 
@@ -464,8 +464,8 @@ describe('AdminPage', () => {
   });
 
   it('success checkmark disappears after timeout', async () => {
-    mockPersistedWeeksData = [
-      { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
+    mockSnapshotsData = [
+      { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockPublishMutateAsync.mockResolvedValue(undefined);
 
@@ -486,8 +486,8 @@ describe('AdminPage', () => {
   });
 
   it('calls downloadExport when export is clicked', async () => {
-    mockPersistedWeeksData = [
-      { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
+    mockSnapshotsData = [
+      { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockExportMutateAsync.mockResolvedValue(undefined);
 
@@ -533,8 +533,8 @@ describe('AdminPage', () => {
   });
 
   it('shows error when delete fails', async () => {
-    mockPersistedWeeksData = [
-      { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
+    mockSnapshotsData = [
+      { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockDeleteMutateAsync.mockRejectedValue(new Error('Delete failed'));
 
@@ -551,8 +551,8 @@ describe('AdminPage', () => {
   });
 
   it('shows error when export fails', async () => {
-    mockPersistedWeeksData = [
-      { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
+    mockSnapshotsData = [
+      { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockExportMutateAsync.mockRejectedValue(new Error('Export failed'));
 
@@ -594,8 +594,8 @@ describe('AdminPage', () => {
       persisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
-    mockPersistedWeeksData = [
-      { season: 2024, week: 5, published: false, createdAt: '2024-09-01T00:00:00Z' },
+    mockSnapshotsData = [
+      { season: 2024, week: 5, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockDeleteMutateAsync.mockResolvedValue(undefined);
 
@@ -622,9 +622,9 @@ describe('AdminPage', () => {
   });
 
   it('preserves collapsed state after publish', async () => {
-    mockPersistedWeeksData = [
-      { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
-      { season: 2024, week: 2, published: false, createdAt: '2024-09-08T00:00:00Z' },
+    mockSnapshotsData = [
+      { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
+      { season: 2024, week: 2, isPublished: false, createdAt: '2024-09-08T00:00:00Z' },
     ];
     mockPublishMutateAsync.mockResolvedValue(undefined);
 
@@ -645,8 +645,8 @@ describe('AdminPage', () => {
     expect(chevron().classList.toString()).not.toContain('-rotate-90');
   });
 
-  it('shows error when fetching persisted weeks fails', () => {
-    mockPersistedWeeksError = new Error('Server unavailable');
+  it('shows error when fetching snapshots fails', () => {
+    mockSnapshotsError = new Error('Server unavailable');
 
     renderAdminPage();
 
@@ -658,8 +658,8 @@ describe('AdminPage', () => {
       persisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
-    mockPersistedWeeksData = [
-      { season: 2024, week: 5, published: false, createdAt: '2024-09-01T00:00:00Z' },
+    mockSnapshotsData = [
+      { season: 2024, week: 5, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockPublishMutateAsync.mockResolvedValue(undefined);
 
@@ -687,17 +687,17 @@ describe('AdminPage', () => {
     expect(previewSection?.querySelector('[aria-label="Success"]')).toBeInTheDocument();
   });
 
-  it('calls refetchPersistedWeeks when retry is clicked on a persisted weeks error', async () => {
-    mockPersistedWeeksError = new Error('Server unavailable');
+  it('calls refetchSnapshots when retry is clicked on a snapshots error', async () => {
+    mockSnapshotsError = new Error('Server unavailable');
 
     renderAdminPage();
 
     await userEvent.click(screen.getByText('Retry'));
 
-    expect(mockRefetchPersistedWeeks).toHaveBeenCalled();
+    expect(mockRefetchSnapshots).toHaveBeenCalled();
   });
 
-  it('does not call refetchPersistedWeeks when retry is clicked on an operation error', async () => {
+  it('does not call refetchSnapshots when retry is clicked on an operation error', async () => {
     mockCalculateMutateAsync.mockRejectedValue(new Error('Network error'));
 
     renderAdminPage();
@@ -709,7 +709,7 @@ describe('AdminPage', () => {
 
     await userEvent.click(screen.getByText('Retry'));
 
-    expect(mockRefetchPersistedWeeks).not.toHaveBeenCalled();
+    expect(mockRefetchSnapshots).not.toHaveBeenCalled();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 

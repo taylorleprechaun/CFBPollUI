@@ -13,7 +13,7 @@ const defaultProps = {
   onExport: vi.fn(),
   onPublish: vi.fn(),
   onToggleSeason: vi.fn(),
-  persistedWeeks: [] as { season: number; week: number; published: boolean; createdAt: string }[],
+  snapshots: [] as { season: number; week: number; isPublished: boolean; createdAt: string }[],
 };
 
 describe('PersistedSnapshotsSection', () => {
@@ -33,10 +33,10 @@ describe('PersistedSnapshotsSection', () => {
     render(
       <PersistedSnapshotsSection
         {...defaultProps}
-        persistedWeeks={[
-          { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
-          { season: 2024, week: 2, published: false, createdAt: '2024-09-08T00:00:00Z' },
-          { season: 2023, week: 1, published: true, createdAt: '2023-09-01T00:00:00Z' },
+        snapshots={[
+          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+          { season: 2024, week: 2, isPublished: false, createdAt: '2024-09-08T00:00:00Z' },
+          { season: 2023, week: 1, isPublished: true, createdAt: '2023-09-01T00:00:00Z' },
         ]}
       />
     );
@@ -51,8 +51,8 @@ describe('PersistedSnapshotsSection', () => {
     render(
       <PersistedSnapshotsSection
         {...defaultProps}
-        persistedWeeks={[
-          { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
+        snapshots={[
+          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
     );
@@ -64,8 +64,8 @@ describe('PersistedSnapshotsSection', () => {
     render(
       <PersistedSnapshotsSection
         {...defaultProps}
-        persistedWeeks={[
-          { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
+        snapshots={[
+          { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
     );
@@ -80,8 +80,8 @@ describe('PersistedSnapshotsSection', () => {
       <PersistedSnapshotsSection
         {...defaultProps}
         onToggleSeason={onToggleSeason}
-        persistedWeeks={[
-          { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
+        snapshots={[
+          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
     );
@@ -97,8 +97,8 @@ describe('PersistedSnapshotsSection', () => {
       <PersistedSnapshotsSection
         {...defaultProps}
         onPublish={onPublish}
-        persistedWeeks={[
-          { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
+        snapshots={[
+          { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
     );
@@ -114,8 +114,8 @@ describe('PersistedSnapshotsSection', () => {
       <PersistedSnapshotsSection
         {...defaultProps}
         onDelete={onDelete}
-        persistedWeeks={[
-          { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
+        snapshots={[
+          { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
     );
@@ -131,8 +131,8 @@ describe('PersistedSnapshotsSection', () => {
       <PersistedSnapshotsSection
         {...defaultProps}
         onExport={onExport}
-        persistedWeeks={[
-          { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
+        snapshots={[
+          { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
     );
@@ -150,8 +150,8 @@ describe('PersistedSnapshotsSection', () => {
         {...defaultProps}
         onExpandAll={onExpandAll}
         onCollapseAll={onCollapseAll}
-        persistedWeeks={[
-          { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
+        snapshots={[
+          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
     );
@@ -168,8 +168,8 @@ describe('PersistedSnapshotsSection', () => {
       <PersistedSnapshotsSection
         {...defaultProps}
         isActionPending={true}
-        persistedWeeks={[
-          { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
+        snapshots={[
+          { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
     );
@@ -187,8 +187,8 @@ describe('PersistedSnapshotsSection', () => {
           key: 'snapshot-publish-2024-1',
           type: 'success',
         }}
-        persistedWeeks={[
-          { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
+        snapshots={[
+          { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
     );
@@ -205,8 +205,8 @@ describe('PersistedSnapshotsSection', () => {
           type: 'error',
           message: 'Publish failed',
         }}
-        persistedWeeks={[
-          { season: 2024, week: 1, published: false, createdAt: '2024-09-01T00:00:00Z' },
+        snapshots={[
+          { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
     );
@@ -219,8 +219,8 @@ describe('PersistedSnapshotsSection', () => {
       <PersistedSnapshotsSection
         {...defaultProps}
         collapsedSeasons={new Set([2024])}
-        persistedWeeks={[
-          { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
+        snapshots={[
+          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
     );
@@ -235,8 +235,8 @@ describe('PersistedSnapshotsSection', () => {
       <PersistedSnapshotsSection
         {...defaultProps}
         collapsedSeasons={new Set()}
-        persistedWeeks={[
-          { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
+        snapshots={[
+          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
     );
@@ -250,8 +250,8 @@ describe('PersistedSnapshotsSection', () => {
       <PersistedSnapshotsSection
         {...defaultProps}
         collapsedSeasons={new Set([2024])}
-        persistedWeeks={[
-          { season: 2024, week: 1, published: true, createdAt: '2024-09-01T00:00:00Z' },
+        snapshots={[
+          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
     );

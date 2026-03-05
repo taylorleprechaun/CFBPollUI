@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   CalculateResponseSchema,
   LoginResponseSchema,
-  PersistedWeekSchema,
-  PersistedWeeksResponseSchema,
+  SnapshotSchema,
+  SnapshotsResponseSchema,
 } from '../../schemas/admin';
 
 describe('Admin schemas', () => {
@@ -54,36 +54,36 @@ describe('Admin schemas', () => {
     });
   });
 
-  describe('PersistedWeekSchema', () => {
-    it('validates a valid persisted week', () => {
+  describe('SnapshotSchema', () => {
+    it('validates a valid snapshot', () => {
       const data = {
         season: 2024,
         week: 5,
-        published: true,
+        isPublished: true,
         createdAt: '2024-11-01T12:00:00Z',
       };
-      const result = PersistedWeekSchema.safeParse(data);
+      const result = SnapshotSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
 
-    it('rejects missing published field', () => {
+    it('rejects missing isPublished field', () => {
       const data = {
         season: 2024,
         week: 5,
         createdAt: '2024-11-01T12:00:00Z',
       };
-      const result = PersistedWeekSchema.safeParse(data);
+      const result = SnapshotSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
   });
 
-  describe('PersistedWeeksResponseSchema', () => {
-    it('validates an array of persisted weeks', () => {
+  describe('SnapshotsResponseSchema', () => {
+    it('validates an array of snapshots', () => {
       const data = [
-        { season: 2024, week: 1, published: true, createdAt: '2024-09-01T12:00:00Z' },
-        { season: 2024, week: 2, published: false, createdAt: '2024-09-08T12:00:00Z' },
+        { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T12:00:00Z' },
+        { season: 2024, week: 2, isPublished: false, createdAt: '2024-09-08T12:00:00Z' },
       ];
-      const result = PersistedWeeksResponseSchema.safeParse(data);
+      const result = SnapshotsResponseSchema.safeParse(data);
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data).toHaveLength(2);
@@ -91,12 +91,12 @@ describe('Admin schemas', () => {
     });
 
     it('validates an empty array', () => {
-      const result = PersistedWeeksResponseSchema.safeParse([]);
+      const result = SnapshotsResponseSchema.safeParse([]);
       expect(result.success).toBe(true);
     });
 
     it('rejects non-array input', () => {
-      const result = PersistedWeeksResponseSchema.safeParse({ weeks: [] });
+      const result = SnapshotsResponseSchema.safeParse({ weeks: [] });
       expect(result.success).toBe(false);
     });
   });
