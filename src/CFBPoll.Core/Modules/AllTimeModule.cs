@@ -99,9 +99,9 @@ public class AllTimeModule : IAllTimeModule
 
     private async Task<IReadOnlyList<RankingsResult>> GetPostseasonSnapshotsAsync()
     {
-        var persistedWeeks = await _rankingsModule.GetPersistedWeeksAsync().ConfigureAwait(false);
+        var snapshots = await _rankingsModule.GetSnapshotsAsync().ConfigureAwait(false);
 
-        var publishedSeasons = persistedWeeks
+        var publishedSeasons = snapshots
             .Where(pw => pw.Published)
             .Select(pw => pw.Season)
             .Distinct()
@@ -110,7 +110,7 @@ public class AllTimeModule : IAllTimeModule
 
         _logger.LogInformation("Found {Count} seasons with published snapshots", publishedSeasons.Count);
 
-        var snapshots = new List<RankingsResult>();
+        var results = new List<RankingsResult>();
 
         foreach (var season in publishedSeasons)
         {
@@ -134,11 +134,11 @@ public class AllTimeModule : IAllTimeModule
                 continue;
             }
 
-            snapshots.Add(snapshot);
+            results.Add(snapshot);
         }
 
-        _logger.LogInformation("Loaded {Count} postseason snapshots", snapshots.Count);
-        return snapshots;
+        _logger.LogInformation("Loaded {Count} postseason snapshots", results.Count);
+        return results;
     }
 
     private static IReadOnlyList<AllTimeEntry> AssignRanks(IEnumerable<AllTimeEntry> entries)

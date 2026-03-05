@@ -21,17 +21,14 @@ public interface IRankingsModule
     Task<RankingsResult> GenerateRankingsAsync(SeasonData seasonData, IDictionary<string, RatingDetails> ratings);
 
     /// <summary>
-    /// Retrieves available published weeks for a season, enriched with week labels.
-    /// </summary>
-    /// <param name="season">The season year.</param>
-    /// <param name="calendarWeeks">Calendar weeks from the external data source.</param>
-    /// <returns>Published weeks with labels.</returns>
-    Task<IEnumerable<WeekInfo>> GetAvailableWeeksAsync(int season, IEnumerable<CalendarWeek> calendarWeeks);
-
-    /// <summary>
     /// Retrieves all persisted week summaries including draft and published.
     /// </summary>
-    Task<IEnumerable<PersistedWeekSummary>> GetPersistedWeeksAsync();
+    Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync();
+
+    /// <summary>
+    /// Retrieves the published week numbers for the given season.
+    /// </summary>
+    Task<IEnumerable<int>> GetPublishedWeekNumbersAsync(int season);
 
     /// <summary>
     /// Computes rank deltas by comparing current rankings against the previous published snapshot.

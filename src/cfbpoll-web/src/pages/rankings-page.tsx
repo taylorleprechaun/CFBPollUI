@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import { useSeason } from '../contexts/season-context';
-import { useAvailableWeeks } from '../hooks/use-available-weeks';
+import { useWeeks } from '../hooks/use-weeks';
 import { useConferences } from '../hooks/use-conferences';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { usePreloadImages } from '../hooks/use-preload-images';
@@ -39,9 +39,14 @@ export function RankingsPage() {
     isLoading: weeksLoading,
     error: weeksError,
     refetch: refetchWeeks,
-  } = useAvailableWeeks(selectedSeason);
+  } = useWeeks(selectedSeason);
 
-  const { selectedWeek, setSelectedWeek } = useWeekSelection(weeksData?.weeks);
+  const publishedWeeks = useMemo(
+    () => weeksData?.weeks?.filter((w) => w.rankingsPublished) ?? [],
+    [weeksData?.weeks]
+  );
+
+  const { selectedWeek, setSelectedWeek } = useWeekSelection(publishedWeeks);
 
   const maxSeason = seasons.length > 0 ? seasons[0] : null;
 
@@ -97,7 +102,7 @@ export function RankingsPage() {
             isLoading={seasonsLoading}
           />
           <WeekSelector
-            weeks={weeksData?.weeks ?? []}
+            weeks={publishedWeeks}
             selectedWeek={selectedWeek}
             onWeekChange={setSelectedWeek}
             isLoading={weeksLoading}

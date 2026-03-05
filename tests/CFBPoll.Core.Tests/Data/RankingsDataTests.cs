@@ -246,7 +246,7 @@ public class RankingsDataTests
     }
 
     [Fact]
-    public async Task GetPersistedWeeksAsync_ReturnsAllSnapshots()
+    public async Task GetSnapshotsAsync_ReturnsAllSnapshots()
     {
         var (data, tempPath) = CreateRankingsDataWithFile();
         try
@@ -258,7 +258,7 @@ public class RankingsDataTests
             await data.SaveSnapshotAsync(CreateRankingsResult(2023, 5));
             await data.PublishSnapshotAsync(2024, 1);
 
-            var weeks = (await data.GetPersistedWeeksAsync()).ToList();
+            var weeks = (await data.GetSnapshotsAsync()).ToList();
 
             Assert.Equal(3, weeks.Count);
             Assert.Contains(weeks, w => w.Season == 2024 && w.Week == 1 && w.Published);

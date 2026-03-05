@@ -38,7 +38,7 @@ public class RankingsData : IRankingsData
         return rowsAffected > 0;
     }
 
-    public async Task<IEnumerable<PersistedWeekSummary>> GetPersistedWeeksAsync()
+    public async Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync()
     {
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync().ConfigureAwait(false);
@@ -47,11 +47,11 @@ public class RankingsData : IRankingsData
         command.CommandText = "SELECT Season, Week, Published, CreatedAt FROM RankingsSnapshot ORDER BY Season DESC, Week DESC";
 
         await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
-        List<PersistedWeekSummary> results = [];
+        List<SnapshotSummary> results = [];
 
         while (await reader.ReadAsync().ConfigureAwait(false))
         {
-            results.Add(new PersistedWeekSummary
+            results.Add(new SnapshotSummary
             {
                 Season = reader.GetInt32(0),
                 Week = reader.GetInt32(1),

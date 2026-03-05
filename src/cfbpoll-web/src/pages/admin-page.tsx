@@ -19,7 +19,7 @@ import {
   usePublishSnapshot,
 } from '../hooks/use-admin-mutations';
 import { useDocumentTitle } from '../hooks/use-document-title';
-import { usePersistedWeeks } from '../hooks/use-persisted-weeks';
+import { useSnapshots } from '../hooks/use-snapshots';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
 import { getWeekLabel } from '../lib/week-utils';
@@ -73,10 +73,10 @@ export function AdminPage() {
   const { selectedWeek, setSelectedWeek } = useWeekSelection(weeksData?.weeks);
 
   const {
-    data: persistedWeeks,
-    error: persistedWeeksError,
-    refetch: refetchPersistedWeeks,
-  } = usePersistedWeeks(token);
+    data: snapshots,
+    error: snapshotsError,
+    refetch: refetchSnapshots,
+  } = useSnapshots(token);
 
   const calculateMutation = useCalculateRankings(token);
   const publishMutation = usePublishSnapshot(token);
@@ -90,21 +90,21 @@ export function AdminPage() {
   const [initialCollapseApplied, setInitialCollapseApplied] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ season: number; week: number } | null>(null);
 
-  const normalizedPersistedError = persistedWeeksError instanceof Error
-    ? persistedWeeksError
-    : persistedWeeksError ? new Error('Failed to load persisted weeks') : null;
-  const error = operationError ?? normalizedPersistedError;
+  const normalizedSnapshotsError = snapshotsError instanceof Error
+    ? snapshotsError
+    : snapshotsError ? new Error('Failed to load snapshots') : null;
+  const error = operationError ?? normalizedSnapshotsError;
 
   const isActionPending = calculateMutation.isPending || publishMutation.isPending || deleteMutation.isPending || exportMutation.isPending;
 
   const clearFeedback = useCallback(() => setActionFeedback(null), []);
 
   useEffect(() => {
-    if (persistedWeeks?.length && !initialCollapseApplied) {
-      setCollapsedSeasons(new Set(persistedWeeks.map((w) => w.season)));
+    if (snapshots?.length && !initialCollapseApplied) {
+      setCollapsedSeasons(new Set(snapshots.map((w) => w.season)));
       setInitialCollapseApplied(true);
     }
-  }, [persistedWeeks, initialCollapseApplied]);
+  }, [snapshots, initialCollapseApplied]);
 
   const handleCalculate = async () => {
     if (selectedSeason === null || selectedWeek === null) return;
@@ -133,8 +133,8 @@ export function AdminPage() {
     }
   };
 
-  const handleDelete = async (season: number, week: number, published: boolean) => {
-    if (published) {
+  const handleDelete = async (season: number, week: number, isPublished: boolean) => {
+    if (isPublished) {
       setDeleteConfirm({ season, week });
       return;
     }
@@ -179,8 +179,8 @@ export function AdminPage() {
 
   const handleExpandAll = () => setCollapsedSeasons(new Set());
   const handleCollapseAll = () => {
-    if (persistedWeeks) {
-      setCollapsedSeasons(new Set(persistedWeeks.map((w) => w.season)));
+    if (snapshots) {
+      setCollapsedSeasons(new Set(snapshots.map((w) => w.season)));
     }
   };
 
@@ -198,7 +198,7 @@ export function AdminPage() {
 
       {error && <ErrorAlert error={error} onRetry={() => {
         setOperationError(null);
-        if (normalizedPersistedError) refetchPersistedWeeks();
+        if (normalizedSnapshotsError) refetchSnapshots();
       }} />}
 
       <div className="bg-white shadow rounded-lg p-6">
@@ -275,7 +275,7 @@ export function AdminPage() {
         onExport={handleExport}
         onPublish={handlePublish}
         onToggleSeason={toggleSeason}
-        persistedWeeks={persistedWeeks ?? []}
+        snapshots={snapshots ?? []}
       />
 
       {deleteConfirm && (

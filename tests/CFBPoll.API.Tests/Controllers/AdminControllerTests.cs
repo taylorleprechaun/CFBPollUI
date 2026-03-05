@@ -50,8 +50,7 @@ public class AdminControllerTests
             .Setup(x => x.GetRankDeltasAsync(2024, 5, It.IsAny<IEnumerable<RankedTeam>>()))
             .ReturnsAsync(deltas);
 
-        var request = new CalculateRequestDTO { Season = 2024, Week = 5 };
-        var result = await _controller.Calculate(request);
+        var result = await _controller.Calculate(2024, 5);
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var response = Assert.IsType<CalculateResponseDTO>(okResult.Value);
@@ -62,23 +61,40 @@ public class AdminControllerTests
     }
 
     [Fact]
-    public async Task Publish_Found_ReturnsOk()
+    public async Task UpdateSnapshot_Found_ReturnsOk()
     {
         _mockAdminModule.Setup(x => x.PublishSnapshotAsync(2024, 5)).ReturnsAsync(true);
 
-        var result = await _controller.Publish(2024, 5);
+        var result = await _controller.UpdateSnapshot(2024, 5, new UpdateSnapshotDTO { IsPublished = true });
 
         Assert.IsType<OkResult>(result);
     }
 
     [Fact]
-    public async Task Publish_NotFound_ReturnsNotFound()
+    public async Task UpdateSnapshot_NotFound_ReturnsNotFound()
     {
         _mockAdminModule.Setup(x => x.PublishSnapshotAsync(2024, 5)).ReturnsAsync(false);
 
-        var result = await _controller.Publish(2024, 5);
+        var result = await _controller.UpdateSnapshot(2024, 5, new UpdateSnapshotDTO { IsPublished = true });
 
         Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdateSnapshot_NullRequest_ThrowsArgumentNullException()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _controller.UpdateSnapshot(2024, 5, null!));
+    }
+
+    [Fact]
+    public async Task UpdateSnapshot_PublishedFalse_ReturnsBadRequest()
+    {
+        var result = await _controller.UpdateSnapshot(2024, 5, new UpdateSnapshotDTO { IsPublished = false });
+
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        var error = Assert.IsType<ErrorResponseDTO>(badRequestResult.Value);
+        Assert.Equal(400, error.StatusCode);
+        _mockAdminModule.Verify(x => x.PublishSnapshotAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
     }
 
     [Fact]
@@ -102,20 +118,20 @@ public class AdminControllerTests
     }
 
     [Fact]
-    public async Task GetPersistedWeeks_ReturnsList()
+    public async Task GetSnapshots_ReturnsList()
     {
-        var weeks = new List<PersistedWeekSummary>
+        var weeks = new List<SnapshotSummary>
         {
-            new PersistedWeekSummary { Season = 2024, Week = 1, Published = true, CreatedAt = DateTime.UtcNow },
-            new PersistedWeekSummary { Season = 2024, Week = 2, Published = false, CreatedAt = DateTime.UtcNow }
+            new SnapshotSummary { Season = 2024, Week = 1, Published = true, CreatedAt = DateTime.UtcNow },
+            new SnapshotSummary { Season = 2024, Week = 2, Published = false, CreatedAt = DateTime.UtcNow }
         };
 
-        _mockAdminModule.Setup(x => x.GetPersistedWeeksAsync()).ReturnsAsync(weeks);
+        _mockAdminModule.Setup(x => x.GetSnapshotsAsync()).ReturnsAsync(weeks);
 
-        var result = await _controller.GetPersistedWeeks();
+        var result = await _controller.GetSnapshots();
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var response = Assert.IsAssignableFrom<IEnumerable<PersistedWeekDTO>>(okResult.Value);
+        var response = Assert.IsAssignableFrom<IEnumerable<SnapshotDTO>>(okResult.Value);
         Assert.Equal(2, response.Count());
     }
 

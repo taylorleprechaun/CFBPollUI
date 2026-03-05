@@ -4,7 +4,7 @@ import { getWeekLabel } from '../../lib/week-utils';
 import { ChevronIcon } from '../ui/chevron-icon';
 import { SuccessCheckmark } from './success-checkmark';
 import type { ActionFeedback } from './types';
-import type { PersistedWeek } from '../../schemas/admin';
+import type { Snapshot } from '../../schemas/admin';
 
 interface PersistedSnapshotsSectionProps {
   actionFeedback: ActionFeedback | null;
@@ -12,12 +12,12 @@ interface PersistedSnapshotsSectionProps {
   isActionPending: boolean;
   onClearFeedback: () => void;
   onCollapseAll: () => void;
-  onDelete: (season: number, week: number, published: boolean) => void;
+  onDelete: (season: number, week: number, isPublished: boolean) => void;
   onExpandAll: () => void;
   onExport: (season: number, week: number) => void;
   onPublish: (season: number, week: number, source: 'preview' | 'snapshot') => void;
   onToggleSeason: (season: number) => void;
-  persistedWeeks: PersistedWeek[];
+  snapshots: Snapshot[];
 }
 
 export function PersistedSnapshotsSection({
@@ -31,15 +31,15 @@ export function PersistedSnapshotsSection({
   onExport,
   onPublish,
   onToggleSeason,
-  persistedWeeks,
+  snapshots,
 }: PersistedSnapshotsSectionProps) {
-  const groupedPersistedWeeks = useMemo(() => {
-    const sorted = [...persistedWeeks].sort((a, b) => {
+  const groupedSnapshots = useMemo(() => {
+    const sorted = [...snapshots].sort((a, b) => {
       if (a.season !== b.season) return b.season - a.season;
       return b.week - a.week;
     });
 
-    const groups: { season: number; weeks: PersistedWeek[] }[] = [];
+    const groups: { season: number; weeks: Snapshot[] }[] = [];
     for (const pw of sorted) {
       const last = groups[groups.length - 1];
       if (last && last.season === pw.season) {
@@ -49,13 +49,13 @@ export function PersistedSnapshotsSection({
       }
     }
     return groups;
-  }, [persistedWeeks]);
+  }, [snapshots]);
 
   return (
     <div className="bg-white shadow rounded-lg p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-gray-900">Persisted Snapshots</h2>
-        {groupedPersistedWeeks.length > 0 && (
+        {groupedSnapshots.length > 0 && (
           <div className="flex gap-2">
             <button
               onClick={onExpandAll}
@@ -73,11 +73,11 @@ export function PersistedSnapshotsSection({
           </div>
         )}
       </div>
-      {groupedPersistedWeeks.length === 0 ? (
+      {groupedSnapshots.length === 0 ? (
         <p className="text-gray-500">No persisted snapshots found.</p>
       ) : (
         <div className="space-y-2">
-          {groupedPersistedWeeks.map((group) => {
+          {groupedSnapshots.map((group) => {
             const isCollapsed = collapsedSeasons.has(group.season);
             const contentId = `snapshots-season-${group.season}`;
             return (
@@ -118,11 +118,11 @@ export function PersistedSnapshotsSection({
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{getWeekLabel(pw.week)}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm">
                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                  pw.published
+                                  pw.isPublished
                                     ? 'bg-green-100 text-green-800'
                                     : 'bg-yellow-100 text-yellow-800'
                                 }`}>
-                                  {pw.published ? 'Published' : 'Draft'}
+                                  {pw.isPublished ? 'Published' : 'Draft'}
                                 </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -130,7 +130,7 @@ export function PersistedSnapshotsSection({
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm">
                                 <div className="flex items-center gap-2">
-                                  {!pw.published && (
+                                  {!pw.isPublished && (
                                     <button
                                       onClick={() => onPublish(pw.season, pw.week, 'snapshot')}
                                       disabled={isActionPending}
@@ -153,7 +153,7 @@ export function PersistedSnapshotsSection({
                                     Export
                                   </button>
                                   <button
-                                    onClick={() => onDelete(pw.season, pw.week, pw.published)}
+                                    onClick={() => onDelete(pw.season, pw.week, pw.isPublished)}
                                     disabled={isActionPending}
                                     className="text-red-600 hover:text-red-800 disabled:opacity-50"
                                   >

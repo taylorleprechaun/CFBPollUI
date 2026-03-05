@@ -18,8 +18,9 @@ export const SeasonsResponseSchema = z.object({
 
 // Week schemas
 export const WeekSchema = z.object({
-  weekNumber: z.number(),
   label: z.string(),
+  rankingsPublished: z.boolean(),
+  weekNumber: z.number(),
 });
 
 export const WeeksResponseSchema = z.object({

@@ -15,7 +15,7 @@ export function useCalculateRankings(token: string | null) {
       return calculateRankings(token, season, week);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['persisted-weeks'] });
+      queryClient.invalidateQueries({ queryKey: ['snapshots'] });
     },
   });
 }
@@ -29,7 +29,7 @@ export function usePublishSnapshot(token: string | null) {
       return publishSnapshot(token, season, week);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['persisted-weeks'] });
+      queryClient.invalidateQueries({ queryKey: ['snapshots'] });
     },
   });
 }
@@ -43,7 +43,7 @@ export function useDeleteSnapshot(token: string | null) {
       return deleteSnapshot(token, season, week);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['persisted-weeks'] });
+      queryClient.invalidateQueries({ queryKey: ['snapshots'] });
     },
   });
 }

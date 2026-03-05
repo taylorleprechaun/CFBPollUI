@@ -60,8 +60,8 @@ public class AllTimeModuleTests
     public async Task GetAllTimeRankingsAsync_NoPersistedWeeks_ReturnsEmptyLists()
     {
         _mockRankingsModule
-            .Setup(x => x.GetPersistedWeeksAsync())
-            .ReturnsAsync(new List<PersistedWeekSummary>());
+            .Setup(x => x.GetSnapshotsAsync())
+            .ReturnsAsync(new List<SnapshotSummary>());
 
         var result = await _module.GetAllTimeRankingsAsync();
 
@@ -74,8 +74,8 @@ public class AllTimeModuleTests
     public async Task GetAllTimeRankingsAsync_OnlyDraftSnapshots_ReturnsEmptyLists()
     {
         _mockRankingsModule
-            .Setup(x => x.GetPersistedWeeksAsync())
-            .ReturnsAsync(new List<PersistedWeekSummary>
+            .Setup(x => x.GetSnapshotsAsync())
+            .ReturnsAsync(new List<SnapshotSummary>
             {
                 new() { Season = 2023, Week = 1, Published = false }
             });
@@ -91,8 +91,8 @@ public class AllTimeModuleTests
     public async Task GetAllTimeRankingsAsync_NoPostseasonInCalendar_SkipsSeason()
     {
         _mockRankingsModule
-            .Setup(x => x.GetPersistedWeeksAsync())
-            .ReturnsAsync(new List<PersistedWeekSummary>
+            .Setup(x => x.GetSnapshotsAsync())
+            .ReturnsAsync(new List<SnapshotSummary>
             {
                 new() { Season = 2023, Week = 5, Published = true }
             });
@@ -116,8 +116,8 @@ public class AllTimeModuleTests
     public async Task GetAllTimeRankingsAsync_NoPublishedPostseasonSnapshot_SkipsSeason()
     {
         _mockRankingsModule
-            .Setup(x => x.GetPersistedWeeksAsync())
-            .ReturnsAsync(new List<PersistedWeekSummary>
+            .Setup(x => x.GetSnapshotsAsync())
+            .ReturnsAsync(new List<SnapshotSummary>
             {
                 new() { Season = 2023, Week = 5, Published = true }
             });
@@ -367,8 +367,8 @@ public class AllTimeModuleTests
     public async Task GetAllTimeRankingsAsync_MultipleSeasons_CombinesData()
     {
         _mockRankingsModule
-            .Setup(x => x.GetPersistedWeeksAsync())
-            .ReturnsAsync(new List<PersistedWeekSummary>
+            .Setup(x => x.GetSnapshotsAsync())
+            .ReturnsAsync(new List<SnapshotSummary>
             {
                 new() { Season = 2022, Week = 5, Published = true },
                 new() { Season = 2023, Week = 6, Published = true }
@@ -425,8 +425,8 @@ public class AllTimeModuleTests
     public async Task GetAllTimeRankingsAsync_DeduplicatesSeasonsFromMultipleWeeks()
     {
         _mockRankingsModule
-            .Setup(x => x.GetPersistedWeeksAsync())
-            .ReturnsAsync(new List<PersistedWeekSummary>
+            .Setup(x => x.GetSnapshotsAsync())
+            .ReturnsAsync(new List<SnapshotSummary>
             {
                 new() { Season = 2023, Week = 3, Published = true },
                 new() { Season = 2023, Week = 5, Published = true }
@@ -597,10 +597,10 @@ public class AllTimeModuleTests
     }
 
     [Fact]
-    public async Task GetAllTimeRankingsAsync_GetPersistedWeeksThrows_PropagatesException()
+    public async Task GetAllTimeRankingsAsync_GetSnapshotsThrows_PropagatesException()
     {
         _mockRankingsModule
-            .Setup(x => x.GetPersistedWeeksAsync())
+            .Setup(x => x.GetSnapshotsAsync())
             .ThrowsAsync(new InvalidOperationException("Database unavailable"));
 
         await Assert.ThrowsAsync<InvalidOperationException>(
@@ -611,8 +611,8 @@ public class AllTimeModuleTests
     public async Task GetAllTimeRankingsAsync_GetCalendarAsyncThrows_PropagatesException()
     {
         _mockRankingsModule
-            .Setup(x => x.GetPersistedWeeksAsync())
-            .ReturnsAsync(new List<PersistedWeekSummary>
+            .Setup(x => x.GetSnapshotsAsync())
+            .ReturnsAsync(new List<SnapshotSummary>
             {
                 new() { Season = 2023, Week = 5, Published = true }
             });
@@ -629,8 +629,8 @@ public class AllTimeModuleTests
     public async Task GetAllTimeRankingsAsync_GetPublishedSnapshotAsyncThrows_PropagatesException()
     {
         _mockRankingsModule
-            .Setup(x => x.GetPersistedWeeksAsync())
-            .ReturnsAsync(new List<PersistedWeekSummary>
+            .Setup(x => x.GetSnapshotsAsync())
+            .ReturnsAsync(new List<SnapshotSummary>
             {
                 new() { Season = 2023, Week = 5, Published = true }
             });
@@ -654,8 +654,8 @@ public class AllTimeModuleTests
     public async Task GetAllTimeRankingsAsync_MultipleSeasonsWithDuplicateWeeks_CallsGetCalendarOncePerSeason()
     {
         _mockRankingsModule
-            .Setup(x => x.GetPersistedWeeksAsync())
-            .ReturnsAsync(new List<PersistedWeekSummary>
+            .Setup(x => x.GetSnapshotsAsync())
+            .ReturnsAsync(new List<SnapshotSummary>
             {
                 new() { Season = 2022, Week = 3, Published = true },
                 new() { Season = 2022, Week = 5, Published = true },
@@ -703,8 +703,8 @@ public class AllTimeModuleTests
     private void SetupSingleSeason(int season, string seasonType, params RankedTeam[] teams)
     {
         _mockRankingsModule
-            .Setup(x => x.GetPersistedWeeksAsync())
-            .ReturnsAsync(new List<PersistedWeekSummary>
+            .Setup(x => x.GetSnapshotsAsync())
+            .ReturnsAsync(new List<SnapshotSummary>
             {
                 new() { Season = season, Week = 5, Published = true }
             });

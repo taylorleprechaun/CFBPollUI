@@ -32,7 +32,7 @@ describe('Zod Schemas', () => {
 
   describe('WeekSchema', () => {
     it('validates valid week', () => {
-      const data = { weekNumber: 5, label: 'Week 5' };
+      const data = { weekNumber: 5, label: 'Week 5', rankingsPublished: false };
       const result = WeekSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
@@ -49,8 +49,8 @@ describe('Zod Schemas', () => {
       const data = {
         season: 2024,
         weeks: [
-          { weekNumber: 1, label: 'Week 1' },
-          { weekNumber: 2, label: 'Week 2' },
+          { weekNumber: 1, label: 'Week 1', rankingsPublished: true },
+          { weekNumber: 2, label: 'Week 2', rankingsPublished: false },
         ],
       };
       const result = WeeksResponseSchema.safeParse(data);
@@ -59,7 +59,7 @@ describe('Zod Schemas', () => {
 
     it('rejects response without season', () => {
       const data = {
-        weeks: [{ weekNumber: 1, label: 'Week 1' }],
+        weeks: [{ weekNumber: 1, label: 'Week 1', rankingsPublished: false }],
       };
       const result = WeeksResponseSchema.safeParse(data);
       expect(result.success).toBe(false);

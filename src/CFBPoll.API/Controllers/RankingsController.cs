@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace CFBPoll.API.Controllers;
 
 [ApiController]
-[Route("api/v1/[controller]")]
 public class RankingsController : ControllerBase
 {
     private readonly ICFBDataService _dataService;
@@ -33,9 +32,9 @@ public class RankingsController : ControllerBase
     /// <param name="season">The season year.</param>
     /// <param name="week">The week number within the season.</param>
     /// <returns>Rankings for all FBS teams.</returns>
-    [HttpGet]
+    [HttpGet("api/v1/seasons/{season}/weeks/{week}/rankings")]
     [ValidateSeasonWeek]
-    public async Task<ActionResult<RankingsResponseDTO>> GetRankings([FromQuery] int season, [FromQuery] int week)
+    public async Task<ActionResult<RankingsResponseDTO>> GetRankings([FromRoute] int season, [FromRoute] int week)
     {
         _logger.LogInformation("Fetching rankings for season {Season}, week {Week}", season, week);
 
@@ -53,31 +52,5 @@ public class RankingsController : ControllerBase
 
         var liveDeltas = await _rankingsModule.GetRankDeltasAsync(season, week, result.Rankings);
         return Ok(RankingsMapper.ToResponseDTO(result, liveDeltas));
-    }
-
-    /// <summary>
-    /// Retrieves the published week numbers for the specified season.
-    /// </summary>
-    /// <param name="season">The season year.</param>
-    /// <returns>Published weeks with labels for the specified season.</returns>
-    [HttpGet("available-weeks")]
-    public async Task<ActionResult<WeeksResponseDTO>> GetAvailableWeeks([FromQuery] int season)
-    {
-        _logger.LogInformation("Fetching available weeks for season {Season}", season);
-
-        var calendar = await _dataService.GetCalendarAsync(season);
-        var availableWeeks = await _rankingsModule.GetAvailableWeeksAsync(season, calendar);
-
-        var weekDTOs = availableWeeks.Select(w => new WeekDTO
-        {
-            Label = w.Label,
-            WeekNumber = w.WeekNumber
-        });
-
-        return Ok(new WeeksResponseDTO
-        {
-            Season = season,
-            Weeks = weekDTOs
-        });
     }
 }

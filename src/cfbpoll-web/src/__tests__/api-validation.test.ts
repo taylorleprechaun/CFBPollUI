@@ -126,8 +126,8 @@ describe('API Functions with Validation', () => {
       const mockResponse = {
         season: 2024,
         weeks: [
-          { weekNumber: 1, label: 'Week 1' },
-          { weekNumber: 2, label: 'Week 2' },
+          { weekNumber: 1, label: 'Week 1', rankingsPublished: true },
+          { weekNumber: 2, label: 'Week 2', rankingsPublished: false },
         ],
       };
       vi.mocked(global.fetch).mockResolvedValue({

@@ -60,7 +60,7 @@ describe('useRankings', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/v1/rankings?season=2024&week=5'),
+      expect.stringContaining('/api/v1/seasons/2024/weeks/5/rankings'),
       undefined
     );
   });
@@ -171,7 +171,7 @@ describe('useRankings', () => {
 
     await waitFor(() =>
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('season=2023'),
+        expect.stringContaining('/seasons/2023/'),
         undefined
       )
     );
@@ -205,7 +205,7 @@ describe('useRankings', () => {
 
     await waitFor(() =>
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('week=3'),
+        expect.stringContaining('/weeks/3/'),
         undefined
       )
     );

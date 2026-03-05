@@ -89,9 +89,9 @@ public class AdminModule : IAdminModule
         return _excelExportModule.GenerateRankingsWorkbook(snapshot);
     }
 
-    public async Task<IEnumerable<PersistedWeekSummary>> GetPersistedWeeksAsync()
+    public async Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync()
     {
-        return await _rankingsModule.GetPersistedWeeksAsync().ConfigureAwait(false);
+        return await _rankingsModule.GetSnapshotsAsync().ConfigureAwait(false);
     }
 
     public async Task<bool> PublishSnapshotAsync(int season, int week)

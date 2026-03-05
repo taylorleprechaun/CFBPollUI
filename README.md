@@ -97,6 +97,9 @@ AllTimeController                  AllTimeModule
 AuthController                     AuthModule
   -> IAuthModule                     -> IOptions<AuthOptions>
 
+                                   CacheModule (IPersistentCache)    CacheData
+                                     -> ICacheData                     -> SQLite
+
 PageVisibilityController           PageVisibilityModule
   -> IPageVisibilityModule           -> IPageVisibilityData           PageVisibilityData
                                                                        -> SQLite
@@ -106,13 +109,15 @@ PollLeadersController              PollLeadersModule
                                      -> IPersistentCache
                                      -> IRankingsModule
 
-                                   CacheModule (IPersistentCache)    CacheData
-                                     -> ICacheData                     -> SQLite
-                                     
 RankingsController                 RankingsModule
   -> ICFBDataService                 -> IRankingsData               RankingsData
   -> IRankingsModule                 -> ISeasonModule                 -> SQLite
   -> IRatingModule
+
+SeasonsController
+  -> ICFBDataService
+  -> IRankingsModule
+  -> ISeasonModule
 
 TeamsController                    TeamsModule
   -> ITeamsModule                    -> ICFBDataService
@@ -218,10 +223,9 @@ The frontend runs at `http://localhost:5173`.
 | `GET /api/v1/conferences` | Returns FBS conferences |
 | `GET /api/v1/page-visibility` | Returns current page visibility settings |
 | `GET /api/v1/poll-leaders?minSeason={min}&maxSeason={max}` | Returns per-team ranking appearance counts across published snapshots |
-| `GET /api/v1/rankings?season={s}&week={w}` | Returns ranked teams for the specified week |
-| `GET /api/v1/rankings/available-weeks?season={s}` | Returns published weeks for a season |
+| `GET /api/v1/seasons/{season}/weeks/{week}/rankings` | Returns ranked teams for the specified week |
 | `GET /api/v1/seasons` | Returns available seasons (2002 to present) |
-| `GET /api/v1/seasons/{season}/weeks` | Returns all weeks for a season |
+| `GET /api/v1/seasons/{season}/weeks` | Returns all weeks for a season with rankings publication status |
 | `GET /api/v1/teams/{teamName}?season={s}&week={w}` | Returns team details including schedule and record breakdowns |
 
 ### Authentication
@@ -234,35 +238,35 @@ The frontend runs at `http://localhost:5173`.
 
 | Endpoint | Description |
 |----------|-------------|
-| `POST /api/v1/admin/calculate` | Calculate rankings for a season/week and save as draft |
-| `POST /api/v1/admin/snapshots/{season}/{week}/publish` | Publish a draft snapshot |
-| `DELETE /api/v1/admin/snapshots/{season}/{week}` | Delete a snapshot |
-| `GET /api/v1/admin/persisted-weeks` | List all persisted snapshots |
-| `GET /api/v1/admin/export?season={s}&week={w}` | Download rankings as Excel |
+| `POST /api/v1/admin/seasons/{season}/weeks/{week}/snapshot` | Calculate rankings for a season/week and save as draft |
+| `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/snapshot` | Update a snapshot (currently supports publishing) |
+| `DELETE /api/v1/admin/seasons/{season}/weeks/{week}/snapshot` | Delete a snapshot |
+| `GET /api/v1/admin/snapshots` | List all persisted snapshots |
+| `GET /api/v1/admin/seasons/{season}/weeks/{week}/snapshot/export` | Download rankings as Excel |
 | `PUT /api/v1/page-visibility` | Update page visibility settings |
 
 ## Testing
 
-The project includes 1148 unit and integration tests across backend and frontend.
+The project includes 1,152 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (601 tests)
+# Backend tests (612 tests)
 dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (547 tests)
+# Frontend tests (540 tests)
 cd src/cfbpoll-web
 npm test
 ```
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-601-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-547-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-612-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-540-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
 ![Web Coverage](https://img.shields.io/badge/Web_Coverage-99%25-brightgreen)
@@ -270,7 +274,7 @@ npm test
 | Project | Line Coverage | Branch Coverage |
 |---------|---------------|-----------------|
 | CFBPoll.Core | 99% | 92% |
-| CFBPoll.API | 100% | 95% |
+| CFBPoll.API | 100% | 96% |
 | cfbpoll-web | 99% | 94% |
 
 **Excluded from coverage:**

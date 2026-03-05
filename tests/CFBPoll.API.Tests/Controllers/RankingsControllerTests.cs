@@ -127,63 +127,6 @@ public class RankingsControllerTests
     }
 
     [Fact]
-    public async Task GetAvailableWeeks_ReturnsPublishedWeeksOnly()
-    {
-        var calendarWeeks = new List<CalendarWeek>
-        {
-            new CalendarWeek { Week = 1, SeasonType = "regular" },
-            new CalendarWeek { Week = 2, SeasonType = "regular" },
-            new CalendarWeek { Week = 3, SeasonType = "regular" }
-        };
-
-        _mockDataService
-            .Setup(x => x.GetCalendarAsync(2024))
-            .ReturnsAsync(calendarWeeks);
-
-        _mockRankingsModule
-            .Setup(x => x.GetAvailableWeeksAsync(2024, calendarWeeks))
-            .ReturnsAsync(new List<WeekInfo>
-            {
-                new WeekInfo { WeekNumber = 1, Label = "Week 1" },
-                new WeekInfo { WeekNumber = 3, Label = "Week 3" }
-            });
-
-        var result = await _controller.GetAvailableWeeks(2024);
-
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var response = Assert.IsType<WeeksResponseDTO>(okResult.Value);
-        Assert.Equal(2024, response.Season);
-
-        var weeks = response.Weeks.ToList();
-        Assert.Equal(2, weeks.Count);
-        Assert.Contains(weeks, w => w.WeekNumber == 1);
-        Assert.Contains(weeks, w => w.WeekNumber == 3);
-    }
-
-    [Fact]
-    public async Task GetAvailableWeeks_NoPublishedWeeks_ReturnsEmpty()
-    {
-        var calendarWeeks = new List<CalendarWeek>
-        {
-            new CalendarWeek { Week = 1, SeasonType = "regular" }
-        };
-
-        _mockDataService
-            .Setup(x => x.GetCalendarAsync(2024))
-            .ReturnsAsync(calendarWeeks);
-
-        _mockRankingsModule
-            .Setup(x => x.GetAvailableWeeksAsync(2024, calendarWeeks))
-            .ReturnsAsync(new List<WeekInfo>());
-
-        var result = await _controller.GetAvailableWeeks(2024);
-
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var response = Assert.IsType<WeeksResponseDTO>(okResult.Value);
-        Assert.Empty(response.Weeks);
-    }
-
-    [Fact]
     public async Task GetRankings_LiveCalculation_DoesNotAttemptAutoPersist()
     {
         _mockRankingsModule

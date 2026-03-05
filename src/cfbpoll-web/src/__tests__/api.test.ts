@@ -27,7 +27,7 @@ describe('API service', () => {
       json: () =>
         Promise.resolve({
           season: 2024,
-          weeks: [{ weekNumber: 1, label: 'Week 1' }],
+          weeks: [{ weekNumber: 1, label: 'Week 1', rankingsPublished: false }],
         }),
     });
     vi.stubGlobal('fetch', mockFetch);
@@ -55,7 +55,7 @@ describe('API service', () => {
     await fetchRankings(2024, 12);
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/v1/rankings?season=2024&week=12'),
+      expect.stringContaining('/api/v1/seasons/2024/weeks/12/rankings'),
       undefined
     );
   });
