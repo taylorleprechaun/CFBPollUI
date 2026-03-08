@@ -18,10 +18,6 @@ function getSystemPreference(): ResolvedTheme {
   return window.matchMedia(MEDIA_QUERY).matches ? 'dark' : 'light';
 }
 
-function resolveTheme(theme: Theme): ResolvedTheme {
-  return theme === 'system' ? getSystemPreference() : theme;
-}
-
 function getStoredTheme(): Theme {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
