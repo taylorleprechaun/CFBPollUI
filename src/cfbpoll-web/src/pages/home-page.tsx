@@ -1,6 +1,9 @@
+import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 
+import { useCountUp } from '../hooks/use-count-up';
 import { useDocumentTitle } from '../hooks/use-document-title';
+import { useInView } from '../hooks/use-in-view';
 
 const FEATURES = [
   {
@@ -42,25 +45,64 @@ const FEATURES = [
 ];
 
 const STATS = [
-  { value: '24+', label: 'Seasons' },
-  { value: '130+', label: 'FBS Teams' },
-  { value: '2002', label: 'Data Since' },
+  { label: 'Seasons', numericValue: 24, suffix: '+' },
+  { label: 'FBS Teams', numericValue: 130, suffix: '+' },
+  { label: 'Data Since', numericValue: 2002, suffix: '' },
 ];
+
+interface StatCardProps {
+  label: string;
+  numericValue: number;
+  suffix: string;
+}
+
+function StatCard({ label, numericValue, suffix }: StatCardProps) {
+  var { ref, inView } = useInView({ threshold: 0.2, triggerOnce: true });
+  var count = useCountUp({ end: numericValue, enabled: inView });
+
+  return (
+    <div
+      ref={ref}
+      className="bg-white/70 dark:bg-gray-800/60 backdrop-blur-md shadow-lg rounded-xl p-4 sm:p-6 text-center border border-white/20 dark:border-gray-700/40"
+    >
+      <div className="text-2xl sm:text-3xl font-extrabold text-accent">
+        {count}{suffix}
+      </div>
+      <div className="text-sm sm:text-base text-text-secondary mt-1">{label}</div>
+    </div>
+  );
+}
 
 export function HomePage() {
   useDocumentTitle('Taylor Steinberg - Home');
+
+  var { ref: featureGridRef, inView: featuresInView } = useInView({
+    threshold: 0.2,
+    triggerOnce: true,
+  });
+
+  var handleScrollToSection = useCallback(
+    (e: React.MouseEvent<HTMLAnchorElement>) => {
+      e.preventDefault();
+      var target = document.getElementById('how-it-works');
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth' });
+      }
+    },
+    [],
+  );
 
   return (
     <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-8">
       <section className="relative overflow-hidden bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 dark:from-gray-900 dark:via-blue-950 dark:to-slate-900 px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0" style={{
+          <div className="absolute inset-0 animate-dot-drift" style={{
             backgroundImage: 'radial-gradient(circle at 25% 25%, rgba(255,255,255,0.15) 1px, transparent 1px)',
             backgroundSize: '48px 48px',
           }} />
         </div>
         <div className="relative max-w-4xl mx-auto text-center">
-          <p className="text-lg sm:text-xl text-blue-200 dark:text-blue-300 font-medium tracking-wide uppercase mb-4">
+          <p className="text-xl sm:text-2xl text-blue-200 dark:text-blue-300 font-medium tracking-wide uppercase mb-4">
             Taylor Steinberg&rsquo;s
           </p>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white mb-6 tracking-tight">
@@ -70,47 +112,63 @@ export function HomePage() {
             A data-driven rating system that evaluates FBS teams based on performance,
             strength of schedule, and advanced statistics.
           </p>
-          <Link
-            to="/rankings"
-            className="inline-flex items-center gap-2 bg-white text-blue-900 dark:bg-blue-500 dark:text-white px-8 py-4 rounded-full font-semibold text-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
-          >
-            View Rankings
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-              <path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clipRule="evenodd" />
-            </svg>
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              to="/rankings"
+              className="inline-flex items-center gap-2 bg-white text-blue-900 dark:bg-blue-500 dark:text-white px-8 py-4 rounded-full font-semibold text-lg shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
+            >
+              View Rankings
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                <path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clipRule="evenodd" />
+              </svg>
+            </Link>
+            <a
+              href="#how-it-works"
+              onClick={handleScrollToSection}
+              className="inline-flex items-center gap-2 border-2 border-white/30 text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-white/10 hover:border-white/50 transition-all duration-200"
+            >
+              Learn More &darr;
+            </a>
+          </div>
         </div>
       </section>
 
       <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-10">
         <div className="grid grid-cols-3 gap-4 sm:gap-6">
           {STATS.map((stat) => (
-            <div
+            <StatCard
               key={stat.label}
-              className="bg-surface shadow-lg rounded-xl p-4 sm:p-6 text-center border border-border"
-            >
-              <div className="text-2xl sm:text-3xl font-extrabold text-accent">{stat.value}</div>
-              <div className="text-sm sm:text-base text-text-secondary mt-1">{stat.label}</div>
-            </div>
+              label={stat.label}
+              numericValue={stat.numericValue}
+              suffix={stat.suffix}
+            />
           ))}
         </div>
       </section>
 
       <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <h2 className="text-2xl sm:text-3xl font-bold text-text-primary text-center mb-4">
+        <h2
+          id="how-it-works"
+          className="text-2xl sm:text-3xl font-bold text-text-primary text-center mb-4"
+        >
           How It Works
         </h2>
         <p className="text-text-secondary text-center mb-12 max-w-prose mx-auto">
           Rankings are calculated using data from the College Football Data API,
           combining multiple factors into a single composite rating.
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {FEATURES.map((feature) => (
+        <div ref={featureGridRef} className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {FEATURES.map((feature, index) => (
             <div
               key={feature.title}
-              className="bg-surface border border-border rounded-xl p-6 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200"
+              className={`bg-surface border border-border rounded-xl p-6 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 ${
+                featuresInView ? 'animate-fade-slide-up' : 'opacity-0'
+              }`}
+              style={featuresInView ? { animationDelay: `${index * 100}ms` } : undefined}
             >
-              <div className="text-accent mb-3">{feature.icon}</div>
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-accent/10 text-accent mb-3">
+                {feature.icon}
+              </div>
               <h3 className="text-lg font-semibold text-text-primary mb-2">{feature.title}</h3>
               <p className="text-text-secondary leading-relaxed">{feature.description}</p>
             </div>

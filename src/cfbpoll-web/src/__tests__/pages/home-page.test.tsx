@@ -1,7 +1,18 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { HomePage } from '../../pages/home-page';
+
+class MockIntersectionObserver {
+  observe = vi.fn();
+  disconnect = vi.fn();
+  unobserve = vi.fn();
+}
+
+beforeEach(() => {
+  vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
+  vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }));
+});
 
 function renderHomePage() {
   return render(
@@ -49,4 +60,27 @@ describe('HomePage', () => {
     expect(link).toHaveAttribute('href', '/rankings');
   });
 
+  it('renders stat labels', () => {
+    renderHomePage();
+
+    expect(screen.getByText('Seasons')).toBeInTheDocument();
+    expect(screen.getByText('FBS Teams')).toBeInTheDocument();
+    expect(screen.getByText('Data Since')).toBeInTheDocument();
+  });
+
+  it('renders the Learn More link', () => {
+    renderHomePage();
+
+    var link = screen.getByRole('link', { name: /Learn More/i });
+
+    expect(link).toHaveAttribute('href', '#how-it-works');
+  });
+
+  it('has How It Works heading with id for scroll target', () => {
+    renderHomePage();
+
+    var heading = screen.getByRole('heading', { name: 'How It Works' });
+
+    expect(heading).toHaveAttribute('id', 'how-it-works');
+  });
 });
