@@ -39,6 +39,6 @@ describe('TeamLogo', () => {
     render(<TeamLogo logoURL="" teamName="Texas" />);
 
     const fallback = screen.getByText('T');
-    expect(fallback).toHaveClass('w-8', 'h-8', 'bg-gray-200', 'rounded-full');
+    expect(fallback).toHaveClass('w-8', 'h-8', 'bg-surface-alt', 'rounded-full');
   });
 });

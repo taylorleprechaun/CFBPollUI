@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { SELECT_BASE } from '../ui/button-styles';
 
 interface SeasonSelectorProps {
   seasons: number[];
@@ -17,7 +18,7 @@ export function SeasonSelector({
 
   return (
     <div className="flex items-center space-x-2">
-      <label htmlFor={id} className="font-medium text-gray-700">
+      <label htmlFor={id} className="font-medium text-text-secondary">
         Season:
       </label>
       <select
@@ -25,7 +26,7 @@ export function SeasonSelector({
         value={selectedSeason ?? ''}
         onChange={(e) => onSeasonChange(Number(e.target.value))}
         disabled={isLoading}
-        className="block w-32 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100"
+        className={`block w-32 ${SELECT_BASE}`}
       >
         {isLoading ? (
           <option>Loading...</option>

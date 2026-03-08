@@ -4,7 +4,9 @@ import { useSearchParams } from 'react-router-dom';
 import { ErrorAlert } from '../components/error';
 import { SeasonSelector } from '../components/rankings/season-selector';
 import { RecordRow, ScheduleRow } from '../components/team-details';
-import { LoadingSpinner } from '../components/ui/loading-spinner';
+import { SELECT_BASE } from '../components/ui/button-styles';
+import { EmptyState } from '../components/ui/empty-state';
+import { Skeleton } from '../components/ui/skeleton';
 import { useSeason } from '../contexts/season-context';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { usePreloadImages } from '../hooks/use-preload-images';
@@ -23,6 +25,58 @@ const filterVsRank11To25 = (g: ScheduleGame) => g.opponentRank != null && g.oppo
 const filterVsRank26To50 = (g: ScheduleGame) => g.opponentRank != null && g.opponentRank >= 26 && g.opponentRank <= 50 && g.isWin != null;
 const filterVsRank51To100 = (g: ScheduleGame) => g.opponentRank != null && g.opponentRank >= 51 && g.opponentRank <= 100 && g.isWin != null;
 const filterVsRank101Plus = (g: ScheduleGame) => (g.opponentRank == null || g.opponentRank >= 101) && g.isWin != null;
+
+function TeamDetailSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="shadow-md rounded-xl p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center space-x-4">
+            <Skeleton className="w-16 h-16 rounded-lg" />
+            <div className="space-y-2">
+              <Skeleton className="h-7 w-48" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-5 w-20" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+            {Array.from({ length: 4 }, (_, i) => (
+              <div key={i} className="space-y-1">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-6 w-12" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="bg-surface shadow-md rounded-xl overflow-hidden">
+        <Skeleton className="h-12 w-full rounded-none" />
+        <div className="divide-y divide-border">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="flex gap-4 px-4 py-3">
+              <Skeleton className="h-4 w-10" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {Array.from({ length: 2 }, (_, i) => (
+          <div key={i} className="bg-surface border border-border rounded-xl overflow-hidden">
+            <Skeleton className="h-12 w-full rounded-none" />
+            <div className="space-y-2 p-4">
+              {Array.from({ length: 3 }, (_, j) => (
+                <Skeleton key={j} className="h-5 w-full" />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function TeamDetailsPage() {
   useDocumentTitle('Taylor Steinberg - Team Details');
@@ -140,8 +194,8 @@ export function TeamDetailsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white shadow rounded-lg p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Team Details</h1>
+      <div className="bg-surface border border-border rounded-xl p-4 sm:p-6">
+        <h1 className="text-2xl font-bold text-text-primary mb-4">Team Details</h1>
         <div className="flex flex-wrap gap-4">
           <SeasonSelector
             seasons={seasons}
@@ -150,7 +204,7 @@ export function TeamDetailsPage() {
             isLoading={seasonsLoading}
           />
           <div className="flex items-center space-x-2">
-            <label htmlFor={teamSelectId} className="font-medium text-gray-700">
+            <label htmlFor={teamSelectId} className="font-medium text-text-secondary">
               Team:
             </label>
             <select
@@ -158,7 +212,7 @@ export function TeamDetailsPage() {
               value={selectedTeam ?? ''}
               onChange={(e) => handleTeamChange(e.target.value)}
               disabled={rankingsLoading || teamOptions.length === 0}
-              className="block w-56 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100"
+              className={`block w-full sm:w-56 ${SELECT_BASE}`}
             >
               <option value="">Select a team</option>
               {teamOptions.map((team) => (
@@ -173,145 +227,143 @@ export function TeamDetailsPage() {
 
       {error && <ErrorAlert error={error} onRetry={handleRetry} />}
 
-      {teamDetailLoading && <LoadingSpinner />}
+      {teamDetailLoading && <TeamDetailSkeleton />}
 
       {teamDetail && (
-        <>
-          <div
-            className="shadow rounded-lg p-6"
-            style={{ backgroundColor: bgColor, color: textColor }}
-          >
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center space-x-4">
-                {!logoError && (
-                  <img
-                    src={teamDetail.logoURL}
-                    alt={`${teamDetail.teamName} logo`}
-                    className="w-16 h-16 object-contain rounded-lg bg-white p-1"
-                    onError={handleLogoError}
-                  />
-                )}
-                <div>
-                  <h2 className="text-2xl font-bold">{teamDetail.teamName}</h2>
-                  <p className="opacity-80">
-                    {teamDetail.conference}
-                    {teamDetail.division ? ` - ${teamDetail.division}` : ''}
-                  </p>
-                  <p className="text-lg font-semibold">{teamDetail.record}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                <div>
-                  <span className="opacity-70">Rank</span>
-                  <p className="text-xl font-bold">#{teamDetail.rank}</p>
-                </div>
-                <div>
-                  <span className="opacity-70">Rating</span>
-                  <p className="text-xl font-bold">{teamDetail.rating.toFixed(4)}</p>
-                </div>
-                <div>
-                  <span className="opacity-70">SOS Rank</span>
-                  <p className="text-xl font-bold">#{teamDetail.sosRanking}</p>
-                </div>
-                <div>
-                  <span className="opacity-70">Weighted SOS</span>
-                  <p className="text-xl font-bold">{teamDetail.weightedSOS.toFixed(4)}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="animate-fade-in" key={`${selectedTeam}-${selectedSeason}`}>
+          <div className="space-y-6">
             <div
-              className="p-6 pb-3 rounded-t-lg"
+              className="shadow-md rounded-xl p-4 sm:p-6"
               style={{ backgroundColor: bgColor, color: textColor }}
             >
-              <h3 className="text-lg font-semibold">Schedule</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Week
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Opponent
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Result
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {teamDetail.schedule.map((game) => (
-                    <ScheduleRow
-                      key={`${game.week}-${game.seasonType}-${game.opponentName}`}
-                      fbsTeamNames={fbsTeamNames}
-                      game={game}
-                      selectedSeason={selectedSeason}
-                      selectedWeek={selectedWeek}
-                      onTeamClick={handleTeamChange}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center space-x-4">
+                  {!logoError && (
+                    <img
+                      src={teamDetail.logoURL}
+                      alt={`${teamDetail.teamName} logo`}
+                      className="w-16 h-16 object-contain rounded-lg bg-surface p-1"
+                      onError={handleLogoError}
                     />
-                  ))}
-                  {teamDetail.schedule.length === 0 && (
-                    <tr>
-                      <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
-                        No games found for this season.
-                      </td>
-                    </tr>
                   )}
-                </tbody>
-              </table>
+                  <div>
+                    <h2 className="text-2xl font-bold">{teamDetail.teamName}</h2>
+                    <p className="opacity-80">
+                      {teamDetail.conference}
+                      {teamDetail.division ? ` - ${teamDetail.division}` : ''}
+                    </p>
+                    <p className="text-lg font-semibold">{teamDetail.record}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                  <div>
+                    <span className="opacity-70">Rank</span>
+                    <p className="text-xl font-bold">#{teamDetail.rank}</p>
+                  </div>
+                  <div>
+                    <span className="opacity-70">Rating</span>
+                    <p className="text-xl font-bold">{teamDetail.rating.toFixed(4)}</p>
+                  </div>
+                  <div>
+                    <span className="opacity-70">SOS Rank</span>
+                    <p className="text-xl font-bold">#{teamDetail.sosRanking}</p>
+                  </div>
+                  <div>
+                    <span className="opacity-70">Weighted SOS</span>
+                    <p className="text-xl font-bold">{teamDetail.weightedSOS.toFixed(4)}</p>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div ref={locationCardRef} className="bg-white shadow rounded-lg overflow-hidden">
-              <h3
-                className="text-lg font-semibold p-4 rounded-t-lg"
+            <div className="bg-surface shadow-md rounded-xl overflow-hidden">
+              <div
+                className="p-4 sm:p-6 pb-3 rounded-t-xl"
                 style={{ backgroundColor: bgColor, color: textColor }}
               >
-                Record by Location
-              </h3>
-              <div className="space-y-2 p-4">
-                <RecordRow label="Home" record={teamDetail.details.home} schedule={teamDetail.schedule} filter={filterHome} containerRef={locationCardRef} />
-                <RecordRow label="Away" record={teamDetail.details.away} schedule={teamDetail.schedule} filter={filterAway} containerRef={locationCardRef} />
-                <RecordRow label="Neutral" record={teamDetail.details.neutral} schedule={teamDetail.schedule} filter={filterNeutral} containerRef={locationCardRef} />
+                <h3 className="text-lg font-semibold">Schedule</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-border">
+                  <thead className="bg-surface-alt border-b-2 border-border">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
+                        Week
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
+                        Opponent
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
+                        Result
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-surface divide-y divide-border">
+                    {teamDetail.schedule.map((game) => (
+                      <ScheduleRow
+                        key={`${game.week}-${game.seasonType}-${game.opponentName}`}
+                        fbsTeamNames={fbsTeamNames}
+                        game={game}
+                        selectedSeason={selectedSeason}
+                        selectedWeek={selectedWeek}
+                        onTeamClick={handleTeamChange}
+                      />
+                    ))}
+                    {teamDetail.schedule.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-8 text-center text-text-muted">
+                          No games found for this season.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
-            <div ref={rankCardRef} className="bg-white shadow rounded-lg overflow-hidden">
-              <h3
-                className="text-lg font-semibold p-4 rounded-t-lg"
-                style={{ backgroundColor: bgColor, color: textColor }}
-              >
-                Record vs Opponent Rank
-              </h3>
-              <div className="space-y-2 p-4">
-                <RecordRow label="vs #1-10" record={teamDetail.details.vsRank1To10} schedule={teamDetail.schedule} filter={filterVsRank1To10} containerRef={rankCardRef} />
-                <RecordRow label="vs #11-25" record={teamDetail.details.vsRank11To25} schedule={teamDetail.schedule} filter={filterVsRank11To25} containerRef={rankCardRef} />
-                <RecordRow label="vs #26-50" record={teamDetail.details.vsRank26To50} schedule={teamDetail.schedule} filter={filterVsRank26To50} containerRef={rankCardRef} />
-                <RecordRow label="vs #51-100" record={teamDetail.details.vsRank51To100} schedule={teamDetail.schedule} filter={filterVsRank51To100} containerRef={rankCardRef} />
-                <RecordRow label="vs #101+" record={teamDetail.details.vsRank101Plus} schedule={teamDetail.schedule} filter={filterVsRank101Plus} containerRef={rankCardRef} />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div ref={locationCardRef} className="bg-surface border border-border rounded-xl overflow-hidden">
+                <h3
+                  className="text-lg font-semibold p-4 rounded-t-xl"
+                  style={{ backgroundColor: bgColor, color: textColor }}
+                >
+                  Record by Location
+                </h3>
+                <div className="space-y-2 p-4">
+                  <RecordRow label="Home" record={teamDetail.details.home} schedule={teamDetail.schedule} filter={filterHome} containerRef={locationCardRef} />
+                  <RecordRow label="Away" record={teamDetail.details.away} schedule={teamDetail.schedule} filter={filterAway} containerRef={locationCardRef} />
+                  <RecordRow label="Neutral" record={teamDetail.details.neutral} schedule={teamDetail.schedule} filter={filterNeutral} containerRef={locationCardRef} />
+                </div>
+              </div>
+              <div ref={rankCardRef} className="bg-surface border border-border rounded-xl overflow-hidden">
+                <h3
+                  className="text-lg font-semibold p-4 rounded-t-xl"
+                  style={{ backgroundColor: bgColor, color: textColor }}
+                >
+                  Record vs Opponent Rank
+                </h3>
+                <div className="space-y-2 p-4">
+                  <RecordRow label="vs #1-10" record={teamDetail.details.vsRank1To10} schedule={teamDetail.schedule} filter={filterVsRank1To10} containerRef={rankCardRef} />
+                  <RecordRow label="vs #11-25" record={teamDetail.details.vsRank11To25} schedule={teamDetail.schedule} filter={filterVsRank11To25} containerRef={rankCardRef} />
+                  <RecordRow label="vs #26-50" record={teamDetail.details.vsRank26To50} schedule={teamDetail.schedule} filter={filterVsRank26To50} containerRef={rankCardRef} />
+                  <RecordRow label="vs #51-100" record={teamDetail.details.vsRank51To100} schedule={teamDetail.schedule} filter={filterVsRank51To100} containerRef={rankCardRef} />
+                  <RecordRow label="vs #101+" record={teamDetail.details.vsRank101Plus} schedule={teamDetail.schedule} filter={filterVsRank101Plus} containerRef={rankCardRef} />
+                </div>
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {!teamDetailLoading && !teamDetail && selectedTeam && !error && (
-        <div className="text-center py-12 text-gray-500">
-          No details available for the selected team.
-        </div>
+        <EmptyState message="No details available for the selected team." />
       )}
 
       {!selectedTeam && !teamDetailLoading && (
-        <div className="text-center py-12 text-gray-500">
-          Select a season and team to view details.
-        </div>
+        <EmptyState message="Select a season and team to view details." />
       )}
     </div>
   );

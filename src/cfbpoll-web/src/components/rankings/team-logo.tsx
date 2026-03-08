@@ -10,7 +10,7 @@ export function TeamLogo({ logoURL, teamName }: TeamLogoProps) {
 
   if (!logoURL || hasError) {
     return (
-      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-xs font-bold text-gray-500">
+      <div className="w-8 h-8 bg-surface-alt rounded-full flex items-center justify-center text-xs font-bold text-text-muted">
         {teamName.charAt(0)}
       </div>
     );
@@ -20,7 +20,7 @@ export function TeamLogo({ logoURL, teamName }: TeamLogoProps) {
     <img
       src={logoURL}
       alt={`${teamName} logo`}
-      className="w-8 h-8 object-contain"
+      className="w-8 h-8 object-contain dark:bg-white dark:rounded-md dark:p-0.5"
       onError={() => setHasError(true)}
     />
   );

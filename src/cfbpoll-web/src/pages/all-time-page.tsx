@@ -45,7 +45,7 @@ export function AllTimePage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">All-Time Rankings</h1>
+      <h1 className="text-3xl font-bold text-text-primary mb-6">All-Time Rankings</h1>
 
       {error && (
         <ErrorAlert error={error} onRetry={() => refetch()} />
@@ -53,7 +53,7 @@ export function AllTimePage() {
 
       {sections.map((section) => (
         <CollapsibleSection key={section.title} title={section.title}>
-          <div className="bg-white shadow rounded-lg overflow-hidden">
+          <div className="bg-surface shadow-md rounded-xl overflow-hidden animate-fade-in">
             <AllTimeTable
               columns={section.columns}
               entries={section.entries}

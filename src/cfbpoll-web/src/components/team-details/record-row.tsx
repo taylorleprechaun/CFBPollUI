@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { ChevronIcon } from '../ui/chevron-icon';
 import type { TeamRecord, ScheduleGame } from '../../types';
 
 interface RecordRowProps {
@@ -41,21 +42,21 @@ export function RecordRow({
       {hasGames ? (
         <button
           type="button"
-          className="flex justify-between text-sm w-full cursor-pointer"
+          className="flex justify-between text-sm w-full cursor-pointer transition-colors duration-150 hover:bg-surface-alt rounded-md px-1 -mx-1"
           onClick={handleClick}
           aria-expanded={expanded}
         >
-          <span className="text-gray-600">
-            <span className="inline-block w-4 text-gray-400" aria-label={expanded ? 'collapse' : 'expand'}>
-              {expanded ? '\u25BE' : '\u25B8'}
+          <span className="text-text-secondary flex items-center">
+            <span className="inline-block w-4" aria-label={expanded ? 'collapse' : 'expand'}>
+              <ChevronIcon open={expanded} size="w-3 h-3" />
             </span>
             <span>{label}</span>
           </span>
           <span className="font-medium">{`${record.wins}-${record.losses}`}</span>
         </button>
       ) : (
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600">
+        <div className="flex justify-between text-sm px-1 -mx-1">
+          <span className="text-text-secondary">
             <span>{label}</span>
           </span>
           <span className="font-medium">-</span>
@@ -68,14 +69,14 @@ export function RecordRow({
               key={`${g.week}-${g.seasonType}-${g.opponentName}`}
               className="text-sm flex items-baseline"
             >
-              <span className="w-10 text-right text-gray-400 shrink-0">
+              <span className="w-10 text-right text-text-muted shrink-0">
                 {g.opponentRank != null ? `#${g.opponentRank}` : ''}
               </span>
-              <span className="ml-2 flex-1 text-gray-600 truncate">
+              <span className="ml-2 flex-1 text-text-secondary truncate">
                 {g.opponentName}
               </span>
               {hasResult(g) && g.teamScore != null && g.opponentScore != null && (
-                <span className={`ml-2 shrink-0 ${g.isWin ? 'text-green-600' : 'text-red-600'}`}>
+                <span className={`ml-2 shrink-0 ${g.isWin ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                   {g.isWin ? 'W' : 'L'} {g.teamScore}-{g.opponentScore}
                 </span>
               )}

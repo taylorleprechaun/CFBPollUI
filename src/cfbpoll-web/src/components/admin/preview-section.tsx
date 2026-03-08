@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { getWeekLabel } from '../../lib/week-utils';
 import { RankingsTable } from '../rankings/rankings-table';
+import { BUTTON_PRIMARY, BUTTON_SUCCESS } from '../ui/button-styles';
 import { ChevronIcon } from '../ui/chevron-icon';
 import { SuccessCheckmark } from './success-checkmark';
 import type { ActionFeedback } from './types';
@@ -30,13 +31,13 @@ export function PreviewSection({
   const previewPublishKey = `preview-publish-${previewRankings.season}-${previewRankings.week}`;
 
   return (
-    <div className="bg-white shadow rounded-lg overflow-hidden">
-      <div className="p-6 border-b border-gray-200">
+    <div className="bg-surface shadow-md rounded-xl overflow-hidden">
+      <div className="p-6 border-b border-border">
         <div className="flex items-center justify-between">
           <button
             type="button"
             onClick={() => setPreviewExpanded(!previewExpanded)}
-            className="flex items-center gap-2 text-lg font-semibold text-gray-900 hover:text-gray-700"
+            className="flex items-center gap-2 text-lg font-semibold text-text-primary hover:text-text-secondary"
           >
             <ChevronIcon open={previewExpanded} size="w-4 h-4" />
             Preview: {previewRankings.season} {getWeekLabel(previewRankings.week)}
@@ -45,14 +46,14 @@ export function PreviewSection({
             <button
               onClick={() => onExport(previewRankings.season, previewRankings.week)}
               disabled={isActionPending}
-              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:opacity-50 text-sm"
+              className={BUTTON_SUCCESS}
             >
               Download Excel
             </button>
             <button
               onClick={() => onPublish(previewRankings.season, previewRankings.week, 'preview')}
               disabled={isActionPending}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 text-sm"
+              className={BUTTON_PRIMARY}
             >
               Publish
             </button>

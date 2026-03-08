@@ -28,7 +28,7 @@ export const teamNameColumn = columnHelper.accessor('teamName', {
         <TeamLogo logoURL={entry.logoURL} teamName={info.getValue()} />
         <Link
           to={teamDetailUrl}
-          className="font-medium hover:text-blue-600 hover:underline"
+          className="font-medium hover:text-accent hover:underline"
         >
           {info.getValue()}
         </Link>

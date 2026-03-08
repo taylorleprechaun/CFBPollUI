@@ -56,7 +56,7 @@ export function RankingsTable({ rankings, isLoading, selectedConference, selecte
         if (team.conferenceRank !== null) {
           return (
             <>
-              {team.conferenceRank} <span className="text-gray-500">({info.getValue()})</span>
+              {team.conferenceRank} <span className="text-text-muted">({info.getValue()})</span>
             </>
           );
         }
@@ -75,7 +75,7 @@ export function RankingsTable({ rankings, isLoading, selectedConference, selecte
             <TeamLogo logoURL={team.logoURL} teamName={info.getValue()} />
             <Link
               to={teamDetailUrl}
-              className="font-medium hover:text-blue-600 hover:underline"
+              className="font-medium hover:text-accent hover:underline"
             >
               {info.getValue()}
             </Link>
@@ -102,7 +102,7 @@ export function RankingsTable({ rankings, isLoading, selectedConference, selecte
         if (team.conferenceSosRank !== null) {
           return (
             <>
-              {team.conferenceSosRank} <span className="text-gray-500">({info.getValue()})</span>
+              {team.conferenceSosRank} <span className="text-text-muted">({info.getValue()})</span>
             </>
           );
         }
@@ -115,7 +115,7 @@ export function RankingsTable({ rankings, isLoading, selectedConference, selecte
         const value = info.getValue();
         if (value !== null && value !== undefined && value > 0) {
           return (
-            <span className="inline-flex items-center gap-0.5 text-green-600">
+            <span className="inline-flex items-center gap-0.5 text-green-600 dark:text-green-400">
               <svg width="12" height="14" viewBox="0 0 24 27" aria-hidden="true">
                 <path d={DELTA_ARROW_PATH} fill="currentColor" transform="rotate(180 12 13.5)" />
               </svg>
@@ -125,7 +125,7 @@ export function RankingsTable({ rankings, isLoading, selectedConference, selecte
         }
         if (value !== null && value !== undefined && value < 0) {
           return (
-            <span className="inline-flex items-center gap-0.5 text-red-600">
+            <span className="inline-flex items-center gap-0.5 text-red-600 dark:text-red-400">
               <svg width="12" height="14" viewBox="0 0 24 27" aria-hidden="true">
                 <path d={DELTA_ARROW_PATH} fill="currentColor" />
               </svg>
@@ -133,7 +133,7 @@ export function RankingsTable({ rankings, isLoading, selectedConference, selecte
             </span>
           );
         }
-        return <span className="text-gray-500">-</span>;
+        return <span className="text-text-muted">-</span>;
       },
       sortingFn: (rowA, rowB) => {
         const a = rowA.original.rankDelta ?? 0;

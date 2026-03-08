@@ -69,7 +69,7 @@ export function ClusterTooltip({ active, coordinate, payload, allPoints, contain
   return createPortal(
     <div
       ref={tooltipRef}
-      className={`pointer-events-none fixed bg-white border border-gray-200 rounded-lg shadow-lg p-2 text-xs grid ${gridCols} gap-x-3 z-50`}
+      className={`pointer-events-none fixed bg-surface border border-border rounded-lg shadow-lg p-2 text-xs text-text-primary grid ${gridCols} gap-x-3 z-50`}
       style={{ left: -9999, top: -9999 }}
     >
       {sorted.map((point) => (
@@ -81,7 +81,7 @@ export function ClusterTooltip({ active, coordinate, payload, allPoints, contain
           />
           <div>
             <span className="font-medium">{point.teamName}</span>
-            <span className="text-gray-500 ml-2">
+            <span className="text-text-muted ml-2">
               ({point.top25Count}, {topN === '5' ? point.top5Count : point.top10Count})
             </span>
           </div>

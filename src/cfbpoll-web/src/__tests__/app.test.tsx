@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '../contexts/auth-context';
 import { SeasonProvider } from '../contexts/season-context';
+import { ThemeProvider } from '../contexts/theme-context';
 import App from '../App';
 
 vi.mock('../pages/home-page', () => ({
@@ -53,15 +54,17 @@ function renderApp(initialRoute = '/') {
   });
 
   return render(
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[initialRoute]}>
-        <AuthProvider>
-          <SeasonProvider>
-            <App />
-          </SeasonProvider>
-        </AuthProvider>
-      </MemoryRouter>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={[initialRoute]}>
+          <AuthProvider>
+            <SeasonProvider>
+              <App />
+            </SeasonProvider>
+          </AuthProvider>
+        </MemoryRouter>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 

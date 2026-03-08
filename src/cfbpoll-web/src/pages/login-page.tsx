@@ -1,7 +1,10 @@
 import { useId, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/auth-context';
+import { BUTTON_PRIMARY } from '../components/ui/button-styles';
 import { useDocumentTitle } from '../hooks/use-document-title';
+
+const INPUT_CLASS = 'w-full px-3 py-2 border border-border bg-surface text-text-primary rounded-md focus:outline-none focus:ring-2 focus:ring-accent';
 
 export function LoginPage() {
   useDocumentTitle('Login - CFB Poll');
@@ -34,11 +37,11 @@ export function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-96">
-      <div className="bg-white shadow rounded-lg p-8 w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6 text-center">Admin Login</h1>
+      <div className="bg-surface shadow-lg rounded-xl p-8 w-full max-w-sm">
+        <h1 className="text-2xl font-bold text-text-primary mb-6 text-center">Admin Login</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor={usernameId} className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor={usernameId} className="block text-sm font-medium text-text-secondary mb-1">
               Username
             </label>
             <input
@@ -46,13 +49,13 @@ export function LoginPage() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={INPUT_CLASS}
               required
               autoComplete="username"
             />
           </div>
           <div>
-            <label htmlFor={passwordId} className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor={passwordId} className="block text-sm font-medium text-text-secondary mb-1">
               Password
             </label>
             <input
@@ -60,7 +63,7 @@ export function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={INPUT_CLASS}
               required
               autoComplete="current-password"
             />
@@ -73,7 +76,7 @@ export function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-blue-900 text-white py-2 px-4 rounded-md hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`${BUTTON_PRIMARY} w-full`}
           >
             {isSubmitting ? 'Logging in...' : 'Log In'}
           </button>

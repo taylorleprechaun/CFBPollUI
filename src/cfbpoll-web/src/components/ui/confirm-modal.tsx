@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { BUTTON_DANGER, BUTTON_SECONDARY } from './button-styles';
 
 interface ConfirmModalProps {
   confirmLabel?: string;
@@ -62,25 +63,25 @@ export function ConfirmModal({ confirmLabel = 'Delete', message, onCancel, onCon
       onClick={onCancel}
     >
       <div
-        className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6"
+        className="bg-surface rounded-xl shadow-xl max-w-md w-full mx-4 p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="confirm-modal-title" className="text-lg font-semibold text-gray-900 mb-2">
+        <h2 id="confirm-modal-title" className="text-lg font-semibold text-text-primary mb-2">
           {title}
         </h2>
-        <p className="text-sm text-gray-600 mb-6">{message}</p>
+        <p className="text-sm text-text-secondary mb-6">{message}</p>
         <div className="flex justify-end gap-3">
           <button
             ref={cancelRef}
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+            className={BUTTON_SECONDARY}
           >
             Cancel
           </button>
           <button
             ref={confirmRef}
             onClick={onConfirm}
-            className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+            className={BUTTON_DANGER}
           >
             {confirmLabel}
           </button>

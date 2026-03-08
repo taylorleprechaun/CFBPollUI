@@ -49,23 +49,23 @@ export function ErrorAlert({ error, onRetry }: ErrorAlertProps) {
   const traceId = error instanceof ApiError ? error.traceId : undefined;
 
   return (
-    <div role="alert" className="bg-red-50 border border-red-200 rounded-lg p-4">
+    <div role="alert" className="animate-fade-in bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-xl p-4">
       <div className="flex items-start">
         <div className="flex-shrink-0">
-          <ErrorCircleIcon className="h-5 w-5 text-red-400" />
+          <ErrorCircleIcon className="h-5 w-5 text-red-400 dark:text-red-500" />
         </div>
         <div className="ml-3 flex-1">
-          <h3 className="text-sm font-medium text-red-800">{title}</h3>
-          <p className="mt-1 text-sm text-red-700">{message}</p>
+          <h3 className="text-sm font-medium text-red-800 dark:text-red-300">{title}</h3>
+          <p className="mt-1 text-sm text-red-700 dark:text-red-400">{message}</p>
           {showTraceId && traceId && (
-            <p className="mt-1 text-xs text-red-500">Trace ID: {traceId}</p>
+            <p className="mt-1 text-xs text-red-500 dark:text-red-500">Trace ID: {traceId}</p>
           )}
         </div>
         {onRetry && (
           <div className="ml-4">
             <button
               onClick={onRetry}
-              className="text-sm font-medium text-red-800 hover:text-red-600 underline"
+              className="text-sm font-medium text-red-800 dark:text-red-300 hover:text-red-600 dark:hover:text-red-200 underline"
             >
               Retry
             </button>

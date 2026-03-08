@@ -236,11 +236,11 @@ describe('TeamDetailsPage', () => {
       ).toBeInTheDocument();
     });
 
-    it('shows loading spinner when team detail is loading', () => {
+    it('shows skeleton when team detail is loading', () => {
       setupMocks({ teamDetailLoading: true });
       renderPage('/team-details?team=USC&season=2024&week=12');
 
-      expect(document.querySelector('.animate-spin')).toBeInTheDocument();
+      expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
     });
   });
 
@@ -291,7 +291,7 @@ describe('TeamDetailsPage', () => {
       renderPage('/team-details?team=USC&season=2024&week=12');
 
       const logo = screen.getByAltText('USC logo');
-      expect(logo).toHaveClass('bg-white');
+      expect(logo).toHaveClass('bg-surface');
       expect(logo).toHaveClass('rounded-lg');
       expect(logo).toHaveClass('p-1');
     });

@@ -18,20 +18,26 @@ describe('HomePage', () => {
     expect(document.title).toBe('Taylor Steinberg - Home');
   });
 
+  it('renders the name intro line', () => {
+    renderHomePage();
+
+    expect(screen.getByText('Taylor Steinberg\u2019s')).toBeInTheDocument();
+  });
+
   it('renders the heading', () => {
     renderHomePage();
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      "Taylor Steinberg's FBS Ratings"
+      'College Football Rankings'
     );
   });
 
   it('renders algorithm factors', () => {
     renderHomePage();
 
-    expect(screen.getByText('Win-loss record')).toBeInTheDocument();
-    expect(screen.getByText('Weighted strength of schedule (SOS)')).toBeInTheDocument();
-    expect(screen.getByText('Game statistics')).toBeInTheDocument();
+    expect(screen.getByText('Win-Loss Record')).toBeInTheDocument();
+    expect(screen.getByText('Strength of Schedule')).toBeInTheDocument();
+    expect(screen.getByText('Game Statistics')).toBeInTheDocument();
     expect(screen.getByText('Success Rate')).toBeInTheDocument();
   });
 
@@ -43,33 +49,4 @@ describe('HomePage', () => {
     expect(link).toHaveAttribute('href', '/rankings');
   });
 
-  it('renders the GitHub link', () => {
-    renderHomePage();
-
-    var link = screen.getByRole('link', { name: 'GitHub' });
-
-    expect(link).toHaveAttribute('href', 'https://github.com/taylorleprechaun');
-    expect(link).toHaveAttribute('target', '_blank');
-    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-  });
-
-  it('renders the LinkedIn link', () => {
-    renderHomePage();
-
-    var link = screen.getByRole('link', { name: 'LinkedIn' });
-
-    expect(link).toHaveAttribute('href', 'https://www.linkedin.com/in/taylor-steinberg-a86994111/');
-    expect(link).toHaveAttribute('target', '_blank');
-    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-  });
-
-  it('renders the Twitter link', () => {
-    renderHomePage();
-
-    var link = screen.getByRole('link', { name: 'Twitter' });
-
-    expect(link).toHaveAttribute('href', 'https://twitter.com/TaylorLeprechau');
-    expect(link).toHaveAttribute('target', '_blank');
-    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
-  });
 });
