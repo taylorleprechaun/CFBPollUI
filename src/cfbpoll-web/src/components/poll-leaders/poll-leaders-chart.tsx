@@ -13,6 +13,7 @@ import {
   YAxis,
 } from 'recharts';
 import type { PollLeaderEntry } from '../../schemas';
+import { useChartColors } from '../../hooks/use-chart-colors';
 
 import { ClusterTooltip } from './cluster-tooltip';
 import type { ChartDataPoint } from './types';
@@ -143,6 +144,7 @@ export function PollLeadersChart({
   tooltipMinTop,
   topN,
 }: PollLeadersChartProps) {
+  const chartColors = useChartColors();
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const chartData = useMemo<ChartDataPoint[]>(
@@ -168,15 +170,15 @@ export function PollLeadersChart({
       <div className="w-fit flex flex-col gap-2 mb-4">
         {children}
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex rounded-lg border border-gray-300 overflow-hidden" role="group" aria-label="Data mode">
+          <div className="flex rounded-lg border border-border overflow-hidden" role="group" aria-label="Data mode">
             <button
               type="button"
               aria-pressed={mode === 'all'}
               onClick={() => onModeChange('all')}
               className={`px-4 py-1.5 text-sm font-medium ${
                 mode === 'all'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                  ? 'bg-accent text-white'
+                  : 'bg-surface text-text-secondary hover:bg-surface-alt'
               }`}
             >
               All Weeks
@@ -187,23 +189,23 @@ export function PollLeadersChart({
               onClick={() => onModeChange('final')}
               className={`px-4 py-1.5 text-sm font-medium ${
                 mode === 'final'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                  ? 'bg-accent text-white'
+                  : 'bg-surface text-text-secondary hover:bg-surface-alt'
               }`}
             >
               Final Only
             </button>
           </div>
 
-          <div className="flex rounded-lg border border-gray-300 overflow-hidden" role="group" aria-label="Y-axis selection">
+          <div className="flex rounded-lg border border-border overflow-hidden" role="group" aria-label="Y-axis selection">
             <button
               type="button"
               aria-pressed={topN === '5'}
               onClick={() => onTopNChange('5')}
               className={`px-4 py-1.5 text-sm font-medium ${
                 topN === '5'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                  ? 'bg-accent text-white'
+                  : 'bg-surface text-text-secondary hover:bg-surface-alt'
               }`}
             >
               Top 5
@@ -214,8 +216,8 @@ export function PollLeadersChart({
               onClick={() => onTopNChange('10')}
               className={`px-4 py-1.5 text-sm font-medium ${
                 topN === '10'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                  ? 'bg-accent text-white'
+                  : 'bg-surface text-text-secondary hover:bg-surface-alt'
               }`}
             >
               Top 10
@@ -225,7 +227,7 @@ export function PollLeadersChart({
       </div>
 
       <div
-        className={`bg-white rounded-lg shadow p-4 transition-opacity duration-200 ${
+        className={`bg-surface rounded-xl shadow-md p-4 transition-opacity duration-200 ${
           isFetching ? 'opacity-60' : ''
         }`}
         ref={containerRef}
@@ -234,20 +236,24 @@ export function PollLeadersChart({
           <ScatterChart
             margin={{ top: 20, right: 30, bottom: 20, left: 20 }}
           >
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
             <XAxis
               type="number"
               dataKey="x"
               name="Times Ranked in Top 25"
-              label={{ value: 'Times Ranked in Top 25', position: 'bottom', offset: 0 }}
+              label={{ value: 'Times Ranked in Top 25', position: 'bottom', offset: 0, fill: chartColors.text }}
               allowDecimals={false}
+              tick={{ fill: chartColors.text }}
+              stroke={chartColors.axis}
             />
             <YAxis
               type="number"
               dataKey="y"
               name={yAxisLabel}
-              label={{ value: yAxisLabel, angle: -90, position: 'insideLeft', offset: 10, style: { textAnchor: 'middle' } }}
+              label={{ value: yAxisLabel, angle: -90, position: 'insideLeft', offset: 10, style: { textAnchor: 'middle', fill: chartColors.text } }}
               allowDecimals={false}
+              tick={{ fill: chartColors.text }}
+              stroke={chartColors.axis}
             />
             <Tooltip
               content={

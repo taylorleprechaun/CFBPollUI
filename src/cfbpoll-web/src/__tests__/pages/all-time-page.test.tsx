@@ -135,7 +135,7 @@ describe('AllTimePage', () => {
     );
   });
 
-  it('shows loading spinners when loading', () => {
+  it('shows table skeletons when loading', () => {
     vi.mocked(useAllTime).mockReturnValue({
       data: undefined,
       isLoading: true,
@@ -145,8 +145,8 @@ describe('AllTimePage', () => {
 
     renderPage();
 
-    const spinners = document.querySelectorAll('.animate-spin');
-    expect(spinners.length).toBe(3);
+    const skeletons = document.querySelectorAll('.animate-pulse');
+    expect(skeletons.length).toBeGreaterThan(0);
   });
 
   it('shows error alert when error occurs', () => {
@@ -221,7 +221,8 @@ describe('AllTimePage', () => {
     await userEvent.click(bestTeamsButton);
 
     expect(bestTeamsButton).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByText('Florida')).not.toBeInTheDocument();
+    const contentDiv = bestTeamsButton.nextElementSibling as HTMLElement;
+    expect(contentDiv.style.gridTemplateRows).toBe('0fr');
   });
 
   it('collapses worst teams section when header is clicked', async () => {
@@ -240,7 +241,8 @@ describe('AllTimePage', () => {
     await userEvent.click(worstTeamsButton);
 
     expect(worstTeamsButton).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByText('Nebraska')).not.toBeInTheDocument();
+    const contentDiv = worstTeamsButton.nextElementSibling as HTMLElement;
+    expect(contentDiv.style.gridTemplateRows).toBe('0fr');
   });
 
   it('collapses hardest schedules section when header is clicked', async () => {
@@ -259,7 +261,8 @@ describe('AllTimePage', () => {
     await userEvent.click(hardestButton);
 
     expect(hardestButton).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByText('Notre Dame')).not.toBeInTheDocument();
+    const contentDiv = hardestButton.nextElementSibling as HTMLElement;
+    expect(contentDiv.style.gridTemplateRows).toBe('0fr');
   });
 
   it('re-expands section when header is clicked again', async () => {
@@ -275,10 +278,11 @@ describe('AllTimePage', () => {
     const bestTeamsButton = screen.getByRole('button', { name: /Best Teams/ });
 
     await userEvent.click(bestTeamsButton);
-    expect(screen.queryByText('Florida')).not.toBeInTheDocument();
+    const contentDiv = bestTeamsButton.nextElementSibling as HTMLElement;
+    expect(contentDiv.style.gridTemplateRows).toBe('0fr');
 
     await userEvent.click(bestTeamsButton);
     expect(bestTeamsButton).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText('Florida')).toBeInTheDocument();
+    expect(contentDiv.style.gridTemplateRows).toBe('1fr');
   });
 });

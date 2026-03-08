@@ -25,9 +25,15 @@ export function CollapsibleSection({
         aria-controls={contentId}
       >
         <ChevronIcon open={open} />
-        <h2 className="text-2xl font-semibold text-gray-800">{title}</h2>
+        <h2 className="text-2xl font-semibold text-text-primary">{title}</h2>
       </button>
-      {open && <div id={contentId}>{children}</div>}
+      <div
+        id={contentId}
+        className="grid transition-[grid-template-rows] duration-300 ease-in-out"
+        style={{ gridTemplateRows: open ? '1fr' : '0fr' }}
+      >
+        <div className="overflow-hidden">{children}</div>
+      </div>
     </section>
   );
 }

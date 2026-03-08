@@ -71,17 +71,18 @@ export function PollLeadersPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">Poll Leaders</h1>
+      <h1 className="text-3xl font-bold text-text-primary mb-6">Poll Leaders</h1>
 
       {error && <ErrorAlert error={error} onRetry={() => refetch()} />}
 
       {isLoading && (
         <div className="flex items-center justify-center min-h-64">
-          <div className="text-gray-500">Loading...</div>
+          <div className="text-text-muted">Loading...</div>
         </div>
       )}
 
       {data && (
+        <div className="animate-fade-in">
         <PollLeadersChart
           data={activeData}
           isFetching={isFetching && !isLoading}
@@ -100,6 +101,7 @@ export function PollLeadersPage() {
             onMinSeasonChange={handleMinSeasonChange}
           />
         </PollLeadersChart>
+        </div>
       )}
     </div>
   );

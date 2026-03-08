@@ -158,11 +158,10 @@ describe('AllTimeTable', () => {
     );
   });
 
-  it('shows loading spinner when isLoading is true', () => {
+  it('shows table skeleton when isLoading is true', () => {
     renderTable({ isLoading: true });
 
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
-    expect(document.querySelector('.animate-spin')).toBeInTheDocument();
+    expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
   it('shows empty message when entries is empty', () => {

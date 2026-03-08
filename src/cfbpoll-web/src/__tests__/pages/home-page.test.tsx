@@ -1,7 +1,18 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { HomePage } from '../../pages/home-page';
+
+class MockIntersectionObserver {
+  observe = vi.fn();
+  disconnect = vi.fn();
+  unobserve = vi.fn();
+}
+
+beforeEach(() => {
+  vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
+  vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }));
+});
 
 function renderHomePage() {
   return render(
@@ -18,20 +29,26 @@ describe('HomePage', () => {
     expect(document.title).toBe('Taylor Steinberg - Home');
   });
 
+  it('renders the name intro line', () => {
+    renderHomePage();
+
+    expect(screen.getByText('Taylor Steinberg\u2019s')).toBeInTheDocument();
+  });
+
   it('renders the heading', () => {
     renderHomePage();
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      "Taylor Steinberg's FBS Ratings"
+      'College Football Rankings'
     );
   });
 
   it('renders algorithm factors', () => {
     renderHomePage();
 
-    expect(screen.getByText('Win-loss record')).toBeInTheDocument();
-    expect(screen.getByText('Weighted strength of schedule (SOS)')).toBeInTheDocument();
-    expect(screen.getByText('Game statistics')).toBeInTheDocument();
+    expect(screen.getByText('Win-Loss Record')).toBeInTheDocument();
+    expect(screen.getByText('Strength of Schedule')).toBeInTheDocument();
+    expect(screen.getByText('Game Statistics')).toBeInTheDocument();
     expect(screen.getByText('Success Rate')).toBeInTheDocument();
   });
 
@@ -43,33 +60,27 @@ describe('HomePage', () => {
     expect(link).toHaveAttribute('href', '/rankings');
   });
 
-  it('renders the GitHub link', () => {
+  it('renders stat labels', () => {
     renderHomePage();
 
-    var link = screen.getByRole('link', { name: 'GitHub' });
-
-    expect(link).toHaveAttribute('href', 'https://github.com/taylorleprechaun');
-    expect(link).toHaveAttribute('target', '_blank');
-    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(screen.getByText('Seasons')).toBeInTheDocument();
+    expect(screen.getByText('FBS Teams')).toBeInTheDocument();
+    expect(screen.getByText('Data Since')).toBeInTheDocument();
   });
 
-  it('renders the LinkedIn link', () => {
+  it('renders the Learn More link', () => {
     renderHomePage();
 
-    var link = screen.getByRole('link', { name: 'LinkedIn' });
+    var link = screen.getByRole('link', { name: /Learn More/i });
 
-    expect(link).toHaveAttribute('href', 'https://www.linkedin.com/in/taylor-steinberg-a86994111/');
-    expect(link).toHaveAttribute('target', '_blank');
-    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(link).toHaveAttribute('href', '#how-it-works');
   });
 
-  it('renders the Twitter link', () => {
+  it('has How It Works heading with id for scroll target', () => {
     renderHomePage();
 
-    var link = screen.getByRole('link', { name: 'Twitter' });
+    var heading = screen.getByRole('heading', { name: 'How It Works' });
 
-    expect(link).toHaveAttribute('href', 'https://twitter.com/TaylorLeprechau');
-    expect(link).toHaveAttribute('target', '_blank');
-    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(heading).toHaveAttribute('id', 'how-it-works');
   });
 });

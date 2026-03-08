@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '../contexts/auth-context';
@@ -11,6 +11,7 @@ import {
   type ActionFeedback,
 } from '../components/admin';
 import { ErrorAlert } from '../components/error';
+import { BUTTON_GHOST } from '../components/ui/button-styles';
 import { ConfirmModal } from '../components/ui/confirm-modal';
 import {
   useCalculateRankings,
@@ -87,7 +88,7 @@ export function AdminPage() {
   const [operationError, setOperationError] = useState<Error | null>(null);
   const [actionFeedback, setActionFeedback] = useState<ActionFeedback | null>(null);
   const [collapsedSeasons, setCollapsedSeasons] = useState<Set<number>>(new Set());
-  const [initialCollapseApplied, setInitialCollapseApplied] = useState(false);
+  const initialCollapseApplied = useRef(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ season: number; week: number } | null>(null);
 
   const normalizedSnapshotsError = snapshotsError instanceof Error
@@ -100,11 +101,11 @@ export function AdminPage() {
   const clearFeedback = useCallback(() => setActionFeedback(null), []);
 
   useEffect(() => {
-    if (snapshots?.length && !initialCollapseApplied) {
+    if (snapshots?.length && !initialCollapseApplied.current) {
       setCollapsedSeasons(new Set(snapshots.map((w) => w.season)));
-      setInitialCollapseApplied(true);
+      initialCollapseApplied.current = true;
     }
-  }, [snapshots, initialCollapseApplied]);
+  }, [snapshots]);
 
   const handleCalculate = async () => {
     if (selectedSeason === null || selectedWeek === null) return;
@@ -187,10 +188,10 @@ export function AdminPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+        <h1 className="text-2xl font-bold text-text-primary">Admin Dashboard</h1>
         <button
           onClick={logout}
-          className="text-sm text-gray-600 hover:text-gray-900 underline"
+          className={BUTTON_GHOST}
         >
           Log Out
         </button>
@@ -201,37 +202,30 @@ export function AdminPage() {
         if (normalizedSnapshotsError) refetchSnapshots();
       }} />}
 
-      <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Page Visibility</h2>
+      <div className="bg-surface border border-border rounded-xl p-4 sm:p-6">
+        <h2 className="text-lg font-semibold text-text-primary mb-4">Page Visibility</h2>
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <label htmlFor={allTimeToggleId} className="text-sm font-medium text-gray-700">
-              All-Time Rankings
-            </label>
-            <input
-              id={allTimeToggleId}
-              type="checkbox"
-              role="switch"
-              checked={allTimeEnabled}
-              onChange={(e) => handleToggle('allTimeEnabled', e.target.checked)}
-              disabled={visibilityMutation.isPending}
-              className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <label htmlFor={pollLeadersToggleId} className="text-sm font-medium text-gray-700">
-              Poll Leaders
-            </label>
-            <input
-              id={pollLeadersToggleId}
-              type="checkbox"
-              role="switch"
-              checked={pollLeadersEnabled}
-              onChange={(e) => handleToggle('pollLeadersEnabled', e.target.checked)}
-              disabled={visibilityMutation.isPending}
-              className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-          </div>
+          {([
+            { id: allTimeToggleId, label: 'All-Time Rankings', field: 'allTimeEnabled' as const, checked: allTimeEnabled },
+            { id: pollLeadersToggleId, label: 'Poll Leaders', field: 'pollLeadersEnabled' as const, checked: pollLeadersEnabled },
+          ]).map((toggle) => (
+            <div key={toggle.field} className="flex items-center justify-between">
+              <label htmlFor={toggle.id} className="text-sm font-medium text-text-secondary">
+                {toggle.label}
+              </label>
+              <button
+                id={toggle.id}
+                type="button"
+                role="switch"
+                aria-checked={toggle.checked}
+                onClick={() => handleToggle(toggle.field, !toggle.checked)}
+                disabled={visibilityMutation.isPending}
+                className={`relative inline-flex h-6 w-11 rounded-full transition-colors duration-200 disabled:opacity-50 ${toggle.checked ? 'bg-accent' : 'bg-border-strong'}`}
+              >
+                <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${toggle.checked ? 'translate-x-5' : 'translate-x-0.5'} mt-0.5`} />
+              </button>
+            </div>
+          ))}
         </div>
         {visibilityFeedback && (
           <p className={`mt-3 text-sm ${visibilityFeedback.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>

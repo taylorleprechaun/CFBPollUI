@@ -41,7 +41,7 @@ export function ScheduleRow({
   const teamDetailUrl = `/team-details?team=${encodeURIComponent(game.opponentName)}${selectedSeason != null ? `&season=${selectedSeason}` : ''}${selectedWeek != null ? `&week=${selectedWeek}` : ''}`;
 
   const opponentLabel = (
-    <span className="text-gray-900">
+    <span className="text-text-primary">
       {locationPrefix}
       {showRank && <span className="text-xs">#{game.opponentRank} </span>}
       {game.opponentName}
@@ -49,22 +49,22 @@ export function ScheduleRow({
   );
 
   return (
-    <tr className="hover:bg-gray-50">
-      <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">
+    <tr className="even:bg-surface-alt/50 hover:bg-accent-light/50 transition-colors duration-150">
+      <td className="px-4 py-3 whitespace-nowrap text-sm text-text-primary">
         {weekLabel}
       </td>
-      <td className="px-6 py-3 whitespace-nowrap text-sm">
-        <div className="text-gray-900">{dateStr}</div>
-        {timeStr && <div className="text-gray-400 text-xs">{timeStr}</div>}
+      <td className="px-4 py-3 whitespace-nowrap text-sm">
+        <div className="text-text-primary">{dateStr}</div>
+        {timeStr && <div className="text-text-muted text-xs">{timeStr}</div>}
       </td>
-      <td className="px-6 py-3 whitespace-nowrap text-sm">
+      <td className="px-4 py-3 whitespace-nowrap text-sm">
         <div className="flex items-center space-x-2">
           <TeamLogo logoURL={game.opponentLogoURL} teamName={game.opponentName} />
           <div>
             {isFbs ? (
               <Link
                 to={teamDetailUrl}
-                className="hover:text-blue-600 hover:underline"
+                className="hover:text-accent hover:underline"
                 onClick={(e) => {
                   e.preventDefault();
                   onTeamClick(game.opponentName);
@@ -76,17 +76,17 @@ export function ScheduleRow({
               opponentLabel
             )}
             {game.opponentRecord && (
-              <span className="text-gray-400 ml-1">({game.opponentRecord})</span>
+              <span className="text-text-muted ml-1">({game.opponentRecord})</span>
             )}
             {game.venue && (
-              <div className="text-gray-400 text-xs">{game.venue}</div>
+              <div className="text-text-muted text-xs">{game.venue}</div>
             )}
           </div>
         </div>
       </td>
-      <td className="px-6 py-3 whitespace-nowrap text-sm">
+      <td className="px-4 py-3 whitespace-nowrap text-sm">
         {game.isWin != null && game.teamScore != null && game.opponentScore != null ? (
-          <span className={game.isWin ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+          <span className={game.isWin ? 'text-green-600 dark:text-green-400 font-medium' : 'text-red-600 dark:text-red-400 font-medium'}>
             {game.isWin ? 'W' : 'L'} {game.teamScore}-{game.opponentScore}
           </span>
         ) : null}

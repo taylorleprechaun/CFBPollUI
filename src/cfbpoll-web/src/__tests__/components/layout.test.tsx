@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { Layout } from '../../components/layout/layout';
+import { ThemeProvider } from '../../contexts/theme-context';
 
 let mockIsAuthenticated = false;
 let mockAllTimeEnabled = true;
@@ -27,9 +28,11 @@ vi.mock('../../hooks/use-page-visibility', () => ({
 
 function renderLayout() {
   return render(
-    <MemoryRouter>
-      <Layout />
-    </MemoryRouter>
+    <ThemeProvider>
+      <MemoryRouter>
+        <Layout />
+      </MemoryRouter>
+    </ThemeProvider>
   );
 }
 
@@ -148,5 +151,14 @@ describe('Layout', () => {
 
     expect(screen.queryByText('All-Time')).not.toBeInTheDocument();
     expect(screen.queryByText('Leaders')).not.toBeInTheDocument();
+  });
+
+  it('renders footer with name and social links', () => {
+    renderLayout();
+
+    expect(screen.getByText('Taylor Steinberg')).toBeInTheDocument();
+    expect(screen.getByLabelText('GitHub')).toHaveAttribute('href', 'https://github.com/taylorleprechaun');
+    expect(screen.getByLabelText('LinkedIn')).toHaveAttribute('href', 'https://www.linkedin.com/in/taylor-steinberg-a86994111/');
+    expect(screen.getByLabelText('Twitter')).toHaveAttribute('href', 'https://twitter.com/TaylorLeprechau');
   });
 });

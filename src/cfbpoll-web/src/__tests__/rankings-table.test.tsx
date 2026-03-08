@@ -116,7 +116,7 @@ describe('RankingsTable', () => {
       renderTable({ rankings: [], isLoading: true });
 
       expect(screen.queryByText('Rank')).not.toBeInTheDocument();
-      expect(document.querySelector('.animate-spin')).toBeInTheDocument();
+      expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
     });
 
     it('shows empty state when no rankings', () => {
@@ -190,7 +190,7 @@ describe('RankingsTable', () => {
 
       const th = rankHeader.closest('th')!;
       expect(th).toHaveAttribute('aria-sort', 'descending');
-      expect(th.textContent).toContain('\u25BC');
+      expect(th.querySelector('svg')).toBeInTheDocument();
     });
 
     it('shows ascending indicator when numeric column is sorted twice', async () => {
@@ -202,7 +202,7 @@ describe('RankingsTable', () => {
 
       const th = rankHeader.closest('th')!;
       expect(th).toHaveAttribute('aria-sort', 'ascending');
-      expect(th.textContent).toContain('\u25B2');
+      expect(th.querySelector('svg')).toBeInTheDocument();
     });
   });
 
@@ -274,7 +274,7 @@ describe('RankingsTable', () => {
 
       const cells = screen.getAllByText('-');
       const grayHyphen = cells.find(
-        (el) => el.tagName === 'SPAN' && el.classList.contains('text-gray-500')
+        (el) => el.tagName === 'SPAN' && el.classList.contains('text-text-muted')
       );
       expect(grayHyphen).toBeInTheDocument();
     });
@@ -285,7 +285,7 @@ describe('RankingsTable', () => {
 
       const cells = screen.getAllByText('-');
       const grayHyphen = cells.find(
-        (el) => el.tagName === 'SPAN' && el.classList.contains('text-gray-500')
+        (el) => el.tagName === 'SPAN' && el.classList.contains('text-text-muted')
       );
       expect(grayHyphen).toBeInTheDocument();
     });

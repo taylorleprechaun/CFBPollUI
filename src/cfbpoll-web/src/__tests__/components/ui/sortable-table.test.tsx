@@ -34,13 +34,12 @@ const testData: TestRow[] = [
 ];
 
 describe('SortableTable', () => {
-  it('renders loading spinner when isLoading is true', () => {
+  it('renders table skeleton when isLoading is true', () => {
     render(
       <SortableTable columns={stringHeaderColumns} data={[]} isLoading={true} />
     );
 
-    expect(document.querySelector('.animate-spin')).toBeInTheDocument();
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
   it('renders empty message when data is empty', () => {
@@ -102,7 +101,7 @@ describe('SortableTable', () => {
     await userEvent.click(nameHeader);
 
     expect(nameHeader).toHaveAttribute('aria-sort', 'ascending');
-    expect(nameHeader.textContent).toContain('\u25B2');
+    expect(nameHeader.querySelector('svg')).toBeInTheDocument();
   });
 
   it('shows descending sort indicator after clicking a string column header twice', async () => {
@@ -115,17 +114,16 @@ describe('SortableTable', () => {
     await userEvent.click(nameHeader);
 
     expect(nameHeader).toHaveAttribute('aria-sort', 'descending');
-    expect(nameHeader.textContent).toContain('\u25BC');
+    expect(nameHeader.querySelector('svg')).toBeInTheDocument();
   });
 
-  it('shows no sort indicator on unsorted columns', () => {
+  it('shows neutral sort indicator on unsorted columns', () => {
     render(
       <SortableTable columns={stringHeaderColumns} data={testData} isLoading={false} />
     );
 
     const scoreHeader = screen.getByText('Score').closest('th')!;
     expect(scoreHeader).toHaveAttribute('aria-sort', 'none');
-    expect(scoreHeader.textContent).not.toContain('\u25B2');
-    expect(scoreHeader.textContent).not.toContain('\u25BC');
+    expect(scoreHeader.querySelector('svg')).toBeInTheDocument();
   });
 });

@@ -7,7 +7,10 @@ import {
   type SortingState,
 } from '@tanstack/react-table';
 import { useState } from 'react';
-import { LoadingSpinner } from './loading-spinner';
+
+import { SortAscIcon, SortDescIcon, SortNeutralIcon } from './icons';
+import { EmptyState } from './empty-state';
+import { TableSkeleton } from './table-skeleton';
 
 interface SortableTableProps<T> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -35,21 +38,17 @@ export function SortableTable<T>({
   });
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <TableSkeleton columns={columns.length} />;
   }
 
   if (data.length === 0) {
-    return (
-      <div className="text-center py-12 text-gray-500">
-        {emptyMessage}
-      </div>
-    );
+    return <EmptyState message={emptyMessage} />;
   }
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+      <table className="min-w-full divide-y divide-border">
+        <thead className="bg-surface-alt border-b-2 border-border">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
@@ -68,14 +67,20 @@ export function SortableTable<T>({
                           : 'none'
                     }
                     aria-label={`Sort by ${headerText}`}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                    className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-surface-elevated select-none ${
+                      sortDirection ? 'text-accent' : 'text-text-muted'
+                    }`}
                   >
                     <div className="flex items-center space-x-1">
                       <span>
                         {flexRender(header.column.columnDef.header, header.getContext())}
                       </span>
-                      <span className="text-gray-400">
-                        {sortDirection === 'asc' ? ' \u25B2' : sortDirection === 'desc' ? ' \u25BC' : ''}
+                      <span className="transition-transform duration-200">
+                        {sortDirection === 'asc'
+                          ? <SortAscIcon />
+                          : sortDirection === 'desc'
+                            ? <SortDescIcon />
+                            : <SortNeutralIcon />}
                       </span>
                     </div>
                   </th>
@@ -84,11 +89,11 @@ export function SortableTable<T>({
             </tr>
           ))}
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-surface divide-y divide-border">
           {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="hover:bg-gray-50">
+            <tr key={row.id} className="even:bg-surface-alt/50 hover:bg-accent-light/50 transition-colors duration-150">
               {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td key={cell.id} className="px-4 py-3 whitespace-nowrap text-sm text-text-primary">
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}

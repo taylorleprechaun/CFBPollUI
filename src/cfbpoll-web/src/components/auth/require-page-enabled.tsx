@@ -12,7 +12,7 @@ export function RequirePageEnabled({ children, enabled }: RequirePageEnabledProp
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-64">
-        <div className="text-gray-500">Loading...</div>
+        <div className="text-text-muted">Loading...</div>
       </div>
     );
   }

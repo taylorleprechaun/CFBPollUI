@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 
 import { getWeekLabel } from '../../lib/week-utils';
+import { BUTTON_DANGER_GHOST, BUTTON_GHOST } from '../ui/button-styles';
 import { ChevronIcon } from '../ui/chevron-icon';
+import { EmptyState } from '../ui/empty-state';
 import { SuccessCheckmark } from './success-checkmark';
 import type { ActionFeedback } from './types';
 import type { Snapshot } from '../../schemas/admin';
@@ -52,21 +54,21 @@ export function PersistedSnapshotsSection({
   }, [snapshots]);
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
+    <div className="bg-surface shadow-md rounded-xl p-4 sm:p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">Persisted Snapshots</h2>
+        <h2 className="text-lg font-semibold text-text-primary">Persisted Snapshots</h2>
         {groupedSnapshots.length > 0 && (
           <div className="flex gap-2">
             <button
               onClick={onExpandAll}
-              className="text-sm text-blue-600 hover:text-blue-800"
+              className="text-sm text-accent hover:text-accent-hover"
             >
               Expand All
             </button>
-            <span className="text-gray-300">|</span>
+            <span className="text-border">|</span>
             <button
               onClick={onCollapseAll}
-              className="text-sm text-blue-600 hover:text-blue-800"
+              className="text-sm text-accent hover:text-accent-hover"
             >
               Collapse All
             </button>
@@ -74,24 +76,24 @@ export function PersistedSnapshotsSection({
         )}
       </div>
       {groupedSnapshots.length === 0 ? (
-        <p className="text-gray-500">No persisted snapshots found.</p>
+        <EmptyState message="No persisted snapshots found." />
       ) : (
         <div className="space-y-2">
           {groupedSnapshots.map((group) => {
             const isCollapsed = collapsedSeasons.has(group.season);
             const contentId = `snapshots-season-${group.season}`;
             return (
-              <div key={group.season} className="border border-gray-200 rounded-lg overflow-hidden">
+              <div key={group.season} className="border border-border rounded-xl overflow-hidden">
                 <button
                   type="button"
                   onClick={() => onToggleSeason(group.season)}
-                  className="w-full flex items-center gap-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 text-left font-medium text-gray-900"
+                  className="w-full flex items-center gap-2 px-4 py-3 bg-surface-alt hover:bg-surface-elevated text-left font-medium text-text-primary"
                   aria-expanded={!isCollapsed}
                   aria-controls={contentId}
                 >
                   <ChevronIcon open={!isCollapsed} size="w-4 h-4" />
                   <span>{group.season} Season</span>
-                  <span className="text-sm font-normal text-gray-500">
+                  <span className="text-sm font-normal text-text-muted">
                     ({group.weeks.length} snapshot{group.weeks.length !== 1 ? 's' : ''})
                   </span>
                 </button>
@@ -101,40 +103,40 @@ export function PersistedSnapshotsSection({
                   style={{ gridTemplateRows: isCollapsed ? '0fr' : '1fr' }}
                 >
                   <div className="overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                    <table className="min-w-full divide-y divide-border">
+                      <thead className="bg-surface-alt border-b-2 border-border">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Week</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Week</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Status</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Created</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
+                      <tbody className="bg-surface divide-y divide-border">
                         {group.weeks.map((pw) => {
                           const publishKey = `snapshot-publish-${pw.season}-${pw.week}`;
                           return (
-                            <tr key={`${pw.season}-${pw.week}`}>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{getWeekLabel(pw.week)}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <tr key={`${pw.season}-${pw.week}`} className="even:bg-surface-alt/50">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-text-primary">{getWeekLabel(pw.week)}</td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm">
                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                                   pw.isPublished
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-yellow-100 text-yellow-800'
+                                    ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300'
+                                    : 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300'
                                 }`}>
                                   {pw.isPublished ? 'Published' : 'Draft'}
                                 </span>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-text-muted">
                                 {new Date(pw.createdAt).toLocaleString()}
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm">
                                 <div className="flex items-center gap-2">
                                   {!pw.isPublished && (
                                     <button
                                       onClick={() => onPublish(pw.season, pw.week, 'snapshot')}
                                       disabled={isActionPending}
-                                      className="text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                                      className={BUTTON_GHOST}
                                     >
                                       Publish
                                     </button>
@@ -148,14 +150,14 @@ export function PersistedSnapshotsSection({
                                   <button
                                     onClick={() => onExport(pw.season, pw.week)}
                                     disabled={isActionPending}
-                                    className="text-green-600 hover:text-green-800 disabled:opacity-50"
+                                    className={BUTTON_GHOST}
                                   >
                                     Export
                                   </button>
                                   <button
                                     onClick={() => onDelete(pw.season, pw.week, pw.isPublished)}
                                     disabled={isActionPending}
-                                    className="text-red-600 hover:text-red-800 disabled:opacity-50"
+                                    className={BUTTON_DANGER_GHOST}
                                   >
                                     Delete
                                   </button>

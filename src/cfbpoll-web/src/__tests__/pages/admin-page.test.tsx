@@ -683,7 +683,7 @@ describe('AdminPage', () => {
     const successIcons = screen.getAllByLabelText('Success');
     expect(successIcons).toHaveLength(1);
 
-    const previewSection = screen.getByText(/Preview: 2024 Week 6/).closest('div.bg-white');
+    const previewSection = screen.getByText(/Preview: 2024 Week 6/).closest('div.bg-surface');
     expect(previewSection?.querySelector('[aria-label="Success"]')).toBeInTheDocument();
   });
 
@@ -721,17 +721,17 @@ describe('AdminPage', () => {
     expect(screen.getByText('Poll Leaders')).toBeInTheDocument();
   });
 
-  it('renders page visibility checkboxes with correct checked state', () => {
+  it('renders page visibility toggles with correct checked state', () => {
     mockAllTimeEnabled = true;
     mockPollLeadersEnabled = false;
 
     renderAdminPage();
 
-    const allTimeCheckbox = screen.getByLabelText('All-Time Rankings') as HTMLInputElement;
-    const pollLeadersCheckbox = screen.getByLabelText('Poll Leaders') as HTMLInputElement;
+    const allTimeToggle = screen.getByLabelText('All-Time Rankings');
+    const pollLeadersToggle = screen.getByLabelText('Poll Leaders');
 
-    expect(allTimeCheckbox.checked).toBe(true);
-    expect(pollLeadersCheckbox.checked).toBe(false);
+    expect(allTimeToggle).toHaveAttribute('aria-checked', 'true');
+    expect(pollLeadersToggle).toHaveAttribute('aria-checked', 'false');
   });
 
   it('calls updatePageVisibility when toggle is changed', async () => {

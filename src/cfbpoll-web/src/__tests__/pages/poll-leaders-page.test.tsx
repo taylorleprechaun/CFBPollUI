@@ -7,6 +7,7 @@ import { rechartsMock } from '../mocks/recharts';
 
 vi.mock('recharts', () => rechartsMock);
 
+import { ThemeProvider } from '../../contexts/theme-context';
 import { PollLeadersPage } from '../../pages/poll-leaders-page';
 
 vi.mock('../../hooks/use-poll-leaders', () => ({
@@ -41,9 +42,11 @@ const mockData = {
 
 function renderPage(initialEntries: string[] = ['/poll-leaders']) {
   return render(
-    <MemoryRouter initialEntries={initialEntries}>
-      <PollLeadersPage />
-    </MemoryRouter>
+    <ThemeProvider>
+      <MemoryRouter initialEntries={initialEntries}>
+        <PollLeadersPage />
+      </MemoryRouter>
+    </ThemeProvider>
   );
 }
 
@@ -327,7 +330,7 @@ describe('PollLeadersPage', () => {
 
     renderPage(['/poll-leaders?minSeason=2002&maxSeason=2024']);
 
-    const chartContainer = screen.getByTestId('scatter-chart').closest('.bg-white');
+    const chartContainer = screen.getByTestId('scatter-chart').closest('.bg-surface');
     expect(chartContainer).toHaveClass('opacity-60');
   });
 
@@ -342,7 +345,7 @@ describe('PollLeadersPage', () => {
 
     renderPage(['/poll-leaders?minSeason=2002&maxSeason=2024']);
 
-    const chartContainer = screen.getByTestId('scatter-chart').closest('.bg-white');
+    const chartContainer = screen.getByTestId('scatter-chart').closest('.bg-surface');
     expect(chartContainer).not.toHaveClass('opacity-60');
   });
 });

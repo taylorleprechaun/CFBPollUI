@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import type { Week } from '../../types';
+import { SELECT_BASE } from '../ui/button-styles';
 
 interface WeekSelectorProps {
   weeks: Week[];
@@ -18,7 +19,7 @@ export function WeekSelector({
 
   return (
     <div className="flex items-center space-x-2">
-      <label htmlFor={id} className="font-medium text-gray-700">
+      <label htmlFor={id} className="font-medium text-text-secondary">
         Week:
       </label>
       <select
@@ -26,7 +27,7 @@ export function WeekSelector({
         value={selectedWeek ?? ''}
         onChange={(e) => onWeekChange(Number(e.target.value))}
         disabled={isLoading || weeks.length === 0}
-        className="block w-40 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100"
+        className={`block w-40 ${SELECT_BASE}`}
       >
         {isLoading ? (
           <option>Loading...</option>

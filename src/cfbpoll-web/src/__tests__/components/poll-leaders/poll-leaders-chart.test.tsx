@@ -6,6 +6,7 @@ import { mockUsePlotArea, mockUseXAxisDomain, mockUseYAxisDomain, rechartsMock }
 
 vi.mock('recharts', () => rechartsMock);
 
+import { ThemeProvider } from '../../../contexts/theme-context';
 import { HitTarget, PollLeadersChart } from '../../../components/poll-leaders/poll-leaders-chart';
 import type { PollLeaderEntry } from '../../../schemas';
 
@@ -26,13 +27,13 @@ afterEach(() => {
 describe('PollLeadersChart', () => {
   it('renders mode toggle buttons', () => {
     render(
-      <PollLeadersChart
+      <ThemeProvider><PollLeadersChart
         data={mockData}
         mode="all"
         onModeChange={vi.fn()}
         onTopNChange={vi.fn()}
         topN="10"
-      />
+      /></ThemeProvider>
     );
 
     expect(screen.getByText('All Weeks')).toBeInTheDocument();
@@ -41,13 +42,13 @@ describe('PollLeadersChart', () => {
 
   it('renders top-N toggle buttons', () => {
     render(
-      <PollLeadersChart
+      <ThemeProvider><PollLeadersChart
         data={mockData}
         mode="all"
         onModeChange={vi.fn()}
         onTopNChange={vi.fn()}
         topN="10"
-      />
+      /></ThemeProvider>
     );
 
     expect(screen.getByText('Top 5')).toBeInTheDocument();
@@ -57,13 +58,13 @@ describe('PollLeadersChart', () => {
   it('calls onModeChange when mode toggle is clicked', async () => {
     const handleModeChange = vi.fn();
     render(
-      <PollLeadersChart
+      <ThemeProvider><PollLeadersChart
         data={mockData}
         mode="all"
         onModeChange={handleModeChange}
         onTopNChange={vi.fn()}
         topN="10"
-      />
+      /></ThemeProvider>
     );
 
     await userEvent.click(screen.getByText('Final Only'));
@@ -74,13 +75,13 @@ describe('PollLeadersChart', () => {
   it('calls onTopNChange when top-N toggle is clicked', async () => {
     const handleTopNChange = vi.fn();
     render(
-      <PollLeadersChart
+      <ThemeProvider><PollLeadersChart
         data={mockData}
         mode="all"
         onModeChange={vi.fn()}
         onTopNChange={handleTopNChange}
         topN="10"
-      />
+      /></ThemeProvider>
     );
 
     await userEvent.click(screen.getByText('Top 5'));
@@ -90,13 +91,13 @@ describe('PollLeadersChart', () => {
 
   it('aria-pressed reflects current mode state', () => {
     render(
-      <PollLeadersChart
+      <ThemeProvider><PollLeadersChart
         data={mockData}
         mode="all"
         onModeChange={vi.fn()}
         onTopNChange={vi.fn()}
         topN="10"
-      />
+      /></ThemeProvider>
     );
 
     expect(screen.getByText('All Weeks')).toHaveAttribute('aria-pressed', 'true');
@@ -105,13 +106,13 @@ describe('PollLeadersChart', () => {
 
   it('aria-pressed reflects final mode state', () => {
     render(
-      <PollLeadersChart
+      <ThemeProvider><PollLeadersChart
         data={mockData}
         mode="final"
         onModeChange={vi.fn()}
         onTopNChange={vi.fn()}
         topN="10"
-      />
+      /></ThemeProvider>
     );
 
     expect(screen.getByText('All Weeks')).toHaveAttribute('aria-pressed', 'false');
@@ -120,13 +121,13 @@ describe('PollLeadersChart', () => {
 
   it('aria-pressed reflects current topN state', () => {
     render(
-      <PollLeadersChart
+      <ThemeProvider><PollLeadersChart
         data={mockData}
         mode="all"
         onModeChange={vi.fn()}
         onTopNChange={vi.fn()}
         topN="5"
-      />
+      /></ThemeProvider>
     );
 
     expect(screen.getByText('Top 5')).toHaveAttribute('aria-pressed', 'true');
@@ -135,13 +136,13 @@ describe('PollLeadersChart', () => {
 
   it('renders the scatter chart', () => {
     render(
-      <PollLeadersChart
+      <ThemeProvider><PollLeadersChart
         data={mockData}
         mode="all"
         onModeChange={vi.fn()}
         onTopNChange={vi.fn()}
         topN="10"
-      />
+      /></ThemeProvider>
     );
 
     expect(screen.getByTestId('scatter-chart')).toBeInTheDocument();
@@ -149,13 +150,13 @@ describe('PollLeadersChart', () => {
 
   it('renders with empty data without errors', () => {
     render(
-      <PollLeadersChart
+      <ThemeProvider><PollLeadersChart
         data={[]}
         mode="all"
         onModeChange={vi.fn()}
         onTopNChange={vi.fn()}
         topN="10"
-      />
+      /></ThemeProvider>
     );
 
     expect(screen.getByTestId('scatter-chart')).toBeInTheDocument();
@@ -164,13 +165,13 @@ describe('PollLeadersChart', () => {
   it('calls onModeChange with all when All Weeks is clicked', async () => {
     const handleModeChange = vi.fn();
     render(
-      <PollLeadersChart
+      <ThemeProvider><PollLeadersChart
         data={mockData}
         mode="final"
         onModeChange={handleModeChange}
         onTopNChange={vi.fn()}
         topN="10"
-      />
+      /></ThemeProvider>
     );
 
     await userEvent.click(screen.getByText('All Weeks'));
@@ -181,13 +182,13 @@ describe('PollLeadersChart', () => {
   it('calls onTopNChange with 10 when Top 10 is clicked', async () => {
     const handleTopNChange = vi.fn();
     render(
-      <PollLeadersChart
+      <ThemeProvider><PollLeadersChart
         data={mockData}
         mode="all"
         onModeChange={vi.fn()}
         onTopNChange={handleTopNChange}
         topN="5"
-      />
+      /></ThemeProvider>
     );
 
     await userEvent.click(screen.getByText('Top 10'));
@@ -197,13 +198,13 @@ describe('PollLeadersChart', () => {
 
   it('renders logos with correct aria-label for each data point', () => {
     render(
-      <PollLeadersChart
+      <ThemeProvider><PollLeadersChart
         data={mockData}
         mode="all"
         onModeChange={vi.fn()}
         onTopNChange={vi.fn()}
         topN="10"
-      />
+      /></ThemeProvider>
     );
 
     const ohioState = screen.getByLabelText('Ohio State');
@@ -217,13 +218,13 @@ describe('PollLeadersChart', () => {
 
   it('renders no logos when data is empty', () => {
     render(
-      <PollLeadersChart
+      <ThemeProvider><PollLeadersChart
         data={[]}
         mode="all"
         onModeChange={vi.fn()}
         onTopNChange={vi.fn()}
         topN="10"
-      />
+      /></ThemeProvider>
     );
 
     expect(screen.queryByLabelText('Ohio State')).not.toBeInTheDocument();
@@ -233,13 +234,13 @@ describe('PollLeadersChart', () => {
     mockUsePlotArea.mockReturnValue(undefined);
 
     render(
-      <PollLeadersChart
+      <ThemeProvider><PollLeadersChart
         data={mockData}
         mode="all"
         onModeChange={vi.fn()}
         onTopNChange={vi.fn()}
         topN="10"
-      />
+      /></ThemeProvider>
     );
 
     expect(screen.queryByLabelText('Alabama')).not.toBeInTheDocument();
@@ -250,13 +251,13 @@ describe('PollLeadersChart', () => {
     mockUseXAxisDomain.mockReturnValue(undefined);
 
     render(
-      <PollLeadersChart
+      <ThemeProvider><PollLeadersChart
         data={mockData}
         mode="all"
         onModeChange={vi.fn()}
         onTopNChange={vi.fn()}
         topN="10"
-      />
+      /></ThemeProvider>
     );
 
     expect(screen.queryByLabelText('Alabama')).not.toBeInTheDocument();
@@ -266,13 +267,13 @@ describe('PollLeadersChart', () => {
     mockUseYAxisDomain.mockReturnValue(undefined);
 
     render(
-      <PollLeadersChart
+      <ThemeProvider><PollLeadersChart
         data={mockData}
         mode="all"
         onModeChange={vi.fn()}
         onTopNChange={vi.fn()}
         topN="10"
-      />
+      /></ThemeProvider>
     );
 
     expect(screen.queryByLabelText('Alabama')).not.toBeInTheDocument();
@@ -291,11 +292,11 @@ describe('PollLeadersChart', () => {
     const onTopNChange = vi.fn();
 
     const { rerender } = render(
-      <PollLeadersChart data={initialData} mode="all" onModeChange={onModeChange} onTopNChange={onTopNChange} topN="10" />
+      <ThemeProvider><PollLeadersChart data={initialData} mode="all" onModeChange={onModeChange} onTopNChange={onTopNChange} topN="10" /></ThemeProvider>
     );
 
     rerender(
-      <PollLeadersChart data={updatedData} mode="all" onModeChange={onModeChange} onTopNChange={onTopNChange} topN="10" />
+      <ThemeProvider><PollLeadersChart data={updatedData} mode="all" onModeChange={onModeChange} onTopNChange={onTopNChange} topN="10" /></ThemeProvider>
     );
 
     expect(screen.getByLabelText('Alabama')).toBeInTheDocument();
@@ -316,11 +317,11 @@ describe('PollLeadersChart', () => {
     const onTopNChange = vi.fn();
 
     const { rerender, unmount } = render(
-      <PollLeadersChart data={initialData} mode="all" onModeChange={onModeChange} onTopNChange={onTopNChange} topN="10" />
+      <ThemeProvider><PollLeadersChart data={initialData} mode="all" onModeChange={onModeChange} onTopNChange={onTopNChange} topN="10" /></ThemeProvider>
     );
 
     rerender(
-      <PollLeadersChart data={updatedData} mode="all" onModeChange={onModeChange} onTopNChange={onTopNChange} topN="10" />
+      <ThemeProvider><PollLeadersChart data={updatedData} mode="all" onModeChange={onModeChange} onTopNChange={onTopNChange} topN="10" /></ThemeProvider>
     );
 
     unmount();
@@ -342,13 +343,13 @@ describe('PollLeadersChart', () => {
     const onTopNChange = vi.fn();
 
     const { rerender } = render(
-      <PollLeadersChart data={initialData} mode="all" onModeChange={onModeChange} onTopNChange={onTopNChange} topN="10" />
+      <ThemeProvider><PollLeadersChart data={initialData} mode="all" onModeChange={onModeChange} onTopNChange={onTopNChange} topN="10" /></ThemeProvider>
     );
 
     rafSpy.mockClear();
 
     rerender(
-      <PollLeadersChart data={updatedData} mode="all" onModeChange={onModeChange} onTopNChange={onTopNChange} topN="10" />
+      <ThemeProvider><PollLeadersChart data={updatedData} mode="all" onModeChange={onModeChange} onTopNChange={onTopNChange} topN="10" /></ThemeProvider>
     );
 
     expect(rafSpy).not.toHaveBeenCalled();
@@ -375,11 +376,11 @@ describe('PollLeadersChart', () => {
     const onTopNChange = vi.fn();
 
     const { rerender } = render(
-      <PollLeadersChart data={initialData} mode="all" onModeChange={onModeChange} onTopNChange={onTopNChange} topN="10" />
+      <ThemeProvider><PollLeadersChart data={initialData} mode="all" onModeChange={onModeChange} onTopNChange={onTopNChange} topN="10" /></ThemeProvider>
     );
 
     rerender(
-      <PollLeadersChart data={updatedData} mode="all" onModeChange={onModeChange} onTopNChange={onTopNChange} topN="10" />
+      <ThemeProvider><PollLeadersChart data={updatedData} mode="all" onModeChange={onModeChange} onTopNChange={onTopNChange} topN="10" /></ThemeProvider>
     );
 
     expect(rafCallbacks).toHaveLength(1);
@@ -428,32 +429,32 @@ describe('PollLeadersChart', () => {
 
   it('applies opacity-60 class when isFetching is true', () => {
     render(
-      <PollLeadersChart
+      <ThemeProvider><PollLeadersChart
         data={mockData}
         isFetching={true}
         mode="all"
         onModeChange={vi.fn()}
         onTopNChange={vi.fn()}
         topN="10"
-      />
+      /></ThemeProvider>
     );
 
-    const chartContainer = screen.getByTestId('scatter-chart').closest('.bg-white');
+    const chartContainer = screen.getByTestId('scatter-chart').closest('.bg-surface');
     expect(chartContainer).toHaveClass('opacity-60');
   });
 
   it('does not apply opacity-60 class when isFetching is not set', () => {
     render(
-      <PollLeadersChart
+      <ThemeProvider><PollLeadersChart
         data={mockData}
         mode="all"
         onModeChange={vi.fn()}
         onTopNChange={vi.fn()}
         topN="10"
-      />
+      /></ThemeProvider>
     );
 
-    const chartContainer = screen.getByTestId('scatter-chart').closest('.bg-white');
+    const chartContainer = screen.getByTestId('scatter-chart').closest('.bg-surface');
     expect(chartContainer).not.toHaveClass('opacity-60');
   });
 
@@ -466,13 +467,13 @@ describe('PollLeadersChart', () => {
     ];
 
     render(
-      <PollLeadersChart
+      <ThemeProvider><PollLeadersChart
         data={samePointData}
         mode="all"
         onModeChange={vi.fn()}
         onTopNChange={vi.fn()}
         topN="10"
-      />
+      /></ThemeProvider>
     );
 
     const logo = screen.getByLabelText('Alabama');

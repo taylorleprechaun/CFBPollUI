@@ -92,8 +92,8 @@ export function RankingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white shadow rounded-lg p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Rankings</h1>
+      <div className="bg-surface border border-border rounded-xl p-4 sm:p-6">
+        <h1 className="text-2xl font-bold text-text-primary mb-4">Rankings</h1>
         <div className="flex flex-wrap gap-4">
           <SeasonSelector
             seasons={seasons}
@@ -122,7 +122,7 @@ export function RankingsPage() {
         <ErrorAlert error={error} onRetry={handleRetry} />
       )}
 
-      <div className="bg-white shadow rounded-lg overflow-hidden">
+      <div className="bg-surface shadow-md rounded-xl overflow-hidden animate-fade-in">
         <RankingsTable
           rankings={rankingsData?.rankings ?? []}
           isLoading={rankingsLoading}
@@ -133,7 +133,7 @@ export function RankingsPage() {
       </div>
 
       {rankingsData && (
-        <div className="text-sm text-gray-500 text-center">
+        <div className="text-sm text-text-muted text-center">
           Showing rankings for {rankingsData.season} Season,{' '}
           {weeksData?.weeks?.find((w) => w.weekNumber === rankingsData.week)?.label ??
             getWeekLabel(rankingsData.week)}

@@ -21,12 +21,12 @@ export function YearRangeSelector({
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex justify-between text-sm font-medium text-gray-700">
+      <div className="flex justify-between text-sm font-medium text-text-secondary">
         <span>{minSeason}</span>
         <span>{maxSeason}</span>
       </div>
       <div className="relative h-6">
-        <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-1 rounded bg-gray-200" />
+        <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-1 rounded bg-border" />
         <div
           className="absolute top-1/2 -translate-y-1/2 h-1 rounded bg-blue-500"
           style={{ left: `${leftPercent}%`, right: `${100 - rightPercent}%` }}

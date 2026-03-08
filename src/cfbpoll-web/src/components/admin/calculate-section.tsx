@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import type { Week } from '../../types';
+import { BUTTON_PRIMARY, SELECT_BASE } from '../ui/button-styles';
 
 interface CalculateSectionProps {
   isCalculating: boolean;
@@ -30,11 +31,11 @@ export function CalculateSection({
   const weekId = useId();
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
-      <h2 className="text-lg font-semibold text-gray-900 mb-4">Calculate Rankings</h2>
+    <div className="bg-surface border border-border rounded-xl p-4 sm:p-6">
+      <h2 className="text-lg font-semibold text-text-primary mb-4">Calculate Rankings</h2>
       <div className="flex flex-wrap gap-4 items-end">
         <div>
-          <label htmlFor={seasonId} className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor={seasonId} className="block text-sm font-medium text-text-secondary mb-1">
             Season
           </label>
           <select
@@ -45,7 +46,7 @@ export function CalculateSection({
               onWeekChange(null);
             }}
             disabled={seasonsLoading}
-            className="border border-gray-300 rounded-md px-3 py-2"
+            className={`px-3 py-2 ${SELECT_BASE}`}
           >
             {seasons.map((s) => (
               <option key={s} value={s}>{s}</option>
@@ -53,7 +54,7 @@ export function CalculateSection({
           </select>
         </div>
         <div>
-          <label htmlFor={weekId} className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor={weekId} className="block text-sm font-medium text-text-secondary mb-1">
             Week
           </label>
           <select
@@ -61,7 +62,7 @@ export function CalculateSection({
             value={selectedWeek ?? ''}
             onChange={(e) => onWeekChange(Number(e.target.value))}
             disabled={weeksLoading}
-            className="border border-gray-300 rounded-md px-3 py-2"
+            className={`px-3 py-2 ${SELECT_BASE}`}
           >
             {weeks.map((w) => (
               <option key={w.weekNumber} value={w.weekNumber}>{w.label}</option>
@@ -71,7 +72,7 @@ export function CalculateSection({
         <button
           onClick={onCalculate}
           disabled={isCalculating || selectedSeason === null || selectedWeek === null}
-          className="bg-blue-900 text-white px-4 py-2 rounded-md hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+          className={BUTTON_PRIMARY}
         >
           {isCalculating ? 'Calculating...' : 'Calculate'}
         </button>
