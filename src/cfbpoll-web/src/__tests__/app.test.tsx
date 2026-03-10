@@ -41,6 +41,7 @@ vi.mock('../hooks/use-page-visibility', () => ({
     allTimeEnabled: true,
     isLoading: false,
     pollLeadersEnabled: true,
+    seasonTrendsEnabled: true,
   }),
 }));
 
@@ -129,8 +130,8 @@ describe('App', () => {
     await waitFor(() => {
       expect(screen.getByText('CFB Poll')).toBeInTheDocument();
       expect(screen.getByText('Home')).toBeInTheDocument();
-      expect(screen.getByText('Rankings')).toBeInTheDocument();
-      expect(screen.getByText('Team Details')).toBeInTheDocument();
+      const rankingsButtons = screen.getAllByRole('button', { name: /Rankings/i });
+      expect(rankingsButtons.length).toBeGreaterThanOrEqual(1);
     });
   });
 

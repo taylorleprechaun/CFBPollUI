@@ -30,6 +30,7 @@ describe('usePageVisibility', () => {
       allTimeEnabled: false,
       isLoading: false,
       pollLeadersEnabled: true,
+      seasonTrendsEnabled: true,
     };
 
     const wrapper = ({ children }: { children: React.ReactNode }) => (

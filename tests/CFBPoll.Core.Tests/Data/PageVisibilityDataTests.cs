@@ -45,6 +45,7 @@ public class PageVisibilityDataTests
 
             Assert.True(result.AllTimeEnabled);
             Assert.True(result.PollLeadersEnabled);
+            Assert.True(result.SeasonTrendsEnabled);
         }
         finally
         {
@@ -63,7 +64,8 @@ public class PageVisibilityDataTests
             var visibility = new PageVisibility
             {
                 AllTimeEnabled = false,
-                PollLeadersEnabled = false
+                PollLeadersEnabled = false,
+                SeasonTrendsEnabled = false
             };
 
             var updated = await data.UpdatePageVisibilityAsync(visibility);
@@ -87,7 +89,8 @@ public class PageVisibilityDataTests
             var visibility = new PageVisibility
             {
                 AllTimeEnabled = false,
-                PollLeadersEnabled = true
+                PollLeadersEnabled = true,
+                SeasonTrendsEnabled = false
             };
             await data.UpdatePageVisibilityAsync(visibility);
 
@@ -95,6 +98,7 @@ public class PageVisibilityDataTests
 
             Assert.False(result.AllTimeEnabled);
             Assert.True(result.PollLeadersEnabled);
+            Assert.False(result.SeasonTrendsEnabled);
         }
         finally
         {
@@ -113,19 +117,22 @@ public class PageVisibilityDataTests
             await data.UpdatePageVisibilityAsync(new PageVisibility
             {
                 AllTimeEnabled = false,
-                PollLeadersEnabled = false
+                PollLeadersEnabled = false,
+                SeasonTrendsEnabled = false
             });
 
             await data.UpdatePageVisibilityAsync(new PageVisibility
             {
                 AllTimeEnabled = true,
-                PollLeadersEnabled = false
+                PollLeadersEnabled = false,
+                SeasonTrendsEnabled = true
             });
 
             var result = await data.GetPageVisibilityAsync();
 
             Assert.True(result.AllTimeEnabled);
             Assert.False(result.PollLeadersEnabled);
+            Assert.True(result.SeasonTrendsEnabled);
         }
         finally
         {
@@ -194,6 +201,7 @@ public class PageVisibilityDataTests
 
             Assert.True(result.AllTimeEnabled);
             Assert.True(result.PollLeadersEnabled);
+            Assert.True(result.SeasonTrendsEnabled);
         }
         finally
         {

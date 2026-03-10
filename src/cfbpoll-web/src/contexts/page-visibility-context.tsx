@@ -8,6 +8,7 @@ export interface PageVisibilityContextValue {
   allTimeEnabled: boolean;
   isLoading: boolean;
   pollLeadersEnabled: boolean;
+  seasonTrendsEnabled: boolean;
 }
 
 export const PageVisibilityContext = createContext<PageVisibilityContextValue | null>(null);
@@ -23,6 +24,7 @@ export function PageVisibilityProvider({ children }: { children: ReactNode }) {
     allTimeEnabled: data?.allTimeEnabled ?? true,
     isLoading,
     pollLeadersEnabled: data?.pollLeadersEnabled ?? true,
+    seasonTrendsEnabled: data?.seasonTrendsEnabled ?? true,
   }), [data, isLoading]);
 
   return (

@@ -13,13 +13,15 @@ public class PageVisibilityMapperTests
         var model = new PageVisibility
         {
             AllTimeEnabled = true,
-            PollLeadersEnabled = false
+            PollLeadersEnabled = false,
+            SeasonTrendsEnabled = true
         };
 
         var result = PageVisibilityMapper.ToDTO(model);
 
         Assert.True(result.AllTimeEnabled);
         Assert.False(result.PollLeadersEnabled);
+        Assert.True(result.SeasonTrendsEnabled);
     }
 
     [Fact]
@@ -28,13 +30,15 @@ public class PageVisibilityMapperTests
         var model = new PageVisibility
         {
             AllTimeEnabled = false,
-            PollLeadersEnabled = false
+            PollLeadersEnabled = false,
+            SeasonTrendsEnabled = false
         };
 
         var result = PageVisibilityMapper.ToDTO(model);
 
         Assert.False(result.AllTimeEnabled);
         Assert.False(result.PollLeadersEnabled);
+        Assert.False(result.SeasonTrendsEnabled);
     }
 
     [Fact]
@@ -43,13 +47,15 @@ public class PageVisibilityMapperTests
         var model = new PageVisibility
         {
             AllTimeEnabled = true,
-            PollLeadersEnabled = true
+            PollLeadersEnabled = true,
+            SeasonTrendsEnabled = true
         };
 
         var result = PageVisibilityMapper.ToDTO(model);
 
         Assert.True(result.AllTimeEnabled);
         Assert.True(result.PollLeadersEnabled);
+        Assert.True(result.SeasonTrendsEnabled);
     }
 
     [Fact]
@@ -64,13 +70,15 @@ public class PageVisibilityMapperTests
         var dto = new PageVisibilityDTO
         {
             AllTimeEnabled = false,
-            PollLeadersEnabled = true
+            PollLeadersEnabled = true,
+            SeasonTrendsEnabled = false
         };
 
         var result = PageVisibilityMapper.ToModel(dto);
 
         Assert.False(result.AllTimeEnabled);
         Assert.True(result.PollLeadersEnabled);
+        Assert.False(result.SeasonTrendsEnabled);
     }
 
     [Fact]
@@ -79,13 +87,15 @@ public class PageVisibilityMapperTests
         var dto = new PageVisibilityDTO
         {
             AllTimeEnabled = false,
-            PollLeadersEnabled = false
+            PollLeadersEnabled = false,
+            SeasonTrendsEnabled = false
         };
 
         var result = PageVisibilityMapper.ToModel(dto);
 
         Assert.False(result.AllTimeEnabled);
         Assert.False(result.PollLeadersEnabled);
+        Assert.False(result.SeasonTrendsEnabled);
     }
 
     [Fact]
@@ -94,13 +104,15 @@ public class PageVisibilityMapperTests
         var dto = new PageVisibilityDTO
         {
             AllTimeEnabled = true,
-            PollLeadersEnabled = true
+            PollLeadersEnabled = true,
+            SeasonTrendsEnabled = true
         };
 
         var result = PageVisibilityMapper.ToModel(dto);
 
         Assert.True(result.AllTimeEnabled);
         Assert.True(result.PollLeadersEnabled);
+        Assert.True(result.SeasonTrendsEnabled);
     }
 
     [Fact]
@@ -115,7 +127,8 @@ public class PageVisibilityMapperTests
         var original = new PageVisibility
         {
             AllTimeEnabled = true,
-            PollLeadersEnabled = false
+            PollLeadersEnabled = false,
+            SeasonTrendsEnabled = true
         };
 
         var dto = PageVisibilityMapper.ToDTO(original);
@@ -123,6 +136,7 @@ public class PageVisibilityMapperTests
 
         Assert.Equal(original.AllTimeEnabled, roundTripped.AllTimeEnabled);
         Assert.Equal(original.PollLeadersEnabled, roundTripped.PollLeadersEnabled);
+        Assert.Equal(original.SeasonTrendsEnabled, roundTripped.SeasonTrendsEnabled);
     }
 
     [Fact]
@@ -131,7 +145,8 @@ public class PageVisibilityMapperTests
         var original = new PageVisibilityDTO
         {
             AllTimeEnabled = false,
-            PollLeadersEnabled = true
+            PollLeadersEnabled = true,
+            SeasonTrendsEnabled = false
         };
 
         var model = PageVisibilityMapper.ToModel(original);
@@ -139,5 +154,6 @@ public class PageVisibilityMapperTests
 
         Assert.Equal(original.AllTimeEnabled, roundTripped.AllTimeEnabled);
         Assert.Equal(original.PollLeadersEnabled, roundTripped.PollLeadersEnabled);
+        Assert.Equal(original.SeasonTrendsEnabled, roundTripped.SeasonTrendsEnabled);
     }
 }

@@ -24,6 +24,9 @@ export const rechartsMock = {
     for (let i = min; i <= max + step; i += step) ticks.push(i);
     return ticks;
   },
+  Line: () => null,
+  ReferenceArea: () => null,
+  LineChart: ({ children }: { children: ReactNode }) => <div data-testid="line-chart">{children}</div>,
   ResponsiveContainer: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   Scatter: () => null,
   ScatterChart: ({ children }: { children: ReactNode }) => <div data-testid="scatter-chart">{children}</div>,

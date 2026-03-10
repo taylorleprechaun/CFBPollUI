@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/auth-context';
 import { usePageVisibility } from '../../hooks/use-page-visibility';
 import { CloseIcon, GitHubIcon, LinkedInIcon, LockIcon, MenuIcon, TwitterIcon, UnlockIcon } from '../ui/icons';
 import { ThemeToggle } from '../ui/theme-toggle';
+import { NavDropdown, type NavItem } from './nav-dropdown';
 
 const DESKTOP_LINK_BASE = 'px-4 py-1.5 rounded-full text-sm font-medium transition-colors';
 const DESKTOP_LINK_ACTIVE = `${DESKTOP_LINK_BASE} bg-nav-active text-white`;
@@ -15,9 +16,13 @@ const MOBILE_LINK_BASE = 'block px-3 py-2 rounded-md text-base font-medium trans
 const MOBILE_LINK_ACTIVE = `${MOBILE_LINK_BASE} bg-nav-active text-white`;
 const MOBILE_LINK_INACTIVE = `${MOBILE_LINK_BASE} text-white/80 hover:bg-nav-hover hover:text-white`;
 
-interface NavLink {
+const MOBILE_SUBLINK_BASE = 'block pl-6 pr-3 py-2 rounded-md text-sm font-medium transition-colors';
+const MOBILE_SUBLINK_ACTIVE = `${MOBILE_SUBLINK_BASE} bg-nav-active text-white`;
+const MOBILE_SUBLINK_INACTIVE = `${MOBILE_SUBLINK_BASE} text-white/80 hover:bg-nav-hover hover:text-white`;
+
+interface NavGroup {
+  items: NavItem[];
   label: string;
-  to: string;
 }
 
 function isActiveLink(pathname: string, linkTo: string): boolean {
@@ -25,9 +30,13 @@ function isActiveLink(pathname: string, linkTo: string): boolean {
   return pathname.startsWith(linkTo);
 }
 
+function isGroupActive(pathname: string, items: NavItem[]): boolean {
+  return items.some((item) => isActiveLink(pathname, item.to));
+}
+
 export function Layout() {
   const { isAuthenticated } = useAuth();
-  const { allTimeEnabled, pollLeadersEnabled } = usePageVisibility();
+  const { allTimeEnabled, pollLeadersEnabled, seasonTrendsEnabled } = usePageVisibility();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
 
@@ -35,13 +44,23 @@ export function Layout() {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
-  const navLinks: NavLink[] = [
-    { label: 'Home', to: '/' },
-    { label: 'Rankings', to: '/rankings' },
-    { label: 'Team Details', to: '/team-details' },
+  const rankingsGroup: NavGroup = {
+    items: [
+      { label: 'Rankings', to: '/rankings' },
+      { label: 'Teams', to: '/team-details' },
+      ...(seasonTrendsEnabled ? [{ label: 'Trends', to: '/season-trends' }] : []),
+    ],
+    label: 'Rankings',
+  };
+
+  const allTimeItems: NavItem[] = [
     ...(allTimeEnabled ? [{ label: 'All-Time', to: '/all-time' }] : []),
     ...(pollLeadersEnabled ? [{ label: 'Leaders', to: '/poll-leaders' }] : []),
   ];
+
+  const allTimeGroup: NavGroup | null = allTimeItems.length > 0
+    ? { items: allTimeItems, label: 'All-Time' }
+    : null;
 
   return (
     <div className="min-h-screen bg-page-bg overflow-x-hidden flex flex-col">
@@ -54,15 +73,24 @@ export function Layout() {
                   CFB Poll
                 </Link>
                 <div className="hidden md:flex space-x-2">
-                  {navLinks.map((link) => (
-                    <Link
-                      key={link.to}
-                      to={link.to}
-                      className={isActiveLink(location.pathname, link.to) ? DESKTOP_LINK_ACTIVE : DESKTOP_LINK_INACTIVE}
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
+                  <Link
+                    to="/"
+                    className={isActiveLink(location.pathname, '/') && location.pathname === '/' ? DESKTOP_LINK_ACTIVE : DESKTOP_LINK_INACTIVE}
+                  >
+                    Home
+                  </Link>
+                  <NavDropdown
+                    isActive={isGroupActive(location.pathname, rankingsGroup.items)}
+                    items={rankingsGroup.items}
+                    label={rankingsGroup.label}
+                  />
+                  {allTimeGroup && (
+                    <NavDropdown
+                      isActive={isGroupActive(location.pathname, allTimeGroup.items)}
+                      items={allTimeGroup.items}
+                      label={allTimeGroup.label}
+                    />
+                  )}
                 </div>
               </div>
               <div className="flex items-center space-x-1">
@@ -88,15 +116,40 @@ export function Layout() {
           </div>
           {isMobileMenuOpen && (
             <div className="md:hidden border-t border-white/20 px-2 pt-2 pb-3 space-y-1">
-              {navLinks.map((link) => (
+              <Link
+                to="/"
+                className={isActiveLink(location.pathname, '/') && location.pathname === '/' ? MOBILE_LINK_ACTIVE : MOBILE_LINK_INACTIVE}
+              >
+                Home
+              </Link>
+              <div className="pt-2 pb-1 px-3 text-xs font-semibold text-white/50 uppercase tracking-wider">
+                {rankingsGroup.label}
+              </div>
+              {rankingsGroup.items.map((item) => (
                 <Link
-                  key={link.to}
-                  to={link.to}
-                  className={isActiveLink(location.pathname, link.to) ? MOBILE_LINK_ACTIVE : MOBILE_LINK_INACTIVE}
+                  key={item.to}
+                  to={item.to}
+                  className={isActiveLink(location.pathname, item.to) ? MOBILE_SUBLINK_ACTIVE : MOBILE_SUBLINK_INACTIVE}
                 >
-                  {link.label}
+                  {item.label}
                 </Link>
               ))}
+              {allTimeGroup && (
+                <>
+                  <div className="pt-2 pb-1 px-3 text-xs font-semibold text-white/50 uppercase tracking-wider">
+                    {allTimeGroup.label}
+                  </div>
+                  {allTimeGroup.items.map((item) => (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className={isActiveLink(location.pathname, item.to) ? MOBILE_SUBLINK_ACTIVE : MOBILE_SUBLINK_INACTIVE}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </>
+              )}
             </div>
           )}
         </nav>

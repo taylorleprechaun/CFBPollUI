@@ -129,6 +129,7 @@ export const AllTimeResponseSchema = z.object({
 export const PageVisibilitySchema = z.object({
   allTimeEnabled: z.boolean(),
   pollLeadersEnabled: z.boolean(),
+  seasonTrendsEnabled: z.boolean(),
 });
 
 // Poll leaders schemas
@@ -147,6 +148,34 @@ export const PollLeadersResponseSchema = z.object({
   minAvailableSeason: z.number(),
 });
 
+// Season trends schemas
+export const SeasonTrendRankingSchema = z.object({
+  rank: z.number().nullable(),
+  rating: z.number(),
+  record: z.string(),
+  weekNumber: z.number(),
+});
+
+export const SeasonTrendTeamSchema = z.object({
+  altColor: z.string(),
+  color: z.string(),
+  conference: z.string(),
+  logoURL: z.string(),
+  rankings: z.array(SeasonTrendRankingSchema),
+  teamName: z.string(),
+});
+
+export const SeasonTrendWeekSchema = z.object({
+  label: z.string(),
+  weekNumber: z.number(),
+});
+
+export const SeasonTrendsResponseSchema = z.object({
+  season: z.number(),
+  teams: z.array(SeasonTrendTeamSchema),
+  weeks: z.array(SeasonTrendWeekSchema),
+});
+
 // Type exports inferred from schemas
 export type AllTimeEntry = z.infer<typeof AllTimeEntrySchema>;
 export type AllTimeResponse = z.infer<typeof AllTimeResponseSchema>;
@@ -159,6 +188,10 @@ export type RankedTeam = z.infer<typeof RankedTeamSchema>;
 export type RankingsResponse = z.infer<typeof RankingsResponseSchema>;
 export type TeamRecord = z.infer<typeof RecordSchema>;
 export type ScheduleGame = z.infer<typeof ScheduleGameSchema>;
+export type SeasonTrendRanking = z.infer<typeof SeasonTrendRankingSchema>;
+export type SeasonTrendTeam = z.infer<typeof SeasonTrendTeamSchema>;
+export type SeasonTrendWeek = z.infer<typeof SeasonTrendWeekSchema>;
+export type SeasonTrendsResponse = z.infer<typeof SeasonTrendsResponseSchema>;
 export type SeasonsResponse = z.infer<typeof SeasonsResponseSchema>;
 export type TeamDetailResponse = z.infer<typeof TeamDetailResponseSchema>;
 export type TeamDetails = z.infer<typeof TeamDetailsSchema>;

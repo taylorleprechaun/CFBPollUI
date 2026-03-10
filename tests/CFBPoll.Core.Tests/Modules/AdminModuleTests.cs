@@ -17,6 +17,7 @@ public class AdminModuleTests
     private readonly Mock<IPollLeadersModule> _mockPollLeadersModule;
     private readonly Mock<IRankingsModule> _mockRankingsModule;
     private readonly Mock<IRatingModule> _mockRatingModule;
+    private readonly Mock<ISeasonTrendsModule> _mockSeasonTrendsModule;
     private readonly AdminModule _adminModule;
 
     public AdminModuleTests()
@@ -28,6 +29,7 @@ public class AdminModuleTests
         _mockPollLeadersModule = new Mock<IPollLeadersModule>();
         _mockRankingsModule = new Mock<IRankingsModule>();
         _mockRatingModule = new Mock<IRatingModule>();
+        _mockSeasonTrendsModule = new Mock<ISeasonTrendsModule>();
 
         _adminModule = new AdminModule(
             _mockDataService.Object,
@@ -36,6 +38,7 @@ public class AdminModuleTests
             _mockPollLeadersModule.Object,
             _mockRankingsModule.Object,
             _mockRatingModule.Object,
+            _mockSeasonTrendsModule.Object,
             _mockLogger.Object);
     }
 
@@ -230,6 +233,22 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task CalculateRankingsAsync_Success_InvalidatesSeasonTrendsCache()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankings);
+
+        await _adminModule.CalculateRankingsAsync(2024, 5);
+
+        _mockSeasonTrendsModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
+    }
+
+    [Fact]
     public async Task CalculateRankingsAsync_PersistFailure_DoesNotInvalidatePollLeadersCache()
     {
         var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
@@ -245,6 +264,7 @@ public class AdminModuleTests
         await _adminModule.CalculateRankingsAsync(2024, 5);
 
         _mockPollLeadersModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
+        _mockSeasonTrendsModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
     }
 
     [Fact]
@@ -258,6 +278,16 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task DeleteSnapshotAsync_Success_InvalidatesSeasonTrendsCache()
+    {
+        _mockRankingsModule.Setup(x => x.DeleteSnapshotAsync(2024, 5)).ReturnsAsync(true);
+
+        await _adminModule.DeleteSnapshotAsync(2024, 5);
+
+        _mockSeasonTrendsModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
+    }
+
+    [Fact]
     public async Task DeleteSnapshotAsync_Failure_DoesNotInvalidatePollLeadersCache()
     {
         _mockRankingsModule.Setup(x => x.DeleteSnapshotAsync(2024, 5)).ReturnsAsync(false);
@@ -265,6 +295,7 @@ public class AdminModuleTests
         await _adminModule.DeleteSnapshotAsync(2024, 5);
 
         _mockPollLeadersModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
+        _mockSeasonTrendsModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
     }
 
     [Fact]
@@ -278,6 +309,16 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task PublishSnapshotAsync_Success_InvalidatesSeasonTrendsCache()
+    {
+        _mockRankingsModule.Setup(x => x.PublishSnapshotAsync(2024, 5)).ReturnsAsync(true);
+
+        await _adminModule.PublishSnapshotAsync(2024, 5);
+
+        _mockSeasonTrendsModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
+    }
+
+    [Fact]
     public async Task PublishSnapshotAsync_Failure_DoesNotInvalidatePollLeadersCache()
     {
         _mockRankingsModule.Setup(x => x.PublishSnapshotAsync(2024, 5)).ReturnsAsync(false);
@@ -285,6 +326,7 @@ public class AdminModuleTests
         await _adminModule.PublishSnapshotAsync(2024, 5);
 
         _mockPollLeadersModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
+        _mockSeasonTrendsModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
     }
 
     [Fact]
