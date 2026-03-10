@@ -26,12 +26,12 @@ interface TeamDotProps {
   onClick: () => void;
   onHover: (index: number, cx: number, cy: number) => void;
   onMouseLeave: () => void;
-  opacity: number;
+  teamIndex: number;
   teamName: string;
   value?: number | null;
 }
 
-const TeamDot = memo(function TeamDot({ chartData, cx, cy, index, logoURL, onClick, onHover, onMouseLeave, opacity, teamName, value }: TeamDotProps) {
+const TeamDot = memo(function TeamDot({ chartData, cx, cy, index, logoURL, onClick, onHover, onMouseLeave, teamIndex, teamName, value }: TeamDotProps) {
   if (value === null || value === undefined || cx === undefined || cy === undefined || index === undefined) {
     return null;
   }
@@ -43,7 +43,7 @@ const TeamDot = memo(function TeamDot({ chartData, cx, cy, index, logoURL, onCli
   const hitSize = 30;
 
   return (
-    <g>
+    <g className={`trend-dot-${teamIndex}`}>
       <rect
         x={cx - hitSize / 2}
         y={cy - hitSize / 2}
@@ -61,7 +61,7 @@ const TeamDot = memo(function TeamDot({ chartData, cx, cy, index, logoURL, onCli
         y={cy - size / 2}
         width={size}
         height={size}
-        style={{ pointerEvents: 'none', opacity }}
+        style={{ pointerEvents: 'none' }}
       />
     </g>
   );
@@ -76,6 +76,13 @@ export function SeasonTrendsChart({ data }: SeasonTrendsChartProps) {
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const [activeWeek, setActiveWeek] = useState<number | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    setSelectedTeam(null);
+    setHoveredTeam(null);
+    setActiveWeek(null);
+    setTooltipPos(null);
+  }, [data.season]);
 
   const chartData = useMemo(() => {
     return data.weeks.map((week) => {
@@ -112,6 +119,46 @@ export function SeasonTrendsChart({ data }: SeasonTrendsChartProps) {
 
   const activeTeam = selectedTeam ?? hoveredTeam;
 
+  // Pre-build stable dot renderers per team so Line props don't change on hover/select
+  const dotRenderers = useMemo(() => {
+    return data.teams.map((team, teamIndex) =>
+      (dotProps: Record<string, unknown>) => (
+        <TeamDot
+          cx={dotProps.cx as number | undefined}
+          cy={dotProps.cy as number | undefined}
+          index={dotProps.index as number | undefined}
+          value={dotProps.value as number | null | undefined}
+          logoURL={team.logoURL}
+          teamName={team.teamName}
+          teamIndex={teamIndex}
+          chartData={chartData}
+          onClick={() => handleClick(team.teamName)}
+          onHover={(weekIndex: number, cx: number, cy: number) => handleDotHover(team.teamName, weekIndex, cx, cy)}
+          onMouseLeave={handleMouseLeave}
+        />
+      )
+    );
+  }, [data.teams, chartData, handleClick, handleDotHover, handleMouseLeave]);
+
+  // CSS-driven highlighting: only the <style> element re-renders on hover/select, not the Lines
+  const activeIndex = activeTeam !== null
+    ? data.teams.findIndex((t) => t.teamName === activeTeam)
+    : -1;
+
+  const highlightCSS = useMemo(() => {
+    if (activeIndex === -1) return '';
+    return data.teams.map((_, i) => {
+      if (i === activeIndex) {
+        return `.trend-line-${i} { opacity: 1 !important; }
+.trend-line-${i} path { stroke-width: 3 !important; }
+.trend-dot-${i} { opacity: 1 !important; }`;
+      }
+      return `.trend-line-${i} { opacity: 0.15 !important; }
+.trend-dot-${i} { opacity: 0.15 !important; }`;
+    }).join('\n');
+  }, [activeIndex, data.teams]);
+
+  // Tooltip logic
   const showTooltip = hoveredTeam !== null && (selectedTeam === null || selectedTeam === hoveredTeam);
 
   const tooltipTeamData = useMemo(
@@ -133,6 +180,7 @@ export function SeasonTrendsChart({ data }: SeasonTrendsChartProps) {
 
   return (
     <div>
+      {highlightCSS && <style>{highlightCSS}</style>}
       <h2 className="text-2xl font-bold text-text-primary mb-4 text-center">{data.season} Rank Progression</h2>
       <div className="bg-surface rounded-xl shadow-md p-4 relative" ref={chartRef}>
         <ResponsiveContainer width="100%" height={1200}>
@@ -213,42 +261,22 @@ export function SeasonTrendsChart({ data }: SeasonTrendsChartProps) {
               isAnimationActive={false}
               connectNulls={false}
             />
-            {data.teams.map((team) => {
-              const isActive = activeTeam === team.teamName;
-              const opacity = activeTeam === null ? 1 : isActive ? 1 : 0.15;
-              const strokeWidth = activeTeam !== null && isActive ? 3 : 1.5;
-
-              return (
-                <Line
-                  key={team.teamName}
-                  yAxisId="left"
-                  type="linear"
-                  dataKey={team.teamName}
-                  stroke={team.color || '#6b7280'}
-                  strokeOpacity={opacity}
-                  strokeWidth={strokeWidth}
-                  dot={(dotProps: Record<string, unknown>) => (
-                    <TeamDot
-                      cx={dotProps.cx as number | undefined}
-                      cy={dotProps.cy as number | undefined}
-                      index={dotProps.index as number | undefined}
-                      value={dotProps.value as number | null | undefined}
-                      logoURL={team.logoURL}
-                      teamName={team.teamName}
-                      chartData={chartData}
-                      onClick={() => handleClick(team.teamName)}
-                      onHover={(weekIndex: number, cx: number, cy: number) => handleDotHover(team.teamName, weekIndex, cx, cy)}
-                      onMouseLeave={handleMouseLeave}
-                      opacity={opacity}
-                    />
-                  )}
-                  activeDot={false}
-                  connectNulls={false}
-                  isAnimationActive={false}
-                  style={{ pointerEvents: 'none' }}
-                />
-              );
-            })}
+            {data.teams.map((team, i) => (
+              <Line
+                key={team.teamName}
+                className={`trend-line-${i}`}
+                yAxisId="left"
+                type="linear"
+                dataKey={team.teamName}
+                stroke={team.color || '#6b7280'}
+                strokeWidth={1.5}
+                dot={dotRenderers[i]}
+                activeDot={false}
+                connectNulls={false}
+                isAnimationActive={false}
+                style={{ pointerEvents: 'none' }}
+              />
+            ))}
           </LineChart>
         </ResponsiveContainer>
         <div
