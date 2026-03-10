@@ -1,11 +1,10 @@
-import { useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   CartesianGrid,
   Line,
   LineChart,
   ReferenceArea,
   ResponsiveContainer,
-  Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
@@ -25,14 +24,14 @@ interface TeamDotProps {
   index?: number;
   logoURL: string;
   onClick: () => void;
-  onMouseEnter: () => void;
+  onHover: (index: number, cx: number, cy: number) => void;
   onMouseLeave: () => void;
   opacity: number;
   teamName: string;
   value?: number | null;
 }
 
-function TeamDot({ chartData, cx, cy, index, logoURL, onClick, onMouseEnter, onMouseLeave, opacity, teamName, value }: TeamDotProps) {
+const TeamDot = memo(function TeamDot({ chartData, cx, cy, index, logoURL, onClick, onHover, onMouseLeave, opacity, teamName, value }: TeamDotProps) {
   if (value === null || value === undefined || cx === undefined || cy === undefined || index === undefined) {
     return null;
   }
@@ -41,29 +40,42 @@ function TeamDot({ chartData, cx, cy, index, logoURL, onClick, onMouseEnter, onM
   const nextRanked = index < chartData.length - 1 && chartData[index + 1][teamName] !== null;
   const isEndpoint = !prevRanked || !nextRanked;
   const size = isEndpoint ? 28 : 14;
+  const hitSize = 30;
 
   return (
-    <image
-      xlinkHref={logoURL}
-      x={cx - size / 2}
-      y={cy - size / 2}
-      width={size}
-      height={size}
-      onClick={(e: React.MouseEvent) => { e.stopPropagation(); onClick(); }}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-      style={{ cursor: 'pointer', opacity }}
-    />
+    <g>
+      <rect
+        x={cx - hitSize / 2}
+        y={cy - hitSize / 2}
+        width={hitSize}
+        height={hitSize}
+        fill="transparent"
+        onClick={(e: React.MouseEvent) => { e.stopPropagation(); onClick(); }}
+        onMouseEnter={() => onHover(index, cx, cy)}
+        onMouseLeave={onMouseLeave}
+        style={{ cursor: 'pointer' }}
+      />
+      <image
+        xlinkHref={logoURL}
+        x={cx - size / 2}
+        y={cy - size / 2}
+        width={size}
+        height={size}
+        style={{ pointerEvents: 'none', opacity }}
+      />
+    </g>
   );
-}
+});
 
 const Y_AXIS_TICKS = Array.from({ length: 25 }, (_, i) => i + 1);
 
 export function SeasonTrendsChart({ data }: SeasonTrendsChartProps) {
   const chartColors = useChartColors();
+  const chartRef = useRef<HTMLDivElement>(null);
   const [hoveredTeam, setHoveredTeam] = useState<string | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const [activeWeek, setActiveWeek] = useState<number | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
 
   const chartData = useMemo(() => {
     return data.weeks.map((week) => {
@@ -81,44 +93,52 @@ export function SeasonTrendsChart({ data }: SeasonTrendsChartProps) {
     });
   }, [data]);
 
-  const handleMouseEnter = useCallback((teamName: string) => {
+  const handleDotHover = useCallback((teamName: string, weekIndex: number, cx: number, cy: number) => {
     setHoveredTeam(teamName);
-  }, []);
+    const week = data.weeks[weekIndex];
+    setActiveWeek(week?.weekNumber ?? null);
+    setTooltipPos({ x: cx, y: cy });
+  }, [data.weeks]);
 
   const handleMouseLeave = useCallback(() => {
     setHoveredTeam(null);
+    setActiveWeek(null);
+    setTooltipPos(null);
   }, []);
 
   const handleClick = useCallback((teamName: string) => {
     setSelectedTeam((prev) => (prev === teamName ? null : teamName));
   }, []);
 
-  const handleTooltipChange = useCallback((props: { activeLabel?: string | number }) => {
-    if (props.activeLabel) {
-      const label = String(props.activeLabel);
-      const week = data.weeks.find((w) => w.label === label);
-      setActiveWeek(week?.weekNumber ?? null);
-    }
-  }, [data.weeks]);
-
   const activeTeam = selectedTeam ?? hoveredTeam;
 
-  const activeTeamData = useMemo(
-    () => data.teams.find((t) => t.teamName === activeTeam) ?? null,
-    [data.teams, activeTeam]
+  const showTooltip = hoveredTeam !== null && (selectedTeam === null || selectedTeam === hoveredTeam);
+
+  const tooltipTeamData = useMemo(
+    () => (showTooltip ? data.teams.find((t) => t.teamName === hoveredTeam) ?? null : null),
+    [data.teams, hoveredTeam, showTooltip]
   );
+
+  const lastTooltipRef = useRef<{ team: typeof tooltipTeamData; week: number | null; pos: { x: number; y: number } }>({
+    team: null, week: null, pos: { x: 0, y: 0 },
+  });
+
+  useEffect(() => {
+    if (tooltipTeamData && tooltipPos) {
+      lastTooltipRef.current = { team: tooltipTeamData, week: activeWeek, pos: tooltipPos };
+    }
+  }, [tooltipTeamData, tooltipPos, activeWeek]);
 
   if (data.teams.length === 0) return null;
 
   return (
     <div>
       <h2 className="text-2xl font-bold text-text-primary mb-4 text-center">{data.season} Rank Progression</h2>
-      <div className="bg-surface rounded-xl shadow-md p-4">
+      <div className="bg-surface rounded-xl shadow-md p-4 relative" ref={chartRef}>
         <ResponsiveContainer width="100%" height={1200}>
           <LineChart
             data={chartData}
             margin={{ top: 40, right: 30, bottom: 25, left: 30 }}
-            onMouseMove={handleTooltipChange}
             onClick={() => setSelectedTeam(null)}
           >
             <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
@@ -182,18 +202,6 @@ export function SeasonTrendsChart({ data }: SeasonTrendsChartProps) {
                 style: { textAnchor: 'middle', fill: chartColors.text, fontSize: 14, fontWeight: 600 },
               }}
             />
-            <Tooltip
-              content={
-                <SeasonTrendsTooltip
-                  activeWeek={activeWeek}
-                  hoveredTeam={activeTeamData}
-                  weeks={data.weeks}
-                />
-              }
-              trigger="hover"
-              cursor={false}
-              isAnimationActive={false}
-            />
             {/* Recharts won't render a YAxis unless at least one Line references its yAxisId.
                This invisible line binds to the right axis so it renders rank ticks on both sides. */}
             <Line
@@ -229,7 +237,7 @@ export function SeasonTrendsChart({ data }: SeasonTrendsChartProps) {
                       teamName={team.teamName}
                       chartData={chartData}
                       onClick={() => handleClick(team.teamName)}
-                      onMouseEnter={() => handleMouseEnter(team.teamName)}
+                      onHover={(weekIndex: number, cx: number, cy: number) => handleDotHover(team.teamName, weekIndex, cx, cy)}
                       onMouseLeave={handleMouseLeave}
                       opacity={opacity}
                     />
@@ -243,6 +251,22 @@ export function SeasonTrendsChart({ data }: SeasonTrendsChartProps) {
             })}
           </LineChart>
         </ResponsiveContainer>
+        <div
+          className="absolute pointer-events-none z-10"
+          style={{
+            left: (tooltipPos?.x ?? lastTooltipRef.current.pos.x) + 16,
+            top: (tooltipPos?.y ?? lastTooltipRef.current.pos.y) - 16,
+            opacity: tooltipTeamData ? 1 : 0,
+            transform: tooltipTeamData ? 'translateY(0)' : 'translateY(4px)',
+            transition: 'opacity 150ms ease-out, transform 150ms ease-out',
+          }}
+        >
+          <SeasonTrendsTooltip
+            activeWeek={tooltipTeamData ? activeWeek : lastTooltipRef.current.week}
+            hoveredTeam={tooltipTeamData ?? lastTooltipRef.current.team}
+            weeks={data.weeks}
+          />
+        </div>
       </div>
     </div>
   );
