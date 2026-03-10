@@ -55,7 +55,7 @@ public class SeasonTrendsModule : ISeasonTrendsModule
 
         var snapshots = (await snapshotsTask).OrderBy(s => s.Week).ToList();
         var calendar = await calendarTask;
-        var fbsTeams = (await teamsTask).ToList();
+        var fbsTeams = await teamsTask;
 
         if (snapshots.Count == 0)
         {
@@ -103,8 +103,7 @@ public class SeasonTrendsModule : ISeasonTrendsModule
             {
                 if (!rankedTeamNames.Contains(teamName))
                 {
-                    var existingWeeks = teamRankings[teamName].Select(r => r.WeekNumber).ToHashSet();
-                    if (!existingWeeks.Contains(snapshot.Week))
+                    if (!teamRankings[teamName].Any(r => r.WeekNumber == snapshot.Week))
                     {
                         teamRankings[teamName].Add(new SeasonTrendRanking
                         {
@@ -139,7 +138,7 @@ public class SeasonTrendsModule : ISeasonTrendsModule
                     Color = fbsTeam?.Color ?? string.Empty,
                     Conference = conference,
                     LogoURL = logoURL,
-                    Rankings = kvp.Value.OrderBy(r => r.WeekNumber).ToList(),
+                    Rankings = kvp.Value,
                     TeamName = kvp.Key
                 };
             })

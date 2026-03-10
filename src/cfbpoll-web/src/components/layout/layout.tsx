@@ -4,6 +4,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 
 import { useAuth } from '../../contexts/auth-context';
 import { usePageVisibility } from '../../hooks/use-page-visibility';
+import { isActiveLink } from '../../lib/route-utils';
 import { CloseIcon, GitHubIcon, LinkedInIcon, LockIcon, MenuIcon, TwitterIcon, UnlockIcon } from '../ui/icons';
 import { ThemeToggle } from '../ui/theme-toggle';
 import { NavDropdown, type NavItem } from './nav-dropdown';
@@ -23,11 +24,6 @@ const MOBILE_SUBLINK_INACTIVE = `${MOBILE_SUBLINK_BASE} text-white/80 hover:bg-n
 interface NavGroup {
   items: NavItem[];
   label: string;
-}
-
-function isActiveLink(pathname: string, linkTo: string): boolean {
-  if (linkTo === '/') return pathname === '/';
-  return pathname.startsWith(linkTo);
 }
 
 function isGroupActive(pathname: string, items: NavItem[]): boolean {
@@ -75,7 +71,7 @@ export function Layout() {
                 <div className="hidden md:flex space-x-2">
                   <Link
                     to="/"
-                    className={isActiveLink(location.pathname, '/') && location.pathname === '/' ? DESKTOP_LINK_ACTIVE : DESKTOP_LINK_INACTIVE}
+                    className={isActiveLink(location.pathname, '/') ? DESKTOP_LINK_ACTIVE : DESKTOP_LINK_INACTIVE}
                   >
                     Home
                   </Link>
@@ -118,7 +114,7 @@ export function Layout() {
             <div className="md:hidden border-t border-white/20 px-2 pt-2 pb-3 space-y-1">
               <Link
                 to="/"
-                className={isActiveLink(location.pathname, '/') && location.pathname === '/' ? MOBILE_LINK_ACTIVE : MOBILE_LINK_INACTIVE}
+                className={isActiveLink(location.pathname, '/') ? MOBILE_LINK_ACTIVE : MOBILE_LINK_INACTIVE}
               >
                 Home
               </Link>

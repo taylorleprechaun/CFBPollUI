@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
+import { isActiveLink } from '../../lib/route-utils';
+
 export interface NavItem {
   label: string;
   to: string;
@@ -19,11 +21,6 @@ const BUTTON_INACTIVE = `${BUTTON_BASE} text-white/80 hover:bg-nav-hover hover:t
 const LINK_BASE = 'block px-4 py-2 text-sm transition-colors whitespace-nowrap';
 const LINK_ACTIVE = `${LINK_BASE} bg-nav-active text-white`;
 const LINK_INACTIVE = `${LINK_BASE} text-white/80 hover:bg-nav-hover hover:text-white`;
-
-function isActiveLink(pathname: string, linkTo: string): boolean {
-  if (linkTo === '/') return pathname === '/';
-  return pathname.startsWith(linkTo);
-}
 
 export function NavDropdown({ isActive, items, label }: NavDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
