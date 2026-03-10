@@ -12,7 +12,8 @@ public static class PageVisibilityMapper
         return new PageVisibilityDTO
         {
             AllTimeEnabled = model.AllTimeEnabled,
-            PollLeadersEnabled = model.PollLeadersEnabled
+            PollLeadersEnabled = model.PollLeadersEnabled,
+            SeasonTrendsEnabled = model.SeasonTrendsEnabled
         };
     }
 
@@ -23,7 +24,8 @@ public static class PageVisibilityMapper
         return new PageVisibility
         {
             AllTimeEnabled = dto.AllTimeEnabled,
-            PollLeadersEnabled = dto.PollLeadersEnabled
+            PollLeadersEnabled = dto.PollLeadersEnabled,
+            SeasonTrendsEnabled = dto.SeasonTrendsEnabled
         };
     }
 }

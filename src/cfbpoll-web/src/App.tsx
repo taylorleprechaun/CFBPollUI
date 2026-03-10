@@ -10,6 +10,7 @@ const HomePage = lazy(() => import('./pages/home-page').then(m => ({ default: m.
 const LoginPage = lazy(() => import('./pages/login-page').then(m => ({ default: m.LoginPage })));
 const PollLeadersPage = lazy(() => import('./pages/poll-leaders-page').then(m => ({ default: m.PollLeadersPage })));
 const RankingsPage = lazy(() => import('./pages/rankings-page').then(m => ({ default: m.RankingsPage })));
+const SeasonTrendsPage = lazy(() => import('./pages/season-trends-page').then(m => ({ default: m.SeasonTrendsPage })));
 const TeamDetailsPage = lazy(() => import('./pages/team-details-page').then(m => ({ default: m.TeamDetailsPage })));
 
 function PageLoader() {
@@ -21,7 +22,7 @@ function PageLoader() {
 }
 
 function App() {
-  const { allTimeEnabled, pollLeadersEnabled } = usePageVisibility();
+  const { allTimeEnabled, pollLeadersEnabled, seasonTrendsEnabled } = usePageVisibility();
 
   return (
     <Routes>
@@ -40,6 +41,13 @@ function App() {
           <Suspense fallback={<PageLoader />}>
             <TeamDetailsPage />
           </Suspense>
+        } />
+        <Route path="season-trends" element={
+          <RequirePageEnabled enabled={seasonTrendsEnabled}>
+            <Suspense fallback={<PageLoader />}>
+              <SeasonTrendsPage />
+            </Suspense>
+          </RequirePageEnabled>
         } />
         <Route path="all-time" element={
           <RequirePageEnabled enabled={allTimeEnabled}>

@@ -23,6 +23,7 @@ vi.mock('../../hooks/use-page-visibility', () => ({
     allTimeEnabled: true,
     isLoading: false,
     pollLeadersEnabled: true,
+    seasonTrendsEnabled: true,
   }),
 }));
 

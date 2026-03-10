@@ -87,12 +87,14 @@ vi.mock('../../hooks/use-snapshots', () => ({
 
 let mockAllTimeEnabled = true;
 let mockPollLeadersEnabled = true;
+let mockSeasonTrendsEnabled = true;
 
 vi.mock('../../hooks/use-page-visibility', () => ({
   usePageVisibility: () => ({
     allTimeEnabled: mockAllTimeEnabled,
     isLoading: false,
     pollLeadersEnabled: mockPollLeadersEnabled,
+    seasonTrendsEnabled: mockSeasonTrendsEnabled,
   }),
 }));
 
@@ -128,6 +130,7 @@ describe('AdminPage', () => {
     mockExportIsPending = false;
     mockAllTimeEnabled = true;
     mockPollLeadersEnabled = true;
+    mockSeasonTrendsEnabled = true;
   });
 
   it('renders admin dashboard when authenticated', () => {
@@ -719,6 +722,7 @@ describe('AdminPage', () => {
     expect(screen.getByText('Page Visibility')).toBeInTheDocument();
     expect(screen.getByText('All-Time Rankings')).toBeInTheDocument();
     expect(screen.getByText('Poll Leaders')).toBeInTheDocument();
+    expect(screen.getByText('Season Trends')).toBeInTheDocument();
   });
 
   it('renders page visibility toggles with correct checked state', () => {
@@ -737,9 +741,11 @@ describe('AdminPage', () => {
   it('calls updatePageVisibility when toggle is changed', async () => {
     mockAllTimeEnabled = true;
     mockPollLeadersEnabled = true;
+    mockSeasonTrendsEnabled = true;
     mockUpdatePageVisibility.mockResolvedValue({
       allTimeEnabled: false,
       pollLeadersEnabled: true,
+      seasonTrendsEnabled: true,
     });
 
     renderAdminPage();
@@ -750,7 +756,7 @@ describe('AdminPage', () => {
     await waitFor(() => {
       expect(mockUpdatePageVisibility).toHaveBeenCalledWith(
         'test-token',
-        { allTimeEnabled: false, pollLeadersEnabled: true }
+        { allTimeEnabled: false, pollLeadersEnabled: true, seasonTrendsEnabled: true }
       );
     });
   });
@@ -767,6 +773,36 @@ describe('AdminPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Page visibility updated')).toBeInTheDocument();
+    });
+  });
+
+  it('renders season trends toggle with correct checked state', () => {
+    mockSeasonTrendsEnabled = false;
+
+    renderAdminPage();
+
+    const seasonTrendsToggle = screen.getByLabelText('Season Trends');
+    expect(seasonTrendsToggle).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('calls updatePageVisibility when season trends toggle is changed', async () => {
+    mockSeasonTrendsEnabled = true;
+    mockUpdatePageVisibility.mockResolvedValue({
+      allTimeEnabled: true,
+      pollLeadersEnabled: true,
+      seasonTrendsEnabled: false,
+    });
+
+    renderAdminPage();
+
+    const seasonTrendsToggle = screen.getByLabelText('Season Trends');
+    await userEvent.click(seasonTrendsToggle);
+
+    await waitFor(() => {
+      expect(mockUpdatePageVisibility).toHaveBeenCalledWith(
+        'test-token',
+        { allTimeEnabled: true, pollLeadersEnabled: true, seasonTrendsEnabled: false }
+      );
     });
   });
 

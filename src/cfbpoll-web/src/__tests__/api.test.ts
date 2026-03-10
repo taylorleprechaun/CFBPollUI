@@ -132,7 +132,7 @@ describe('API service', () => {
     it('calls correct URL and validates response', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ allTimeEnabled: true, pollLeadersEnabled: false }),
+        json: () => Promise.resolve({ allTimeEnabled: true, pollLeadersEnabled: false, seasonTrendsEnabled: true }),
       });
       vi.stubGlobal('fetch', mockFetch);
 

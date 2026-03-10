@@ -18,19 +18,17 @@ This was created using Claude Code with a lot of guidelines to follow my code st
 
 ## TODO
 
-Last Updated 2/24/2026
-- I have only recently started to learn React and this application uses it for the UI. I had Claude create it all following the best practices that I could find online, but I don't know for certain that everything is correct. As I learn more I know I will end up refactoring that code.
-- Finish back-filling rankings. My original repo started mid-2018 and has gone since then. Any season before that never had "official" rankings, and the algorithm has changed a bit over time so I need to publish real rankings back-dated to 2002 (the start of the data being used here).
+Last Updated 3/9/2026
 - Add a page to view a team's history to see season results and rankings over time.
-- Add a page to see ranking trends during a season (like a chart with a column per week showing the logos of the top 25 teams at each week).
 
 ## Features
 
 - **Custom Ranking Algorithm**: Evaluates teams based on wins, strength of schedule, and margin of victory
 - **Team Details**: Drill into individual teams to see schedule with opponent rankings, clickable opponent links, and expandable record breakdowns by location and opponent tier
 - **All-Time Rankings**: View the best teams, worst teams, and hardest schedules across all seasons with sortable tables
+- **Season Trends**: Interactive line chart showing rank progression throughout a season, with team logos as data points, CSS-driven highlighting, and custom tooltips
 - **Poll Leaders**: Scatter chart showing how frequently teams have been ranked, with team logos as data points, year range filtering, and toggleable all-weeks vs. final-only modes
-- **Page Visibility Controls**: Admin toggles to enable/disable the All-Time and Poll Leaders pages, with deep-link blocking for disabled pages
+- **Page Visibility Controls**: Admin toggles to enable/disable the All-Time, Poll Leaders, and Season Trends pages, with deep-link blocking for disabled pages
 - **Historical Data**: Access rankings from 2002 to present
 - **Mobile-Responsive UI**: Collapsible hamburger menu navigation on small screens with viewport-aware chart tooltips
 - **Interactive UI**: Sortable rankings table with team logos and colors
@@ -57,7 +55,7 @@ Last Updated 2/24/2026
 - TanStack Table for sortable tables
 - Tailwind CSS for styling
 - React Router for navigation
-- Recharts for scatter chart visualization
+- Recharts for chart visualization
 - Zod for runtime response validation
 
 ## Project Structure
@@ -89,6 +87,7 @@ AdminController                    AdminModule
                                      -> IPollLeadersModule
                                      -> IRankingsModule
                                      -> IRatingModule
+                                     -> ISeasonTrendsModule
 
 AllTimeController                  AllTimeModule
   -> IAllTimeModule                  -> ICFBDataService
@@ -108,6 +107,12 @@ PollLeadersController              PollLeadersModule
   -> IPollLeadersModule              -> ICFBDataService
                                      -> IPersistentCache
                                      -> IRankingsModule
+
+SeasonTrendsController             SeasonTrendsModule
+  -> ISeasonTrendsModule             -> ICFBDataService
+                                     -> IPersistentCache
+                                     -> IRankingsModule
+                                     -> ISeasonModule
 
 RankingsController                 RankingsModule
   -> ICFBDataService                 -> IRankingsData               RankingsData
@@ -223,6 +228,7 @@ The frontend runs at `http://localhost:5173`.
 | `GET /api/v1/conferences` | Returns FBS conferences |
 | `GET /api/v1/page-visibility` | Returns current page visibility settings |
 | `GET /api/v1/poll-leaders?minSeason={min}&maxSeason={max}` | Returns per-team ranking appearance counts across published snapshots |
+| `GET /api/v1/seasons/{season}/trends` | Returns season trends showing rank progression across published weeks |
 | `GET /api/v1/seasons/{season}/weeks/{week}/rankings` | Returns ranked teams for the specified week |
 | `GET /api/v1/seasons` | Returns available seasons (2002 to present) |
 | `GET /api/v1/seasons/{season}/weeks` | Returns all weeks for a season with rankings publication status |
@@ -247,26 +253,26 @@ The frontend runs at `http://localhost:5173`.
 
 ## Testing
 
-The project includes 1,181 unit and integration tests across backend and frontend.
+The project includes 1,280 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (612 tests)
+# Backend tests (646 tests)
 dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (569 tests)
+# Frontend tests (634 tests)
 cd src/cfbpoll-web
 npm test
 ```
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-612-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-569-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-646-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-634-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
 ![Web Coverage](https://img.shields.io/badge/Web_Coverage-98%25-brightgreen)

@@ -10,4 +10,5 @@ public class CacheOptions
     public int MaxSeasonYearExpirationHours { get; set; } = 24;
     public int PollLeadersExpirationHours { get; set; } = 24;
     public int SeasonDataExpirationHours { get; set; } = 144;
+    public int SeasonTrendsExpirationHours { get; set; } = 24;
 }

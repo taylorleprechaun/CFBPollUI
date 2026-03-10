@@ -8,6 +8,7 @@ import {
   PageVisibilitySchema,
   PollLeadersResponseSchema,
   RankingsResponseSchema,
+  SeasonTrendsResponseSchema,
   SeasonsResponseSchema,
   TeamDetailResponseSchema,
   WeeksResponseSchema,
@@ -16,6 +17,7 @@ import {
   type PageVisibility,
   type PollLeadersResponse,
   type RankingsResponse,
+  type SeasonTrendsResponse,
   type SeasonsResponse,
   type TeamDetailResponse,
   type WeeksResponse,
@@ -63,6 +65,11 @@ export async function fetchTeamDetail(
 export async function fetchPageVisibility(): Promise<PageVisibility> {
   const response = await safeFetch(`${API_BASE_URL}/api/v1/page-visibility`);
   return parseResponse(response, PageVisibilitySchema);
+}
+
+export async function fetchSeasonTrends(season: number): Promise<SeasonTrendsResponse> {
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/seasons/${season}/trends`);
+  return parseResponse(response, SeasonTrendsResponseSchema);
 }
 
 export async function fetchPollLeaders(

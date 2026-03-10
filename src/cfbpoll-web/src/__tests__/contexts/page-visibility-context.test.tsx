@@ -15,11 +15,12 @@ import { PageVisibilityProvider } from '../../contexts/page-visibility-context';
 import { usePageVisibility } from '../../hooks/use-page-visibility';
 
 function TestConsumer() {
-  const { allTimeEnabled, pollLeadersEnabled, isLoading } = usePageVisibility();
+  const { allTimeEnabled, pollLeadersEnabled, seasonTrendsEnabled, isLoading } = usePageVisibility();
   return (
     <div>
       <span data-testid="all-time">{String(allTimeEnabled)}</span>
       <span data-testid="poll-leaders">{String(pollLeadersEnabled)}</span>
+      <span data-testid="season-trends">{String(seasonTrendsEnabled)}</span>
       <span data-testid="loading">{String(isLoading)}</span>
     </div>
   );
@@ -55,6 +56,7 @@ describe('PageVisibilityContext', () => {
 
     expect(screen.getByTestId('all-time').textContent).toBe('true');
     expect(screen.getByTestId('poll-leaders').textContent).toBe('true');
+    expect(screen.getByTestId('season-trends').textContent).toBe('true');
     expect(screen.getByTestId('loading').textContent).toBe('true');
   });
 
@@ -62,6 +64,7 @@ describe('PageVisibilityContext', () => {
     vi.mocked(fetchPageVisibility).mockResolvedValue({
       allTimeEnabled: false,
       pollLeadersEnabled: true,
+      seasonTrendsEnabled: false,
     });
 
     renderWithProviders();
@@ -72,6 +75,7 @@ describe('PageVisibilityContext', () => {
 
     expect(screen.getByTestId('all-time').textContent).toBe('false');
     expect(screen.getByTestId('poll-leaders').textContent).toBe('true');
+    expect(screen.getByTestId('season-trends').textContent).toBe('false');
   });
 
   it('handles fetch error gracefully with defaults of true', async () => {
@@ -85,5 +89,6 @@ describe('PageVisibilityContext', () => {
 
     expect(screen.getByTestId('all-time').textContent).toBe('true');
     expect(screen.getByTestId('poll-leaders').textContent).toBe('true');
+    expect(screen.getByTestId('season-trends').textContent).toBe('true');
   });
 });

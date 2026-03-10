@@ -14,6 +14,7 @@ public class AdminModule : IAdminModule
     private readonly IPollLeadersModule _pollLeadersModule;
     private readonly IRankingsModule _rankingsModule;
     private readonly IRatingModule _ratingModule;
+    private readonly ISeasonTrendsModule _seasonTrendsModule;
 
     public AdminModule(
         ICFBDataService dataService,
@@ -22,6 +23,7 @@ public class AdminModule : IAdminModule
         IPollLeadersModule pollLeadersModule,
         IRankingsModule rankingsModule,
         IRatingModule ratingModule,
+        ISeasonTrendsModule seasonTrendsModule,
         ILogger<AdminModule> logger)
     {
         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
@@ -31,6 +33,7 @@ public class AdminModule : IAdminModule
         _pollLeadersModule = pollLeadersModule ?? throw new ArgumentNullException(nameof(pollLeadersModule));
         _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
         _ratingModule = ratingModule ?? throw new ArgumentNullException(nameof(ratingModule));
+        _seasonTrendsModule = seasonTrendsModule ?? throw new ArgumentNullException(nameof(seasonTrendsModule));
     }
 
     public async Task<CalculateRankingsResult> CalculateRankingsAsync(int season, int week)
@@ -51,6 +54,7 @@ public class AdminModule : IAdminModule
             _logger.LogInformation("Saved draft snapshot for season {Season}, week {Week}", season, week);
 
             await _pollLeadersModule.InvalidateCacheAsync().ConfigureAwait(false);
+            await _seasonTrendsModule.InvalidateCacheAsync().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -72,7 +76,10 @@ public class AdminModule : IAdminModule
         var result = await _rankingsModule.DeleteSnapshotAsync(season, week).ConfigureAwait(false);
 
         if (result)
+        {
             await _pollLeadersModule.InvalidateCacheAsync().ConfigureAwait(false);
+            await _seasonTrendsModule.InvalidateCacheAsync().ConfigureAwait(false);
+        }
 
         return result;
     }
@@ -101,7 +108,10 @@ public class AdminModule : IAdminModule
         var result = await _rankingsModule.PublishSnapshotAsync(season, week).ConfigureAwait(false);
 
         if (result)
+        {
             await _pollLeadersModule.InvalidateCacheAsync().ConfigureAwait(false);
+            await _seasonTrendsModule.InvalidateCacheAsync().ConfigureAwait(false);
+        }
 
         return result;
     }

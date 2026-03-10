@@ -31,15 +31,16 @@ export function AdminPage() {
   useDocumentTitle('Admin - CFB Poll');
 
   const { token, logout } = useAuth();
-  const { allTimeEnabled, pollLeadersEnabled } = usePageVisibility();
+  const { allTimeEnabled, pollLeadersEnabled, seasonTrendsEnabled } = usePageVisibility();
   const queryClient = useQueryClient();
   const allTimeToggleId = useId();
   const pollLeadersToggleId = useId();
+  const seasonTrendsToggleId = useId();
 
   const [visibilityFeedback, setVisibilityFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const visibilityMutation = useMutation({
-    mutationFn: (visibility: { allTimeEnabled: boolean; pollLeadersEnabled: boolean }) => {
+    mutationFn: (visibility: { allTimeEnabled: boolean; pollLeadersEnabled: boolean; seasonTrendsEnabled: boolean }) => {
       if (!token) throw new Error('Authentication required');
       return updatePageVisibility(token, visibility);
     },
@@ -48,11 +49,12 @@ export function AdminPage() {
     },
   });
 
-  const handleToggle = async (field: 'allTimeEnabled' | 'pollLeadersEnabled', value: boolean) => {
+  const handleToggle = async (field: 'allTimeEnabled' | 'pollLeadersEnabled' | 'seasonTrendsEnabled', value: boolean) => {
     setVisibilityFeedback(null);
     const updated = {
       allTimeEnabled,
       pollLeadersEnabled,
+      seasonTrendsEnabled,
       [field]: value,
     };
     try {
@@ -208,6 +210,7 @@ export function AdminPage() {
           {([
             { id: allTimeToggleId, label: 'All-Time Rankings', field: 'allTimeEnabled' as const, checked: allTimeEnabled },
             { id: pollLeadersToggleId, label: 'Poll Leaders', field: 'pollLeadersEnabled' as const, checked: pollLeadersEnabled },
+            { id: seasonTrendsToggleId, label: 'Season Trends', field: 'seasonTrendsEnabled' as const, checked: seasonTrendsEnabled },
           ]).map((toggle) => (
             <div key={toggle.field} className="flex items-center justify-between">
               <label htmlFor={toggle.id} className="text-sm font-medium text-text-secondary">
