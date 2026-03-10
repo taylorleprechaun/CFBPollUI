@@ -252,30 +252,30 @@ The project includes 1,181 unit and integration tests across backend and fronten
 ### Running Tests
 
 ```bash
-# Backend tests (612 tests)
+# Backend tests (646 tests)
 dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (569 tests)
+# Frontend tests (629 tests)
 cd src/cfbpoll-web
 npm test
 ```
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-612-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-569-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-646-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-629-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
-![Web Coverage](https://img.shields.io/badge/Web_Coverage-98%25-brightgreen)
+![Web Coverage](https://img.shields.io/badge/Web_Coverage-99%25-brightgreen)
 
 | Project | Line Coverage | Branch Coverage |
 |---------|---------------|-----------------|
 | CFBPoll.Core | 99% | 92% |
 | CFBPoll.API | 100% | 96% |
-| cfbpoll-web | 98% | 91% |
+| cfbpoll-web | 99% | 92% |
 
 **Excluded from coverage:**
 - `RatingModule` - Proprietary rating algorithm, not included in the repository. Tests are maintained locally.
