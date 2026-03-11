@@ -96,7 +96,7 @@ describe('LoginPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Log In' }));
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/admin');
+      expect(mockNavigate).toHaveBeenCalledWith('/admin/snapshots');
     });
   });
 

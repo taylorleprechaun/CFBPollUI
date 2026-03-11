@@ -64,3 +64,5 @@ export function SeasonTrendsPage() {
     </div>
   );
 }
+
+export default SeasonTrendsPage;

@@ -142,3 +142,5 @@ export function RankingsPage() {
     </div>
   );
 }
+
+export default RankingsPage;

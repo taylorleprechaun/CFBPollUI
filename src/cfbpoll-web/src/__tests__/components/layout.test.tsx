@@ -156,13 +156,13 @@ describe('Layout', () => {
     expect(lockLink).toHaveAttribute('href', '/login');
   });
 
-  it('shows unlock icon linking to admin when authenticated', () => {
+  it('shows unlock icon as admin menu button when authenticated', () => {
     mockIsAuthenticated = true;
     renderLayout();
 
-    const unlockLink = screen.getByLabelText('Admin dashboard');
-    expect(unlockLink).toBeInTheDocument();
-    expect(unlockLink).toHaveAttribute('href', '/admin');
+    const adminMenuButton = screen.getByLabelText('Admin menu');
+    expect(adminMenuButton).toBeInTheDocument();
+    expect(adminMenuButton.tagName).toBe('BUTTON');
   });
 
   it('renders hamburger menu button', () => {
@@ -219,6 +219,48 @@ describe('Layout', () => {
     expect(screen.queryByText('Leaders')).not.toBeInTheDocument();
     // Trends should be hidden
     expect(screen.queryByText('Trends')).not.toBeInTheDocument();
+  });
+
+  it('shows admin menu dropdown on unlock icon click', async () => {
+    mockIsAuthenticated = true;
+    renderLayout();
+
+    await userEvent.click(screen.getByLabelText('Admin menu'));
+
+    expect(screen.getByText('Snapshots')).toBeInTheDocument();
+    expect(screen.getByText('Predictions')).toBeInTheDocument();
+    expect(screen.getByText('Settings')).toBeInTheDocument();
+  });
+
+  it('hides admin menu button when not authenticated', () => {
+    mockIsAuthenticated = false;
+    renderLayout();
+
+    expect(screen.queryByLabelText('Admin menu')).not.toBeInTheDocument();
+  });
+
+  it('shows admin section in mobile menu when authenticated', async () => {
+    mockIsAuthenticated = true;
+    const user = userEvent.setup();
+    renderLayout();
+
+    await user.click(screen.getByLabelText('Open menu'));
+
+    expect(screen.getByText('Snapshots')).toBeInTheDocument();
+    expect(screen.getByText('Predictions')).toBeInTheDocument();
+    expect(screen.getByText('Settings')).toBeInTheDocument();
+  });
+
+  it('hides admin section in mobile menu when not authenticated', async () => {
+    mockIsAuthenticated = false;
+    const user = userEvent.setup();
+    renderLayout();
+
+    await user.click(screen.getByLabelText('Open menu'));
+
+    expect(screen.queryByText('Snapshots')).not.toBeInTheDocument();
+    expect(screen.queryByText('Predictions')).not.toBeInTheDocument();
+    expect(screen.queryByText('Settings')).not.toBeInTheDocument();
   });
 
   it('renders footer with name and social links', () => {

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
+import { useDropdown } from '../../hooks/use-dropdown';
 import { isActiveLink } from '../../lib/route-utils';
 
 export interface NavItem {
@@ -18,48 +18,20 @@ const BUTTON_BASE = 'px-4 py-1.5 rounded-full text-sm font-medium transition-col
 const BUTTON_ACTIVE = `${BUTTON_BASE} bg-nav-active text-white`;
 const BUTTON_INACTIVE = `${BUTTON_BASE} text-white/80 hover:bg-nav-hover hover:text-white`;
 
-const LINK_BASE = 'block px-4 py-2 text-sm transition-colors whitespace-nowrap';
-const LINK_ACTIVE = `${LINK_BASE} bg-nav-active text-white`;
-const LINK_INACTIVE = `${LINK_BASE} text-white/80 hover:bg-nav-hover hover:text-white`;
+export const DROPDOWN_LINK_BASE = 'block px-4 py-2 text-sm transition-colors whitespace-nowrap';
+export const DROPDOWN_LINK_ACTIVE = `${DROPDOWN_LINK_BASE} bg-nav-active text-white`;
+export const DROPDOWN_LINK_INACTIVE = `${DROPDOWN_LINK_BASE} text-white/80 hover:bg-nav-hover hover:text-white`;
 
 export function NavDropdown({ isActive, items, label }: NavDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const { containerRef, isOpen, toggle } = useDropdown();
   const location = useLocation();
-
-  useEffect(() => {
-    setIsOpen(false);
-  }, [location.pathname]);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setIsOpen(false);
-      }
-    }
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleEscape);
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-        document.removeEventListener('keydown', handleEscape);
-      };
-    }
-  }, [isOpen]);
 
   return (
     <div ref={containerRef} className="relative">
       <button
         type="button"
         className={isActive ? BUTTON_ACTIVE : BUTTON_INACTIVE}
-        onClick={() => setIsOpen((prev) => !prev)}
+        onClick={toggle}
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
@@ -80,7 +52,7 @@ export function NavDropdown({ isActive, items, label }: NavDropdownProps) {
             <Link
               key={item.to}
               to={item.to}
-              className={isActiveLink(location.pathname, item.to) ? LINK_ACTIVE : LINK_INACTIVE}
+              className={isActiveLink(location.pathname, item.to) ? DROPDOWN_LINK_ACTIVE : DROPDOWN_LINK_INACTIVE}
             >
               {item.label}
             </Link>

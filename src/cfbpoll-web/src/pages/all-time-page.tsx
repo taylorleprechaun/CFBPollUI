@@ -65,3 +65,5 @@ export function AllTimePage() {
     </div>
   );
 }
+
+export default AllTimePage;

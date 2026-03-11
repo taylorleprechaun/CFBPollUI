@@ -1,17 +1,19 @@
-import { lazy, Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { lazy, Suspense, type ReactNode } from 'react';
+import { Navigate, Routes, Route } from 'react-router-dom';
 import { RequireAuth, RequireGuest, RequirePageEnabled } from './components/auth';
 import { Layout } from './components/layout/layout';
 import { usePageVisibility } from './hooks/use-page-visibility';
 
-const AdminPage = lazy(() => import('./pages/admin-page').then(m => ({ default: m.AdminPage })));
-const AllTimePage = lazy(() => import('./pages/all-time-page').then(m => ({ default: m.AllTimePage })));
-const HomePage = lazy(() => import('./pages/home-page').then(m => ({ default: m.HomePage })));
-const LoginPage = lazy(() => import('./pages/login-page').then(m => ({ default: m.LoginPage })));
-const PollLeadersPage = lazy(() => import('./pages/poll-leaders-page').then(m => ({ default: m.PollLeadersPage })));
-const RankingsPage = lazy(() => import('./pages/rankings-page').then(m => ({ default: m.RankingsPage })));
-const SeasonTrendsPage = lazy(() => import('./pages/season-trends-page').then(m => ({ default: m.SeasonTrendsPage })));
-const TeamDetailsPage = lazy(() => import('./pages/team-details-page').then(m => ({ default: m.TeamDetailsPage })));
+const AllTimePage = lazy(() => import('./pages/all-time-page'));
+const HomePage = lazy(() => import('./pages/home-page'));
+const LoginPage = lazy(() => import('./pages/login-page'));
+const PollLeadersPage = lazy(() => import('./pages/poll-leaders-page'));
+const PredictionsPage = lazy(() => import('./pages/predictions-page'));
+const RankingsPage = lazy(() => import('./pages/rankings-page'));
+const SeasonTrendsPage = lazy(() => import('./pages/season-trends-page'));
+const SettingsPage = lazy(() => import('./pages/settings-page'));
+const SnapshotsPage = lazy(() => import('./pages/snapshots-page'));
+const TeamDetailsPage = lazy(() => import('./pages/team-details-page'));
 
 function PageLoader() {
   return (
@@ -21,6 +23,10 @@ function PageLoader() {
   );
 }
 
+function LazyPage({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
+}
+
 function App() {
   const { allTimeEnabled, pollLeadersEnabled, seasonTrendsEnabled } = usePageVisibility();
 
@@ -28,53 +34,44 @@ function App() {
     <Routes>
       <Route path="/" element={<Layout />}>
         <Route index element={
-          <Suspense fallback={<PageLoader />}>
-            <HomePage />
-          </Suspense>
+          <LazyPage><HomePage /></LazyPage>
         } />
         <Route path="rankings" element={
-          <Suspense fallback={<PageLoader />}>
-            <RankingsPage />
-          </Suspense>
+          <LazyPage><RankingsPage /></LazyPage>
         } />
         <Route path="team-details" element={
-          <Suspense fallback={<PageLoader />}>
-            <TeamDetailsPage />
-          </Suspense>
+          <LazyPage><TeamDetailsPage /></LazyPage>
         } />
         <Route path="season-trends" element={
           <RequirePageEnabled enabled={seasonTrendsEnabled}>
-            <Suspense fallback={<PageLoader />}>
-              <SeasonTrendsPage />
-            </Suspense>
+            <LazyPage><SeasonTrendsPage /></LazyPage>
           </RequirePageEnabled>
         } />
         <Route path="all-time" element={
           <RequirePageEnabled enabled={allTimeEnabled}>
-            <Suspense fallback={<PageLoader />}>
-              <AllTimePage />
-            </Suspense>
+            <LazyPage><AllTimePage /></LazyPage>
           </RequirePageEnabled>
         } />
         <Route path="poll-leaders" element={
           <RequirePageEnabled enabled={pollLeadersEnabled}>
-            <Suspense fallback={<PageLoader />}>
-              <PollLeadersPage />
-            </Suspense>
+            <LazyPage><PollLeadersPage /></LazyPage>
           </RequirePageEnabled>
         } />
         <Route element={<RequireGuest />}>
           <Route path="login" element={
-            <Suspense fallback={<PageLoader />}>
-              <LoginPage />
-            </Suspense>
+            <LazyPage><LoginPage /></LazyPage>
           } />
         </Route>
         <Route element={<RequireAuth />}>
-          <Route path="admin" element={
-            <Suspense fallback={<PageLoader />}>
-              <AdminPage />
-            </Suspense>
+          <Route path="admin" element={<Navigate to="/admin/snapshots" replace />} />
+          <Route path="admin/snapshots" element={
+            <LazyPage><SnapshotsPage /></LazyPage>
+          } />
+          <Route path="admin/predictions" element={
+            <LazyPage><PredictionsPage /></LazyPage>
+          } />
+          <Route path="admin/settings" element={
+            <LazyPage><SettingsPage /></LazyPage>
           } />
         </Route>
       </Route>

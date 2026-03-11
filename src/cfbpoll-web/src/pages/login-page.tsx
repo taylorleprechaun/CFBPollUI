@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/auth-context';
 import { BUTTON_PRIMARY } from '../components/ui/button-styles';
 import { useDocumentTitle } from '../hooks/use-document-title';
+import { toErrorMessage } from '../lib/error-utils';
 
 const INPUT_CLASS = 'w-full px-3 py-2 border border-border bg-surface text-text-primary rounded-md focus:outline-none focus:ring-2 focus:ring-accent';
 
@@ -27,9 +28,9 @@ export function LoginPage() {
 
     try {
       await login(username, password);
-      navigate('/admin');
+      navigate('/admin/snapshots');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(toErrorMessage(err, 'Login failed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -85,3 +86,5 @@ export function LoginPage() {
     </div>
   );
 }
+
+export default LoginPage;

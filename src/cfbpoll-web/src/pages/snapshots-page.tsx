@@ -1,9 +1,6 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useAuth } from '../contexts/auth-context';
 import { useSeason } from '../contexts/season-context';
-import { usePageVisibility } from '../hooks/use-page-visibility';
 import {
   CalculateSection,
   PersistedSnapshotsSection,
@@ -11,7 +8,6 @@ import {
   type ActionFeedback,
 } from '../components/admin';
 import { ErrorAlert } from '../components/error';
-import { BUTTON_GHOST } from '../components/ui/button-styles';
 import { ConfirmModal } from '../components/ui/confirm-modal';
 import {
   useCalculateRankings,
@@ -19,51 +15,19 @@ import {
   useExportSnapshot,
   usePublishSnapshot,
 } from '../hooks/use-admin-mutations';
+import { useAuth } from '../contexts/auth-context';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { useSnapshots } from '../hooks/use-snapshots';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
+import { toError, toErrorMessage } from '../lib/error-utils';
 import { getWeekLabel } from '../lib/week-utils';
 import type { CalculateResponse } from '../schemas/admin';
-import { updatePageVisibility } from '../services/admin-api';
 
-export function AdminPage() {
-  useDocumentTitle('Admin - CFB Poll');
+export function SnapshotsPage() {
+  useDocumentTitle('Snapshots - CFB Poll');
 
-  const { token, logout } = useAuth();
-  const { allTimeEnabled, pollLeadersEnabled, seasonTrendsEnabled } = usePageVisibility();
-  const queryClient = useQueryClient();
-  const allTimeToggleId = useId();
-  const pollLeadersToggleId = useId();
-  const seasonTrendsToggleId = useId();
-
-  const [visibilityFeedback, setVisibilityFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-
-  const visibilityMutation = useMutation({
-    mutationFn: (visibility: { allTimeEnabled: boolean; pollLeadersEnabled: boolean; seasonTrendsEnabled: boolean }) => {
-      if (!token) throw new Error('Authentication required');
-      return updatePageVisibility(token, visibility);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['page-visibility'] });
-    },
-  });
-
-  const handleToggle = async (field: 'allTimeEnabled' | 'pollLeadersEnabled' | 'seasonTrendsEnabled', value: boolean) => {
-    setVisibilityFeedback(null);
-    const updated = {
-      allTimeEnabled,
-      pollLeadersEnabled,
-      seasonTrendsEnabled,
-      [field]: value,
-    };
-    try {
-      await visibilityMutation.mutateAsync(updated);
-      setVisibilityFeedback({ type: 'success', message: 'Page visibility updated' });
-    } catch {
-      setVisibilityFeedback({ type: 'error', message: 'Failed to update page visibility' });
-    }
-  };
+  const { token } = useAuth();
 
   const {
     seasons,
@@ -93,21 +57,26 @@ export function AdminPage() {
   const initialCollapseApplied = useRef(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ season: number; week: number } | null>(null);
 
-  const normalizedSnapshotsError = snapshotsError instanceof Error
-    ? snapshotsError
-    : snapshotsError ? new Error('Failed to load snapshots') : null;
+  const normalizedSnapshotsError = snapshotsError
+    ? toError(snapshotsError, 'Failed to load snapshots')
+    : null;
   const error = operationError ?? normalizedSnapshotsError;
 
-  const isActionPending = calculateMutation.isPending || publishMutation.isPending || deleteMutation.isPending || exportMutation.isPending;
+  const isActionPending = calculateMutation.isPending || publishMutation.isPending || deleteMutation.isPending;
 
   const clearFeedback = useCallback(() => setActionFeedback(null), []);
 
+  const uniqueSeasons = useMemo(
+    () => snapshots ? [...new Set(snapshots.map((w) => w.season))] : [],
+    [snapshots],
+  );
+
   useEffect(() => {
-    if (snapshots?.length && !initialCollapseApplied.current) {
-      setCollapsedSeasons(new Set(snapshots.map((w) => w.season)));
+    if (uniqueSeasons.length > 0 && !initialCollapseApplied.current) {
+      setCollapsedSeasons(new Set(uniqueSeasons));
       initialCollapseApplied.current = true;
     }
-  }, [snapshots]);
+  }, [uniqueSeasons]);
 
   const handleCalculate = async () => {
     if (selectedSeason === null || selectedWeek === null) return;
@@ -118,7 +87,7 @@ export function AdminPage() {
       const result = await calculateMutation.mutateAsync({ season: selectedSeason, week: selectedWeek });
       setCalculatedResult(result);
     } catch (err) {
-      setOperationError(err instanceof Error ? err : new Error('Calculation failed'));
+      setOperationError(toError(err, 'Calculation failed'));
     }
   };
 
@@ -131,8 +100,7 @@ export function AdminPage() {
       await publishMutation.mutateAsync({ season, week });
       setActionFeedback({ key: feedbackKey, type: 'success' });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Publish failed';
-      setActionFeedback({ key: feedbackKey, type: 'error', message });
+      setActionFeedback({ key: feedbackKey, type: 'error', message: toErrorMessage(err, 'Publish failed') });
     }
   };
 
@@ -154,7 +122,7 @@ export function AdminPage() {
         setCalculatedResult(null);
       }
     } catch (err) {
-      setOperationError(err instanceof Error ? err : new Error('Delete failed'));
+      setOperationError(toError(err, 'Delete failed'));
     }
   };
 
@@ -164,7 +132,7 @@ export function AdminPage() {
     try {
       await exportMutation.mutateAsync({ season, week });
     } catch (err) {
-      setOperationError(err instanceof Error ? err : new Error('Export failed'));
+      setOperationError(toError(err, 'Export failed'));
     }
   };
 
@@ -181,61 +149,18 @@ export function AdminPage() {
   };
 
   const handleExpandAll = () => setCollapsedSeasons(new Set());
-  const handleCollapseAll = () => {
-    if (snapshots) {
-      setCollapsedSeasons(new Set(snapshots.map((w) => w.season)));
-    }
-  };
+  const handleCollapseAll = () => setCollapsedSeasons(new Set(uniqueSeasons));
+
+  const handleRetry = useCallback(() => {
+    setOperationError(null);
+    if (normalizedSnapshotsError) refetchSnapshots();
+  }, [normalizedSnapshotsError, refetchSnapshots]);
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-text-primary">Admin Dashboard</h1>
-        <button
-          onClick={logout}
-          className={BUTTON_GHOST}
-        >
-          Log Out
-        </button>
-      </div>
+      <h1 className="text-2xl font-bold text-text-primary">Snapshots</h1>
 
-      {error && <ErrorAlert error={error} onRetry={() => {
-        setOperationError(null);
-        if (normalizedSnapshotsError) refetchSnapshots();
-      }} />}
-
-      <div className="bg-surface border border-border rounded-xl p-4 sm:p-6">
-        <h2 className="text-lg font-semibold text-text-primary mb-4">Page Visibility</h2>
-        <div className="space-y-3">
-          {([
-            { id: allTimeToggleId, label: 'All-Time Rankings', field: 'allTimeEnabled' as const, checked: allTimeEnabled },
-            { id: pollLeadersToggleId, label: 'Poll Leaders', field: 'pollLeadersEnabled' as const, checked: pollLeadersEnabled },
-            { id: seasonTrendsToggleId, label: 'Season Trends', field: 'seasonTrendsEnabled' as const, checked: seasonTrendsEnabled },
-          ]).map((toggle) => (
-            <div key={toggle.field} className="flex items-center justify-between">
-              <label htmlFor={toggle.id} className="text-sm font-medium text-text-secondary">
-                {toggle.label}
-              </label>
-              <button
-                id={toggle.id}
-                type="button"
-                role="switch"
-                aria-checked={toggle.checked}
-                onClick={() => handleToggle(toggle.field, !toggle.checked)}
-                disabled={visibilityMutation.isPending}
-                className={`relative inline-flex h-6 w-11 rounded-full transition-colors duration-200 disabled:opacity-50 ${toggle.checked ? 'bg-accent' : 'bg-border-strong'}`}
-              >
-                <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${toggle.checked ? 'translate-x-5' : 'translate-x-0.5'} mt-0.5`} />
-              </button>
-            </div>
-          ))}
-        </div>
-        {visibilityFeedback && (
-          <p className={`mt-3 text-sm ${visibilityFeedback.type === 'error' ? 'text-red-600' : 'text-green-600'}`}>
-            {visibilityFeedback.message}
-          </p>
-        )}
-      </div>
+      {error && <ErrorAlert error={error} onRetry={handleRetry} />}
 
       <CalculateSection
         isCalculating={calculateMutation.isPending}
@@ -286,3 +211,5 @@ export function AdminPage() {
     </div>
   );
 }
+
+export default SnapshotsPage;

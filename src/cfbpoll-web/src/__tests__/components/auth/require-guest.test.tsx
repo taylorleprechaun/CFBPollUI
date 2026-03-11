@@ -21,7 +21,7 @@ function renderWithRoutes(initialRoute: string) {
         <Route element={<RequireGuest />}>
           <Route path="/login" element={<div>Login Content</div>} />
         </Route>
-        <Route path="/admin" element={<div>Admin Page</div>} />
+        <Route path="/admin/snapshots" element={<div>Admin Page</div>} />
       </Routes>
     </MemoryRouter>
   );
