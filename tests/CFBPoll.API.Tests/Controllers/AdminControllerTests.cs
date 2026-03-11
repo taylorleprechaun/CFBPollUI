@@ -31,7 +31,7 @@ public class AdminControllerTests
         var rankedTeam = new RankedTeam { TeamName = "Ohio State", Rank = 1, Rating = 90, Details = new TeamDetails() };
         var calculateResult = new CalculateRankingsResult
         {
-            Persisted = true,
+            IsPersisted = true,
             Rankings = new RankingsResult
             {
                 Season = 2024,
@@ -54,7 +54,7 @@ public class AdminControllerTests
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var response = Assert.IsType<CalculateResponseDTO>(okResult.Value);
-        Assert.True(response.Persisted);
+        Assert.True(response.IsPersisted);
         Assert.Equal(2024, response.Rankings.Season);
         var team = Assert.Single(response.Rankings.Rankings);
         Assert.Equal(2, team.RankDelta);
@@ -122,8 +122,8 @@ public class AdminControllerTests
     {
         var weeks = new List<SnapshotSummary>
         {
-            new SnapshotSummary { Season = 2024, Week = 1, Published = true, CreatedAt = DateTime.UtcNow },
-            new SnapshotSummary { Season = 2024, Week = 2, Published = false, CreatedAt = DateTime.UtcNow }
+            new SnapshotSummary { Season = 2024, Week = 1, IsPublished = true, CreatedAt = DateTime.UtcNow },
+            new SnapshotSummary { Season = 2024, Week = 2, IsPublished = false, CreatedAt = DateTime.UtcNow }
         };
 
         _mockAdminModule.Setup(x => x.GetSnapshotsAsync()).ReturnsAsync(weeks);
@@ -159,6 +159,122 @@ public class AdminControllerTests
         var result = await _controller.Export(2024, 5);
 
         Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task CalculatePredictions_ReturnsPredictions()
+    {
+        var calculateResult = new CalculatePredictionsResult
+        {
+            IsPersisted = true,
+            Predictions = new PredictionsResult
+            {
+                Season = 2024,
+                Week = 5,
+                Predictions =
+                [
+                    new GamePrediction
+                    {
+                        AwayTeam = "Michigan",
+                        HomeTeam = "Ohio State",
+                        PredictedWinner = "Ohio State",
+                        PredictedMargin = 10.5,
+                        Confidence = 75,
+                        HomeWinProbability = 0.72,
+                        NeutralSite = false
+                    }
+                ]
+            }
+        };
+
+        _mockAdminModule
+            .Setup(x => x.CalculatePredictionsAsync(2024, 5))
+            .ReturnsAsync(calculateResult);
+
+        var result = await _controller.CalculatePredictions(2024, 5);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<CalculatePredictionsResponseDTO>(okResult.Value);
+        Assert.True(response.IsPersisted);
+        Assert.Equal(2024, response.Predictions.Season);
+        Assert.Equal(5, response.Predictions.Week);
+        var prediction = Assert.Single(response.Predictions.Predictions);
+        Assert.Equal("Ohio State", prediction.PredictedWinner);
+    }
+
+    [Fact]
+    public async Task UpdatePrediction_Found_ReturnsOk()
+    {
+        _mockAdminModule.Setup(x => x.PublishPredictionsAsync(2024, 5)).ReturnsAsync(true);
+
+        var result = await _controller.UpdatePrediction(2024, 5, new UpdateSnapshotDTO { IsPublished = true });
+
+        Assert.IsType<OkResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdatePrediction_NotFound_ReturnsNotFound()
+    {
+        _mockAdminModule.Setup(x => x.PublishPredictionsAsync(2024, 5)).ReturnsAsync(false);
+
+        var result = await _controller.UpdatePrediction(2024, 5, new UpdateSnapshotDTO { IsPublished = true });
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdatePrediction_NullRequest_ThrowsArgumentNullException()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _controller.UpdatePrediction(2024, 5, null!));
+    }
+
+    [Fact]
+    public async Task UpdatePrediction_PublishedFalse_ReturnsBadRequest()
+    {
+        var result = await _controller.UpdatePrediction(2024, 5, new UpdateSnapshotDTO { IsPublished = false });
+
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        var error = Assert.IsType<ErrorResponseDTO>(badRequestResult.Value);
+        Assert.Equal(400, error.StatusCode);
+        _mockAdminModule.Verify(x => x.PublishPredictionsAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeletePrediction_Found_ReturnsOk()
+    {
+        _mockAdminModule.Setup(x => x.DeletePredictionsAsync(2024, 5)).ReturnsAsync(true);
+
+        var result = await _controller.DeletePrediction(2024, 5);
+
+        Assert.IsType<OkResult>(result);
+    }
+
+    [Fact]
+    public async Task DeletePrediction_NotFound_ReturnsNotFound()
+    {
+        _mockAdminModule.Setup(x => x.DeletePredictionsAsync(2024, 5)).ReturnsAsync(false);
+
+        var result = await _controller.DeletePrediction(2024, 5);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task GetPredictions_ReturnsList()
+    {
+        var summaries = new List<PredictionsSummary>
+        {
+            new() { Season = 2024, Week = 1, IsPublished = true, CreatedAt = DateTime.UtcNow, GameCount = 10 },
+            new() { Season = 2024, Week = 2, IsPublished = false, CreatedAt = DateTime.UtcNow, GameCount = 8 }
+        };
+
+        _mockAdminModule.Setup(x => x.GetPredictionsSummariesAsync()).ReturnsAsync(summaries);
+
+        var result = await _controller.GetPredictions();
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsAssignableFrom<IEnumerable<PredictionsSummaryDTO>>(okResult.Value);
+        Assert.Equal(2, response.Count());
     }
 
     [Fact]

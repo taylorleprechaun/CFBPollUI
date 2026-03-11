@@ -3,6 +3,8 @@ import type { Week } from '../../types';
 import { BUTTON_PRIMARY, SELECT_BASE } from '../ui/button-styles';
 
 interface CalculateSectionProps {
+  buttonLabel?: string;
+  buttonPendingLabel?: string;
   isCalculating: boolean;
   onCalculate: () => void;
   onSeasonChange: (season: number) => void;
@@ -11,11 +13,14 @@ interface CalculateSectionProps {
   seasonsLoading: boolean;
   selectedSeason: number | null;
   selectedWeek: number | null;
+  title?: string;
   weeks: Week[];
   weeksLoading: boolean;
 }
 
 export function CalculateSection({
+  buttonLabel = 'Calculate',
+  buttonPendingLabel = 'Calculating...',
   isCalculating,
   onCalculate,
   onSeasonChange,
@@ -24,6 +29,7 @@ export function CalculateSection({
   seasonsLoading,
   selectedSeason,
   selectedWeek,
+  title = 'Calculate Rankings',
   weeks,
   weeksLoading,
 }: CalculateSectionProps) {
@@ -32,7 +38,7 @@ export function CalculateSection({
 
   return (
     <div className="bg-surface border border-border rounded-xl p-4 sm:p-6">
-      <h2 className="text-lg font-semibold text-text-primary mb-4">Calculate Rankings</h2>
+      <h2 className="text-lg font-semibold text-text-primary mb-4">{title}</h2>
       <div className="flex flex-wrap gap-4 items-end">
         <div>
           <label htmlFor={seasonId} className="block text-sm font-medium text-text-secondary mb-1">
@@ -74,7 +80,7 @@ export function CalculateSection({
           disabled={isCalculating || selectedSeason === null || selectedWeek === null}
           className={BUTTON_PRIMARY}
         >
-          {isCalculating ? 'Calculating...' : 'Calculate'}
+          {isCalculating ? buttonPendingLabel : buttonLabel}
         </button>
       </div>
     </div>

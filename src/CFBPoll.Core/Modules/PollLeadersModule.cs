@@ -41,7 +41,7 @@ public class PollLeadersModule : IPollLeadersModule
     public async Task<PollLeadersResult> GetPollLeadersAsync(int? minSeason, int? maxSeason)
     {
         var snapshots = await _rankingsModule.GetSnapshotsAsync().ConfigureAwait(false);
-        var publishedWeeks = snapshots.Where(pw => pw.Published).ToList();
+        var publishedWeeks = snapshots.Where(pw => pw.IsPublished).ToList();
 
         if (publishedWeeks.Count == 0)
         {

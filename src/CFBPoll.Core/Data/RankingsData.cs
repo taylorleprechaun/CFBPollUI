@@ -55,7 +55,7 @@ public class RankingsData : IRankingsData
             {
                 Season = reader.GetInt32(0),
                 Week = reader.GetInt32(1),
-                Published = reader.GetInt32(2) == 1,
+                IsPublished = reader.GetInt32(2) == 1,
                 CreatedAt = DateTime.Parse(reader.GetString(3))
             });
         }

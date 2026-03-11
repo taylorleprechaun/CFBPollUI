@@ -2,6 +2,9 @@
 src/CFBPoll.Core/Modules/RatingModule.cs
 src/CFBPoll.Core/Modules/Archive/
 
+# Secret prediction calculator module implementation
+src/CFBPoll.Core/Modules/PredictionCalculatorModule.cs
+
 # Private configuration (contains API key)
 appsettings-private.json
 **/appsettings-private.json

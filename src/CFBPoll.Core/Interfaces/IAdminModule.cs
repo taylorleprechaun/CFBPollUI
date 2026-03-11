@@ -3,14 +3,24 @@ using CFBPoll.Core.Models;
 namespace CFBPoll.Core.Interfaces;
 
 /// <summary>
-/// Module for admin operations including calculating and managing rankings snapshots.
+/// Module for admin operations including calculating and managing rankings snapshots and predictions.
 /// </summary>
 public interface IAdminModule
 {
     /// <summary>
+    /// Calculates predictions for the given season and week and saves as a draft.
+    /// </summary>
+    Task<CalculatePredictionsResult> CalculatePredictionsAsync(int season, int week);
+
+    /// <summary>
     /// Calculates rankings for the given season and week and saves as a draft.
     /// </summary>
     Task<CalculateRankingsResult> CalculateRankingsAsync(int season, int week);
+
+    /// <summary>
+    /// Deletes predictions for the given season and week.
+    /// </summary>
+    Task<bool> DeletePredictionsAsync(int season, int week);
 
     /// <summary>
     /// Deletes a snapshot for the given season and week.
@@ -24,9 +34,19 @@ public interface IAdminModule
     Task<byte[]?> ExportRankingsAsync(int season, int week);
 
     /// <summary>
+    /// Gets all persisted prediction summaries.
+    /// </summary>
+    Task<IEnumerable<PredictionsSummary>> GetPredictionsSummariesAsync();
+
+    /// <summary>
     /// Gets all persisted week summaries.
     /// </summary>
     Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync();
+
+    /// <summary>
+    /// Publishes predictions for the given season and week.
+    /// </summary>
+    Task<bool> PublishPredictionsAsync(int season, int week);
 
     /// <summary>
     /// Publishes a snapshot for the given season and week.

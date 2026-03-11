@@ -105,7 +105,7 @@ describe('PersistedSnapshotsSection', () => {
 
     fireEvent.click(screen.getByText('Publish'));
 
-    expect(onPublish).toHaveBeenCalledWith(2024, 1, 'snapshot');
+    expect(onPublish).toHaveBeenCalledWith(2024, 1);
   });
 
   it('calls onDelete when Delete button is clicked', () => {

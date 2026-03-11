@@ -139,7 +139,7 @@ describe('SnapshotsPage', () => {
 
   it('calls calculateRankings on calculate button click', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
-      persisted: true,
+      isPersisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
 
@@ -153,7 +153,7 @@ describe('SnapshotsPage', () => {
 
   it('shows preview after calculation', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
-      persisted: true,
+      isPersisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
 
@@ -167,7 +167,7 @@ describe('SnapshotsPage', () => {
 
   it('collapses and expands preview', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
-      persisted: true,
+      isPersisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
 
@@ -190,7 +190,7 @@ describe('SnapshotsPage', () => {
 
   it('shows persist warning when not persisted', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
-      persisted: false,
+      isPersisted: false,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
 
@@ -387,7 +387,7 @@ describe('SnapshotsPage', () => {
 
   it('shows success checkmark on preview publish', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
-      persisted: true,
+      isPersisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
     mockPublishMutateAsync.mockResolvedValue(undefined);
@@ -409,7 +409,7 @@ describe('SnapshotsPage', () => {
 
   it('shows error message on preview publish failure', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
-      persisted: true,
+      isPersisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
     mockPublishMutateAsync.mockRejectedValue(new Error('Server error'));
@@ -528,7 +528,7 @@ describe('SnapshotsPage', () => {
 
   it('calls downloadExport for preview Download Excel button', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
-      persisted: true,
+      isPersisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
     mockExportMutateAsync.mockResolvedValue(undefined);
@@ -549,7 +549,7 @@ describe('SnapshotsPage', () => {
 
   it('clears calculated result when matching snapshot is deleted', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
-      persisted: true,
+      isPersisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
     mockSnapshotsData = [
@@ -611,7 +611,7 @@ describe('SnapshotsPage', () => {
 
   it('preview publish checkmark does not appear in snapshot section', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
-      persisted: true,
+      isPersisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
     mockSnapshotsData = [

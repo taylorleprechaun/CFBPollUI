@@ -9,11 +9,15 @@ import {
 } from '../schemas';
 
 import {
+  CalculatePredictionsResponseSchema,
   CalculateResponseSchema,
   LoginResponseSchema,
+  PredictionsSummariesResponseSchema,
   SnapshotsResponseSchema,
+  type CalculatePredictionsResponse,
   type CalculateResponse,
   type LoginResponse,
+  type PredictionsSummary,
   type Snapshot,
 } from '../schemas/admin';
 
@@ -99,6 +103,54 @@ export async function downloadExport(
 
   const blob = await response.blob();
   triggerBlobDownload(blob, `Rankings_${season}_Week${week}.xlsx`);
+}
+
+export async function calculatePredictions(
+  token: string,
+  season: number,
+  week: number
+): Promise<CalculatePredictionsResponse> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction`,
+    withAuth(token, { method: 'POST' })
+  );
+  return parseResponse(response, CalculatePredictionsResponseSchema);
+}
+
+export async function deletePredictions(
+  token: string,
+  season: number,
+  week: number
+): Promise<void> {
+  await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction`,
+    withAuth(token, { method: 'DELETE' })
+  );
+}
+
+export async function fetchPredictionsSummaries(
+  token: string
+): Promise<PredictionsSummary[]> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/predictions`,
+    withAuth(token)
+  );
+  return parseResponse(response, PredictionsSummariesResponseSchema);
+}
+
+export async function publishPredictions(
+  token: string,
+  season: number,
+  week: number
+): Promise<void> {
+  await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction`,
+    withAuth(token, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isPublished: true }),
+    })
+  );
 }
 
 export async function updatePageVisibility(

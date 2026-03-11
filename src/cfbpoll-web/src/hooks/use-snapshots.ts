@@ -6,7 +6,7 @@ import { fetchSnapshots } from '../services/admin-api';
 export function useSnapshots(token: string | null) {
   return useQuery({
     queryKey: ['snapshots'],
-    queryFn: () => fetchSnapshots(token!),
+    queryFn: token ? () => fetchSnapshots(token) : () => Promise.reject(new Error('No token')),
     enabled: token !== null,
     staleTime: STALE_TIME_SNAPSHOTS,
   });

@@ -14,7 +14,7 @@ interface PreviewSectionProps {
   isActionPending: boolean;
   onClearFeedback: () => void;
   onExport: (season: number, week: number) => void;
-  onPublish: (season: number, week: number, source: 'preview' | 'snapshot') => void;
+  onPublish: (season: number, week: number) => void;
 }
 
 export function PreviewSection({
@@ -51,7 +51,7 @@ export function PreviewSection({
               Download Excel
             </button>
             <button
-              onClick={() => onPublish(previewRankings.season, previewRankings.week, 'preview')}
+              onClick={() => onPublish(previewRankings.season, previewRankings.week)}
               disabled={isActionPending}
               className={BUTTON_PRIMARY}
             >
@@ -65,7 +65,7 @@ export function PreviewSection({
             )}
           </div>
         </div>
-        {!calculatedResult.persisted && (
+        {!calculatedResult.isPersisted && (
           <p className="text-amber-600 text-sm mt-2">
             Warning: Rankings were not persisted to the database.
           </p>

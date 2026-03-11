@@ -48,6 +48,8 @@ try
     builder.Services.AddRankingsModule();
     builder.Services.AddSingleton<ISeasonModule, SeasonModule>();
     builder.Services.AddSingleton<IConferenceModule, ConferenceModule>();
+    builder.Services.AddSingleton<IPredictionCalculatorModule, PredictionCalculatorModule>();
+    builder.Services.AddSingleton<IPredictionsModule, PredictionsModule>();
     builder.Services.AddSingleton<IAdminModule, AdminModule>();
     builder.Services.AddSingleton<IAllTimeModule, AllTimeModule>();
     builder.Services.AddSingleton<IAuthModule, AuthModule>();

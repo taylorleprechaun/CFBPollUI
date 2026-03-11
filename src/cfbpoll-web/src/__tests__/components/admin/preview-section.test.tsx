@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { PreviewSection } from '../../../components/admin';
 
 const defaultResult = {
-  persisted: true,
+  isPersisted: true,
   rankings: {
     season: 2024,
     week: 5,
@@ -58,12 +58,12 @@ describe('PreviewSection', () => {
 
     fireEvent.click(screen.getByText('Publish'));
 
-    expect(onPublish).toHaveBeenCalledWith(2024, 5, 'preview');
+    expect(onPublish).toHaveBeenCalledWith(2024, 5);
   });
 
   it('shows not-persisted warning when persisted is false', () => {
     renderPreview({
-      calculatedResult: { ...defaultResult, persisted: false },
+      calculatedResult: { ...defaultResult, isPersisted: false },
     });
 
     expect(screen.getByText(/Rankings were not persisted/)).toBeInTheDocument();

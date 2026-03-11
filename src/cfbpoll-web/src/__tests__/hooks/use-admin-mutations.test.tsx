@@ -7,20 +7,29 @@ import {
   usePublishSnapshot,
   useDeleteSnapshot,
   useExportSnapshot,
+  useCalculatePredictions,
+  usePublishPredictions,
+  useDeletePredictions,
 } from '../../hooks/use-admin-mutations';
 
 vi.mock('../../services/admin-api', () => ({
+  calculatePredictions: vi.fn(),
   calculateRankings: vi.fn(),
-  publishSnapshot: vi.fn(),
+  deletePredictions: vi.fn(),
   deleteSnapshot: vi.fn(),
   downloadExport: vi.fn(),
+  publishPredictions: vi.fn(),
+  publishSnapshot: vi.fn(),
 }));
 
 import {
+  calculatePredictions,
   calculateRankings,
-  publishSnapshot,
+  deletePredictions,
   deleteSnapshot,
   downloadExport,
+  publishPredictions,
+  publishSnapshot,
 } from '../../services/admin-api';
 
 function createWrapper() {
@@ -36,7 +45,7 @@ describe('useCalculateRankings', () => {
   beforeEach(() => vi.resetAllMocks());
 
   it('calls calculateRankings with token and params', async () => {
-    const mockResult = { persisted: true, rankings: { season: 2024, week: 5, rankings: [] } };
+    const mockResult = { isPersisted: true, rankings: { season: 2024, week: 5, rankings: [] } };
     vi.mocked(calculateRankings).mockResolvedValue(mockResult);
 
     const { result } = renderHook(() => useCalculateRankings('test-token'), {
@@ -117,6 +126,73 @@ describe('useExportSnapshot', () => {
   });
 });
 
+describe('useCalculatePredictions', () => {
+  beforeEach(() => vi.resetAllMocks());
+
+  it('calls calculatePredictions with token and params', async () => {
+    const mockResult = { isPersisted: true, predictions: { season: 2024, week: 3, predictions: [] } };
+    vi.mocked(calculatePredictions).mockResolvedValue(mockResult);
+
+    const { result } = renderHook(() => useCalculatePredictions('test-token'), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ season: 2024, week: 3 });
+    });
+
+    expect(calculatePredictions).toHaveBeenCalledWith('test-token', 2024, 3);
+  });
+
+  it('rejects on failure', async () => {
+    vi.mocked(calculatePredictions).mockRejectedValue(new Error('Failed'));
+
+    const { result } = renderHook(() => useCalculatePredictions('test-token'), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(
+      act(() => result.current.mutateAsync({ season: 2024, week: 3 }))
+    ).rejects.toThrow('Failed');
+  });
+});
+
+describe('usePublishPredictions', () => {
+  beforeEach(() => vi.resetAllMocks());
+
+  it('calls publishPredictions with token and params', async () => {
+    vi.mocked(publishPredictions).mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => usePublishPredictions('test-token'), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ season: 2024, week: 3 });
+    });
+
+    expect(publishPredictions).toHaveBeenCalledWith('test-token', 2024, 3);
+  });
+});
+
+describe('useDeletePredictions', () => {
+  beforeEach(() => vi.resetAllMocks());
+
+  it('calls deletePredictions with token and params', async () => {
+    vi.mocked(deletePredictions).mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useDeletePredictions('test-token'), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ season: 2024, week: 3 });
+    });
+
+    expect(deletePredictions).toHaveBeenCalledWith('test-token', 2024, 3);
+  });
+});
+
 describe('null token guard', () => {
   beforeEach(() => vi.resetAllMocks());
 
@@ -154,6 +230,42 @@ describe('null token guard', () => {
     ).rejects.toThrow('Authentication required');
 
     expect(deleteSnapshot).not.toHaveBeenCalled();
+  });
+
+  it('useCalculatePredictions rejects with Authentication required when token is null', async () => {
+    const { result } = renderHook(() => useCalculatePredictions(null), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(
+      act(() => result.current.mutateAsync({ season: 2024, week: 3 }))
+    ).rejects.toThrow('Authentication required');
+
+    expect(calculatePredictions).not.toHaveBeenCalled();
+  });
+
+  it('usePublishPredictions rejects with Authentication required when token is null', async () => {
+    const { result } = renderHook(() => usePublishPredictions(null), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(
+      act(() => result.current.mutateAsync({ season: 2024, week: 3 }))
+    ).rejects.toThrow('Authentication required');
+
+    expect(publishPredictions).not.toHaveBeenCalled();
+  });
+
+  it('useDeletePredictions rejects with Authentication required when token is null', async () => {
+    const { result } = renderHook(() => useDeletePredictions(null), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(
+      act(() => result.current.mutateAsync({ season: 2024, week: 3 }))
+    ).rejects.toThrow('Authentication required');
+
+    expect(deletePredictions).not.toHaveBeenCalled();
   });
 
   it('useExportSnapshot rejects with Authentication required when token is null', async () => {

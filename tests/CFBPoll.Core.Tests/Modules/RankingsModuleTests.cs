@@ -594,7 +594,7 @@ public class RankingsModuleTests
     {
         var weeks = new List<SnapshotSummary>
         {
-            new SnapshotSummary { Season = 2024, Week = 1, Published = true }
+            new SnapshotSummary { Season = 2024, Week = 1, IsPublished = true }
         };
         _mockRankingsData.Setup(x => x.GetSnapshotsAsync()).ReturnsAsync(weeks);
 

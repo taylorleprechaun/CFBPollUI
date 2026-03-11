@@ -1,11 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   loginUser,
+  calculatePredictions,
   calculateRankings,
-  publishSnapshot,
+  deletePredictions,
   deleteSnapshot,
   downloadExport,
+  fetchPredictionsSummaries,
   fetchSnapshots,
+  publishPredictions,
+  publishSnapshot,
   updatePageVisibility,
 } from '../../services/admin-api';
 
@@ -53,7 +57,7 @@ describe('Admin API service', () => {
         ok: true,
         json: () =>
           Promise.resolve({
-            persisted: true,
+            isPersisted: true,
             rankings: { season: 2024, week: 5, rankings: [] },
           }),
       });
@@ -284,6 +288,147 @@ describe('Admin API service', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await expect(fetchSnapshots('token')).rejects.toThrow('Timeout');
+    });
+  });
+
+  describe('calculatePredictions', () => {
+    it('sends POST to prediction endpoint with auth header', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            isPersisted: true,
+            predictions: { season: 2024, week: 5, predictions: [] },
+          }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await calculatePredictions('my-token', 2024, 5);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/prediction'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+          }),
+        })
+      );
+    });
+
+    it('throws on failed calculate', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ message: 'Server error' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(calculatePredictions('token', 2024, 5)).rejects.toThrow('Server error');
+    });
+  });
+
+  describe('publishPredictions', () => {
+    it('sends PATCH to prediction endpoint with auth header and body', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({}),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await publishPredictions('my-token', 2024, 5);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/prediction'),
+        expect.objectContaining({
+          method: 'PATCH',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+            'Content-Type': 'application/json',
+          }),
+          body: JSON.stringify({ isPublished: true }),
+        })
+      );
+    });
+
+    it('throws on failed publish', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: () => Promise.resolve({ message: 'Not found' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(publishPredictions('token', 2024, 5)).rejects.toThrow('Not found');
+    });
+  });
+
+  describe('deletePredictions', () => {
+    it('sends DELETE to prediction endpoint with auth header', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({}),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await deletePredictions('my-token', 2024, 5);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/prediction'),
+        expect.objectContaining({
+          method: 'DELETE',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+          }),
+        })
+      );
+    });
+
+    it('throws on failed delete', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: () => Promise.resolve({ message: 'Not found' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(deletePredictions('token', 2024, 5)).rejects.toThrow('Not found');
+    });
+  });
+
+  describe('fetchPredictionsSummaries', () => {
+    it('sends GET to predictions with auth header', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve([
+            { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z', gameCount: 10 },
+          ]),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchPredictionsSummaries('my-token');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/predictions'),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+          }),
+        })
+      );
+      expect(result).toHaveLength(1);
+    });
+
+    it('throws on failed fetch', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ message: 'DB error' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(fetchPredictionsSummaries('token')).rejects.toThrow('DB error');
     });
   });
 

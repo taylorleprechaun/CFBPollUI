@@ -118,8 +118,8 @@ public class PollLeadersModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2023, Week = 1, Published = false },
-                new() { Season = 2023, Week = 2, Published = false }
+                new() { Season = 2023, Week = 1, IsPublished = false },
+                new() { Season = 2023, Week = 2, IsPublished = false }
             });
 
         var result = await _module.GetPollLeadersAsync(null, null);
@@ -137,8 +137,8 @@ public class PollLeadersModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2023, Week = 1, Published = true },
-                new() { Season = 2023, Week = 2, Published = true }
+                new() { Season = 2023, Week = 1, IsPublished = true },
+                new() { Season = 2023, Week = 2, IsPublished = true }
             });
 
         _mockDataService
@@ -196,10 +196,10 @@ public class PollLeadersModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2022, Week = 3, Published = true },
-                new() { Season = 2022, Week = 5, Published = true },
-                new() { Season = 2023, Week = 4, Published = true },
-                new() { Season = 2023, Week = 6, Published = true }
+                new() { Season = 2022, Week = 3, IsPublished = true },
+                new() { Season = 2022, Week = 5, IsPublished = true },
+                new() { Season = 2023, Week = 4, IsPublished = true },
+                new() { Season = 2023, Week = 6, IsPublished = true }
             });
 
         _mockDataService
@@ -288,9 +288,9 @@ public class PollLeadersModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2021, Week = 5, Published = true },
-                new() { Season = 2022, Week = 5, Published = true },
-                new() { Season = 2023, Week = 5, Published = true }
+                new() { Season = 2021, Week = 5, IsPublished = true },
+                new() { Season = 2022, Week = 5, IsPublished = true },
+                new() { Season = 2023, Week = 5, IsPublished = true }
             });
 
         _mockRankingsModule
@@ -332,10 +332,10 @@ public class PollLeadersModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2020, Week = 5, Published = true },
-                new() { Season = 2021, Week = 5, Published = true },
-                new() { Season = 2022, Week = 5, Published = true },
-                new() { Season = 2023, Week = 5, Published = true }
+                new() { Season = 2020, Week = 5, IsPublished = true },
+                new() { Season = 2021, Week = 5, IsPublished = true },
+                new() { Season = 2022, Week = 5, IsPublished = true },
+                new() { Season = 2023, Week = 5, IsPublished = true }
             });
 
         _mockRankingsModule
@@ -373,7 +373,7 @@ public class PollLeadersModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2023, Week = 3, Published = true }
+                new() { Season = 2023, Week = 3, IsPublished = true }
             });
 
         _mockDataService
@@ -412,7 +412,7 @@ public class PollLeadersModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2023, Week = 3, Published = true }
+                new() { Season = 2023, Week = 3, IsPublished = true }
             });
 
         _mockDataService
@@ -450,7 +450,7 @@ public class PollLeadersModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2023, Week = 1, Published = true }
+                new() { Season = 2023, Week = 1, IsPublished = true }
             });
 
         _mockDataService
@@ -495,7 +495,7 @@ public class PollLeadersModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2023, Week = 1, Published = true }
+                new() { Season = 2023, Week = 1, IsPublished = true }
             });
 
         _mockDataService
@@ -555,8 +555,8 @@ public class PollLeadersModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2023, Week = 1, Published = true },
-                new() { Season = 2023, Week = 2, Published = true }
+                new() { Season = 2023, Week = 1, IsPublished = true },
+                new() { Season = 2023, Week = 2, IsPublished = true }
             });
 
         _mockDataService
@@ -596,9 +596,9 @@ public class PollLeadersModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2020, Week = 1, Published = true },
-                new() { Season = 2021, Week = 1, Published = true },
-                new() { Season = 2022, Week = 1, Published = true }
+                new() { Season = 2020, Week = 1, IsPublished = true },
+                new() { Season = 2021, Week = 1, IsPublished = true },
+                new() { Season = 2022, Week = 1, IsPublished = true }
             });
 
         _mockRankingsModule
@@ -650,9 +650,9 @@ public class PollLeadersModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2020, Week = 1, Published = true },
-                new() { Season = 2021, Week = 1, Published = true },
-                new() { Season = 2022, Week = 1, Published = true }
+                new() { Season = 2020, Week = 1, IsPublished = true },
+                new() { Season = 2021, Week = 1, IsPublished = true },
+                new() { Season = 2022, Week = 1, IsPublished = true }
             });
 
         _mockRankingsModule
@@ -716,8 +716,8 @@ public class PollLeadersModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2023, Week = 1, Published = true },
-                new() { Season = 2023, Week = 2, Published = true }
+                new() { Season = 2023, Week = 1, IsPublished = true },
+                new() { Season = 2023, Week = 2, IsPublished = true }
             });
 
         _mockDataService
@@ -772,9 +772,9 @@ public class PollLeadersModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2023, Week = 1, Published = true },
-                new() { Season = 2023, Week = 2, Published = false },
-                new() { Season = 2023, Week = 3, Published = true }
+                new() { Season = 2023, Week = 1, IsPublished = true },
+                new() { Season = 2023, Week = 2, IsPublished = false },
+                new() { Season = 2023, Week = 3, IsPublished = true }
             });
 
         _mockDataService
@@ -823,7 +823,7 @@ public class PollLeadersModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2023, Week = 1, Published = true }
+                new() { Season = 2023, Week = 1, IsPublished = true }
             });
 
         var cachedResult = new PollLeadersResult
@@ -885,7 +885,7 @@ public class PollLeadersModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = season, Week = week, Published = true }
+                new() { Season = season, Week = week, IsPublished = true }
             });
 
         _mockDataService

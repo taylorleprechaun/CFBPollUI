@@ -261,9 +261,9 @@ public class RankingsDataTests
             var weeks = (await data.GetSnapshotsAsync()).ToList();
 
             Assert.Equal(3, weeks.Count);
-            Assert.Contains(weeks, w => w.Season == 2024 && w.Week == 1 && w.Published);
-            Assert.Contains(weeks, w => w.Season == 2024 && w.Week == 2 && !w.Published);
-            Assert.Contains(weeks, w => w.Season == 2023 && w.Week == 5 && !w.Published);
+            Assert.Contains(weeks, w => w.Season == 2024 && w.Week == 1 && w.IsPublished);
+            Assert.Contains(weeks, w => w.Season == 2024 && w.Week == 2 && !w.IsPublished);
+            Assert.Contains(weeks, w => w.Season == 2023 && w.Week == 5 && !w.IsPublished);
         }
         finally
         {

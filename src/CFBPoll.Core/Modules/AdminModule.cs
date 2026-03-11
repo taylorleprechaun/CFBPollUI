@@ -12,6 +12,8 @@ public class AdminModule : IAdminModule
     private readonly IExcelExportModule _excelExportModule;
     private readonly ILogger<AdminModule> _logger;
     private readonly IPollLeadersModule _pollLeadersModule;
+    private readonly IPredictionCalculatorModule _predictionCalculatorModule;
+    private readonly IPredictionsModule _predictionsModule;
     private readonly IRankingsModule _rankingsModule;
     private readonly IRatingModule _ratingModule;
     private readonly ISeasonTrendsModule _seasonTrendsModule;
@@ -21,6 +23,8 @@ public class AdminModule : IAdminModule
         IExcelExportModule excelExportModule,
         IPersistentCache cache,
         IPollLeadersModule pollLeadersModule,
+        IPredictionCalculatorModule predictionCalculatorModule,
+        IPredictionsModule predictionsModule,
         IRankingsModule rankingsModule,
         IRatingModule ratingModule,
         ISeasonTrendsModule seasonTrendsModule,
@@ -31,9 +35,76 @@ public class AdminModule : IAdminModule
         _excelExportModule = excelExportModule ?? throw new ArgumentNullException(nameof(excelExportModule));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _pollLeadersModule = pollLeadersModule ?? throw new ArgumentNullException(nameof(pollLeadersModule));
+        _predictionCalculatorModule = predictionCalculatorModule ?? throw new ArgumentNullException(nameof(predictionCalculatorModule));
+        _predictionsModule = predictionsModule ?? throw new ArgumentNullException(nameof(predictionsModule));
         _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
         _ratingModule = ratingModule ?? throw new ArgumentNullException(nameof(ratingModule));
         _seasonTrendsModule = seasonTrendsModule ?? throw new ArgumentNullException(nameof(seasonTrendsModule));
+    }
+
+    public async Task<CalculatePredictionsResult> CalculatePredictionsAsync(int season, int week)
+    {
+        _logger.LogInformation("Calculating predictions for season {Season}, week {Week}", season, week);
+
+        var seasonDataTask = _dataService.GetSeasonDataAsync(season, week);
+        var fullScheduleTask = _dataService.GetFullSeasonScheduleAsync(season);
+        await Task.WhenAll(seasonDataTask, fullScheduleTask).ConfigureAwait(false);
+
+        var seasonData = seasonDataTask.Result;
+        var fullSchedule = fullScheduleTask.Result;
+        var ratings = await _ratingModule.RateTeamsAsync(seasonData).ConfigureAwait(false);
+
+        var gameWeek = week + 1;
+        var fbsTeamNames = new HashSet<string>(seasonData.Teams.Keys, StringComparer.OrdinalIgnoreCase);
+        var scoic = StringComparison.OrdinalIgnoreCase;
+
+        var maxRegularWeek = fullSchedule
+            .Where(g => g.SeasonType is not null && g.SeasonType.Equals("regular", scoic) && g.Week.HasValue)
+            .Select(g => g.Week!.Value)
+            .DefaultIfEmpty(0)
+            .Max();
+
+        var isPostseason = gameWeek > maxRegularWeek;
+
+        var upcomingGames = fullSchedule
+            .Where(g => g.HomeTeam is not null && fbsTeamNames.Contains(g.HomeTeam)
+                && g.AwayTeam is not null && fbsTeamNames.Contains(g.AwayTeam)
+                && (isPostseason
+                    ? g.SeasonType is not null && g.SeasonType.Equals("postseason", scoic)
+                    : g.Week == gameWeek))
+            .ToList();
+
+        _logger.LogDebug("Found {GameCount} FBS vs FBS games for season {Season}, week {Week}",
+            upcomingGames.Count, season, week);
+
+        var gamePredictions = await _predictionCalculatorModule
+            .GeneratePredictionsAsync(seasonData, ratings, upcomingGames)
+            .ConfigureAwait(false);
+
+        var predictionsResult = new PredictionsResult
+        {
+            Predictions = gamePredictions.ToList(),
+            Season = season,
+            Week = week
+        };
+
+        var persisted = true;
+        try
+        {
+            await _predictionsModule.SaveAsync(predictionsResult).ConfigureAwait(false);
+            _logger.LogInformation("Saved draft predictions for season {Season}, week {Week}", season, week);
+        }
+        catch (Exception ex)
+        {
+            persisted = false;
+            _logger.LogWarning(ex, "Failed to persist predictions for season {Season}, week {Week}", season, week);
+        }
+
+        return new CalculatePredictionsResult
+        {
+            IsPersisted = persisted,
+            Predictions = predictionsResult
+        };
     }
 
     public async Task<CalculateRankingsResult> CalculateRankingsAsync(int season, int week)
@@ -64,9 +135,16 @@ public class AdminModule : IAdminModule
 
         return new CalculateRankingsResult
         {
-            Persisted = persisted,
+            IsPersisted = persisted,
             Rankings = rankings
         };
+    }
+
+    public async Task<bool> DeletePredictionsAsync(int season, int week)
+    {
+        _logger.LogInformation("Deleting predictions for season {Season}, week {Week}", season, week);
+
+        return await _predictionsModule.DeleteAsync(season, week).ConfigureAwait(false);
     }
 
     public async Task<bool> DeleteSnapshotAsync(int season, int week)
@@ -96,9 +174,21 @@ public class AdminModule : IAdminModule
         return _excelExportModule.GenerateRankingsWorkbook(snapshot);
     }
 
+    public async Task<IEnumerable<PredictionsSummary>> GetPredictionsSummariesAsync()
+    {
+        return await _predictionsModule.GetAllSummariesAsync().ConfigureAwait(false);
+    }
+
     public async Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync()
     {
         return await _rankingsModule.GetSnapshotsAsync().ConfigureAwait(false);
+    }
+
+    public async Task<bool> PublishPredictionsAsync(int season, int week)
+    {
+        _logger.LogInformation("Publishing predictions for season {Season}, week {Week}", season, week);
+
+        return await _predictionsModule.PublishAsync(season, week).ConfigureAwait(false);
     }
 
     public async Task<bool> PublishSnapshotAsync(int season, int week)
