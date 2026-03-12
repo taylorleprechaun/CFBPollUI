@@ -26,6 +26,41 @@ public class CFBDataService : ICFBDataService
         _client = new ApiClient(requestAdapter);
     }
 
+    public async Task<IEnumerable<BettingLine>> GetBettingLinesAsync(int season, int week)
+    {
+        try
+        {
+            var response = await _client.Lines.GetAsync(config =>
+            {
+                config.QueryParameters.Year = season;
+                config.QueryParameters.Week = week;
+            });
+
+            if (response is null)
+                return [];
+
+            return response
+                .Where(g => !string.IsNullOrEmpty(g.HomeTeam) && !string.IsNullOrEmpty(g.AwayTeam))
+                .Select(g =>
+                {
+                    var line = g.Lines?.FirstOrDefault(l => l.SpreadOpen.HasValue || l.OverUnderOpen.HasValue);
+                    return new BettingLine
+                    {
+                        AwayTeam = g.AwayTeam!,
+                        GameID = g.Id,
+                        HomeTeam = g.HomeTeam!,
+                        OverUnderOpen = line?.OverUnderOpen,
+                        SpreadOpen = line?.SpreadOpen
+                    };
+                });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to fetch betting lines for season {Season}, week {Week}", season, week);
+            return [];
+        }
+    }
+
     public async Task<IEnumerable<AdvancedGameStats>> GetAdvancedGameStatsAsync(int season, string seasonType)
     {
         try

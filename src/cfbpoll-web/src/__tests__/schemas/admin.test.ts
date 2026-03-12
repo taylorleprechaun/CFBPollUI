@@ -85,10 +85,16 @@ describe('Admin schemas', () => {
   describe('GamePredictionSchema', () => {
     it('validates a valid game prediction', () => {
       const data = {
+        awayLogoURL: 'https://example.com/michigan.png',
         awayTeam: 'Michigan',
-        confidence: 75.5,
+        awayTeamScore: 17,
+        bettingOverUnder: 48.5,
+        bettingSpread: -7.5,
+        homeLogoURL: 'https://example.com/ohiostate.png',
         homeTeam: 'Ohio State',
-        homeWinProbability: 0.72,
+        homeTeamScore: 28,
+        myOverUnderPick: 'Under',
+        mySpreadPick: 'Ohio State',
         neutralSite: false,
         predictedMargin: 10.5,
         predictedWinner: 'Ohio State',
@@ -97,12 +103,38 @@ describe('Admin schemas', () => {
       expect(result.success).toBe(true);
     });
 
+    it('validates null betting values', () => {
+      const data = {
+        awayLogoURL: '',
+        awayTeam: 'Texas',
+        awayTeamScore: 24,
+        bettingOverUnder: null,
+        bettingSpread: null,
+        homeLogoURL: '',
+        homeTeam: 'Oklahoma',
+        homeTeamScore: 21,
+        myOverUnderPick: '',
+        mySpreadPick: '',
+        neutralSite: true,
+        predictedMargin: 3.0,
+        predictedWinner: 'Texas',
+      };
+      const result = GamePredictionSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
     it('rejects missing predictedWinner', () => {
       const data = {
+        awayLogoURL: '',
         awayTeam: 'Michigan',
-        confidence: 75.5,
+        awayTeamScore: 17,
+        bettingOverUnder: 48.5,
+        bettingSpread: -7.5,
+        homeLogoURL: '',
         homeTeam: 'Ohio State',
-        homeWinProbability: 0.72,
+        homeTeamScore: 28,
+        myOverUnderPick: 'Under',
+        mySpreadPick: 'Ohio State',
         neutralSite: false,
         predictedMargin: 10.5,
       };
@@ -118,10 +150,16 @@ describe('Admin schemas', () => {
         week: 5,
         predictions: [
           {
+            awayLogoURL: 'https://example.com/iowa.png',
             awayTeam: 'Iowa',
-            confidence: 65,
+            awayTeamScore: 21,
+            bettingOverUnder: 42.0,
+            bettingSpread: -7.0,
+            homeLogoURL: 'https://example.com/nebraska.png',
             homeTeam: 'Nebraska',
-            homeWinProbability: 0.68,
+            homeTeamScore: 28,
+            myOverUnderPick: 'Over',
+            mySpreadPick: 'Nebraska',
             neutralSite: false,
             predictedMargin: 7.0,
             predictedWinner: 'Nebraska',

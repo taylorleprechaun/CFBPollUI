@@ -52,8 +52,6 @@ public class AdminModule : IAdminModule
 
         var seasonData = seasonDataTask.Result;
         var fullSchedule = fullScheduleTask.Result;
-        var ratings = await _ratingModule.RateTeamsAsync(seasonData).ConfigureAwait(false);
-
         var gameWeek = week + 1;
         var fbsTeamNames = new HashSet<string>(seasonData.Teams.Keys, StringComparer.OrdinalIgnoreCase);
         var scoic = StringComparison.OrdinalIgnoreCase;
@@ -65,6 +63,16 @@ public class AdminModule : IAdminModule
             .Max();
 
         var isPostseason = gameWeek > maxRegularWeek;
+
+        // CFBD API serves all postseason betting lines under week 1
+        var bettingLinesWeek = isPostseason ? 1 : gameWeek;
+
+        var ratingsTask = _ratingModule.RateTeamsAsync(seasonData);
+        var bettingLinesTask = _dataService.GetBettingLinesAsync(season, bettingLinesWeek);
+        await Task.WhenAll(ratingsTask, bettingLinesTask).ConfigureAwait(false);
+
+        var ratings = ratingsTask.Result;
+        var bettingLines = bettingLinesTask.Result;
 
         var upcomingGames = fullSchedule
             .Where(g => g.HomeTeam is not null && fbsTeamNames.Contains(g.HomeTeam)
@@ -78,7 +86,7 @@ public class AdminModule : IAdminModule
             upcomingGames.Count, season, week);
 
         var gamePredictions = await _predictionCalculatorModule
-            .GeneratePredictionsAsync(seasonData, ratings, upcomingGames)
+            .GeneratePredictionsAsync(seasonData, ratings, upcomingGames, bettingLines)
             .ConfigureAwait(false);
 
         var predictionsResult = new PredictionsResult
@@ -208,16 +216,24 @@ public class AdminModule : IAdminModule
 
     private async Task ClearSeasonCacheAsync(int season, int week)
     {
-        var cacheKeys = new[]
+        var gameWeek = week + 1;
+        var cacheKeys = new List<string>
         {
-            $"teams_{season}",
-            $"games_{season}_regular",
-            $"games_{season}_postseason",
-            $"advancedGameStats_{season}_regular",
             $"advancedGameStats_{season}_postseason",
+            $"advancedGameStats_{season}_regular",
+            $"bettingLines_{season}_{gameWeek}",
+            $"games_{season}_postseason",
+            $"games_{season}_regular",
             $"seasonStats_{season}",
-            $"seasonStats_{season}_week_{week}"
+            $"seasonStats_{season}_week_{week}",
+            $"teams_{season}"
         };
+
+        // CFBD API serves postseason betting lines under week 1; clear that key too if different
+        if (gameWeek != 1)
+        {
+            cacheKeys.Add($"bettingLines_{season}_1");
+        }
 
         foreach (var key in cacheKeys)
         {

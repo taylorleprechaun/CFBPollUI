@@ -35,6 +35,9 @@ public class AdminModuleTests
         _mockRatingModule = new Mock<IRatingModule>();
         _mockSeasonTrendsModule = new Mock<ISeasonTrendsModule>();
 
+        _mockDataService.Setup(x => x.GetBettingLinesAsync(It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new List<BettingLine>());
+
         _adminModule = new AdminModule(
             _mockDataService.Object,
             _mockExcelExportModule.Object,
@@ -89,13 +92,15 @@ public class AdminModuleTests
 
         await _adminModule.CalculateRankingsAsync(2024, 5);
 
-        _mockCache.Verify(x => x.RemoveAsync("teams_2024"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("games_2024_regular"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("games_2024_postseason"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("advancedGameStats_2024_regular"), Times.Once);
         _mockCache.Verify(x => x.RemoveAsync("advancedGameStats_2024_postseason"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("advancedGameStats_2024_regular"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("bettingLines_2024_1"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("bettingLines_2024_6"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("games_2024_postseason"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("games_2024_regular"), Times.Once);
         _mockCache.Verify(x => x.RemoveAsync("seasonStats_2024"), Times.Once);
         _mockCache.Verify(x => x.RemoveAsync("seasonStats_2024_week_5"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("teams_2024"), Times.Once);
 
         Assert.True(callOrder.IndexOf("get_season_data") > callOrder.IndexOf("cache_remove:teams_2024"));
     }
@@ -390,7 +395,7 @@ public class AdminModuleTests
         _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
         _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(schedule);
         _mockPredictionCalculatorModule
-            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.Is<IEnumerable<ScheduleGame>>(g => g.Count() == 2)))
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.Is<IEnumerable<ScheduleGame>>(g => g.Count() == 2), It.IsAny<IEnumerable<BettingLine>>()))
             .ReturnsAsync(predictions);
 
         var result = await _adminModule.CalculatePredictionsAsync(2024, 5);
@@ -413,7 +418,7 @@ public class AdminModuleTests
         _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
         _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(new List<ScheduleGame>());
         _mockPredictionCalculatorModule
-            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>()))
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
             .ReturnsAsync(new List<GamePrediction>());
 
         await _adminModule.CalculatePredictionsAsync(2024, 8);
@@ -447,7 +452,7 @@ public class AdminModuleTests
         _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
         _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(schedule);
         _mockPredictionCalculatorModule
-            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>()))
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
             .ReturnsAsync(new List<GamePrediction>());
 
         await _adminModule.CalculatePredictionsAsync(2024, 5);
@@ -455,7 +460,8 @@ public class AdminModuleTests
         _mockPredictionCalculatorModule.Verify(x =>
             x.GeneratePredictionsAsync(seasonData, ratings,
                 It.Is<IEnumerable<ScheduleGame>>(g =>
-                    g.Count() == 2)),
+                    g.Count() == 2),
+                It.IsAny<IEnumerable<BettingLine>>()),
             Times.Once);
     }
 
@@ -480,7 +486,7 @@ public class AdminModuleTests
         _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
         _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(schedule);
         _mockPredictionCalculatorModule
-            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>()))
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
             .ReturnsAsync(new List<GamePrediction>());
 
         await _adminModule.CalculatePredictionsAsync(2024, 4);
@@ -488,7 +494,8 @@ public class AdminModuleTests
         _mockPredictionCalculatorModule.Verify(x =>
             x.GeneratePredictionsAsync(seasonData, ratings,
                 It.Is<IEnumerable<ScheduleGame>>(g =>
-                    g.Count() == 1 && g.First().HomeTeam == "Ohio State" && g.First().AwayTeam == "Michigan")),
+                    g.Count() == 1 && g.First().HomeTeam == "Ohio State" && g.First().AwayTeam == "Michigan"),
+                It.IsAny<IEnumerable<BettingLine>>()),
             Times.Once);
     }
 
@@ -515,7 +522,7 @@ public class AdminModuleTests
         _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
         _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(schedule);
         _mockPredictionCalculatorModule
-            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>()))
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
             .ReturnsAsync(new List<GamePrediction>());
 
         await _adminModule.CalculatePredictionsAsync(2024, 15);
@@ -523,8 +530,37 @@ public class AdminModuleTests
         _mockPredictionCalculatorModule.Verify(x =>
             x.GeneratePredictionsAsync(seasonData, ratings,
                 It.Is<IEnumerable<ScheduleGame>>(g =>
-                    g.Count() == 2 && g.All(game => game.SeasonType == "postseason"))),
+                    g.Count() == 2 && g.All(game => game.SeasonType == "postseason")),
+                It.IsAny<IEnumerable<BettingLine>>()),
             Times.Once);
+        _mockDataService.Verify(x => x.GetBettingLinesAsync(2024, 1), Times.Once);
+    }
+
+    [Fact]
+    public async Task CalculatePredictionsAsync_RegularSeason_FetchesBettingLinesForNextWeek()
+    {
+        var fbsTeams = new Dictionary<string, TeamInfo>
+        {
+            ["Nebraska"] = new(),
+            ["Iowa"] = new()
+        };
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = fbsTeams };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var schedule = new List<ScheduleGame>
+        {
+            new() { Week = 6, SeasonType = "regular", HomeTeam = "Nebraska", AwayTeam = "Iowa" }
+        };
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(schedule);
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(new List<GamePrediction>());
+
+        await _adminModule.CalculatePredictionsAsync(2024, 5);
+
+        _mockDataService.Verify(x => x.GetBettingLinesAsync(2024, 6), Times.Once);
     }
 
     [Fact]
@@ -537,7 +573,7 @@ public class AdminModuleTests
         _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
         _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(new List<ScheduleGame>());
         _mockPredictionCalculatorModule
-            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>()))
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
             .ReturnsAsync(new List<GamePrediction>());
         _mockPredictionsModule.Setup(x => x.SaveAsync(It.IsAny<PredictionsResult>()))
             .ThrowsAsync(new InvalidOperationException("DB error"));

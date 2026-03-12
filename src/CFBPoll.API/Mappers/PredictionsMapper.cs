@@ -11,10 +11,16 @@ public static class PredictionsMapper
 
         return new GamePredictionDTO
         {
+            AwayLogoURL = prediction.AwayLogoURL,
             AwayTeam = prediction.AwayTeam,
-            Confidence = prediction.Confidence,
+            AwayTeamScore = prediction.AwayTeamScore,
+            BettingOverUnder = prediction.BettingOverUnder,
+            BettingSpread = prediction.BettingSpread,
+            HomeLogoURL = prediction.HomeLogoURL,
             HomeTeam = prediction.HomeTeam,
-            HomeWinProbability = prediction.HomeWinProbability,
+            HomeTeamScore = prediction.HomeTeamScore,
+            MyOverUnderPick = prediction.MyOverUnderPick,
+            MySpreadPick = prediction.MySpreadPick,
             NeutralSite = prediction.NeutralSite,
             PredictedMargin = prediction.PredictedMargin,
             PredictedWinner = prediction.PredictedWinner

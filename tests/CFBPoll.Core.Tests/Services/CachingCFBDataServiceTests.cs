@@ -697,4 +697,40 @@ public class CachingCFBDataServiceTests
         _mockInnerService.Setup(x => x.GetAdvancedGameStatsAsync(season, "regular")).ReturnsAsync(advancedStats);
         _mockInnerService.Setup(x => x.GetSeasonTeamStatsAsync(season, week)).ReturnsAsync(seasonStats);
     }
+
+    [Fact]
+    public async Task GetBettingLinesAsync_ReturnsCachedData_WhenCacheHit()
+    {
+        var cachedData = new List<BettingLine>
+        {
+            new BettingLine { HomeTeam = "Texas", AwayTeam = "Oklahoma", SpreadOpen = -3.5, OverUnderOpen = 55.5 }
+        };
+
+        _mockCache.Setup(x => x.GetAsync<List<BettingLine>>("bettingLines_2024_6"))
+            .ReturnsAsync(cachedData);
+
+        var result = await _service.GetBettingLinesAsync(2024, 6);
+
+        Assert.Single(result);
+        _mockInnerService.Verify(x => x.GetBettingLinesAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetBettingLinesAsync_FetchesFromInnerService_WhenCacheMiss()
+    {
+        var apiData = new List<BettingLine>
+        {
+            new BettingLine { HomeTeam = "Nebraska", AwayTeam = "Iowa", SpreadOpen = -7.0, OverUnderOpen = 42.0 }
+        };
+
+        _mockCache.Setup(x => x.GetAsync<List<BettingLine>>("bettingLines_2024_6"))
+            .ReturnsAsync((List<BettingLine>?)null);
+        _mockInnerService.Setup(x => x.GetBettingLinesAsync(2024, 6))
+            .ReturnsAsync(apiData);
+
+        var result = await _service.GetBettingLinesAsync(2024, 6);
+
+        Assert.Single(result);
+        _mockCache.Verify(x => x.SetAsync("bettingLines_2024_6", It.IsAny<List<BettingLine>>(), It.IsAny<DateTime>()), Times.Once);
+    }
 }

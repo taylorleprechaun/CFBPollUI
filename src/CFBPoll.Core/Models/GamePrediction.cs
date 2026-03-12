@@ -2,10 +2,16 @@ namespace CFBPoll.Core.Models;
 
 public class GamePrediction
 {
+    public string AwayLogoURL { get; set; } = string.Empty;
     public string AwayTeam { get; set; } = string.Empty;
-    public double Confidence { get; set; }
+    public int AwayTeamScore { get; set; }
+    public double? BettingOverUnder { get; set; }
+    public double? BettingSpread { get; set; }
+    public string HomeLogoURL { get; set; } = string.Empty;
     public string HomeTeam { get; set; } = string.Empty;
-    public double HomeWinProbability { get; set; }
+    public int HomeTeamScore { get; set; }
+    public string MyOverUnderPick { get; set; } = string.Empty;
+    public string MySpreadPick { get; set; } = string.Empty;
     public bool NeutralSite { get; set; }
     public double PredictedMargin { get; set; }
     public string PredictedWinner { get; set; } = string.Empty;

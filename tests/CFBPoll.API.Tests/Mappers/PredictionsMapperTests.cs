@@ -11,10 +11,16 @@ public class PredictionsMapperTests
     {
         var prediction = new GamePrediction
         {
+            AwayLogoURL = "https://example.com/michigan.png",
             AwayTeam = "Michigan",
-            Confidence = 75.5,
+            AwayTeamScore = 17,
+            BettingOverUnder = 48.5,
+            BettingSpread = -7.5,
+            HomeLogoURL = "https://example.com/ohiostate.png",
             HomeTeam = "Ohio State",
-            HomeWinProbability = 0.72,
+            HomeTeamScore = 28,
+            MyOverUnderPick = "Under",
+            MySpreadPick = "Ohio State",
             NeutralSite = false,
             PredictedMargin = 10.5,
             PredictedWinner = "Ohio State"
@@ -22,10 +28,16 @@ public class PredictionsMapperTests
 
         var result = PredictionsMapper.ToDTO(prediction);
 
+        Assert.Equal("https://example.com/michigan.png", result.AwayLogoURL);
         Assert.Equal("Michigan", result.AwayTeam);
-        Assert.Equal(75.5, result.Confidence);
+        Assert.Equal(17, result.AwayTeamScore);
+        Assert.Equal(48.5, result.BettingOverUnder);
+        Assert.Equal(-7.5, result.BettingSpread);
+        Assert.Equal("https://example.com/ohiostate.png", result.HomeLogoURL);
         Assert.Equal("Ohio State", result.HomeTeam);
-        Assert.Equal(0.72, result.HomeWinProbability);
+        Assert.Equal(28, result.HomeTeamScore);
+        Assert.Equal("Under", result.MyOverUnderPick);
+        Assert.Equal("Ohio State", result.MySpreadPick);
         Assert.False(result.NeutralSite);
         Assert.Equal(10.5, result.PredictedMargin);
         Assert.Equal("Ohio State", result.PredictedWinner);
@@ -37,9 +49,7 @@ public class PredictionsMapperTests
         var prediction = new GamePrediction
         {
             AwayTeam = "Texas",
-            Confidence = 60,
             HomeTeam = "Oklahoma",
-            HomeWinProbability = 0.55,
             NeutralSite = true,
             PredictedMargin = 3.0,
             PredictedWinner = "Texas"
@@ -48,6 +58,29 @@ public class PredictionsMapperTests
         var result = PredictionsMapper.ToDTO(prediction);
 
         Assert.True(result.NeutralSite);
+    }
+
+    [Fact]
+    public void ToDTO_NullBettingValues_MapsCorrectly()
+    {
+        var prediction = new GamePrediction
+        {
+            AwayTeam = "Iowa",
+            HomeTeam = "Nebraska",
+            BettingOverUnder = null,
+            BettingSpread = null,
+            MyOverUnderPick = "",
+            MySpreadPick = "",
+            PredictedMargin = 5.0,
+            PredictedWinner = "Nebraska"
+        };
+
+        var result = PredictionsMapper.ToDTO(prediction);
+
+        Assert.Null(result.BettingOverUnder);
+        Assert.Null(result.BettingSpread);
+        Assert.Equal("", result.MyOverUnderPick);
+        Assert.Equal("", result.MySpreadPick);
     }
 
     [Fact]
@@ -71,8 +104,8 @@ public class PredictionsMapperTests
                     HomeTeam = "Nebraska",
                     PredictedWinner = "Nebraska",
                     PredictedMargin = 7.0,
-                    Confidence = 65,
-                    HomeWinProbability = 0.68
+                    HomeTeamScore = 28,
+                    AwayTeamScore = 21
                 }
             ]
         };

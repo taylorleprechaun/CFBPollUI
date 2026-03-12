@@ -1,11 +1,12 @@
 import { useState } from 'react';
 
 import { getWeekLabel } from '../../lib/week-utils';
+import { TeamLogo } from '../rankings/team-logo';
 import { BUTTON_PRIMARY } from '../ui/button-styles';
 import { ChevronIcon } from '../ui/chevron-icon';
 import { SuccessCheckmark } from './success-checkmark';
 import type { ActionFeedback } from './types';
-import type { CalculatePredictionsResponse } from '../../schemas/admin';
+import type { CalculatePredictionsResponse, GamePrediction } from '../../schemas/admin';
 
 interface PredictionsPreviewSectionProps {
   calculatedResult: CalculatePredictionsResponse;
@@ -13,6 +14,22 @@ interface PredictionsPreviewSectionProps {
   isActionPending: boolean;
   onClearFeedback: () => void;
   onPublish: (season: number, week: number) => void;
+}
+
+function formatSpread(prediction: GamePrediction): string {
+  if (prediction.bettingSpread === null || prediction.bettingSpread === undefined) return 'N/A';
+  const spread = prediction.bettingSpread;
+  const sign = spread > 0 ? '+' : '';
+  return `${prediction.homeTeam} ${sign}${spread}`;
+}
+
+function formatOverUnder(value: number | null | undefined): string {
+  if (value === null || value === undefined) return 'N/A';
+  return value.toString();
+}
+
+function formatPick(pick: string): string {
+  return pick || 'N/A';
 }
 
 export function PredictionsPreviewSection({
@@ -72,31 +89,52 @@ export function PredictionsPreviewSection({
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-surface-alt">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Matchup</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Predicted Winner</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">Margin</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">Confidence</th>
-                <th className="px-4 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">Home Win %</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Score</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Winner</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Spread</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">My Spread Pick</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">O/U</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">My O/U Pick</th>
               </tr>
             </thead>
             <tbody className="bg-surface divide-y divide-border">
               {predictions.predictions.map((p) => (
                 <tr key={`${p.awayTeam}-${p.homeTeam}`} className="even:bg-surface-alt/50">
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-text-primary">
-                    {p.awayTeam} @ {p.homeTeam}
-                    {p.neutralSite && <span className="ml-1 text-text-muted text-xs">(N)</span>}
+                  <td className="px-4 py-3 text-sm text-text-primary">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <TeamLogo logoURL={p.awayLogoURL} teamName={p.awayTeam} />
+                        <span>{p.awayTeam}</span>
+                        <span className="font-semibold ml-auto">{p.awayTeamScore}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <TeamLogo logoURL={p.homeLogoURL} teamName={p.homeTeam} />
+                        <span>{p.homeTeam}</span>
+                        {p.neutralSite && <span className="text-text-muted text-xs">(N)</span>}
+                        <span className="font-semibold ml-auto">{p.homeTeamScore}</span>
+                      </div>
+                    </div>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-text-primary">
-                    {p.predictedWinner}
+                  <td className="px-4 py-3 text-sm font-medium text-text-primary align-middle">
+                    <div className="flex items-center gap-2">
+                      <TeamLogo
+                        logoURL={p.predictedWinner === p.homeTeam ? p.homeLogoURL : p.awayLogoURL}
+                        teamName={p.predictedWinner}
+                      />
+                      <span>{p.predictedWinner}</span>
+                    </div>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary text-right">
-                    {p.predictedMargin.toFixed(1)}
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary align-middle">
+                    {formatSpread(p)}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary text-right">
-                    {p.confidence.toFixed(1)}%
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary align-middle">
+                    {formatPick(p.mySpreadPick)}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary text-right">
-                    {(p.homeWinProbability * 100).toFixed(1)}%
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary text-right align-middle">
+                    {formatOverUnder(p.bettingOverUnder)}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary align-middle">
+                    {formatPick(p.myOverUnderPick)}
                   </td>
                 </tr>
               ))}

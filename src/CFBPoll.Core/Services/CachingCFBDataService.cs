@@ -26,6 +26,15 @@ public class CachingCFBDataService : ICFBDataService
         _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
     }
 
+    public async Task<IEnumerable<BettingLine>> GetBettingLinesAsync(int season, int week)
+    {
+        var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
+        return await GetOrCacheListAsync(
+            $"bettingLines_{season}_{week}",
+            () => _innerService.GetBettingLinesAsync(season, week),
+            expiresAt).ConfigureAwait(false);
+    }
+
     public async Task<IEnumerable<AdvancedGameStats>> GetAdvancedGameStatsAsync(int season, string seasonType)
     {
         var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);

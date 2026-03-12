@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { HomePage } from '../../pages/home-page';
 
@@ -82,5 +83,18 @@ describe('HomePage', () => {
     var heading = screen.getByRole('heading', { name: 'How It Works' });
 
     expect(heading).toHaveAttribute('id', 'how-it-works');
+  });
+
+  it('scrolls to how-it-works section when Learn More is clicked', async () => {
+    const user = userEvent.setup();
+    renderHomePage();
+
+    var target = document.getElementById('how-it-works')!;
+    target.scrollIntoView = vi.fn();
+
+    var link = screen.getByRole('link', { name: /Learn More/i });
+    await user.click(link);
+
+    expect(target.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' });
   });
 });

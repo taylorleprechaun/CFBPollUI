@@ -21,10 +21,16 @@ export const SnapshotSchema = z.object({
 export const SnapshotsResponseSchema = z.array(SnapshotSchema);
 
 export const GamePredictionSchema = z.object({
+  awayLogoURL: z.string(),
   awayTeam: z.string(),
-  confidence: z.number(),
+  awayTeamScore: z.number(),
+  bettingOverUnder: z.number().nullable(),
+  bettingSpread: z.number().nullable(),
+  homeLogoURL: z.string(),
   homeTeam: z.string(),
-  homeWinProbability: z.number(),
+  homeTeamScore: z.number(),
+  myOverUnderPick: z.string(),
+  mySpreadPick: z.string(),
   neutralSite: z.boolean(),
   predictedMargin: z.number(),
   predictedWinner: z.string(),

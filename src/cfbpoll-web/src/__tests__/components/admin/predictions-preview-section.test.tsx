@@ -11,19 +11,31 @@ const defaultProps = {
       week: 5,
       predictions: [
         {
+          awayLogoURL: 'https://example.com/michigan.png',
           awayTeam: 'Michigan',
-          confidence: 75.5,
+          awayTeamScore: 17,
+          bettingOverUnder: 48.5,
+          bettingSpread: -7.5,
+          homeLogoURL: 'https://example.com/ohiostate.png',
           homeTeam: 'Ohio State',
-          homeWinProbability: 0.72,
+          homeTeamScore: 28,
+          myOverUnderPick: 'Under',
+          mySpreadPick: 'Ohio State',
           neutralSite: false,
           predictedMargin: 10.5,
           predictedWinner: 'Ohio State',
         },
         {
+          awayLogoURL: 'https://example.com/iowa.png',
           awayTeam: 'Iowa',
-          confidence: 55.0,
+          awayTeamScore: 21,
+          bettingOverUnder: 42.0,
+          bettingSpread: -3.0,
+          homeLogoURL: 'https://example.com/nebraska.png',
           homeTeam: 'Nebraska',
-          homeWinProbability: 0.62,
+          homeTeamScore: 24,
+          myOverUnderPick: 'Over',
+          mySpreadPick: 'Nebraska',
           neutralSite: false,
           predictedMargin: 3.5,
           predictedWinner: 'Nebraska',
@@ -44,25 +56,51 @@ describe('PredictionsPreviewSection', () => {
     expect(screen.getByText(/Preview:/)).toBeInTheDocument();
   });
 
-  it('renders prediction table with matchups', () => {
-    render(<PredictionsPreviewSection {...defaultProps} />);
-
-    expect(screen.getByText('Michigan @ Ohio State')).toBeInTheDocument();
-    expect(screen.getByText('Iowa @ Nebraska')).toBeInTheDocument();
-  });
-
   it('renders game count', () => {
     render(<PredictionsPreviewSection {...defaultProps} />);
 
     expect(screen.getByText('(2 games)')).toBeInTheDocument();
   });
 
-  it('renders predicted winners', () => {
+  it('renders team names in score column', () => {
     render(<PredictionsPreviewSection {...defaultProps} />);
 
-    const winners = screen.getAllByText('Ohio State');
-    expect(winners.length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText('Nebraska')).toBeInTheDocument();
+    expect(screen.getAllByText('Michigan').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Ohio State').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('renders predicted scores', () => {
+    render(<PredictionsPreviewSection {...defaultProps} />);
+
+    expect(screen.getByText('17')).toBeInTheDocument();
+    expect(screen.getByText('28')).toBeInTheDocument();
+  });
+
+  it('renders spread column', () => {
+    render(<PredictionsPreviewSection {...defaultProps} />);
+
+    expect(screen.getByText('Ohio State -7.5')).toBeInTheDocument();
+  });
+
+  it('renders over/under column', () => {
+    render(<PredictionsPreviewSection {...defaultProps} />);
+
+    expect(screen.getByText('48.5')).toBeInTheDocument();
+    expect(screen.getByText('42')).toBeInTheDocument();
+  });
+
+  it('renders my spread pick', () => {
+    render(<PredictionsPreviewSection {...defaultProps} />);
+
+    const ohioStateCells = screen.getAllByText('Ohio State');
+    expect(ohioStateCells.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('renders my over/under pick', () => {
+    render(<PredictionsPreviewSection {...defaultProps} />);
+
+    expect(screen.getByText('Under')).toBeInTheDocument();
+    expect(screen.getByText('Over')).toBeInTheDocument();
   });
 
   it('calls onPublish when Publish button is clicked', async () => {
@@ -104,10 +142,16 @@ describe('PredictionsPreviewSection', () => {
           week: 5,
           predictions: [
             {
+              awayLogoURL: 'https://example.com/texas.png',
               awayTeam: 'Texas',
-              confidence: 60,
+              awayTeamScore: 24,
+              bettingOverUnder: null,
+              bettingSpread: null,
+              homeLogoURL: 'https://example.com/oklahoma.png',
               homeTeam: 'Oklahoma',
-              homeWinProbability: 0.55,
+              homeTeamScore: 21,
+              myOverUnderPick: '',
+              mySpreadPick: '',
               neutralSite: true,
               predictedMargin: 3.0,
               predictedWinner: 'Texas',
@@ -120,6 +164,41 @@ describe('PredictionsPreviewSection', () => {
     render(<PredictionsPreviewSection {...props} />);
 
     expect(screen.getByText('(N)')).toBeInTheDocument();
+  });
+
+  it('shows N/A for null betting values', () => {
+    const props = {
+      ...defaultProps,
+      calculatedResult: {
+        isPersisted: true,
+        predictions: {
+          season: 2024,
+          week: 5,
+          predictions: [
+            {
+              awayLogoURL: '',
+              awayTeam: 'USC',
+              awayTeamScore: 21,
+              bettingOverUnder: null,
+              bettingSpread: null,
+              homeLogoURL: '',
+              homeTeam: 'Notre Dame',
+              homeTeamScore: 28,
+              myOverUnderPick: '',
+              mySpreadPick: '',
+              neutralSite: false,
+              predictedMargin: 7.0,
+              predictedWinner: 'Notre Dame',
+            },
+          ],
+        },
+      },
+    };
+
+    render(<PredictionsPreviewSection {...props} />);
+
+    const naElements = screen.getAllByText('N/A');
+    expect(naElements.length).toBeGreaterThanOrEqual(2);
   });
 
   it('disables publish button when action is pending', () => {

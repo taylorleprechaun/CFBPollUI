@@ -244,9 +244,9 @@ public class PredictionsDataTests
                 Week = 5,
                 Predictions =
                 [
-                    new GamePrediction { AwayTeam = "Florida", HomeTeam = "Alabama", PredictedWinner = "Alabama", PredictedMargin = 10, Confidence = 75 },
-                    new GamePrediction { AwayTeam = "Iowa", HomeTeam = "Nebraska", PredictedWinner = "Nebraska", PredictedMargin = 3, Confidence = 55 },
-                    new GamePrediction { AwayTeam = "USC", HomeTeam = "Notre Dame", PredictedWinner = "Notre Dame", PredictedMargin = 7, Confidence = 65 }
+                    new GamePrediction { AwayTeam = "Florida", HomeTeam = "Alabama", PredictedWinner = "Alabama", PredictedMargin = 10, HomeTeamScore = 31, AwayTeamScore = 21 },
+                    new GamePrediction { AwayTeam = "Iowa", HomeTeam = "Nebraska", PredictedWinner = "Nebraska", PredictedMargin = 3, HomeTeamScore = 24, AwayTeamScore = 21 },
+                    new GamePrediction { AwayTeam = "USC", HomeTeam = "Notre Dame", PredictedWinner = "Notre Dame", PredictedMargin = 7, HomeTeamScore = 28, AwayTeamScore = 21 }
                 ]
             };
 
@@ -333,9 +333,9 @@ public class PredictionsDataTests
                 new GamePrediction
                 {
                     AwayTeam = awayTeam,
-                    Confidence = 75.5,
+                    AwayTeamScore = 17,
                     HomeTeam = homeTeam,
-                    HomeWinProbability = 0.72,
+                    HomeTeamScore = 28,
                     NeutralSite = false,
                     PredictedMargin = 10.5,
                     PredictedWinner = homeTeam

@@ -176,11 +176,11 @@ public class AdminControllerTests
                     new GamePrediction
                     {
                         AwayTeam = "Michigan",
+                        AwayTeamScore = 17,
                         HomeTeam = "Ohio State",
+                        HomeTeamScore = 28,
                         PredictedWinner = "Ohio State",
                         PredictedMargin = 10.5,
-                        Confidence = 75,
-                        HomeWinProbability = 0.72,
                         NeutralSite = false
                     }
                 ]
