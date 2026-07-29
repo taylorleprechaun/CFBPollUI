@@ -163,6 +163,36 @@ public class CachingServiceExtensionsTests
     }
 
     [Fact]
+    public void AddCFBDataServiceWithCaching_UsesConfiguredPreferredProvider()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration(apiKey: "test-api-key", preferredProvider: "DraftKings");
+
+        services.AddCFBDataServiceWithCaching(configuration);
+
+        var provider = services.BuildServiceProvider();
+        var service = provider.GetService<CFBDataService>();
+
+        Assert.NotNull(service);
+    }
+    
+    [Fact]
+    public void AddCFBDataServiceWithCaching_UsesDefaultPreferredProvider()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration(apiKey: "test-api-key", preferredProvider: null);
+
+        services.AddCFBDataServiceWithCaching(configuration);
+
+        var provider = services.BuildServiceProvider();
+        var service = provider.GetService<CFBDataService>();
+
+        Assert.NotNull(service);
+    }
+
+    [Fact]
     public void AddCFBDataServiceWithCaching_ReturnsServiceCollection()
     {
         var services = new ServiceCollection();
@@ -278,7 +308,8 @@ public class CachingServiceExtensionsTests
         string? connectionString = null,
         int? maxSeasonYearExpirationHours = null,
         int? seasonDataExpirationHours = null,
-        int? minimumYear = null)
+        int? minimumYear = null,
+        string? preferredProvider = null)
     {
         var configValues = new Dictionary<string, string?>();
 
@@ -310,6 +341,11 @@ public class CachingServiceExtensionsTests
         if (minimumYear.HasValue)
         {
             configValues["HistoricalData:MinimumYear"] = minimumYear.Value.ToString();
+        }
+
+        if (preferredProvider is not null)
+        {
+            configValues["BettingLines:PreferredProvider"] = preferredProvider;
         }
 
         return new ConfigurationBuilder()

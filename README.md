@@ -276,12 +276,12 @@ The frontend runs at `http://localhost:5173`.
 
 ## Testing
 
-The project includes 1,455 unit and integration tests across backend and frontend.
+The project includes 1,460 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (698 tests)
+# Backend tests (703 tests)
 dotnet test
 
 # Run with coverage
@@ -294,7 +294,7 @@ npm test
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-698-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-703-blue)
 ![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-757-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)

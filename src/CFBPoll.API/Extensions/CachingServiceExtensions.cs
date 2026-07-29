@@ -23,6 +23,7 @@ public static class CachingServiceExtensions
                 "API key not configured. Set CollegeFootballData:ApiKey in appsettings.json or appsettings-private.json");
 
         int minimumYear = configuration.GetValue<int>("HistoricalData:MinimumYear", 2002);
+        string preferredBettingProvider = configuration.GetValue<string>("BettingLines:PreferredProvider", "Bovada")!;
 
         services.AddHttpClient<CFBDataService>();
 
@@ -30,7 +31,7 @@ public static class CachingServiceExtensions
         {
             var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
             HttpClient httpClient = httpClientFactory.CreateClient(nameof(CFBDataService));
-            return new CFBDataService(httpClient, apiKey, minimumYear, sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<CFBDataService>>());
+            return new CFBDataService(httpClient, apiKey, minimumYear, preferredBettingProvider, sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<CFBDataService>>());
         });
 
         services.AddSingleton<ICFBDataService>(sp =>
