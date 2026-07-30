@@ -43,6 +43,12 @@ vi.mock('../pages/predictions-page', () => ({
   default: MockPredictionsPage,
 }));
 
+const MockPublicPredictionsPage = () => <div>Public Predictions Page Content</div>;
+vi.mock('../pages/public-predictions-page', () => ({
+  PublicPredictionsPage: MockPublicPredictionsPage,
+  default: MockPublicPredictionsPage,
+}));
+
 const MockSettingsPage = () => <div>Settings Page Content</div>;
 vi.mock('../pages/settings-page', () => ({
   SettingsPage: MockSettingsPage,
@@ -58,17 +64,21 @@ vi.mock('../hooks/use-seasons', () => ({
   }),
 }));
 
+let mockPredictionsPageEnabled = true;
+
 vi.mock('../hooks/use-page-visibility', () => ({
   usePageVisibility: () => ({
     allTimeEnabled: true,
     isLoading: false,
     pollLeadersEnabled: true,
+    predictionsPageEnabled: mockPredictionsPageEnabled,
     seasonTrendsEnabled: true,
   }),
 }));
 
 afterEach(() => {
   sessionStorage.clear();
+  mockPredictionsPageEnabled = true;
 });
 
 function renderApp(initialRoute = '/') {
@@ -110,6 +120,22 @@ describe('App', () => {
     renderApp('/team-details');
     await waitFor(() => {
       expect(screen.getByText('Team Details Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('renders public predictions page at /predictions route when enabled', async () => {
+    renderApp('/predictions');
+    await waitFor(() => {
+      expect(screen.getByText('Public Predictions Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('redirects /predictions to home when predictions page is disabled', async () => {
+    mockPredictionsPageEnabled = false;
+
+    renderApp('/predictions');
+    await waitFor(() => {
+      expect(screen.getByText('Home Page Content')).toBeInTheDocument();
     });
   });
 

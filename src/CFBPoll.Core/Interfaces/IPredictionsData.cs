@@ -13,14 +13,24 @@ public interface IPredictionsData
     Task<bool> DeleteAsync(int season, int week);
 
     /// <summary>
+    /// Retrieves all persisted prediction summaries including draft and published.
+    /// </summary>
+    Task<IEnumerable<PredictionsSummary>> GetAllSummariesAsync();
+
+    /// <summary>
     /// Retrieves predictions for the given season and week.
     /// </summary>
     Task<PredictionsResult?> GetAsync(int season, int week);
 
     /// <summary>
-    /// Retrieves all persisted prediction summaries including draft and published.
+    /// Retrieves a published prediction result for the given season and week.
     /// </summary>
-    Task<IEnumerable<PredictionsSummary>> GetAllSummariesAsync();
+    Task<PredictionsResult?> GetPublishedAsync(int season, int week);
+
+    /// <summary>
+    /// Retrieves the published prediction week numbers for the given season.
+    /// </summary>
+    Task<IEnumerable<int>> GetPublishedWeekNumbersAsync(int season);
 
     /// <summary>
     /// Creates the database table if it does not exist.

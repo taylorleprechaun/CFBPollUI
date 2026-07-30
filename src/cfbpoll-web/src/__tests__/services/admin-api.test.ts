@@ -530,13 +530,14 @@ describe('Admin API service', () => {
     it('sends PUT with auth header and JSON body', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ allTimeEnabled: true, pollLeadersEnabled: true, seasonTrendsEnabled: true }),
+        json: () => Promise.resolve({ allTimeEnabled: true, pollLeadersEnabled: true, predictionsPageEnabled: true, seasonTrendsEnabled: true }),
       });
       vi.stubGlobal('fetch', mockFetch);
 
       const result = await updatePageVisibility('my-token', {
         allTimeEnabled: true,
         pollLeadersEnabled: true,
+        predictionsPageEnabled: true,
         seasonTrendsEnabled: true,
       });
 
@@ -548,28 +549,30 @@ describe('Admin API service', () => {
             Authorization: 'Bearer my-token',
             'Content-Type': 'application/json',
           }),
-          body: JSON.stringify({ allTimeEnabled: true, pollLeadersEnabled: true, seasonTrendsEnabled: true }),
+          body: JSON.stringify({ allTimeEnabled: true, pollLeadersEnabled: true, predictionsPageEnabled: true, seasonTrendsEnabled: true }),
         })
       );
       expect(result.allTimeEnabled).toBe(true);
       expect(result.pollLeadersEnabled).toBe(true);
+      expect(result.predictionsPageEnabled).toBe(true);
       expect(result.seasonTrendsEnabled).toBe(true);
     });
 
     it('validates response against PageVisibilitySchema', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ allTimeEnabled: false, pollLeadersEnabled: false, seasonTrendsEnabled: false }),
+        json: () => Promise.resolve({ allTimeEnabled: false, pollLeadersEnabled: false, predictionsPageEnabled: false, seasonTrendsEnabled: false }),
       });
       vi.stubGlobal('fetch', mockFetch);
 
       const result = await updatePageVisibility('my-token', {
         allTimeEnabled: false,
         pollLeadersEnabled: false,
+        predictionsPageEnabled: false,
         seasonTrendsEnabled: false,
       });
 
-      expect(result).toEqual({ allTimeEnabled: false, pollLeadersEnabled: false, seasonTrendsEnabled: false });
+      expect(result).toEqual({ allTimeEnabled: false, pollLeadersEnabled: false, predictionsPageEnabled: false, seasonTrendsEnabled: false });
     });
 
     it('throws on HTTP error', async () => {
@@ -581,7 +584,12 @@ describe('Admin API service', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await expect(
-        updatePageVisibility('bad-token', { allTimeEnabled: true, pollLeadersEnabled: true, seasonTrendsEnabled: true })
+        updatePageVisibility('bad-token', {
+          allTimeEnabled: true,
+          pollLeadersEnabled: true,
+          predictionsPageEnabled: true,
+          seasonTrendsEnabled: true,
+        })
       ).rejects.toThrow('Forbidden');
     });
   });

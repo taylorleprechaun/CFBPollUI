@@ -19,6 +19,7 @@ vi.mock('../../contexts/auth-context', () => ({
 
 let mockAllTimeEnabled = true;
 let mockPollLeadersEnabled = true;
+let mockPredictionsPageEnabled = true;
 let mockSeasonTrendsEnabled = true;
 
 vi.mock('../../hooks/use-page-visibility', () => ({
@@ -26,6 +27,7 @@ vi.mock('../../hooks/use-page-visibility', () => ({
     allTimeEnabled: mockAllTimeEnabled,
     isLoading: false,
     pollLeadersEnabled: mockPollLeadersEnabled,
+    predictionsPageEnabled: mockPredictionsPageEnabled,
     seasonTrendsEnabled: mockSeasonTrendsEnabled,
   }),
 }));
@@ -56,6 +58,7 @@ describe('SettingsPage', () => {
     mockToken = 'test-token';
     mockAllTimeEnabled = true;
     mockPollLeadersEnabled = true;
+    mockPredictionsPageEnabled = true;
     mockSeasonTrendsEnabled = true;
   });
 
@@ -80,6 +83,8 @@ describe('SettingsPage', () => {
     expect(screen.getByText('All-Time')).toBeInTheDocument();
     expect(screen.getByText('All-Time Rankings')).toBeInTheDocument();
     expect(screen.getByText('Poll Leaders')).toBeInTheDocument();
+    expect(screen.getByText('Predictions')).toBeInTheDocument();
+    expect(screen.getByText('Predictions & Track Record')).toBeInTheDocument();
   });
 
   it('renders page visibility toggles with correct checked state', () => {
@@ -98,10 +103,12 @@ describe('SettingsPage', () => {
   it('calls updatePageVisibility when toggle is changed', async () => {
     mockAllTimeEnabled = true;
     mockPollLeadersEnabled = true;
+    mockPredictionsPageEnabled = true;
     mockSeasonTrendsEnabled = true;
     mockUpdatePageVisibility.mockResolvedValue({
       allTimeEnabled: false,
       pollLeadersEnabled: true,
+      predictionsPageEnabled: true,
       seasonTrendsEnabled: true,
     });
 
@@ -113,7 +120,32 @@ describe('SettingsPage', () => {
     await waitFor(() => {
       expect(mockUpdatePageVisibility).toHaveBeenCalledWith(
         'test-token',
-        { allTimeEnabled: false, pollLeadersEnabled: true, seasonTrendsEnabled: true }
+        { allTimeEnabled: false, pollLeadersEnabled: true, predictionsPageEnabled: true, seasonTrendsEnabled: true }
+      );
+    });
+  });
+
+  it('calls updatePageVisibility when predictions toggle is changed', async () => {
+    mockAllTimeEnabled = true;
+    mockPollLeadersEnabled = true;
+    mockPredictionsPageEnabled = true;
+    mockSeasonTrendsEnabled = true;
+    mockUpdatePageVisibility.mockResolvedValue({
+      allTimeEnabled: true,
+      pollLeadersEnabled: true,
+      predictionsPageEnabled: false,
+      seasonTrendsEnabled: true,
+    });
+
+    renderSettingsPage();
+
+    const predictionsCheckbox = screen.getByLabelText('Predictions & Track Record');
+    await userEvent.click(predictionsCheckbox);
+
+    await waitFor(() => {
+      expect(mockUpdatePageVisibility).toHaveBeenCalledWith(
+        'test-token',
+        { allTimeEnabled: true, pollLeadersEnabled: true, predictionsPageEnabled: false, seasonTrendsEnabled: true }
       );
     });
   });
@@ -147,6 +179,7 @@ describe('SettingsPage', () => {
     mockUpdatePageVisibility.mockResolvedValue({
       allTimeEnabled: true,
       pollLeadersEnabled: true,
+      predictionsPageEnabled: true,
       seasonTrendsEnabled: false,
     });
 
@@ -158,7 +191,7 @@ describe('SettingsPage', () => {
     await waitFor(() => {
       expect(mockUpdatePageVisibility).toHaveBeenCalledWith(
         'test-token',
-        { allTimeEnabled: true, pollLeadersEnabled: true, seasonTrendsEnabled: false }
+        { allTimeEnabled: true, pollLeadersEnabled: true, predictionsPageEnabled: true, seasonTrendsEnabled: false }
       );
     });
   });

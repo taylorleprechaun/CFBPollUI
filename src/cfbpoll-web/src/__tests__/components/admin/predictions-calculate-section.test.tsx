@@ -16,8 +16,8 @@ const defaultProps = {
   selectedWeek: 5,
   title: 'Generate Predictions',
   weeks: [
-    { weekNumber: 1, label: 'Week 1', rankingsPublished: true },
-    { weekNumber: 5, label: 'Week 5', rankingsPublished: false },
+    { weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: true },
+    { weekNumber: 5, label: 'Week 5', predictionsPublished: false, rankingsPublished: false },
   ],
   weeksLoading: false,
 };

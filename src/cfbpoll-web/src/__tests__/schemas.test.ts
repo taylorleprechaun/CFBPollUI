@@ -7,6 +7,8 @@ import {
   RankedTeamSchema,
   ScheduleGameSchema,
   TeamDetailResponseSchema,
+  GamePredictionPublicSchema,
+  PredictionsPublicResponseSchema,
 } from '../schemas';
 
 describe('Zod Schemas', () => {
@@ -32,7 +34,7 @@ describe('Zod Schemas', () => {
 
   describe('WeekSchema', () => {
     it('validates valid week', () => {
-      const data = { weekNumber: 5, label: 'Week 5', rankingsPublished: false };
+      const data = { weekNumber: 5, label: 'Week 5', predictionsPublished: false, rankingsPublished: false };
       const result = WeekSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
@@ -49,8 +51,8 @@ describe('Zod Schemas', () => {
       const data = {
         season: 2024,
         weeks: [
-          { weekNumber: 1, label: 'Week 1', rankingsPublished: true },
-          { weekNumber: 2, label: 'Week 2', rankingsPublished: false },
+          { weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: true },
+          { weekNumber: 2, label: 'Week 2', predictionsPublished: true, rankingsPublished: false },
         ],
       };
       const result = WeeksResponseSchema.safeParse(data);
@@ -59,7 +61,7 @@ describe('Zod Schemas', () => {
 
     it('rejects response without season', () => {
       const data = {
-        weeks: [{ weekNumber: 1, label: 'Week 1', rankingsPublished: false }],
+        weeks: [{ weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: false }],
       };
       const result = WeeksResponseSchema.safeParse(data);
       expect(result.success).toBe(false);
@@ -243,6 +245,68 @@ describe('Zod Schemas', () => {
     it('rejects response with missing required fields', () => {
       const data = { teamName: 'USC' };
       const result = TeamDetailResponseSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('GamePredictionPublicSchema', () => {
+    it('validates a valid prediction', () => {
+      const data = {
+        awayLogoURL: 'https://example.com/away.png',
+        awayTeam: 'Michigan',
+        awayTeamScore: 17,
+        bettingOverUnder: 45.5,
+        bettingSpread: -3.5,
+        homeLogoURL: 'https://example.com/home.png',
+        homeTeam: 'Ohio State',
+        homeTeamScore: 28,
+        myOverUnderPick: 'Over',
+        mySpreadPick: 'Ohio State',
+        neutralSite: false,
+        predictedMargin: 11,
+        predictedWinner: 'Ohio State',
+      };
+      const result = GamePredictionPublicSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('allows null betting lines', () => {
+      const data = {
+        awayLogoURL: '',
+        awayTeam: 'Michigan',
+        awayTeamScore: 17,
+        bettingOverUnder: null,
+        bettingSpread: null,
+        homeLogoURL: '',
+        homeTeam: 'Ohio State',
+        homeTeamScore: 28,
+        myOverUnderPick: '',
+        mySpreadPick: '',
+        neutralSite: false,
+        predictedMargin: 11,
+        predictedWinner: 'Ohio State',
+      };
+      const result = GamePredictionPublicSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects a prediction missing required fields', () => {
+      const data = { homeTeam: 'Ohio State' };
+      const result = GamePredictionPublicSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('PredictionsPublicResponseSchema', () => {
+    it('validates a valid response', () => {
+      const data = { season: 2024, week: 5, predictions: [] };
+      const result = PredictionsPublicResponseSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects a response without season', () => {
+      const data = { week: 5, predictions: [] };
+      const result = PredictionsPublicResponseSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
   });

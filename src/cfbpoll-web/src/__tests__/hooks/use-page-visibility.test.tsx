@@ -30,6 +30,7 @@ describe('usePageVisibility', () => {
       allTimeEnabled: false,
       isLoading: false,
       pollLeadersEnabled: true,
+      predictionsPageEnabled: true,
       seasonTrendsEnabled: true,
     };
 

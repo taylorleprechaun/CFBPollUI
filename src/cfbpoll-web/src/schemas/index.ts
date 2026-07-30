@@ -19,6 +19,7 @@ export const SeasonsResponseSchema = z.object({
 // Week schemas
 export const WeekSchema = z.object({
   label: z.string(),
+  predictionsPublished: z.boolean(),
   rankingsPublished: z.boolean(),
   weekNumber: z.number(),
 });
@@ -129,7 +130,31 @@ export const AllTimeResponseSchema = z.object({
 export const PageVisibilitySchema = z.object({
   allTimeEnabled: z.boolean(),
   pollLeadersEnabled: z.boolean(),
+  predictionsPageEnabled: z.boolean(),
   seasonTrendsEnabled: z.boolean(),
+});
+
+// Prediction schemas (public)
+export const GamePredictionPublicSchema = z.object({
+  awayLogoURL: z.string(),
+  awayTeam: z.string(),
+  awayTeamScore: z.number(),
+  bettingOverUnder: z.number().nullable(),
+  bettingSpread: z.number().nullable(),
+  homeLogoURL: z.string(),
+  homeTeam: z.string(),
+  homeTeamScore: z.number(),
+  myOverUnderPick: z.string(),
+  mySpreadPick: z.string(),
+  neutralSite: z.boolean(),
+  predictedMargin: z.number(),
+  predictedWinner: z.string(),
+});
+
+export const PredictionsPublicResponseSchema = z.object({
+  predictions: z.array(GamePredictionPublicSchema),
+  season: z.number(),
+  week: z.number(),
 });
 
 // Poll leaders schemas
@@ -181,9 +206,11 @@ export type AllTimeEntry = z.infer<typeof AllTimeEntrySchema>;
 export type AllTimeResponse = z.infer<typeof AllTimeResponseSchema>;
 export type Conference = z.infer<typeof ConferenceSchema>;
 export type ConferencesResponse = z.infer<typeof ConferencesResponseSchema>;
+export type GamePredictionPublic = z.infer<typeof GamePredictionPublicSchema>;
 export type PageVisibility = z.infer<typeof PageVisibilitySchema>;
 export type PollLeaderEntry = z.infer<typeof PollLeaderEntrySchema>;
 export type PollLeadersResponse = z.infer<typeof PollLeadersResponseSchema>;
+export type PredictionsPublicResponse = z.infer<typeof PredictionsPublicResponseSchema>;
 export type RankedTeam = z.infer<typeof RankedTeamSchema>;
 export type RankingsResponse = z.infer<typeof RankingsResponseSchema>;
 export type TeamRecord = z.infer<typeof RecordSchema>;

@@ -12,6 +12,243 @@ namespace CFBPoll.Core.Tests.Data;
 public class PredictionsDataTests
 {
     [Fact]
+    public void Constructor_ThrowsOnNullLogger()
+    {
+        var options = new Mock<IOptions<DatabaseOptions>>();
+        options.Setup(x => x.Value).Returns(new DatabaseOptions());
+
+        Assert.Throws<ArgumentNullException>(() =>
+            new PredictionsData(options.Object, null!));
+    }
+
+    [Fact]
+    public void Constructor_ThrowsOnNullOptions()
+    {
+        Assert.Throws<ArgumentNullException>(() =>
+            new PredictionsData(null!, new Mock<ILogger<PredictionsData>>().Object));
+    }
+
+    [Fact]
+    public async Task DeleteAsync_DeletesExisting_ReturnsTrue()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveAsync(CreatePredictionsResult(2024, 5));
+            var deleted = await data.DeleteAsync(2024, 5);
+
+            Assert.True(deleted);
+
+            var result = await data.GetAsync(2024, 5);
+            Assert.Null(result);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task DeleteAsync_NonExisting_ReturnsFalse()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var deleted = await data.DeleteAsync(2024, 5);
+
+            Assert.False(deleted);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetAllSummariesAsync_ReturnsAllSummaries()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveAsync(CreatePredictionsResult(2024, 1));
+            await data.SaveAsync(CreatePredictionsResult(2024, 2, "Nebraska", "USC"));
+            await data.SaveAsync(CreatePredictionsResult(2023, 5));
+            await data.PublishAsync(2024, 1);
+
+            var summaries = (await data.GetAllSummariesAsync()).ToList();
+
+            Assert.Equal(3, summaries.Count);
+            Assert.Contains(summaries, s => s.Season == 2024 && s.Week == 1 && s.IsPublished && s.GameCount == 1);
+            Assert.Contains(summaries, s => s.Season == 2024 && s.Week == 2 && !s.IsPublished && s.GameCount == 1);
+            Assert.Contains(summaries, s => s.Season == 2023 && s.Week == 5 && !s.IsPublished && s.GameCount == 1);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetAllSummariesAsync_ReturnsCorrectGameCount()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var predictions = new PredictionsResult
+            {
+                Season = 2024,
+                Week = 5,
+                Predictions =
+                [
+                    new GamePrediction { AwayTeam = "Florida", HomeTeam = "Alabama", PredictedWinner = "Alabama", PredictedMargin = 10, HomeTeamScore = 31, AwayTeamScore = 21 },
+                    new GamePrediction { AwayTeam = "Iowa", HomeTeam = "Nebraska", PredictedWinner = "Nebraska", PredictedMargin = 3, HomeTeamScore = 24, AwayTeamScore = 21 },
+                    new GamePrediction { AwayTeam = "USC", HomeTeam = "Notre Dame", PredictedWinner = "Notre Dame", PredictedMargin = 7, HomeTeamScore = 28, AwayTeamScore = 21 }
+                ]
+            };
+
+            await data.SaveAsync(predictions);
+
+            var summaries = (await data.GetAllSummariesAsync()).ToList();
+            Assert.Equal(3, summaries.Single().GameCount);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetAsync_ReturnsNull_WhenNotFound()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var result = await data.GetAsync(2024, 5);
+
+            Assert.Null(result);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetPublishedAsync_NotFound_ReturnsNull()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var result = await data.GetPublishedAsync(2024, 5);
+
+            Assert.Null(result);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetPublishedAsync_NotPublished_ReturnsNull()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveAsync(CreatePredictionsResult(2024, 5));
+
+            var result = await data.GetPublishedAsync(2024, 5);
+
+            Assert.Null(result);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetPublishedAsync_Published_ReturnsResult()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveAsync(CreatePredictionsResult(2024, 5));
+            await data.PublishAsync(2024, 5);
+
+            var result = await data.GetPublishedAsync(2024, 5);
+
+            Assert.NotNull(result);
+            Assert.Equal(2024, result.Season);
+            Assert.Equal(5, result.Week);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetPublishedWeekNumbersAsync_NoPublishedWeeks_ReturnsEmpty()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveAsync(CreatePredictionsResult(2024, 1));
+
+            var weeks = (await data.GetPublishedWeekNumbersAsync(2024)).ToList();
+
+            Assert.Empty(weeks);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetPublishedWeekNumbersAsync_ReturnsOnlyPublishedWeeks()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveAsync(CreatePredictionsResult(2024, 1));
+            await data.SaveAsync(CreatePredictionsResult(2024, 2));
+            await data.SaveAsync(CreatePredictionsResult(2024, 3));
+            await data.PublishAsync(2024, 1);
+            await data.PublishAsync(2024, 3);
+
+            var weeks = (await data.GetPublishedWeekNumbersAsync(2024)).ToList();
+
+            Assert.Equal(new List<int> { 1, 3 }, weeks);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
     public async Task InitializeAsync_CreatesTable()
     {
         var (data, tempPath) = CreatePredictionsDataWithFile();
@@ -26,6 +263,46 @@ public class PredictionsDataTests
             var result = await command.ExecuteScalarAsync();
 
             Assert.Equal("PredictionsSnapshot", result);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task PublishAsync_ReturnsFalse_WhenNotFound()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var published = await data.PublishAsync(2024, 5);
+
+            Assert.False(published);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task PublishAsync_SetsPublishedFlag()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveAsync(CreatePredictionsResult(2024, 5));
+            var published = await data.PublishAsync(2024, 5);
+
+            Assert.True(published);
+
+            var summaries = (await data.GetAllSummariesAsync()).ToList();
+            Assert.True(summaries.Single(s => s.Season == 2024 && s.Week == 5).IsPublished);
         }
         finally
         {
@@ -107,178 +384,6 @@ public class PredictionsDataTests
     }
 
     [Fact]
-    public async Task GetAsync_ReturnsNull_WhenNotFound()
-    {
-        var (data, tempPath) = CreatePredictionsDataWithFile();
-        try
-        {
-            await data.InitializeAsync();
-
-            var result = await data.GetAsync(2024, 5);
-
-            Assert.Null(result);
-        }
-        finally
-        {
-            CleanupFile(tempPath);
-        }
-    }
-
-    [Fact]
-    public async Task DeleteAsync_DeletesExisting_ReturnsTrue()
-    {
-        var (data, tempPath) = CreatePredictionsDataWithFile();
-        try
-        {
-            await data.InitializeAsync();
-
-            await data.SaveAsync(CreatePredictionsResult(2024, 5));
-            var deleted = await data.DeleteAsync(2024, 5);
-
-            Assert.True(deleted);
-
-            var result = await data.GetAsync(2024, 5);
-            Assert.Null(result);
-        }
-        finally
-        {
-            CleanupFile(tempPath);
-        }
-    }
-
-    [Fact]
-    public async Task DeleteAsync_NonExisting_ReturnsFalse()
-    {
-        var (data, tempPath) = CreatePredictionsDataWithFile();
-        try
-        {
-            await data.InitializeAsync();
-
-            var deleted = await data.DeleteAsync(2024, 5);
-
-            Assert.False(deleted);
-        }
-        finally
-        {
-            CleanupFile(tempPath);
-        }
-    }
-
-    [Fact]
-    public async Task PublishAsync_SetsPublishedFlag()
-    {
-        var (data, tempPath) = CreatePredictionsDataWithFile();
-        try
-        {
-            await data.InitializeAsync();
-
-            await data.SaveAsync(CreatePredictionsResult(2024, 5));
-            var published = await data.PublishAsync(2024, 5);
-
-            Assert.True(published);
-
-            var summaries = (await data.GetAllSummariesAsync()).ToList();
-            Assert.True(summaries.Single(s => s.Season == 2024 && s.Week == 5).IsPublished);
-        }
-        finally
-        {
-            CleanupFile(tempPath);
-        }
-    }
-
-    [Fact]
-    public async Task PublishAsync_ReturnsFalse_WhenNotFound()
-    {
-        var (data, tempPath) = CreatePredictionsDataWithFile();
-        try
-        {
-            await data.InitializeAsync();
-
-            var published = await data.PublishAsync(2024, 5);
-
-            Assert.False(published);
-        }
-        finally
-        {
-            CleanupFile(tempPath);
-        }
-    }
-
-    [Fact]
-    public async Task GetAllSummariesAsync_ReturnsAllSummaries()
-    {
-        var (data, tempPath) = CreatePredictionsDataWithFile();
-        try
-        {
-            await data.InitializeAsync();
-
-            await data.SaveAsync(CreatePredictionsResult(2024, 1));
-            await data.SaveAsync(CreatePredictionsResult(2024, 2, "Nebraska", "USC"));
-            await data.SaveAsync(CreatePredictionsResult(2023, 5));
-            await data.PublishAsync(2024, 1);
-
-            var summaries = (await data.GetAllSummariesAsync()).ToList();
-
-            Assert.Equal(3, summaries.Count);
-            Assert.Contains(summaries, s => s.Season == 2024 && s.Week == 1 && s.IsPublished && s.GameCount == 1);
-            Assert.Contains(summaries, s => s.Season == 2024 && s.Week == 2 && !s.IsPublished && s.GameCount == 1);
-            Assert.Contains(summaries, s => s.Season == 2023 && s.Week == 5 && !s.IsPublished && s.GameCount == 1);
-        }
-        finally
-        {
-            CleanupFile(tempPath);
-        }
-    }
-
-    [Fact]
-    public async Task GetAllSummariesAsync_ReturnsCorrectGameCount()
-    {
-        var (data, tempPath) = CreatePredictionsDataWithFile();
-        try
-        {
-            await data.InitializeAsync();
-
-            var predictions = new PredictionsResult
-            {
-                Season = 2024,
-                Week = 5,
-                Predictions =
-                [
-                    new GamePrediction { AwayTeam = "Florida", HomeTeam = "Alabama", PredictedWinner = "Alabama", PredictedMargin = 10, HomeTeamScore = 31, AwayTeamScore = 21 },
-                    new GamePrediction { AwayTeam = "Iowa", HomeTeam = "Nebraska", PredictedWinner = "Nebraska", PredictedMargin = 3, HomeTeamScore = 24, AwayTeamScore = 21 },
-                    new GamePrediction { AwayTeam = "USC", HomeTeam = "Notre Dame", PredictedWinner = "Notre Dame", PredictedMargin = 7, HomeTeamScore = 28, AwayTeamScore = 21 }
-                ]
-            };
-
-            await data.SaveAsync(predictions);
-
-            var summaries = (await data.GetAllSummariesAsync()).ToList();
-            Assert.Equal(3, summaries.Single().GameCount);
-        }
-        finally
-        {
-            CleanupFile(tempPath);
-        }
-    }
-
-    [Fact]
-    public void Constructor_ThrowsOnNullOptions()
-    {
-        Assert.Throws<ArgumentNullException>(() =>
-            new PredictionsData(null!, new Mock<ILogger<PredictionsData>>().Object));
-    }
-
-    [Fact]
-    public void Constructor_ThrowsOnNullLogger()
-    {
-        var options = new Mock<IOptions<DatabaseOptions>>();
-        options.Setup(x => x.Value).Returns(new DatabaseOptions());
-
-        Assert.Throws<ArgumentNullException>(() =>
-            new PredictionsData(options.Object, null!));
-    }
-
-    [Fact]
     public async Task SaveAsync_ThrowsOnNullPredictions()
     {
         var (data, tempPath) = CreatePredictionsDataWithFile();
@@ -290,6 +395,20 @@ public class PredictionsDataTests
         finally
         {
             CleanupFile(tempPath);
+        }
+    }
+
+    private static void CleanupFile(string filePath)
+    {
+        SqliteConnection.ClearAllPools();
+        try
+        {
+            if (File.Exists(filePath))
+                File.Delete(filePath);
+        }
+        catch
+        {
+            // Best-effort cleanup
         }
     }
 
@@ -305,20 +424,6 @@ public class PredictionsDataTests
 
         var logger = new Mock<ILogger<PredictionsData>>();
         return (new PredictionsData(options.Object, logger.Object), tempPath);
-    }
-
-    private static void CleanupFile(string filePath)
-    {
-        SqliteConnection.ClearAllPools();
-        try
-        {
-            if (File.Exists(filePath))
-                File.Delete(filePath);
-        }
-        catch
-        {
-            // Best-effort cleanup
-        }
     }
 
     private static PredictionsResult CreatePredictionsResult(

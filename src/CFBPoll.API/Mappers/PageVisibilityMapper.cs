@@ -13,6 +13,7 @@ public static class PageVisibilityMapper
         {
             AllTimeEnabled = model.AllTimeEnabled,
             PollLeadersEnabled = model.PollLeadersEnabled,
+            PredictionsPageEnabled = model.PredictionsPageEnabled,
             SeasonTrendsEnabled = model.SeasonTrendsEnabled
         };
     }
@@ -25,6 +26,7 @@ public static class PageVisibilityMapper
         {
             AllTimeEnabled = dto.AllTimeEnabled,
             PollLeadersEnabled = dto.PollLeadersEnabled,
+            PredictionsPageEnabled = dto.PredictionsPageEnabled,
             SeasonTrendsEnabled = dto.SeasonTrendsEnabled
         };
     }

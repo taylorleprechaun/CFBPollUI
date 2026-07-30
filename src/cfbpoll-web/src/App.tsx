@@ -9,6 +9,7 @@ const HomePage = lazy(() => import('./pages/home-page'));
 const LoginPage = lazy(() => import('./pages/login-page'));
 const PollLeadersPage = lazy(() => import('./pages/poll-leaders-page'));
 const PredictionsPage = lazy(() => import('./pages/predictions-page'));
+const PublicPredictionsPage = lazy(() => import('./pages/public-predictions-page'));
 const RankingsPage = lazy(() => import('./pages/rankings-page'));
 const SeasonTrendsPage = lazy(() => import('./pages/season-trends-page'));
 const SettingsPage = lazy(() => import('./pages/settings-page'));
@@ -28,7 +29,7 @@ function LazyPage({ children }: { children: ReactNode }) {
 }
 
 function App() {
-  const { allTimeEnabled, pollLeadersEnabled, seasonTrendsEnabled } = usePageVisibility();
+  const { allTimeEnabled, pollLeadersEnabled, predictionsPageEnabled, seasonTrendsEnabled } = usePageVisibility();
 
   return (
     <Routes>
@@ -55,6 +56,11 @@ function App() {
         <Route path="poll-leaders" element={
           <RequirePageEnabled enabled={pollLeadersEnabled}>
             <LazyPage><PollLeadersPage /></LazyPage>
+          </RequirePageEnabled>
+        } />
+        <Route path="predictions" element={
+          <RequirePageEnabled enabled={predictionsPageEnabled}>
+            <LazyPage><PublicPredictionsPage /></LazyPage>
           </RequirePageEnabled>
         } />
         <Route element={<RequireGuest />}>

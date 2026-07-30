@@ -6,6 +6,7 @@ import { usePageVisibility } from '../hooks/use-page-visibility';
 import { BUTTON_GHOST } from '../components/ui/button-styles';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { updatePageVisibility } from '../services/admin-api';
+import type { PageVisibility } from '../schemas';
 
 interface ToggleSwitchProps {
   checked: boolean;
@@ -41,11 +42,11 @@ export function SettingsPage() {
   useDocumentTitle('Settings - CFB Poll');
 
   const { token, logout } = useAuth();
-  const { allTimeEnabled, pollLeadersEnabled, seasonTrendsEnabled } = usePageVisibility();
+  const { allTimeEnabled, pollLeadersEnabled, predictionsPageEnabled, seasonTrendsEnabled } = usePageVisibility();
   const queryClient = useQueryClient();
 
   const visibilityMutation = useMutation({
-    mutationFn: (visibility: { allTimeEnabled: boolean; pollLeadersEnabled: boolean; seasonTrendsEnabled: boolean }) => {
+    mutationFn: (visibility: PageVisibility) => {
       if (!token) throw new Error('Authentication required');
       return updatePageVisibility(token, visibility);
     },
@@ -54,8 +55,8 @@ export function SettingsPage() {
     },
   });
 
-  const handleToggle = (field: 'allTimeEnabled' | 'pollLeadersEnabled' | 'seasonTrendsEnabled', value: boolean) => {
-    const current = { allTimeEnabled, pollLeadersEnabled, seasonTrendsEnabled };
+  const handleToggle = (field: keyof PageVisibility, value: boolean) => {
+    const current: PageVisibility = { allTimeEnabled, pollLeadersEnabled, predictionsPageEnabled, seasonTrendsEnabled };
     if (current[field] === value) return;
     visibilityMutation.mutate({ ...current, [field]: value });
   };
@@ -100,6 +101,17 @@ export function SettingsPage() {
                 disabled={visibilityMutation.isPending}
                 label="Poll Leaders"
                 onChange={(checked) => handleToggle('pollLeadersEnabled', checked)}
+              />
+            </div>
+          </div>
+          <div>
+            <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Predictions</h3>
+            <div className="space-y-3">
+              <ToggleSwitch
+                checked={predictionsPageEnabled}
+                disabled={visibilityMutation.isPending}
+                label="Predictions & Track Record"
+                onChange={(checked) => handleToggle('predictionsPageEnabled', checked)}
               />
             </div>
           </div>

@@ -7,6 +7,7 @@ import {
   ConferencesResponseSchema,
   PageVisibilitySchema,
   PollLeadersResponseSchema,
+  PredictionsPublicResponseSchema,
   RankingsResponseSchema,
   SeasonTrendsResponseSchema,
   SeasonsResponseSchema,
@@ -16,6 +17,7 @@ import {
   type ConferencesResponse,
   type PageVisibility,
   type PollLeadersResponse,
+  type PredictionsPublicResponse,
   type RankingsResponse,
   type SeasonTrendsResponse,
   type SeasonsResponse,
@@ -39,6 +41,14 @@ export async function fetchRankings(
 ): Promise<RankingsResponse> {
   const response = await safeFetch(`${API_BASE_URL}/api/v1/seasons/${season}/weeks/${week}/rankings`);
   return parseResponse(response, RankingsResponseSchema);
+}
+
+export async function fetchPredictions(
+  season: number,
+  week: number
+): Promise<PredictionsPublicResponse> {
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/seasons/${season}/weeks/${week}/predictions`);
+  return parseResponse(response, PredictionsPublicResponseSchema);
 }
 
 export async function fetchConferences(): Promise<ConferencesResponse> {

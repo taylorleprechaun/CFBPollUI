@@ -39,7 +39,7 @@ function isGroupActive(pathname: string, items: NavItem[]): boolean {
 
 export function Layout() {
   const { isAuthenticated } = useAuth();
-  const { allTimeEnabled, pollLeadersEnabled, seasonTrendsEnabled } = usePageVisibility();
+  const { allTimeEnabled, pollLeadersEnabled, predictionsPageEnabled, seasonTrendsEnabled } = usePageVisibility();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const adminDropdown = useDropdown();
   const location = useLocation();
@@ -64,6 +64,10 @@ export function Layout() {
 
   const allTimeGroup: NavGroup | null = allTimeItems.length > 0
     ? { items: allTimeItems, label: 'All-Time' }
+    : null;
+
+  const predictionsGroup: NavGroup | null = predictionsPageEnabled
+    ? { items: [{ label: 'Predictions', to: '/predictions' }], label: 'Predictions' }
     : null;
 
   return (
@@ -93,6 +97,13 @@ export function Layout() {
                       isActive={isGroupActive(location.pathname, allTimeGroup.items)}
                       items={allTimeGroup.items}
                       label={allTimeGroup.label}
+                    />
+                  )}
+                  {predictionsGroup && (
+                    <NavDropdown
+                      isActive={isGroupActive(location.pathname, predictionsGroup.items)}
+                      items={predictionsGroup.items}
+                      label={predictionsGroup.label}
                     />
                   )}
                 </div>
@@ -172,6 +183,22 @@ export function Layout() {
                     {allTimeGroup.label}
                   </div>
                   {allTimeGroup.items.map((item) => (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className={isActiveLink(location.pathname, item.to) ? MOBILE_SUBLINK_ACTIVE : MOBILE_SUBLINK_INACTIVE}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </>
+              )}
+              {predictionsGroup && (
+                <>
+                  <div className="pt-2 pb-1 px-3 text-xs font-semibold text-white/50 uppercase tracking-wider">
+                    {predictionsGroup.label}
+                  </div>
+                  {predictionsGroup.items.map((item) => (
                     <Link
                       key={item.to}
                       to={item.to}

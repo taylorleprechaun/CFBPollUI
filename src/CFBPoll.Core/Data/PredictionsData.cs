@@ -38,24 +38,6 @@ public class PredictionsData : IPredictionsData
         return rowsAffected > 0;
     }
 
-    public async Task<PredictionsResult?> GetAsync(int season, int week)
-    {
-        await using var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync().ConfigureAwait(false);
-
-        await using var command = connection.CreateCommand();
-        command.CommandText = "SELECT PredictionsJson FROM PredictionsSnapshot WHERE Season = @Season AND Week = @Week";
-        command.Parameters.AddWithValue("@Season", season);
-        command.Parameters.AddWithValue("@Week", week);
-
-        var result = await command.ExecuteScalarAsync().ConfigureAwait(false);
-
-        if (result is not string json)
-            return null;
-
-        return JsonSerializer.Deserialize<PredictionsResult>(json);
-    }
-
     public async Task<IEnumerable<PredictionsSummary>> GetAllSummariesAsync()
     {
         await using var connection = new SqliteConnection(_connectionString);
@@ -80,6 +62,62 @@ public class PredictionsData : IPredictionsData
         }
 
         return results;
+    }
+
+    public async Task<PredictionsResult?> GetAsync(int season, int week)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT PredictionsJson FROM PredictionsSnapshot WHERE Season = @Season AND Week = @Week";
+        command.Parameters.AddWithValue("@Season", season);
+        command.Parameters.AddWithValue("@Week", week);
+
+        var result = await command.ExecuteScalarAsync().ConfigureAwait(false);
+
+        if (result is not string json)
+            return null;
+
+        return JsonSerializer.Deserialize<PredictionsResult>(json);
+    }
+
+    public async Task<PredictionsResult?> GetPublishedAsync(int season, int week)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT PredictionsJson FROM PredictionsSnapshot WHERE Season = @Season AND Week = @Week AND Published = 1";
+        command.Parameters.AddWithValue("@Season", season);
+        command.Parameters.AddWithValue("@Week", week);
+
+        var result = await command.ExecuteScalarAsync().ConfigureAwait(false);
+
+        if (result is not string json)
+            return null;
+
+        return JsonSerializer.Deserialize<PredictionsResult>(json);
+    }
+
+    public async Task<IEnumerable<int>> GetPublishedWeekNumbersAsync(int season)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT Week FROM PredictionsSnapshot WHERE Season = @Season AND Published = 1 ORDER BY Week";
+        command.Parameters.AddWithValue("@Season", season);
+
+        await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
+        List<int> weeks = [];
+
+        while (await reader.ReadAsync().ConfigureAwait(false))
+        {
+            weeks.Add(reader.GetInt32(0));
+        }
+
+        return weeks;
     }
 
     public async Task InitializeAsync()

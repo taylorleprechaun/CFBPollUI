@@ -17,14 +17,24 @@ public class PredictionsModule : IPredictionsModule
         return await _predictionsData.DeleteAsync(season, week).ConfigureAwait(false);
     }
 
+    public async Task<IEnumerable<PredictionsSummary>> GetAllSummariesAsync()
+    {
+        return await _predictionsData.GetAllSummariesAsync().ConfigureAwait(false);
+    }
+
     public async Task<PredictionsResult?> GetAsync(int season, int week)
     {
         return await _predictionsData.GetAsync(season, week).ConfigureAwait(false);
     }
 
-    public async Task<IEnumerable<PredictionsSummary>> GetAllSummariesAsync()
+    public async Task<PredictionsResult?> GetPublishedAsync(int season, int week)
     {
-        return await _predictionsData.GetAllSummariesAsync().ConfigureAwait(false);
+        return await _predictionsData.GetPublishedAsync(season, week).ConfigureAwait(false);
+    }
+
+    public async Task<IEnumerable<int>> GetPublishedWeekNumbersAsync(int season)
+    {
+        return await _predictionsData.GetPublishedWeekNumbersAsync(season).ConfigureAwait(false);
     }
 
     public async Task<bool> PublishAsync(int season, int week)

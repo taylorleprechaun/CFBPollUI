@@ -8,6 +8,7 @@ import { ThemeProvider } from '../../contexts/theme-context';
 let mockIsAuthenticated = false;
 let mockAllTimeEnabled = true;
 let mockPollLeadersEnabled = true;
+let mockPredictionsPageEnabled = false;
 let mockSeasonTrendsEnabled = true;
 
 vi.mock('../../contexts/auth-context', () => ({
@@ -24,6 +25,7 @@ vi.mock('../../hooks/use-page-visibility', () => ({
     allTimeEnabled: mockAllTimeEnabled,
     isLoading: false,
     pollLeadersEnabled: mockPollLeadersEnabled,
+    predictionsPageEnabled: mockPredictionsPageEnabled,
     seasonTrendsEnabled: mockSeasonTrendsEnabled,
   }),
 }));
@@ -43,6 +45,7 @@ describe('Layout', () => {
     mockIsAuthenticated = false;
     mockAllTimeEnabled = true;
     mockPollLeadersEnabled = true;
+    mockPredictionsPageEnabled = false;
     mockSeasonTrendsEnabled = true;
   });
 
@@ -145,6 +148,48 @@ describe('Layout', () => {
     await userEvent.click(allTimeButton);
 
     expect(screen.queryByText('Leaders')).not.toBeInTheDocument();
+  });
+
+  it('hides Predictions dropdown when predictionsPageEnabled is false', () => {
+    mockPredictionsPageEnabled = false;
+    renderLayout();
+
+    expect(screen.queryByRole('button', { name: /^Predictions$/i })).not.toBeInTheDocument();
+  });
+
+  it('shows Predictions dropdown when predictionsPageEnabled is true', async () => {
+    mockPredictionsPageEnabled = true;
+    renderLayout();
+
+    const predictionsButton = screen.getByRole('button', { name: /^Predictions$/i });
+    expect(predictionsButton).toBeInTheDocument();
+
+    await userEvent.click(predictionsButton);
+
+    const predictionsLink = screen.getAllByRole('link').find((l) => l.getAttribute('href') === '/predictions');
+    expect(predictionsLink).toBeDefined();
+  });
+
+  it('shows Predictions section in mobile menu when enabled', async () => {
+    mockPredictionsPageEnabled = true;
+    const user = userEvent.setup();
+    renderLayout();
+
+    await user.click(screen.getByLabelText('Open menu'));
+
+    const predictionsLink = screen.getAllByRole('link').find((l) => l.getAttribute('href') === '/predictions');
+    expect(predictionsLink).toBeDefined();
+  });
+
+  it('hides Predictions section in mobile menu when disabled', async () => {
+    mockPredictionsPageEnabled = false;
+    const user = userEvent.setup();
+    renderLayout();
+
+    await user.click(screen.getByLabelText('Open menu'));
+
+    const predictionsLink = screen.queryAllByRole('link').find((l) => l.getAttribute('href') === '/predictions');
+    expect(predictionsLink).toBeUndefined();
   });
 
   it('shows lock icon linking to login when not authenticated', () => {

@@ -25,7 +25,7 @@ public class PageVisibilityData : IPageVisibilityData
         await connection.OpenAsync().ConfigureAwait(false);
 
         await using var command = connection.CreateCommand();
-        command.CommandText = "SELECT AllTimeEnabled, PollLeadersEnabled, SeasonTrendsEnabled FROM PageVisibility WHERE Id = 1";
+        command.CommandText = "SELECT AllTimeEnabled, PollLeadersEnabled, SeasonTrendsEnabled, PredictionsPageEnabled FROM PageVisibility WHERE Id = 1";
 
         await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
 
@@ -35,6 +35,7 @@ public class PageVisibilityData : IPageVisibilityData
             {
                 AllTimeEnabled = reader.GetInt32(0) == 1,
                 PollLeadersEnabled = reader.GetInt32(1) == 1,
+                PredictionsPageEnabled = reader.GetInt32(3) == 1,
                 SeasonTrendsEnabled = reader.GetInt32(2) == 1
             };
         }
@@ -43,6 +44,7 @@ public class PageVisibilityData : IPageVisibilityData
         {
             AllTimeEnabled = true,
             PollLeadersEnabled = true,
+            PredictionsPageEnabled = true,
             SeasonTrendsEnabled = true
         };
     }
@@ -67,16 +69,8 @@ public class PageVisibilityData : IPageVisibilityData
         seedCommand.CommandText = "INSERT OR IGNORE INTO PageVisibility (Id) VALUES (1)";
         await seedCommand.ExecuteNonQueryAsync().ConfigureAwait(false);
 
-        try
-        {
-            await using var alterCommand = connection.CreateCommand();
-            alterCommand.CommandText = "ALTER TABLE PageVisibility ADD COLUMN SeasonTrendsEnabled INTEGER NOT NULL DEFAULT 1";
-            await alterCommand.ExecuteNonQueryAsync().ConfigureAwait(false);
-        }
-        catch (SqliteException)
-        {
-            // Column already exists — safe to ignore
-        }
+        await TryAddColumnAsync(connection, "SeasonTrendsEnabled").ConfigureAwait(false);
+        await TryAddColumnAsync(connection, "PredictionsPageEnabled").ConfigureAwait(false);
 
         _logger.LogInformation("PageVisibility table initialized");
 
@@ -93,19 +87,38 @@ public class PageVisibilityData : IPageVisibilityData
         await using var command = connection.CreateCommand();
         command.CommandText = """
             UPDATE PageVisibility
-            SET AllTimeEnabled = @AllTimeEnabled, PollLeadersEnabled = @PollLeadersEnabled, SeasonTrendsEnabled = @SeasonTrendsEnabled
+            SET AllTimeEnabled = @AllTimeEnabled, PollLeadersEnabled = @PollLeadersEnabled, SeasonTrendsEnabled = @SeasonTrendsEnabled, PredictionsPageEnabled = @PredictionsPageEnabled
             WHERE Id = 1
             """;
         command.Parameters.AddWithValue("@AllTimeEnabled", visibility.AllTimeEnabled ? 1 : 0);
         command.Parameters.AddWithValue("@PollLeadersEnabled", visibility.PollLeadersEnabled ? 1 : 0);
         command.Parameters.AddWithValue("@SeasonTrendsEnabled", visibility.SeasonTrendsEnabled ? 1 : 0);
+        command.Parameters.AddWithValue("@PredictionsPageEnabled", visibility.PredictionsPageEnabled ? 1 : 0);
 
         var rowsAffected = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
 
         _logger.LogInformation(
-            "Updated page visibility: AllTimeEnabled={AllTimeEnabled}, PollLeadersEnabled={PollLeadersEnabled}, SeasonTrendsEnabled={SeasonTrendsEnabled}",
-            visibility.AllTimeEnabled, visibility.PollLeadersEnabled, visibility.SeasonTrendsEnabled);
+            "Updated page visibility: AllTimeEnabled={AllTimeEnabled}, PollLeadersEnabled={PollLeadersEnabled}, SeasonTrendsEnabled={SeasonTrendsEnabled}, PredictionsPageEnabled={PredictionsPageEnabled}",
+            visibility.AllTimeEnabled, visibility.PollLeadersEnabled, visibility.SeasonTrendsEnabled, visibility.PredictionsPageEnabled);
 
         return rowsAffected > 0;
+    }
+
+    /// <summary>
+    /// Adds a new boolean page-visibility column, defaulting to enabled, if it does not already exist.
+    /// This is the de facto migration mechanism for this table since it has no separate migrations folder.
+    /// </summary>
+    private static async Task TryAddColumnAsync(SqliteConnection connection, string columnName)
+    {
+        try
+        {
+            await using var alterCommand = connection.CreateCommand();
+            alterCommand.CommandText = $"ALTER TABLE PageVisibility ADD COLUMN {columnName} INTEGER NOT NULL DEFAULT 1";
+            await alterCommand.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
+        catch (SqliteException)
+        {
+            // Column already exists — safe to ignore
+        }
     }
 }
