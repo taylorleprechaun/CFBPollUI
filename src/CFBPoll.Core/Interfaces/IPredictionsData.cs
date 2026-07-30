@@ -8,6 +8,11 @@ namespace CFBPoll.Core.Interfaces;
 public interface IPredictionsData
 {
     /// <summary>
+    /// Determines whether graded results have been published for the given season and week.
+    /// </summary>
+    Task<bool> AreResultsPublishedAsync(int season, int week);
+
+    /// <summary>
     /// Deletes predictions for the given season and week.
     /// </summary>
     Task<bool> DeleteAsync(int season, int week);
@@ -23,9 +28,10 @@ public interface IPredictionsData
     Task<PredictionsResult?> GetAsync(int season, int week);
 
     /// <summary>
-    /// Retrieves a published prediction result for the given season and week.
+    /// Retrieves a published prediction result for the given season and week, along with whether
+    /// its graded results have been published.
     /// </summary>
-    Task<PredictionsResult?> GetPublishedAsync(int season, int week);
+    Task<(PredictionsResult Predictions, bool ResultsPublished)?> GetPublishedAsync(int season, int week);
 
     /// <summary>
     /// Retrieves the published prediction week numbers for the given season.
@@ -43,7 +49,18 @@ public interface IPredictionsData
     Task<bool> PublishAsync(int season, int week);
 
     /// <summary>
+    /// Publishes graded results for the given season and week. Only succeeds if the week has
+    /// already been graded and the picks themselves are published.
+    /// </summary>
+    Task<bool> PublishGradedResultsAsync(int season, int week);
+
+    /// <summary>
     /// Saves predictions as a draft.
     /// </summary>
     Task<bool> SaveAsync(PredictionsResult predictions);
+
+    /// <summary>
+    /// Saves graded results for the given season and week without changing publish state.
+    /// </summary>
+    Task<bool> SaveGradedResultAsync(PredictionsResult gradedPredictions);
 }

@@ -12,6 +12,11 @@ public class PredictionsModule : IPredictionsModule
         _predictionsData = predictionsData ?? throw new ArgumentNullException(nameof(predictionsData));
     }
 
+    public async Task<bool> AreResultsPublishedAsync(int season, int week)
+    {
+        return await _predictionsData.AreResultsPublishedAsync(season, week).ConfigureAwait(false);
+    }
+
     public async Task<bool> DeleteAsync(int season, int week)
     {
         return await _predictionsData.DeleteAsync(season, week).ConfigureAwait(false);
@@ -27,7 +32,7 @@ public class PredictionsModule : IPredictionsModule
         return await _predictionsData.GetAsync(season, week).ConfigureAwait(false);
     }
 
-    public async Task<PredictionsResult?> GetPublishedAsync(int season, int week)
+    public async Task<(PredictionsResult Predictions, bool ResultsPublished)?> GetPublishedAsync(int season, int week)
     {
         return await _predictionsData.GetPublishedAsync(season, week).ConfigureAwait(false);
     }
@@ -42,10 +47,22 @@ public class PredictionsModule : IPredictionsModule
         return await _predictionsData.PublishAsync(season, week).ConfigureAwait(false);
     }
 
+    public async Task<bool> PublishGradedResultsAsync(int season, int week)
+    {
+        return await _predictionsData.PublishGradedResultsAsync(season, week).ConfigureAwait(false);
+    }
+
     public async Task<bool> SaveAsync(PredictionsResult predictions)
     {
         ArgumentNullException.ThrowIfNull(predictions);
 
         return await _predictionsData.SaveAsync(predictions).ConfigureAwait(false);
+    }
+
+    public async Task<bool> SaveGradedResultAsync(PredictionsResult gradedPredictions)
+    {
+        ArgumentNullException.ThrowIfNull(gradedPredictions);
+
+        return await _predictionsData.SaveGradedResultAsync(gradedPredictions).ConfigureAwait(false);
     }
 }

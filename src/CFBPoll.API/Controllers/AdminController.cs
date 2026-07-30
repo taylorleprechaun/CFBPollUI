@@ -58,7 +58,7 @@ public class AdminController : ControllerBase
         return Ok(new CalculatePredictionsResponseDTO
         {
             IsPersisted = result.IsPersisted,
-            Predictions = PredictionsMapper.ToResponseDTO(result.Predictions)
+            Predictions = PredictionsMapper.ToResponseDTO(result.Predictions, resultsPublished: false)
         });
     }
     /// <summary>
@@ -131,6 +131,46 @@ public class AdminController : ControllerBase
         var snapshots = await _adminModule.GetSnapshotsAsync();
 
         return Ok(snapshots.Select(SnapshotMapper.ToDTO));
+    }
+
+    /// <summary>
+    /// Grades predictions for the specified season and week against actual final scores and saves
+    /// the result as a draft.
+    /// </summary>
+    [HttpPost("seasons/{season}/weeks/{week}/prediction/grade")]
+    public async Task<ActionResult<GradePredictionsResponseDTO>> GradePredictions(int season, int week)
+    {
+        _logger.LogInformation("Admin grading predictions for season {Season}, week {Week}", season, week);
+
+        var result = await _adminModule.GradePredictionsAsync(season, week);
+
+        if (result is null)
+            return NotFound(new ErrorResponseDTO { Message = PREDICTION_NOT_FOUND, StatusCode = 404 });
+
+        return Ok(PredictionsMapper.ToGradeResponseDTO(result));
+    }
+
+    /// <summary>
+    /// Publishes graded results for the specified season and week, making them visible on the
+    /// public predictions page. Only succeeds if the week has already been graded and the picks
+    /// are published.
+    /// </summary>
+    [HttpPatch("seasons/{season}/weeks/{week}/prediction/results")]
+    public async Task<ActionResult> PublishGradedResults(int season, int week, [FromBody] UpdateSnapshotDTO request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (!request.IsPublished)
+            return BadRequest(new ErrorResponseDTO { Message = "Only publishing (isPublished: true) is currently supported", StatusCode = 400 });
+
+        _logger.LogInformation("Admin publishing graded results for season {Season}, week {Week}", season, week);
+
+        var published = await _adminModule.PublishGradedResultsAsync(season, week);
+
+        if (!published)
+            return NotFound(new ErrorResponseDTO { Message = PREDICTION_NOT_FOUND, StatusCode = 404 });
+
+        return Ok();
     }
 
     /// <summary>

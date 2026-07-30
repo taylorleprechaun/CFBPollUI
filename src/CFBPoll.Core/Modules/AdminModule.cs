@@ -13,6 +13,7 @@ public class AdminModule : IAdminModule
     private readonly ILogger<AdminModule> _logger;
     private readonly IPollLeadersModule _pollLeadersModule;
     private readonly IPredictionCalculatorModule _predictionCalculatorModule;
+    private readonly IPredictionGradingModule _predictionGradingModule;
     private readonly IPredictionsModule _predictionsModule;
     private readonly IRankingsModule _rankingsModule;
     private readonly IRatingModule _ratingModule;
@@ -24,6 +25,7 @@ public class AdminModule : IAdminModule
         IPersistentCache cache,
         IPollLeadersModule pollLeadersModule,
         IPredictionCalculatorModule predictionCalculatorModule,
+        IPredictionGradingModule predictionGradingModule,
         IPredictionsModule predictionsModule,
         IRankingsModule rankingsModule,
         IRatingModule ratingModule,
@@ -36,6 +38,7 @@ public class AdminModule : IAdminModule
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _pollLeadersModule = pollLeadersModule ?? throw new ArgumentNullException(nameof(pollLeadersModule));
         _predictionCalculatorModule = predictionCalculatorModule ?? throw new ArgumentNullException(nameof(predictionCalculatorModule));
+        _predictionGradingModule = predictionGradingModule ?? throw new ArgumentNullException(nameof(predictionGradingModule));
         _predictionsModule = predictionsModule ?? throw new ArgumentNullException(nameof(predictionsModule));
         _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
         _ratingModule = ratingModule ?? throw new ArgumentNullException(nameof(ratingModule));
@@ -54,17 +57,9 @@ public class AdminModule : IAdminModule
 
         var seasonData = seasonDataTask.Result;
         var fullSchedule = fullScheduleTask.Result;
-        var gameWeek = week + 1;
+        var (gameWeek, isPostseason) = GameWeekResolver.Resolve(week, fullSchedule);
         var fbsTeamNames = new HashSet<string>(seasonData.Teams.Keys, StringComparer.OrdinalIgnoreCase);
         var scoic = StringComparison.OrdinalIgnoreCase;
-
-        var maxRegularWeek = fullSchedule
-            .Where(g => g.SeasonType is not null && g.SeasonType.Equals("regular", scoic) && g.Week.HasValue)
-            .Select(g => g.Week!.Value)
-            .DefaultIfEmpty(0)
-            .Max();
-
-        var isPostseason = gameWeek > maxRegularWeek;
 
         // CFBD API serves all postseason betting lines under week 1
         var bettingLinesWeek = isPostseason ? 1 : gameWeek;
@@ -191,6 +186,18 @@ public class AdminModule : IAdminModule
     public async Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync()
     {
         return await _rankingsModule.GetSnapshotsAsync().ConfigureAwait(false);
+    }
+
+    public async Task<GradePredictionsResult?> GradePredictionsAsync(int season, int week)
+    {
+        return await _predictionGradingModule.GradeAsync(season, week).ConfigureAwait(false);
+    }
+
+    public async Task<bool> PublishGradedResultsAsync(int season, int week)
+    {
+        _logger.LogInformation("Publishing graded results for season {Season}, week {Week}", season, week);
+
+        return await _predictionsModule.PublishGradedResultsAsync(season, week).ConfigureAwait(false);
     }
 
     public async Task<bool> PublishPredictionsAsync(int season, int week)

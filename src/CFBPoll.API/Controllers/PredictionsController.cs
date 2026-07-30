@@ -36,6 +36,6 @@ public class PredictionsController : ControllerBase
         if (published is null)
             return NotFound(new ErrorResponseDTO { Message = PREDICTIONS_NOT_FOUND, StatusCode = 404 });
 
-        return Ok(PredictionsMapper.ToResponseDTO(published));
+        return Ok(PredictionsMapper.ToResponseDTO(published.Value.Predictions, published.Value.ResultsPublished));
     }
 }

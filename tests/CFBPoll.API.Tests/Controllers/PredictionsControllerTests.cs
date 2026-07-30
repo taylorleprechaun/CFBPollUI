@@ -41,7 +41,7 @@ public class PredictionsControllerTests
     {
         _mockPredictionsModule
             .Setup(x => x.GetPublishedAsync(2024, 5))
-            .ReturnsAsync((PredictionsResult?)null);
+            .ReturnsAsync(((PredictionsResult Predictions, bool ResultsPublished)?)null);
 
         var result = await _controller.GetPredictions(2024, 5);
 
@@ -65,7 +65,7 @@ public class PredictionsControllerTests
 
         _mockPredictionsModule
             .Setup(x => x.GetPublishedAsync(2024, 5))
-            .ReturnsAsync(published);
+            .ReturnsAsync((published, false));
 
         var result = await _controller.GetPredictions(2024, 5);
 
@@ -75,5 +75,69 @@ public class PredictionsControllerTests
         Assert.Equal(5, response.Week);
         Assert.Single(response.Predictions);
         Assert.Equal("Alabama", response.Predictions.First().PredictedWinner);
+    }
+
+    [Fact]
+    public async Task GetPredictions_ResultsNotPublished_SuppressesGradeFields()
+    {
+        var published = new PredictionsResult
+        {
+            Season = 2024,
+            Week = 5,
+            Predictions =
+            [
+                new GamePrediction
+                {
+                    HomeTeam = "Alabama",
+                    AwayTeam = "Florida",
+                    PredictedWinner = "Alabama",
+                    ActualWinner = "Alabama",
+                    WinnerGrade = PredictionGradeStatus.Correct
+                }
+            ]
+        };
+
+        _mockPredictionsModule.Setup(x => x.GetPublishedAsync(2024, 5)).ReturnsAsync((published, false));
+
+        var result = await _controller.GetPredictions(2024, 5);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<PredictionsResponseDTO>(okResult.Value);
+        Assert.False(response.ResultsPublished);
+        var prediction = Assert.Single(response.Predictions);
+        Assert.Null(prediction.ActualWinner);
+        Assert.Equal("Ungraded", prediction.WinnerGrade);
+    }
+
+    [Fact]
+    public async Task GetPredictions_ResultsPublished_IncludesGradeFields()
+    {
+        var published = new PredictionsResult
+        {
+            Season = 2024,
+            Week = 5,
+            Predictions =
+            [
+                new GamePrediction
+                {
+                    HomeTeam = "Alabama",
+                    AwayTeam = "Florida",
+                    PredictedWinner = "Alabama",
+                    ActualWinner = "Alabama",
+                    WinnerGrade = PredictionGradeStatus.Correct
+                }
+            ]
+        };
+
+        _mockPredictionsModule.Setup(x => x.GetPublishedAsync(2024, 5)).ReturnsAsync((published, true));
+
+        var result = await _controller.GetPredictions(2024, 5);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<PredictionsResponseDTO>(okResult.Value);
+        Assert.True(response.ResultsPublished);
+        var prediction = Assert.Single(response.Predictions);
+        Assert.Equal("Alabama", prediction.ActualWinner);
+        Assert.Equal("Correct", prediction.WinnerGrade);
     }
 }

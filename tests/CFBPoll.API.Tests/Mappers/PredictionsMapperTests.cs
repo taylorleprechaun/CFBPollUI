@@ -7,6 +7,36 @@ namespace CFBPoll.API.Tests.Mappers;
 public class PredictionsMapperTests
 {
     [Fact]
+    public void ToDTO_IncludeGradeDetailsFalse_SuppressesGradeFields()
+    {
+        var prediction = new GamePrediction
+        {
+            AwayTeam = "Michigan",
+            HomeTeam = "Ohio State",
+            PredictedWinner = "Ohio State",
+            ActualAwayScore = 17,
+            ActualHomeScore = 28,
+            ActualOverUnderResult = "Over",
+            ActualSpreadCoveringTeam = "Ohio State",
+            ActualWinner = "Ohio State",
+            OverUnderGrade = PredictionGradeStatus.Correct,
+            SpreadGrade = PredictionGradeStatus.Correct,
+            WinnerGrade = PredictionGradeStatus.Correct
+        };
+
+        var result = PredictionsMapper.ToDTO(prediction, includeGradeDetails: false);
+
+        Assert.Null(result.ActualAwayScore);
+        Assert.Null(result.ActualHomeScore);
+        Assert.Null(result.ActualOverUnderResult);
+        Assert.Null(result.ActualSpreadCoveringTeam);
+        Assert.Null(result.ActualWinner);
+        Assert.Equal("Ungraded", result.OverUnderGrade);
+        Assert.Equal("Ungraded", result.SpreadGrade);
+        Assert.Equal("Ungraded", result.WinnerGrade);
+    }
+
+    [Fact]
     public void ToDTO_MapsAllProperties()
     {
         var prediction = new GamePrediction
@@ -41,6 +71,36 @@ public class PredictionsMapperTests
         Assert.False(result.NeutralSite);
         Assert.Equal(10.5, result.PredictedMargin);
         Assert.Equal("Ohio State", result.PredictedWinner);
+    }
+
+    [Fact]
+    public void ToDTO_MapsGradeFieldsAndActualScores()
+    {
+        var prediction = new GamePrediction
+        {
+            AwayTeam = "Michigan",
+            HomeTeam = "Ohio State",
+            PredictedWinner = "Ohio State",
+            ActualAwayScore = 17,
+            ActualHomeScore = 28,
+            ActualOverUnderResult = "Over",
+            ActualSpreadCoveringTeam = "Ohio State",
+            ActualWinner = "Ohio State",
+            OverUnderGrade = PredictionGradeStatus.Correct,
+            SpreadGrade = PredictionGradeStatus.Correct,
+            WinnerGrade = PredictionGradeStatus.Correct
+        };
+
+        var result = PredictionsMapper.ToDTO(prediction);
+
+        Assert.Equal(17, result.ActualAwayScore);
+        Assert.Equal(28, result.ActualHomeScore);
+        Assert.Equal("Over", result.ActualOverUnderResult);
+        Assert.Equal("Ohio State", result.ActualSpreadCoveringTeam);
+        Assert.Equal("Ohio State", result.ActualWinner);
+        Assert.Equal("Correct", result.OverUnderGrade);
+        Assert.Equal("Correct", result.SpreadGrade);
+        Assert.Equal("Correct", result.WinnerGrade);
     }
 
     [Fact]
@@ -90,6 +150,81 @@ public class PredictionsMapperTests
     }
 
     [Fact]
+    public void ToDTO_UngradedGame_MapsNullsAndUngraded()
+    {
+        var prediction = new GamePrediction
+        {
+            AwayTeam = "Michigan",
+            HomeTeam = "Ohio State",
+            PredictedWinner = "Ohio State"
+        };
+
+        var result = PredictionsMapper.ToDTO(prediction);
+
+        Assert.Null(result.ActualAwayScore);
+        Assert.Null(result.ActualHomeScore);
+        Assert.Null(result.ActualOverUnderResult);
+        Assert.Null(result.ActualSpreadCoveringTeam);
+        Assert.Null(result.ActualWinner);
+        Assert.Equal("Ungraded", result.OverUnderGrade);
+        Assert.Equal("Ungraded", result.SpreadGrade);
+        Assert.Equal("Ungraded", result.WinnerGrade);
+    }
+
+    [Fact]
+    public void ToGradeResponseDTO_IncludesGradeDetailsRegardlessOfPublishState()
+    {
+        var gradeResult = new GradePredictionsResult
+        {
+            IsPersisted = true,
+            Predictions = new PredictionsResult
+            {
+                Season = 2024,
+                Week = 5,
+                Predictions =
+                [
+                    new GamePrediction
+                    {
+                        AwayTeam = "Michigan",
+                        HomeTeam = "Ohio State",
+                        WinnerGrade = PredictionGradeStatus.Correct,
+                        ActualWinner = "Ohio State"
+                    }
+                ]
+            }
+        };
+
+        var result = PredictionsMapper.ToGradeResponseDTO(gradeResult);
+
+        var prediction = Assert.Single(result.Predictions.Predictions);
+        Assert.Equal("Correct", prediction.WinnerGrade);
+        Assert.Equal("Ohio State", prediction.ActualWinner);
+    }
+
+    [Fact]
+    public void ToGradeResponseDTO_MapsUnmatchedGameCount()
+    {
+        var gradeResult = new GradePredictionsResult
+        {
+            IsPersisted = true,
+            Predictions = new PredictionsResult { Season = 2024, Week = 5 },
+            UnmatchedGameCount = 3
+        };
+
+        var result = PredictionsMapper.ToGradeResponseDTO(gradeResult);
+
+        Assert.True(result.IsPersisted);
+        Assert.Equal(3, result.UnmatchedGameCount);
+        Assert.Equal(2024, result.Predictions.Season);
+    }
+
+    [Fact]
+    public void ToGradeResponseDTO_NullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => PredictionsMapper.ToGradeResponseDTO(null!));
+    }
+
+    [Fact]
     public void ToResponseDTO_MapsAllProperties()
     {
         var predictionsResult = new PredictionsResult
@@ -110,10 +245,11 @@ public class PredictionsMapperTests
             ]
         };
 
-        var result = PredictionsMapper.ToResponseDTO(predictionsResult);
+        var result = PredictionsMapper.ToResponseDTO(predictionsResult, resultsPublished: true);
 
         Assert.Equal(2024, result.Season);
         Assert.Equal(5, result.Week);
+        Assert.True(result.ResultsPublished);
         var prediction = Assert.Single(result.Predictions);
         Assert.Equal("Nebraska", prediction.PredictedWinner);
     }
@@ -121,7 +257,35 @@ public class PredictionsMapperTests
     [Fact]
     public void ToResponseDTO_NullInput_ThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>(() => PredictionsMapper.ToResponseDTO(null!));
+        Assert.Throws<ArgumentNullException>(() => PredictionsMapper.ToResponseDTO(null!, true));
+    }
+
+    [Fact]
+    public void ToResponseDTO_ResultsNotPublished_SuppressesGradeFields()
+    {
+        var predictionsResult = new PredictionsResult
+        {
+            Season = 2024,
+            Week = 5,
+            Predictions =
+            [
+                new GamePrediction
+                {
+                    AwayTeam = "Iowa",
+                    HomeTeam = "Nebraska",
+                    PredictedWinner = "Nebraska",
+                    ActualWinner = "Nebraska",
+                    WinnerGrade = PredictionGradeStatus.Correct
+                }
+            ]
+        };
+
+        var result = PredictionsMapper.ToResponseDTO(predictionsResult, resultsPublished: false);
+
+        Assert.False(result.ResultsPublished);
+        var prediction = Assert.Single(result.Predictions);
+        Assert.Null(prediction.ActualWinner);
+        Assert.Equal("Ungraded", prediction.WinnerGrade);
     }
 
     [Fact]
@@ -131,7 +295,10 @@ public class PredictionsMapperTests
         {
             CreatedAt = new DateTime(2024, 9, 1, 12, 0, 0, DateTimeKind.Utc),
             GameCount = 15,
+            GradedAt = new DateTime(2024, 9, 3, 8, 0, 0, DateTimeKind.Utc),
+            IsGraded = true,
             IsPublished = true,
+            ResultsPublished = true,
             Season = 2024,
             Week = 5
         };
@@ -140,9 +307,40 @@ public class PredictionsMapperTests
 
         Assert.Equal(new DateTime(2024, 9, 1, 12, 0, 0, DateTimeKind.Utc), result.CreatedAt);
         Assert.Equal(15, result.GameCount);
+        Assert.Equal(new DateTime(2024, 9, 3, 8, 0, 0, DateTimeKind.Utc), result.GradedAt);
+        Assert.True(result.IsGraded);
         Assert.True(result.IsPublished);
+        Assert.True(result.ResultsPublished);
         Assert.Equal(2024, result.Season);
         Assert.Equal(5, result.Week);
+    }
+
+    [Fact]
+    public void ToSummaryDTO_NullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => PredictionsMapper.ToSummaryDTO(null!));
+    }
+
+    [Fact]
+    public void ToSummaryDTO_UngradedPrediction_MapsGradedFalseAndNullGradedAt()
+    {
+        var summary = new PredictionsSummary
+        {
+            CreatedAt = new DateTime(2024, 9, 1, 12, 0, 0, DateTimeKind.Utc),
+            GameCount = 10,
+            IsGraded = false,
+            IsPublished = true,
+            ResultsPublished = false,
+            GradedAt = null,
+            Season = 2024,
+            Week = 3
+        };
+
+        var result = PredictionsMapper.ToSummaryDTO(summary);
+
+        Assert.False(result.IsGraded);
+        Assert.False(result.ResultsPublished);
+        Assert.Null(result.GradedAt);
     }
 
     [Fact]
@@ -160,11 +358,5 @@ public class PredictionsMapperTests
         var result = PredictionsMapper.ToSummaryDTO(summary);
 
         Assert.False(result.IsPublished);
-    }
-
-    [Fact]
-    public void ToSummaryDTO_NullInput_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() => PredictionsMapper.ToSummaryDTO(null!));
     }
 }

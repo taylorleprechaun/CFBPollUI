@@ -44,6 +44,18 @@ public interface IAdminModule
     Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync();
 
     /// <summary>
+    /// Grades predictions for the given season and week against actual final scores and saves the
+    /// result as a draft. Returns null if no predictions have been generated for the week.
+    /// </summary>
+    Task<GradePredictionsResult?> GradePredictionsAsync(int season, int week);
+
+    /// <summary>
+    /// Publishes graded results for the given season and week, making them visible on the public
+    /// predictions page. Only succeeds if the week has already been graded and the picks are published.
+    /// </summary>
+    Task<bool> PublishGradedResultsAsync(int season, int week);
+
+    /// <summary>
     /// Publishes predictions for the given season and week.
     /// </summary>
     Task<bool> PublishPredictionsAsync(int season, int week);

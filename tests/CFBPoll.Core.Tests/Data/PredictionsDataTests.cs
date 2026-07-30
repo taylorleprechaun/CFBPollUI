@@ -12,6 +12,67 @@ namespace CFBPoll.Core.Tests.Data;
 public class PredictionsDataTests
 {
     [Fact]
+    public async Task AreResultsPublishedAsync_NoRow_ReturnsFalse()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var result = await data.AreResultsPublishedAsync(2024, 5);
+
+            Assert.False(result);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task AreResultsPublishedAsync_ResultsNotPublished_ReturnsFalse()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveAsync(CreatePredictionsResult(2024, 5));
+
+            var result = await data.AreResultsPublishedAsync(2024, 5);
+
+            Assert.False(result);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task AreResultsPublishedAsync_ResultsPublished_ReturnsTrue()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveAsync(CreatePredictionsResult(2024, 5));
+            await data.PublishAsync(2024, 5);
+            await data.SaveGradedResultAsync(CreatePredictionsResult(2024, 5));
+            await data.PublishGradedResultsAsync(2024, 5);
+
+            var result = await data.AreResultsPublishedAsync(2024, 5);
+
+            Assert.True(result);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
     public void Constructor_ThrowsOnNullLogger()
     {
         var options = new Mock<IOptions<DatabaseOptions>>();
@@ -195,8 +256,8 @@ public class PredictionsDataTests
             var result = await data.GetPublishedAsync(2024, 5);
 
             Assert.NotNull(result);
-            Assert.Equal(2024, result.Season);
-            Assert.Equal(5, result.Week);
+            Assert.Equal(2024, result.Value.Predictions.Season);
+            Assert.Equal(5, result.Value.Predictions.Week);
         }
         finally
         {
@@ -204,6 +265,51 @@ public class PredictionsDataTests
         }
     }
 
+    [Fact]
+    public async Task GetPublishedAsync_ResultsNotPublished_ReturnsResultsPublishedFalse()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveAsync(CreatePredictionsResult(2024, 5));
+            await data.PublishAsync(2024, 5);
+
+            var result = await data.GetPublishedAsync(2024, 5);
+
+            Assert.NotNull(result);
+            Assert.False(result.Value.ResultsPublished);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetPublishedAsync_ResultsPublished_ReturnsResultsPublishedTrue()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveAsync(CreatePredictionsResult(2024, 5));
+            await data.PublishAsync(2024, 5);
+            await data.SaveGradedResultAsync(CreatePredictionsResult(2024, 5));
+            await data.PublishGradedResultsAsync(2024, 5);
+
+            var result = await data.GetPublishedAsync(2024, 5);
+
+            Assert.NotNull(result);
+            Assert.True(result.Value.ResultsPublished);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
     [Fact]
     public async Task GetPublishedWeekNumbersAsync_NoPublishedWeeks_ReturnsEmpty()
     {
@@ -241,6 +347,26 @@ public class PredictionsDataTests
             var weeks = (await data.GetPublishedWeekNumbersAsync(2024)).ToList();
 
             Assert.Equal(new List<int> { 1, 3 }, weeks);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task InitializeAsync_CalledTwice_DoesNotThrow()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+            await data.InitializeAsync();
+
+            await data.SaveAsync(CreatePredictionsResult(2024, 5));
+            var result = await data.GetAsync(2024, 5);
+
+            Assert.NotNull(result);
         }
         finally
         {
@@ -311,6 +437,89 @@ public class PredictionsDataTests
     }
 
     [Fact]
+    public async Task PublishGradedResultsAsync_GradedAndPicksPublished_SetsResultsPublishedTrue()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveAsync(CreatePredictionsResult(2024, 5));
+            await data.PublishAsync(2024, 5);
+            await data.SaveGradedResultAsync(CreatePredictionsResult(2024, 5));
+
+            var published = await data.PublishGradedResultsAsync(2024, 5);
+
+            Assert.True(published);
+            Assert.True(await data.AreResultsPublishedAsync(2024, 5));
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task PublishGradedResultsAsync_NoRow_ReturnsFalse()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var published = await data.PublishGradedResultsAsync(2024, 5);
+
+            Assert.False(published);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task PublishGradedResultsAsync_NotGraded_ReturnsFalse()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveAsync(CreatePredictionsResult(2024, 5));
+            await data.PublishAsync(2024, 5);
+
+            var published = await data.PublishGradedResultsAsync(2024, 5);
+
+            Assert.False(published);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task PublishGradedResultsAsync_PicksNotPublished_ReturnsFalse()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveAsync(CreatePredictionsResult(2024, 5));
+            await data.SaveGradedResultAsync(CreatePredictionsResult(2024, 5));
+
+            var published = await data.PublishGradedResultsAsync(2024, 5);
+
+            Assert.False(published);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
     public async Task SaveAsync_AndGetAsync_RoundTrips()
     {
         var (data, tempPath) = CreatePredictionsDataWithFile();
@@ -328,6 +537,34 @@ public class PredictionsDataTests
             Assert.Equal(5, result.Week);
             Assert.Single(result.Predictions);
             Assert.Equal("Ohio State", result.Predictions.First().PredictedWinner);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task SaveAsync_OverwritingGradedRow_ResetsGradedAndResultsPublished()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveAsync(CreatePredictionsResult(2024, 5));
+            await data.PublishAsync(2024, 5);
+            await data.SaveGradedResultAsync(CreatePredictionsResult(2024, 5));
+            await data.PublishGradedResultsAsync(2024, 5);
+
+            await data.SaveAsync(CreatePredictionsResult(2024, 5));
+
+            var summaries = (await data.GetAllSummariesAsync()).ToList();
+            var summary = summaries.Single(s => s.Season == 2024 && s.Week == 5);
+
+            Assert.False(summary.IsGraded);
+            Assert.False(summary.ResultsPublished);
+            Assert.Null(summary.GradedAt);
         }
         finally
         {
@@ -391,6 +628,73 @@ public class PredictionsDataTests
         {
             await data.InitializeAsync();
             await Assert.ThrowsAsync<ArgumentNullException>(() => data.SaveAsync(null!));
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task SaveGradedResultAsync_NoExistingRow_ReturnsFalse()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var saved = await data.SaveGradedResultAsync(CreatePredictionsResult(2024, 5));
+
+            Assert.False(saved);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task SaveGradedResultAsync_ThrowsOnNullPredictions()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+            await Assert.ThrowsAsync<ArgumentNullException>(() => data.SaveGradedResultAsync(null!));
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task SaveGradedResultAsync_UpdatesJsonAndGradedWithoutTouchingPublished()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveAsync(CreatePredictionsResult(2024, 5));
+
+            var graded = CreatePredictionsResult(2024, 5);
+            graded.Predictions[0].WinnerGrade = PredictionGradeStatus.Correct;
+
+            var saved = await data.SaveGradedResultAsync(graded);
+
+            Assert.True(saved);
+
+            var result = await data.GetAsync(2024, 5);
+            Assert.NotNull(result);
+            Assert.Equal(PredictionGradeStatus.Correct, result.Predictions.First().WinnerGrade);
+
+            var summaries = (await data.GetAllSummariesAsync()).ToList();
+            var summary = summaries.Single(s => s.Season == 2024 && s.Week == 5);
+            Assert.True(summary.IsGraded);
+            Assert.NotNull(summary.GradedAt);
+            Assert.False(summary.IsPublished);
+            Assert.False(summary.ResultsPublished);
         }
         finally
         {

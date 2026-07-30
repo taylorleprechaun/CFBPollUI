@@ -224,6 +224,90 @@ public class AdminControllerTests
     }
 
     [Fact]
+    public async Task GradePredictions_NullResult_ReturnsNotFound()
+    {
+        _mockAdminModule.Setup(x => x.GradePredictionsAsync(2024, 5)).ReturnsAsync((GradePredictionsResult?)null);
+
+        var result = await _controller.GradePredictions(2024, 5);
+
+        Assert.IsType<NotFoundObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task GradePredictions_Success_ReturnsOk()
+    {
+        var gradeResult = new GradePredictionsResult
+        {
+            IsPersisted = true,
+            Predictions = new PredictionsResult
+            {
+                Season = 2024,
+                Week = 5,
+                Predictions =
+                [
+                    new GamePrediction
+                    {
+                        AwayTeam = "Michigan",
+                        HomeTeam = "Ohio State",
+                        PredictedWinner = "Ohio State",
+                        WinnerGrade = PredictionGradeStatus.Correct,
+                        ActualWinner = "Ohio State"
+                    }
+                ]
+            },
+            UnmatchedGameCount = 0
+        };
+
+        _mockAdminModule.Setup(x => x.GradePredictionsAsync(2024, 5)).ReturnsAsync(gradeResult);
+
+        var result = await _controller.GradePredictions(2024, 5);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<GradePredictionsResponseDTO>(okResult.Value);
+        Assert.True(response.IsPersisted);
+        Assert.Equal(0, response.UnmatchedGameCount);
+        var prediction = Assert.Single(response.Predictions.Predictions);
+        Assert.Equal("Correct", prediction.WinnerGrade);
+    }
+
+    [Fact]
+    public async Task PublishGradedResults_IsPublishedFalse_ReturnsBadRequest()
+    {
+        var result = await _controller.PublishGradedResults(2024, 5, new UpdateSnapshotDTO { IsPublished = false });
+
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        var error = Assert.IsType<ErrorResponseDTO>(badRequestResult.Value);
+        Assert.Equal(400, error.StatusCode);
+        _mockAdminModule.Verify(x => x.PublishGradedResultsAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task PublishGradedResults_ModuleReturnsFalse_ReturnsNotFound()
+    {
+        _mockAdminModule.Setup(x => x.PublishGradedResultsAsync(2024, 5)).ReturnsAsync(false);
+
+        var result = await _controller.PublishGradedResults(2024, 5, new UpdateSnapshotDTO { IsPublished = true });
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task PublishGradedResults_NullRequest_ThrowsArgumentNullException()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _controller.PublishGradedResults(2024, 5, null!));
+    }
+
+    [Fact]
+    public async Task PublishGradedResults_Success_ReturnsOk()
+    {
+        _mockAdminModule.Setup(x => x.PublishGradedResultsAsync(2024, 5)).ReturnsAsync(true);
+
+        var result = await _controller.PublishGradedResults(2024, 5, new UpdateSnapshotDTO { IsPublished = true });
+
+        Assert.IsType<OkResult>(result);
+    }
+
+    [Fact]
     public async Task RefreshCache_DelegatesToAdminModuleWithCorrectSeasonAndWeek()
     {
         _mockAdminModule.Setup(x => x.RefreshSeasonCacheAsync(2024, 5)).ReturnsAsync(0);

@@ -20,6 +20,21 @@ public class PredictionsData : IPredictionsData
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
+    public async Task<bool> AreResultsPublishedAsync(int season, int week)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT ResultsPublished FROM PredictionsSnapshot WHERE Season = @Season AND Week = @Week";
+        command.Parameters.AddWithValue("@Season", season);
+        command.Parameters.AddWithValue("@Week", week);
+
+        var result = await command.ExecuteScalarAsync().ConfigureAwait(false);
+
+        return result is long value && value == 1;
+    }
+
     public async Task<bool> DeleteAsync(int season, int week)
     {
         await using var connection = new SqliteConnection(_connectionString);
@@ -44,7 +59,7 @@ public class PredictionsData : IPredictionsData
         await connection.OpenAsync().ConfigureAwait(false);
 
         await using var command = connection.CreateCommand();
-        command.CommandText = "SELECT Season, Week, Published, CreatedAt, GameCount FROM PredictionsSnapshot ORDER BY Season DESC, Week DESC";
+        command.CommandText = "SELECT Season, Week, Published, CreatedAt, GameCount, Graded, ResultsPublished, GradedAt FROM PredictionsSnapshot ORDER BY Season DESC, Week DESC";
 
         await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
         List<PredictionsSummary> results = [];
@@ -57,7 +72,10 @@ public class PredictionsData : IPredictionsData
                 Week = reader.GetInt32(1),
                 IsPublished = reader.GetInt32(2) == 1,
                 CreatedAt = DateTime.Parse(reader.GetString(3)),
-                GameCount = reader.GetInt32(4)
+                GameCount = reader.GetInt32(4),
+                IsGraded = reader.GetInt32(5) == 1,
+                ResultsPublished = reader.GetInt32(6) == 1,
+                GradedAt = reader.IsDBNull(7) ? null : DateTime.Parse(reader.GetString(7))
             });
         }
 
@@ -82,22 +100,26 @@ public class PredictionsData : IPredictionsData
         return JsonSerializer.Deserialize<PredictionsResult>(json);
     }
 
-    public async Task<PredictionsResult?> GetPublishedAsync(int season, int week)
+    public async Task<(PredictionsResult Predictions, bool ResultsPublished)?> GetPublishedAsync(int season, int week)
     {
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync().ConfigureAwait(false);
 
         await using var command = connection.CreateCommand();
-        command.CommandText = "SELECT PredictionsJson FROM PredictionsSnapshot WHERE Season = @Season AND Week = @Week AND Published = 1";
+        command.CommandText = "SELECT PredictionsJson, ResultsPublished FROM PredictionsSnapshot WHERE Season = @Season AND Week = @Week AND Published = 1";
         command.Parameters.AddWithValue("@Season", season);
         command.Parameters.AddWithValue("@Week", week);
 
-        var result = await command.ExecuteScalarAsync().ConfigureAwait(false);
+        await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
 
-        if (result is not string json)
+        if (!await reader.ReadAsync().ConfigureAwait(false))
             return null;
 
-        return JsonSerializer.Deserialize<PredictionsResult>(json);
+        var predictions = JsonSerializer.Deserialize<PredictionsResult>(reader.GetString(0));
+        if (predictions is null)
+            return null;
+
+        return (predictions, reader.GetInt32(1) == 1);
     }
 
     public async Task<IEnumerable<int>> GetPublishedWeekNumbersAsync(int season)
@@ -142,6 +164,10 @@ public class PredictionsData : IPredictionsData
 
         await command.ExecuteNonQueryAsync().ConfigureAwait(false);
 
+        await TryAddColumnAsync(connection, "Graded INTEGER NOT NULL DEFAULT 0").ConfigureAwait(false);
+        await TryAddColumnAsync(connection, "ResultsPublished INTEGER NOT NULL DEFAULT 0").ConfigureAwait(false);
+        await TryAddColumnAsync(connection, "GradedAt TEXT NULL").ConfigureAwait(false);
+
         _logger.LogInformation("Predictions database initialized");
     }
 
@@ -163,6 +189,27 @@ public class PredictionsData : IPredictionsData
         return rowsAffected > 0;
     }
 
+    public async Task<bool> PublishGradedResultsAsync(int season, int week)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE PredictionsSnapshot SET ResultsPublished = 1
+            WHERE Season = @Season AND Week = @Week AND Graded = 1 AND Published = 1
+            """;
+        command.Parameters.AddWithValue("@Season", season);
+        command.Parameters.AddWithValue("@Week", week);
+
+        var rowsAffected = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
+
+        _logger.LogInformation("Published graded results for season {Season}, week {Week}: {RowsAffected} rows affected",
+            season, week, rowsAffected);
+
+        return rowsAffected > 0;
+    }
+
     public async Task<bool> SaveAsync(PredictionsResult predictions)
     {
         ArgumentNullException.ThrowIfNull(predictions);
@@ -175,8 +222,8 @@ public class PredictionsData : IPredictionsData
 
         await using var command = connection.CreateCommand();
         command.CommandText = """
-            INSERT OR REPLACE INTO PredictionsSnapshot (Season, Week, PredictionsJson, Published, CreatedAt, GameCount)
-            VALUES (@Season, @Week, @PredictionsJson, 0, @CreatedAt, @GameCount)
+            INSERT OR REPLACE INTO PredictionsSnapshot (Season, Week, PredictionsJson, Published, CreatedAt, GameCount, Graded, ResultsPublished, GradedAt)
+            VALUES (@Season, @Week, @PredictionsJson, 0, @CreatedAt, @GameCount, 0, 0, NULL)
             """;
         command.Parameters.AddWithValue("@Season", predictions.Season);
         command.Parameters.AddWithValue("@Week", predictions.Week);
@@ -190,6 +237,52 @@ public class PredictionsData : IPredictionsData
             predictions.Season, predictions.Week, gameCount);
 
         return rowsAffected > 0;
+    }
+
+    public async Task<bool> SaveGradedResultAsync(PredictionsResult gradedPredictions)
+    {
+        ArgumentNullException.ThrowIfNull(gradedPredictions);
+
+        var json = JsonSerializer.Serialize(gradedPredictions);
+
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE PredictionsSnapshot
+            SET PredictionsJson = @PredictionsJson, Graded = 1, GradedAt = @GradedAt
+            WHERE Season = @Season AND Week = @Week
+            """;
+        command.Parameters.AddWithValue("@Season", gradedPredictions.Season);
+        command.Parameters.AddWithValue("@Week", gradedPredictions.Week);
+        command.Parameters.AddWithValue("@PredictionsJson", json);
+        command.Parameters.AddWithValue("@GradedAt", DateTime.UtcNow.ToString("o"));
+
+        var rowsAffected = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
+
+        _logger.LogInformation("Saved graded results for season {Season}, week {Week}: {RowsAffected} rows affected",
+            gradedPredictions.Season, gradedPredictions.Week, rowsAffected);
+
+        return rowsAffected > 0;
+    }
+
+    /// <summary>
+    /// Adds a new column to the predictions table if it does not already exist.
+    /// This is the de facto migration mechanism for this table since it has no separate migrations folder.
+    /// </summary>
+    private static async Task TryAddColumnAsync(SqliteConnection connection, string columnDefinition)
+    {
+        try
+        {
+            await using var alterCommand = connection.CreateCommand();
+            alterCommand.CommandText = $"ALTER TABLE PredictionsSnapshot ADD COLUMN {columnDefinition}";
+            await alterCommand.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
+        catch (SqliteException)
+        {
+            // Column already exists — safe to ignore
+        }
     }
 
     private void EnsureDirectoryExists()

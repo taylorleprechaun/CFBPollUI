@@ -17,6 +17,7 @@ public class AdminModuleTests
     private readonly Mock<ILogger<AdminModule>> _mockLogger;
     private readonly Mock<IPollLeadersModule> _mockPollLeadersModule;
     private readonly Mock<IPredictionCalculatorModule> _mockPredictionCalculatorModule;
+    private readonly Mock<IPredictionGradingModule> _mockPredictionGradingModule;
     private readonly Mock<IPredictionsModule> _mockPredictionsModule;
     private readonly Mock<IRankingsModule> _mockRankingsModule;
     private readonly Mock<IRatingModule> _mockRatingModule;
@@ -29,6 +30,7 @@ public class AdminModuleTests
         _mockLogger = new Mock<ILogger<AdminModule>>();
         _mockPollLeadersModule = new Mock<IPollLeadersModule>();
         _mockPredictionCalculatorModule = new Mock<IPredictionCalculatorModule>();
+        _mockPredictionGradingModule = new Mock<IPredictionGradingModule>();
         _mockPredictionsModule = new Mock<IPredictionsModule>();
         _mockRankingsModule = new Mock<IRankingsModule>();
         _mockRatingModule = new Mock<IRatingModule>();
@@ -43,6 +45,7 @@ public class AdminModuleTests
             _mockCache.Object,
             _mockPollLeadersModule.Object,
             _mockPredictionCalculatorModule.Object,
+            _mockPredictionGradingModule.Object,
             _mockPredictionsModule.Object,
             _mockRankingsModule.Object,
             _mockRatingModule.Object,
@@ -616,6 +619,45 @@ public class AdminModuleTests
 
         Assert.Single(result);
         _mockRankingsModule.Verify(x => x.GetSnapshotsAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task GradePredictionsAsync_DelegatesToGradingModule()
+    {
+        var gradeResult = new GradePredictionsResult
+        {
+            IsPersisted = true,
+            Predictions = new PredictionsResult { Season = 2024, Week = 5 },
+            UnmatchedGameCount = 0
+        };
+        _mockPredictionGradingModule.Setup(x => x.GradeAsync(2024, 5)).ReturnsAsync(gradeResult);
+
+        var result = await _adminModule.GradePredictionsAsync(2024, 5);
+
+        Assert.NotNull(result);
+        Assert.True(result.IsPersisted);
+        _mockPredictionGradingModule.Verify(x => x.GradeAsync(2024, 5), Times.Once);
+    }
+
+    [Fact]
+    public async Task GradePredictionsAsync_NoStoredPredictions_ReturnsNull()
+    {
+        _mockPredictionGradingModule.Setup(x => x.GradeAsync(2024, 5)).ReturnsAsync((GradePredictionsResult?)null);
+
+        var result = await _adminModule.GradePredictionsAsync(2024, 5);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task PublishGradedResultsAsync_DelegatesToPredictionsModule()
+    {
+        _mockPredictionsModule.Setup(x => x.PublishGradedResultsAsync(2024, 5)).ReturnsAsync(true);
+
+        var result = await _adminModule.PublishGradedResultsAsync(2024, 5);
+
+        Assert.True(result);
+        _mockPredictionsModule.Verify(x => x.PublishGradedResultsAsync(2024, 5), Times.Once);
     }
 
     [Fact]
