@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, waitForElementToBeRemoved } from '@testing-library/react';
+import { render, screen, waitFor, waitForElementToBeRemoved, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -46,10 +46,12 @@ const mockCalculateMutateAsync = vi.fn();
 const mockPublishMutateAsync = vi.fn();
 const mockDeleteMutateAsync = vi.fn();
 const mockExportMutateAsync = vi.fn();
+const mockRefreshCacheMutateAsync = vi.fn();
 let mockCalculateIsPending = false;
 let mockPublishIsPending = false;
 let mockDeleteIsPending = false;
 let mockExportIsPending = false;
+let mockRefreshCacheIsPending = false;
 
 vi.mock('../../hooks/use-admin-mutations', () => ({
   useCalculateRankings: () => ({
@@ -67,6 +69,10 @@ vi.mock('../../hooks/use-admin-mutations', () => ({
   useExportSnapshot: () => ({
     mutateAsync: mockExportMutateAsync,
     isPending: mockExportIsPending,
+  }),
+  useRefreshCache: () => ({
+    mutateAsync: mockRefreshCacheMutateAsync,
+    isPending: mockRefreshCacheIsPending,
   }),
 }));
 
@@ -117,6 +123,7 @@ describe('SnapshotsPage', () => {
     mockPublishIsPending = false;
     mockDeleteIsPending = false;
     mockExportIsPending = false;
+    mockRefreshCacheIsPending = false;
   });
 
   it('renders snapshots page heading', () => {
@@ -667,5 +674,73 @@ describe('SnapshotsPage', () => {
 
     expect(mockRefetchSnapshots).not.toHaveBeenCalled();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('renders refresh cached data button', () => {
+    renderSnapshotsPage();
+    expect(screen.getByRole('button', { name: 'Refresh Cached Data' })).toBeInTheDocument();
+  });
+
+  it('shows confirm modal instead of calling refreshCache immediately when refresh button is clicked', async () => {
+    renderSnapshotsPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('Refresh Cached Data')).toBeInTheDocument();
+    expect(mockRefreshCacheMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('does not call refreshCache when confirm modal is cancelled', async () => {
+    renderSnapshotsPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText('Cancel'));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(mockRefreshCacheMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('calls refreshCache with selected season and week when confirmed', async () => {
+    mockRefreshCacheMutateAsync.mockResolvedValue({ removedCount: 8, season: 2024, week: 5 });
+
+    renderSnapshotsPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
+
+    const dialog = screen.getByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Refresh' }));
+
+    await waitFor(() => {
+      expect(mockRefreshCacheMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
+    });
+  });
+
+  it('shows removed count feedback after a successful confirmed refresh', async () => {
+    mockRefreshCacheMutateAsync.mockResolvedValue({ removedCount: 8, season: 2024, week: 5 });
+
+    renderSnapshotsPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
+
+    const dialog = screen.getByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Refresh' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Removed 8 cached entries')).toBeInTheDocument();
+    });
+  });
+
+  it('shows error feedback when confirmed refresh fails', async () => {
+    mockRefreshCacheMutateAsync.mockRejectedValue(new Error('Refresh failed'));
+
+    renderSnapshotsPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
+
+    const dialog = screen.getByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Refresh' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Refresh failed')).toBeInTheDocument();
+    });
   });
 });

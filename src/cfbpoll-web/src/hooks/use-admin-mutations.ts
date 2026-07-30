@@ -7,6 +7,7 @@ import {
   downloadExport,
   publishPredictions,
   publishSnapshot,
+  refreshCache,
 } from '../services/admin-api';
 
 export function useCalculateRankings(token: string | null) {
@@ -89,6 +90,15 @@ export function useDeletePredictions(token: string | null) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['predictions-summaries'] });
+    },
+  });
+}
+
+export function useRefreshCache(token: string | null) {
+  return useMutation({
+    mutationFn: ({ season, week }: { season: number; week: number }) => {
+      if (!token) throw new Error('Authentication required');
+      return refreshCache(token, season, week);
     },
   });
 }

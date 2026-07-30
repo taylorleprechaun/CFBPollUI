@@ -17,6 +17,7 @@ public static class CachingServiceExtensions
 
         services.AddSingleton<ICacheData, CacheData>();
         services.AddSingleton<IPersistentCache, CacheModule>();
+        services.AddHostedService<CacheCleanupHostedService>();
 
         string apiKey = configuration["CollegeFootballData:ApiKey"]
             ?? throw new InvalidOperationException(
@@ -47,16 +48,16 @@ public static class CachingServiceExtensions
         return services;
     }
 
-    public static async Task InitializeCacheAsync(this WebApplication app)
-    {
-        var cacheData = app.Services.GetRequiredService<ICacheData>();
-        await cacheData.InitializeAsync().ConfigureAwait(false);
-    }
-
     public static IServiceCollection AddRankingsModule(this IServiceCollection services)
     {
         services.AddSingleton<IRankingsModule, RankingsModule>();
 
         return services;
+    }
+
+    public static async Task InitializeCacheAsync(this WebApplication app)
+    {
+        var cacheData = app.Services.GetRequiredService<ICacheData>();
+        await cacheData.InitializeAsync().ConfigureAwait(false);
     }
 }

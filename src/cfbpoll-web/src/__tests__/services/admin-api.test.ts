@@ -10,6 +10,7 @@ import {
   fetchSnapshots,
   publishPredictions,
   publishSnapshot,
+  refreshCache,
   updatePageVisibility,
 } from '../../services/admin-api';
 
@@ -479,6 +480,49 @@ describe('Admin API service', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await expect(downloadExport('token', 2024, 5)).rejects.toThrow('Not found');
+    });
+  });
+
+  describe('refreshCache', () => {
+    it('sends POST to cache endpoint with auth header', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ removedCount: 8, season: 2024, week: 5 }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await refreshCache('my-token', 2024, 5);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/cache'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+          }),
+        })
+      );
+      expect(result.removedCount).toBe(8);
+      expect(result.season).toBe(2024);
+      expect(result.week).toBe(5);
+    });
+
+    it('throws on failed refresh', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ message: 'Server error' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(refreshCache('token', 2024, 5)).rejects.toThrow('Server error');
+    });
+
+    it('throws on network failure', async () => {
+      const mockFetch = vi.fn().mockRejectedValue(new Error('Connection refused'));
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(refreshCache('token', 2024, 5)).rejects.toThrow('Connection refused');
     });
   });
 

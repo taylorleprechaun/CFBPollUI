@@ -46,6 +46,8 @@ public class AdminModule : IAdminModule
     {
         _logger.LogInformation("Calculating predictions for season {Season}, week {Week}", season, week);
 
+        await RefreshSeasonCacheAsync(season, week).ConfigureAwait(false);
+
         var seasonDataTask = _dataService.GetSeasonDataAsync(season, week);
         var fullScheduleTask = _dataService.GetFullSeasonScheduleAsync(season);
         await Task.WhenAll(seasonDataTask, fullScheduleTask).ConfigureAwait(false);
@@ -119,8 +121,7 @@ public class AdminModule : IAdminModule
     {
         _logger.LogInformation("Calculating rankings for season {Season}, week {Week}", season, week);
 
-        await ClearSeasonCacheAsync(season, week).ConfigureAwait(false);
-        _logger.LogDebug("Cleared component caches for season {Season} to force fresh API data", season);
+        await RefreshSeasonCacheAsync(season, week).ConfigureAwait(false);
 
         var seasonData = await _dataService.GetSeasonDataAsync(season, week).ConfigureAwait(false);
         var ratings = await _ratingModule.RateTeamsAsync(seasonData).ConfigureAwait(false);
@@ -214,30 +215,20 @@ public class AdminModule : IAdminModule
         return result;
     }
 
-    private async Task ClearSeasonCacheAsync(int season, int week)
+    public async Task<int> RefreshSeasonCacheAsync(int season, int week)
     {
-        var gameWeek = week + 1;
-        var cacheKeys = new List<string>
-        {
-            $"advancedGameStats_{season}_postseason",
-            $"advancedGameStats_{season}_regular",
-            $"bettingLines_{season}_{gameWeek}",
-            $"games_{season}_postseason",
-            $"games_{season}_regular",
-            $"seasonStats_{season}",
-            $"seasonStats_{season}_week_{week}",
-            $"teams_{season}"
-        };
+        _logger.LogInformation("Refreshing cached CFBD data for season {Season}, week {Week}", season, week);
 
-        // CFBD API serves postseason betting lines under week 1; clear that key too if different
-        if (gameWeek != 1)
+        var removed = 0;
+        foreach (var key in CacheKeys.GetSeasonScopedKeys(season, week))
         {
-            cacheKeys.Add($"bettingLines_{season}_1");
+            if (await _cache.RemoveAsync(key).ConfigureAwait(false))
+            {
+                removed++;
+            }
         }
 
-        foreach (var key in cacheKeys)
-        {
-            await _cache.RemoveAsync(key).ConfigureAwait(false);
-        }
+        _logger.LogInformation("Removed {Count} cached entries for season {Season}, week {Week}", removed, season, week);
+        return removed;
     }
 }

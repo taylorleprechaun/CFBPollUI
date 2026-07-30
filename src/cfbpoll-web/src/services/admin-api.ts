@@ -13,11 +13,13 @@ import {
   CalculateResponseSchema,
   LoginResponseSchema,
   PredictionsSummariesResponseSchema,
+  RefreshCacheResponseSchema,
   SnapshotsResponseSchema,
   type CalculatePredictionsResponse,
   type CalculateResponse,
   type LoginResponse,
   type PredictionsSummary,
+  type RefreshCacheResponse,
   type Snapshot,
 } from '../schemas/admin';
 
@@ -151,6 +153,18 @@ export async function publishPredictions(
       body: JSON.stringify({ isPublished: true }),
     })
   );
+}
+
+export async function refreshCache(
+  token: string,
+  season: number,
+  week: number
+): Promise<RefreshCacheResponse> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/cache`,
+    withAuth(token, { method: 'POST' })
+  );
+  return parseResponse(response, RefreshCacheResponseSchema);
 }
 
 export async function updatePageVisibility(

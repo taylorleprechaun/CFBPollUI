@@ -1,14 +1,20 @@
 import { useId } from 'react';
 import type { Week } from '../../types';
-import { BUTTON_PRIMARY, SELECT_BASE } from '../ui/button-styles';
+import { BUTTON_PRIMARY, BUTTON_SECONDARY, SELECT_BASE } from '../ui/button-styles';
+import { SuccessCheckmark } from './success-checkmark';
+import type { ActionFeedback } from './types';
 
 interface CalculateSectionProps {
   buttonLabel?: string;
   buttonPendingLabel?: string;
   isCalculating: boolean;
+  isRefreshingCache?: boolean;
   onCalculate: () => void;
+  onClearRefreshFeedback?: () => void;
+  onRefreshCache?: () => void;
   onSeasonChange: (season: number) => void;
   onWeekChange: (week: number | null) => void;
+  refreshFeedback?: ActionFeedback | null;
   seasons: number[];
   seasonsLoading: boolean;
   selectedSeason: number | null;
@@ -22,9 +28,13 @@ export function CalculateSection({
   buttonLabel = 'Calculate',
   buttonPendingLabel = 'Calculating...',
   isCalculating,
+  isRefreshingCache = false,
   onCalculate,
+  onClearRefreshFeedback,
+  onRefreshCache,
   onSeasonChange,
   onWeekChange,
+  refreshFeedback,
   seasons,
   seasonsLoading,
   selectedSeason,
@@ -35,10 +45,33 @@ export function CalculateSection({
 }: CalculateSectionProps) {
   const seasonId = useId();
   const weekId = useId();
+  const refreshFeedbackKey = `refresh-cache-${selectedSeason}-${selectedWeek}`;
 
   return (
     <div className="bg-surface border border-border rounded-xl p-4 sm:p-6">
-      <h2 className="text-lg font-semibold text-text-primary mb-4">{title}</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <h2 className="text-lg font-semibold text-text-primary">{title}</h2>
+        {onRefreshCache && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onRefreshCache}
+              disabled={isRefreshingCache || selectedSeason === null || selectedWeek === null}
+              className={BUTTON_SECONDARY}
+            >
+              {isRefreshingCache ? 'Refreshing...' : 'Refresh Cached Data'}
+            </button>
+            {refreshFeedback?.key === refreshFeedbackKey && refreshFeedback.type === 'success' && (
+              <span className="flex items-center gap-1 text-sm text-green-700">
+                <SuccessCheckmark onDone={() => onClearRefreshFeedback?.()} />
+                {refreshFeedback.message}
+              </span>
+            )}
+            {refreshFeedback?.key === refreshFeedbackKey && refreshFeedback.type === 'error' && (
+              <span className="text-red-600 text-sm">{refreshFeedback.message}</span>
+            )}
+          </div>
+        )}
+      </div>
       <div className="flex flex-wrap gap-4 items-end">
         <div>
           <label htmlFor={seasonId} className="block text-sm font-medium text-text-secondary mb-1">

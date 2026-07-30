@@ -10,6 +10,7 @@ import {
   useCalculatePredictions,
   usePublishPredictions,
   useDeletePredictions,
+  useRefreshCache,
 } from '../../hooks/use-admin-mutations';
 
 vi.mock('../../services/admin-api', () => ({
@@ -20,6 +21,7 @@ vi.mock('../../services/admin-api', () => ({
   downloadExport: vi.fn(),
   publishPredictions: vi.fn(),
   publishSnapshot: vi.fn(),
+  refreshCache: vi.fn(),
 }));
 
 import {
@@ -30,6 +32,7 @@ import {
   downloadExport,
   publishPredictions,
   publishSnapshot,
+  refreshCache,
 } from '../../services/admin-api';
 
 function createWrapper() {
@@ -193,6 +196,37 @@ describe('useDeletePredictions', () => {
   });
 });
 
+describe('useRefreshCache', () => {
+  beforeEach(() => vi.resetAllMocks());
+
+  it('calls refreshCache with token and params', async () => {
+    const mockResult = { removedCount: 8, season: 2024, week: 5 };
+    vi.mocked(refreshCache).mockResolvedValue(mockResult);
+
+    const { result } = renderHook(() => useRefreshCache('test-token'), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ season: 2024, week: 5 });
+    });
+
+    expect(refreshCache).toHaveBeenCalledWith('test-token', 2024, 5);
+  });
+
+  it('rejects on failure', async () => {
+    vi.mocked(refreshCache).mockRejectedValue(new Error('Failed'));
+
+    const { result } = renderHook(() => useRefreshCache('test-token'), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(
+      act(() => result.current.mutateAsync({ season: 2024, week: 5 }))
+    ).rejects.toThrow('Failed');
+  });
+});
+
 describe('null token guard', () => {
   beforeEach(() => vi.resetAllMocks());
 
@@ -278,5 +312,17 @@ describe('null token guard', () => {
     ).rejects.toThrow('Authentication required');
 
     expect(downloadExport).not.toHaveBeenCalled();
+  });
+
+  it('useRefreshCache rejects with Authentication required when token is null', async () => {
+    const { result } = renderHook(() => useRefreshCache(null), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(
+      act(() => result.current.mutateAsync({ season: 2024, week: 5 }))
+    ).rejects.toThrow('Authentication required');
+
+    expect(refreshCache).not.toHaveBeenCalled();
   });
 });

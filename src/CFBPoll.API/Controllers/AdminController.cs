@@ -26,24 +26,6 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Generates predictions for the specified season and week and saves as a draft.
-    /// </summary>
-    [HttpPost("seasons/{season}/weeks/{week}/prediction")]
-    public async Task<ActionResult<CalculatePredictionsResponseDTO>> CalculatePredictions(int season, int week)
-    {
-        _logger.LogInformation("Admin calculating predictions for season {Season}, week {Week}",
-            season, week);
-
-        var result = await _adminModule.CalculatePredictionsAsync(season, week);
-
-        return Ok(new CalculatePredictionsResponseDTO
-        {
-            IsPersisted = result.IsPersisted,
-            Predictions = PredictionsMapper.ToResponseDTO(result.Predictions)
-        });
-    }
-
-    /// <summary>
     /// Calculates rankings for the specified season and week and saves as a draft.
     /// </summary>
     [HttpPost("seasons/{season}/weeks/{week}/snapshot")]
@@ -60,6 +42,110 @@ public class AdminController : ControllerBase
             IsPersisted = result.IsPersisted,
             Rankings = RankingsMapper.ToResponseDTO(result.Rankings, deltas)
         });
+    }
+
+    /// <summary>
+    /// Generates predictions for the specified season and week and saves as a draft.
+    /// </summary>
+    [HttpPost("seasons/{season}/weeks/{week}/prediction")]
+    public async Task<ActionResult<CalculatePredictionsResponseDTO>> CalculatePredictions(int season, int week)
+    {
+        _logger.LogInformation("Admin calculating predictions for season {Season}, week {Week}",
+            season, week);
+
+        var result = await _adminModule.CalculatePredictionsAsync(season, week);
+
+        return Ok(new CalculatePredictionsResponseDTO
+        {
+            IsPersisted = result.IsPersisted,
+            Predictions = PredictionsMapper.ToResponseDTO(result.Predictions)
+        });
+    }
+    /// <summary>
+    /// Deletes a snapshot for the specified season and week.
+    /// </summary>
+    [HttpDelete("seasons/{season}/weeks/{week}/snapshot")]
+    public async Task<ActionResult> Delete(int season, int week)
+    {
+        _logger.LogInformation("Admin deleting snapshot for season {Season}, week {Week}", season, week);
+
+        var deleted = await _adminModule.DeleteSnapshotAsync(season, week);
+
+        if (!deleted)
+            return NotFound(new ErrorResponseDTO { Message = SNAPSHOT_NOT_FOUND, StatusCode = 404 });
+
+        return Ok();
+    }
+
+    /// <summary>
+    /// Deletes predictions for the specified season and week.
+    /// </summary>
+    [HttpDelete("seasons/{season}/weeks/{week}/prediction")]
+    public async Task<ActionResult> DeletePrediction(int season, int week)
+    {
+        _logger.LogInformation("Admin deleting predictions for season {Season}, week {Week}", season, week);
+
+        var deleted = await _adminModule.DeletePredictionsAsync(season, week);
+
+        if (!deleted)
+            return NotFound(new ErrorResponseDTO { Message = PREDICTION_NOT_FOUND, StatusCode = 404 });
+
+        return Ok();
+    }
+
+    /// <summary>
+    /// Downloads an Excel export of the rankings for the specified season and week.
+    /// </summary>
+    [HttpGet("seasons/{season}/weeks/{week}/snapshot/export")]
+    public async Task<ActionResult> Export(int season, int week)
+    {
+        _logger.LogInformation("Admin exporting rankings for season {Season}, week {Week}", season, week);
+
+        var bytes = await _adminModule.ExportRankingsAsync(season, week);
+
+        if (bytes is null)
+            return NotFound(new ErrorResponseDTO { Message = SNAPSHOT_NOT_FOUND, StatusCode = 404 });
+
+        return File(bytes,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            $"Rankings_{season}_Week{week}.xlsx");
+    }
+
+    /// <summary>
+    /// Gets all persisted prediction summaries including draft and published.
+    /// </summary>
+    [HttpGet("predictions")]
+    public async Task<ActionResult<IEnumerable<PredictionsSummaryDTO>>> GetPredictions()
+    {
+        var summaries = await _adminModule.GetPredictionsSummariesAsync();
+
+        return Ok(summaries.Select(PredictionsMapper.ToSummaryDTO));
+    }
+
+    /// <summary>
+    /// Gets all persisted snapshots including draft and published.
+    /// </summary>
+    [HttpGet("snapshots")]
+    public async Task<ActionResult<IEnumerable<SnapshotDTO>>> GetSnapshots()
+    {
+        var snapshots = await _adminModule.GetSnapshotsAsync();
+
+        return Ok(snapshots.Select(SnapshotMapper.ToDTO));
+    }
+
+    /// <summary>
+    /// Clears cached CollegeFootballData API responses for the specified season and week without
+    /// recalculating rankings or predictions. Use when CFBD has corrected source data and an admin
+    /// wants fresh data available before deciding whether to recalculate.
+    /// </summary>
+    [HttpPost("seasons/{season}/weeks/{week}/cache")]
+    public async Task<ActionResult<RefreshCacheResponseDTO>> RefreshCache(int season, int week)
+    {
+        _logger.LogInformation("Admin refreshing cached CFBD data for season {Season}, week {Week}", season, week);
+
+        var removedCount = await _adminModule.RefreshSeasonCacheAsync(season, week);
+
+        return Ok(new RefreshCacheResponseDTO { RemovedCount = removedCount, Season = season, Week = week });
     }
 
     /// <summary>
@@ -102,77 +188,5 @@ public class AdminController : ControllerBase
             return NotFound(new ErrorResponseDTO { Message = SNAPSHOT_NOT_FOUND, StatusCode = 404 });
 
         return Ok();
-    }
-
-    /// <summary>
-    /// Deletes predictions for the specified season and week.
-    /// </summary>
-    [HttpDelete("seasons/{season}/weeks/{week}/prediction")]
-    public async Task<ActionResult> DeletePrediction(int season, int week)
-    {
-        _logger.LogInformation("Admin deleting predictions for season {Season}, week {Week}", season, week);
-
-        var deleted = await _adminModule.DeletePredictionsAsync(season, week);
-
-        if (!deleted)
-            return NotFound(new ErrorResponseDTO { Message = PREDICTION_NOT_FOUND, StatusCode = 404 });
-
-        return Ok();
-    }
-
-    /// <summary>
-    /// Deletes a snapshot for the specified season and week.
-    /// </summary>
-    [HttpDelete("seasons/{season}/weeks/{week}/snapshot")]
-    public async Task<ActionResult> Delete(int season, int week)
-    {
-        _logger.LogInformation("Admin deleting snapshot for season {Season}, week {Week}", season, week);
-
-        var deleted = await _adminModule.DeleteSnapshotAsync(season, week);
-
-        if (!deleted)
-            return NotFound(new ErrorResponseDTO { Message = SNAPSHOT_NOT_FOUND, StatusCode = 404 });
-
-        return Ok();
-    }
-
-    /// <summary>
-    /// Gets all persisted prediction summaries including draft and published.
-    /// </summary>
-    [HttpGet("predictions")]
-    public async Task<ActionResult<IEnumerable<PredictionsSummaryDTO>>> GetPredictions()
-    {
-        var summaries = await _adminModule.GetPredictionsSummariesAsync();
-
-        return Ok(summaries.Select(PredictionsMapper.ToSummaryDTO));
-    }
-
-    /// <summary>
-    /// Gets all persisted snapshots including draft and published.
-    /// </summary>
-    [HttpGet("snapshots")]
-    public async Task<ActionResult<IEnumerable<SnapshotDTO>>> GetSnapshots()
-    {
-        var snapshots = await _adminModule.GetSnapshotsAsync();
-
-        return Ok(snapshots.Select(SnapshotMapper.ToDTO));
-    }
-
-    /// <summary>
-    /// Downloads an Excel export of the rankings for the specified season and week.
-    /// </summary>
-    [HttpGet("seasons/{season}/weeks/{week}/snapshot/export")]
-    public async Task<ActionResult> Export(int season, int week)
-    {
-        _logger.LogInformation("Admin exporting rankings for season {Season}, week {Week}", season, week);
-
-        var bytes = await _adminModule.ExportRankingsAsync(season, week);
-
-        if (bytes is null)
-            return NotFound(new ErrorResponseDTO { Message = SNAPSHOT_NOT_FOUND, StatusCode = 404 });
-
-        return File(bytes,
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            $"Rankings_{season}_Week{week}.xlsx");
     }
 }

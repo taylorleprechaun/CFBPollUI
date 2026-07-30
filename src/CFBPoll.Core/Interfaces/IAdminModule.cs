@@ -52,4 +52,11 @@ public interface IAdminModule
     /// Publishes a snapshot for the given season and week.
     /// </summary>
     Task<bool> PublishSnapshotAsync(int season, int week);
+
+    /// <summary>
+    /// Removes cached CollegeFootballData API responses scoped to the given season and week,
+    /// forcing the next data fetch to pull fresh data. Does not recalculate rankings or predictions.
+    /// </summary>
+    /// <returns>The number of cache entries actually removed.</returns>
+    Task<int> RefreshSeasonCacheAsync(int season, int week);
 }

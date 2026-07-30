@@ -10,6 +10,7 @@ import {
   useCalculatePredictions,
   useDeletePredictions,
   usePublishPredictions,
+  useRefreshCache,
 } from '../hooks/use-admin-mutations';
 import { useAdminPageState } from '../hooks/use-admin-page-state';
 import { useAuth } from '../contexts/auth-context';
@@ -44,6 +45,7 @@ export function PredictionsPage() {
   const calculateMutation = useCalculatePredictions(token);
   const publishMutation = usePublishPredictions(token);
   const deleteMutation = useDeletePredictions(token);
+  const refreshCacheMutation = useRefreshCache(token);
 
   const {
     actionFeedback,
@@ -53,14 +55,19 @@ export function PredictionsPage() {
     deleteConfirm,
     error,
     executeDelete,
+    executeRefreshCache,
     handleCalculate,
     handleCollapseAll,
     handleDelete,
     handleExpandAll,
     handlePublish,
+    handleRefreshCache,
     handleRetry,
     isActionPending,
+    isRefreshingCache,
+    refreshCacheConfirm,
     setDeleteConfirm,
+    setRefreshCacheConfirm,
     toggleSeason,
   } = useAdminPageState<CalculatePredictionsResponse>({
     calculateMutation,
@@ -72,6 +79,7 @@ export function PredictionsPage() {
     queryError: summariesError,
     queryErrorLabel: 'Failed to load predictions',
     refetch: refetchSummaries,
+    refreshCacheMutation,
     selectedSeason,
     selectedWeek,
   });
@@ -86,9 +94,17 @@ export function PredictionsPage() {
         buttonLabel="Generate"
         buttonPendingLabel="Generating..."
         isCalculating={calculateMutation.isPending}
+        isRefreshingCache={isRefreshingCache}
         onCalculate={handleCalculate}
+        onClearRefreshFeedback={clearFeedback}
+        onRefreshCache={() => {
+          if (selectedSeason !== null && selectedWeek !== null) {
+            handleRefreshCache(selectedSeason, selectedWeek);
+          }
+        }}
         onSeasonChange={setSelectedSeason}
         onWeekChange={setSelectedWeek}
+        refreshFeedback={actionFeedback}
         seasons={seasons}
         seasonsLoading={seasonsLoading}
         selectedSeason={selectedSeason}
@@ -131,6 +147,16 @@ export function PredictionsPage() {
           message={`These predictions (${deleteConfirm.season} ${getWeekLabel(deleteConfirm.week)}) are published and visible to users. Are you sure you want to delete them?`}
           onConfirm={() => executeDelete(deleteConfirm.season, deleteConfirm.week)}
           onCancel={() => setDeleteConfirm(null)}
+        />
+      )}
+
+      {refreshCacheConfirm && (
+        <ConfirmModal
+          title="Refresh Cached Data"
+          message={`This will clear cached source data for ${refreshCacheConfirm.season} ${getWeekLabel(refreshCacheConfirm.week)} and force a fresh pull from the College Football Data API on the next calculation. This is normally unnecessary since Generate already forces a fresh pull. Continue?`}
+          confirmLabel="Refresh"
+          onConfirm={() => executeRefreshCache(refreshCacheConfirm.season, refreshCacheConfirm.week)}
+          onCancel={() => setRefreshCacheConfirm(null)}
         />
       )}
     </div>

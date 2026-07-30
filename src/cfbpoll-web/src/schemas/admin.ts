@@ -57,10 +57,17 @@ export const PredictionsSummarySchema = z.object({
 
 export const PredictionsSummariesResponseSchema = z.array(PredictionsSummarySchema);
 
+export const RefreshCacheResponseSchema = z.object({
+  removedCount: z.number(),
+  season: z.number(),
+  week: z.number(),
+});
+
 export type CalculatePredictionsResponse = z.infer<typeof CalculatePredictionsResponseSchema>;
 export type CalculateResponse = z.infer<typeof CalculateResponseSchema>;
 export type GamePrediction = z.infer<typeof GamePredictionSchema>;
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 export type PredictionsResponse = z.infer<typeof PredictionsResponseSchema>;
 export type PredictionsSummary = z.infer<typeof PredictionsSummarySchema>;
+export type RefreshCacheResponse = z.infer<typeof RefreshCacheResponseSchema>;
 export type Snapshot = z.infer<typeof SnapshotSchema>;

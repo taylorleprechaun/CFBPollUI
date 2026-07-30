@@ -7,6 +7,7 @@ import {
   PredictionsResponseSchema,
   PredictionsSummarySchema,
   PredictionsSummariesResponseSchema,
+  RefreshCacheResponseSchema,
   SnapshotSchema,
   SnapshotsResponseSchema,
 } from '../../schemas/admin';
@@ -241,6 +242,26 @@ describe('Admin schemas', () => {
     it('validates an empty array', () => {
       const result = PredictionsSummariesResponseSchema.safeParse([]);
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe('RefreshCacheResponseSchema', () => {
+    it('validates a valid refresh cache response', () => {
+      const data = { removedCount: 8, season: 2024, week: 5 };
+      const result = RefreshCacheResponseSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('validates a zero removedCount', () => {
+      const data = { removedCount: 0, season: 2024, week: 5 };
+      const result = RefreshCacheResponseSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects missing removedCount field', () => {
+      const data = { season: 2024, week: 5 };
+      const result = RefreshCacheResponseSchema.safeParse(data);
+      expect(result.success).toBe(false);
     });
   });
 

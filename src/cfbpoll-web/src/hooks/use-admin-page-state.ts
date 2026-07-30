@@ -20,6 +20,7 @@ interface UseAdminPageStateOptions<TCalcResult> {
   queryError: Error | null;
   queryErrorLabel: string;
   refetch: () => void;
+  refreshCacheMutation?: UseMutationResult<{ removedCount: number }, Error, SeasonWeekParams>;
   selectedSeason: number | null;
   selectedWeek: number | null;
 }
@@ -34,6 +35,7 @@ export function useAdminPageState<TCalcResult>({
   queryError,
   queryErrorLabel,
   refetch,
+  refreshCacheMutation,
   selectedSeason,
   selectedWeek,
 }: UseAdminPageStateOptions<TCalcResult>) {
@@ -43,6 +45,7 @@ export function useAdminPageState<TCalcResult>({
   const [collapsedSeasons, setCollapsedSeasons] = useState<Set<number>>(new Set());
   const initialCollapseApplied = useRef(false);
   const [deleteConfirm, setDeleteConfirm] = useState<SeasonWeekParams | null>(null);
+  const [refreshCacheConfirm, setRefreshCacheConfirm] = useState<SeasonWeekParams | null>(null);
 
   const normalizedQueryError = queryError
     ? toError(queryError, queryErrorLabel)
@@ -50,6 +53,7 @@ export function useAdminPageState<TCalcResult>({
   const error = operationError ?? normalizedQueryError;
 
   const isActionPending = calculateMutation.isPending || publishMutation.isPending || deleteMutation.isPending;
+  const isRefreshingCache = refreshCacheMutation?.isPending ?? false;
 
   const clearFeedback = useCallback(() => setActionFeedback(null), []);
 
@@ -87,6 +91,24 @@ export function useAdminPageState<TCalcResult>({
       setActionFeedback({ key: `${feedbackKeyPrefix}-${season}-${week}`, type: 'success' });
     } catch (err) {
       setActionFeedback({ key: `${feedbackKeyPrefix}-${season}-${week}`, type: 'error', message: toErrorMessage(err, 'Publish failed') });
+    }
+  };
+
+  const handleRefreshCache = (season: number, week: number) => {
+    setRefreshCacheConfirm({ season, week });
+  };
+
+  const executeRefreshCache = async (season: number, week: number) => {
+    if (!refreshCacheMutation) return;
+    setRefreshCacheConfirm(null);
+    setOperationError(null);
+    setActionFeedback(null);
+
+    try {
+      const result = await refreshCacheMutation.mutateAsync({ season, week });
+      setActionFeedback({ key: `refresh-cache-${season}-${week}`, type: 'success', message: `Removed ${result.removedCount} cached entries` });
+    } catch (err) {
+      setActionFeedback({ key: `refresh-cache-${season}-${week}`, type: 'error', message: toErrorMessage(err, 'Refresh failed') });
     }
   };
 
@@ -143,15 +165,20 @@ export function useAdminPageState<TCalcResult>({
     deleteConfirm,
     error,
     executeDelete,
+    executeRefreshCache,
     handleCalculate,
     handleCollapseAll,
     handleDelete,
     handleExpandAll,
     handlePublish,
+    handleRefreshCache,
     handleRetry,
     isActionPending,
+    isRefreshingCache,
+    refreshCacheConfirm,
     setDeleteConfirm,
     setOperationError,
+    setRefreshCacheConfirm,
     toggleSeason,
   };
 }

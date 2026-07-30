@@ -45,7 +45,9 @@ vi.mock('../../hooks/use-weeks', () => ({
 const mockCalculateMutateAsync = vi.fn();
 const mockPublishMutateAsync = vi.fn();
 const mockDeleteMutateAsync = vi.fn();
+const mockRefreshCacheMutateAsync = vi.fn();
 let mockCalculateIsPending = false;
+let mockRefreshCacheIsPending = false;
 
 vi.mock('../../hooks/use-admin-mutations', () => ({
   useCalculatePredictions: () => ({
@@ -59,6 +61,10 @@ vi.mock('../../hooks/use-admin-mutations', () => ({
   useDeletePredictions: () => ({
     mutateAsync: mockDeleteMutateAsync,
     isPending: false,
+  }),
+  useRefreshCache: () => ({
+    mutateAsync: mockRefreshCacheMutateAsync,
+    isPending: mockRefreshCacheIsPending,
   }),
 }));
 
@@ -105,6 +111,7 @@ describe('PredictionsPage', () => {
     mockSummariesData = [];
     mockSummariesError = null;
     mockCalculateIsPending = false;
+    mockRefreshCacheIsPending = false;
   });
 
   it('renders heading', () => {
@@ -380,5 +387,65 @@ describe('PredictionsPage', () => {
       expect(screen.queryByText('Delete Published Predictions')).not.toBeInTheDocument();
     });
     expect(mockDeleteMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('renders refresh cached data button', () => {
+    renderPredictionsPage();
+    expect(screen.getByRole('button', { name: 'Refresh Cached Data' })).toBeInTheDocument();
+  });
+
+  it('shows confirm modal instead of calling refreshCache immediately when refresh button is clicked', async () => {
+    const user = userEvent.setup();
+
+    renderPredictionsPage();
+    await user.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('Refresh Cached Data')).toBeInTheDocument();
+    expect(mockRefreshCacheMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('does not call refreshCache when confirm modal is cancelled', async () => {
+    const user = userEvent.setup();
+
+    renderPredictionsPage();
+    await user.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    await user.click(screen.getByText('Cancel'));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(mockRefreshCacheMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('calls refreshCache with selected season and week when confirmed', async () => {
+    const user = userEvent.setup();
+    mockRefreshCacheMutateAsync.mockResolvedValue({ removedCount: 6, season: 2024, week: 5 });
+
+    renderPredictionsPage();
+    await user.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
+
+    const dialog = screen.getByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Refresh' }));
+
+    await waitFor(() => {
+      expect(mockRefreshCacheMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
+    });
+  });
+
+  it('shows removed count feedback after a successful confirmed refresh', async () => {
+    const user = userEvent.setup();
+    mockRefreshCacheMutateAsync.mockResolvedValue({ removedCount: 6, season: 2024, week: 5 });
+
+    renderPredictionsPage();
+    await user.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
+
+    const dialog = screen.getByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Refresh' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Removed 6 cached entries')).toBeInTheDocument();
+    });
   });
 });
