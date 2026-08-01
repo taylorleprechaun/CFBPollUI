@@ -1,3 +1,6 @@
+import { badgeColorClasses } from './badge-colors';
+import type { BadgeColor } from './badge-colors';
+
 export type PredictionStage = 'draft' | 'picks-published' | 'graded' | 'results-published';
 
 interface StageFlags {
@@ -13,11 +16,11 @@ const STAGE_LABELS: Record<PredictionStage, string> = {
   'results-published': 'Results Published',
 };
 
-const STAGE_CLASSES: Record<PredictionStage, string> = {
-  draft: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300',
-  'picks-published': 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300',
-  graded: 'bg-red-100 dark:bg-red-900/40 text-red-900 dark:text-red-200',
-  'results-published': 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300',
+const STAGE_COLORS: Record<PredictionStage, BadgeColor> = {
+  draft: 'gray',
+  'picks-published': 'yellow',
+  graded: 'red',
+  'results-published': 'green',
 };
 
 export function derivePredictionStage({ isGraded, isPublished, resultsPublished }: StageFlags): PredictionStage {
@@ -32,5 +35,5 @@ export function predictionStageLabel(stage: PredictionStage): string {
 }
 
 export function predictionStageClasses(stage: PredictionStage): string {
-  return STAGE_CLASSES[stage];
+  return badgeColorClasses(STAGE_COLORS[stage]);
 }

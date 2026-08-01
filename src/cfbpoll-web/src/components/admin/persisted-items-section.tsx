@@ -1,5 +1,6 @@
 import { type ReactNode, useMemo } from 'react';
 
+import { badgeColorClasses } from '../../lib/badge-colors';
 import { groupBySeasonDescending } from '../../lib/group-utils';
 import { getWeekLabel } from '../../lib/week-utils';
 import { BUTTON_DANGER_GHOST, BUTTON_GHOST } from '../ui/button-styles';
@@ -28,7 +29,17 @@ interface PersistedItemsSectionProps<T extends { createdAt: string; isPublished:
   onToggleSeason: (season: number) => void;
   onView?: (season: number, week: number) => void;
   renderExtraCells?: (item: T) => ReactNode;
+  renderStatusCell?: (item: T) => ReactNode;
   title: string;
+}
+
+function defaultStatusCell<T extends { isPublished: boolean }>(item: T) {
+  return (
+    <StatusBadge
+      className={badgeColorClasses(item.isPublished ? 'green' : 'yellow')}
+      label={item.isPublished ? 'Published' : 'Draft'}
+    />
+  );
 }
 
 export function PersistedItemsSection<T extends { createdAt: string; isPublished: boolean; season: number; week: number }>({
@@ -50,6 +61,7 @@ export function PersistedItemsSection<T extends { createdAt: string; isPublished
   onToggleSeason,
   onView,
   renderExtraCells,
+  renderStatusCell = defaultStatusCell,
   title,
 }: PersistedItemsSectionProps<T>) {
   const groupedItems = useMemo(() => groupBySeasonDescending(items), [items]);
@@ -122,12 +134,7 @@ export function PersistedItemsSection<T extends { createdAt: string; isPublished
                               <td className="px-4 py-3 whitespace-nowrap text-sm text-text-primary">{getWeekLabel(item.week)}</td>
                               {renderExtraCells?.(item)}
                               <td className="px-4 py-3 whitespace-nowrap text-sm">
-                                <StatusBadge
-                                  className={item.isPublished
-                                    ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300'
-                                    : 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300'}
-                                  label={item.isPublished ? 'Published' : 'Draft'}
-                                />
+                                {renderStatusCell(item)}
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-sm text-text-muted">
                                 {new Date(item.createdAt).toLocaleString()}

@@ -1,9 +1,17 @@
-const GRADE_CLASSES: Record<string, string> = {
-  Correct: 'bg-green-100 dark:bg-green-900/40 text-green-900 dark:text-green-200',
-  Incorrect: 'bg-red-100 dark:bg-red-900/40 text-red-900 dark:text-red-200',
-  Push: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300',
+import { badgeColorClasses } from './badge-colors';
+import type { BadgeColor } from './badge-colors';
+
+const GRADE_COLORS: Record<string, BadgeColor> = {
+  Correct: 'green',
+  Incorrect: 'red',
+  Push: 'gray',
 };
 
+// Intentionally distinct from the shared gray so an ungraded/unrecognized
+// grade value doesn't visually read as an equivalent "Push" result.
+const FALLBACK_CLASSES = 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400';
+
 export function gradeClasses(grade: string): string {
-  return GRADE_CLASSES[grade] ?? 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400';
+  const color = GRADE_COLORS[grade];
+  return color ? badgeColorClasses(color) : FALLBACK_CLASSES;
 }

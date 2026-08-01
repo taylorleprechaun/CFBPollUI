@@ -1,6 +1,7 @@
 import { StatusBadge } from '../ui/status-badge';
 import { PersistedItemsSection } from './persisted-items-section';
 import type { ActionFeedback } from './types';
+import { derivePredictionStage, predictionStageClasses, predictionStageLabel } from '../../lib/prediction-stage';
 import type { PredictionsSummary } from '../../schemas/admin';
 
 interface PersistedPredictionsSectionProps {
@@ -18,31 +19,18 @@ interface PersistedPredictionsSectionProps {
 }
 
 const EXTRA_COLUMN_HEADERS = (
-  <>
-    <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Games</th>
-    <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Graded</th>
-    <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Results</th>
-  </>
+  <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Games</th>
 );
-
-function statusBadgeClasses(isActive: boolean): string {
-  return isActive
-    ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300'
-    : 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300';
-}
 
 function renderExtraCells(item: PredictionsSummary) {
   return (
-    <>
-      <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary">{item.gameCount}</td>
-      <td className="px-4 py-3 whitespace-nowrap text-sm">
-        <StatusBadge className={statusBadgeClasses(item.isGraded)} label={item.isGraded ? 'Graded' : 'Ungraded'} />
-      </td>
-      <td className="px-4 py-3 whitespace-nowrap text-sm">
-        <StatusBadge className={statusBadgeClasses(item.resultsPublished)} label={item.resultsPublished ? 'Published' : 'Draft'} />
-      </td>
-    </>
+    <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary">{item.gameCount}</td>
   );
+}
+
+function renderStatusCell(item: PredictionsSummary) {
+  const stage = derivePredictionStage(item);
+  return <StatusBadge className={predictionStageClasses(stage)} label={predictionStageLabel(stage)} />;
 }
 
 export function PersistedPredictionsSection({
@@ -77,6 +65,7 @@ export function PersistedPredictionsSection({
       onToggleSeason={onToggleSeason}
       onView={onView}
       renderExtraCells={renderExtraCells}
+      renderStatusCell={renderStatusCell}
       title="Persisted Predictions"
     />
   );

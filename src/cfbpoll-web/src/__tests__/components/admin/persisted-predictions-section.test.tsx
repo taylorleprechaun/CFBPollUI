@@ -55,7 +55,7 @@ describe('PersistedPredictionsSection', () => {
     expect(screen.getByText('(2 predictions)')).toBeInTheDocument();
   });
 
-  it('shows Published badge for published predictions', () => {
+  it('shows Picks Published badge for published but ungraded predictions', () => {
     const props = {
       ...defaultProps,
       summaries: [
@@ -65,7 +65,7 @@ describe('PersistedPredictionsSection', () => {
 
     render(<PersistedPredictionsSection {...props} />);
 
-    expect(screen.getByText('Published')).toBeInTheDocument();
+    expect(screen.getByText('Picks Published')).toBeInTheDocument();
   });
 
   it('shows Draft badge for unpublished predictions', () => {
@@ -167,20 +167,7 @@ describe('PersistedPredictionsSection', () => {
     expect(within(row!).getByText('Graded')).toBeInTheDocument();
   });
 
-  it('shows Ungraded badge for ungraded predictions', () => {
-    const props = {
-      ...defaultProps,
-      summaries: [
-        { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z', gameCount: 10, gradedAt: null, isGraded: false, resultsPublished: false },
-      ],
-    };
-
-    render(<PersistedPredictionsSection {...props} />);
-
-    expect(screen.getByText('Ungraded')).toBeInTheDocument();
-  });
-
-  it('shows Published badge in Results column for published results', () => {
+  it('shows Results Published badge for published results', () => {
     const props = {
       ...defaultProps,
       summaries: [
@@ -190,20 +177,22 @@ describe('PersistedPredictionsSection', () => {
 
     render(<PersistedPredictionsSection {...props} />);
 
-    expect(screen.getAllByText('Published').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText('Results Published')).toBeInTheDocument();
   });
 
-  it('shows Draft badge in Results column for unpublished results', () => {
+  it('shows only the Games extra column header, not separate Graded/Results columns', () => {
     const props = {
       ...defaultProps,
       summaries: [
-        { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z', gameCount: 10, gradedAt: '2024-09-02T00:00:00Z', isGraded: true, resultsPublished: false },
+        { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z', gameCount: 10, gradedAt: null, isGraded: false, resultsPublished: false },
       ],
     };
 
     render(<PersistedPredictionsSection {...props} />);
 
-    expect(screen.getAllByText('Draft').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('Games')).toBeInTheDocument();
+    expect(screen.queryByText('Graded')).not.toBeInTheDocument();
+    expect(screen.queryByText('Results')).not.toBeInTheDocument();
   });
 
   it('calls onToggleSeason when season header is clicked', async () => {
