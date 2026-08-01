@@ -117,44 +117,44 @@ describe('PredictionsTable', () => {
       winnerGrade: 'Correct',
     });
 
-    it('does not apply grading styles when resultsPublished is false', () => {
-      render(<PredictionsTable predictions={[gradedPrediction]} resultsPublished={false} />);
+    it('does not apply grading styles when showGrades is false', () => {
+      render(<PredictionsTable predictions={[gradedPrediction]} showGrades={false} />);
 
       expect(screen.queryByText(/Final:/)).not.toBeInTheDocument();
       for (const el of screen.getAllByText('Ohio State')) {
-        expect(el.className).not.toContain('text-green-700');
-        expect(el.className).not.toContain('line-through');
+        expect(el.className).not.toContain('bg-green-100');
+        expect(el.className).not.toContain('rounded-lg');
       }
     });
 
-    it('shows the final score when resultsPublished is true', () => {
-      render(<PredictionsTable predictions={[gradedPrediction]} resultsPublished={true} />);
+    it('shows the final score when showGrades is true', () => {
+      render(<PredictionsTable predictions={[gradedPrediction]} showGrades={true} />);
 
       expect(screen.getByText((_, element) => element?.textContent === 'Final: 17-28')).toBeInTheDocument();
     });
 
     it('highlights a correct winner pick in green', () => {
-      render(<PredictionsTable predictions={[gradedPrediction]} resultsPublished={true} />);
+      render(<PredictionsTable predictions={[gradedPrediction]} showGrades={true} />);
 
-      const winner = screen.getByText('Ohio State', { selector: 'span.text-green-700' });
-      expect(winner).toBeInTheDocument();
+      const winner = screen.getByText('Ohio State', { selector: 'span.rounded-lg' });
+      expect(winner.className).toContain('bg-green-100');
     });
 
-    it('strikes through an incorrect winner pick and shows the actual winner', () => {
+    it('highlights an incorrect winner pick in red and shows the actual winner', () => {
       const prediction = buildPrediction({
         actualWinner: 'Michigan',
         winnerGrade: 'Incorrect',
       });
 
-      render(<PredictionsTable predictions={[prediction]} resultsPublished={true} />);
+      render(<PredictionsTable predictions={[prediction]} showGrades={true} />);
 
-      const winner = screen.getByText('Ohio State', { selector: 'span.line-through' });
-      expect(winner).toBeInTheDocument();
+      const winner = screen.getByText('Ohio State', { selector: 'span.rounded-lg' });
+      expect(winner.className).toContain('bg-red-100');
       expect(screen.getByText('Actual: Michigan')).toBeInTheDocument();
     });
 
     it('highlights a correct spread pick in green with no actual-value line', () => {
-      render(<PredictionsTable predictions={[gradedPrediction]} resultsPublished={true} />);
+      render(<PredictionsTable predictions={[gradedPrediction]} showGrades={true} />);
 
       const picks = screen.getAllByText('Ohio State', { selector: 'span.font-semibold' });
       const spreadPick = picks.find((el) => el.closest('div')?.className.includes('rounded-lg'));
@@ -169,7 +169,7 @@ describe('PredictionsTable', () => {
         spreadGrade: 'Incorrect',
       });
 
-      render(<PredictionsTable predictions={[prediction]} resultsPublished={true} />);
+      render(<PredictionsTable predictions={[prediction]} showGrades={true} />);
 
       expect(screen.getByText('Correct: Michigan')).toBeInTheDocument();
     });
@@ -180,10 +180,12 @@ describe('PredictionsTable', () => {
         spreadGrade: 'Push',
       });
 
-      render(<PredictionsTable predictions={[prediction]} resultsPublished={true} />);
+      render(<PredictionsTable predictions={[prediction]} showGrades={true} />);
 
-      const pick = screen.getByText('Ohio State', { selector: 'span.font-semibold' });
-      expect(pick.closest('div')?.className).toContain('bg-gray-100');
+      const picks = screen.getAllByText('Ohio State', { selector: 'span.font-semibold' });
+      const spreadPick = picks.find((el) => el.closest('div')?.className.includes('rounded-lg'));
+      expect(spreadPick).toBeDefined();
+      expect(spreadPick!.closest('div')?.className).toContain('bg-gray-100');
     });
 
     it('highlights a NotApplicable over/under grade in gray', () => {
@@ -193,7 +195,7 @@ describe('PredictionsTable', () => {
         overUnderGrade: 'NotApplicable',
       });
 
-      render(<PredictionsTable predictions={[prediction]} resultsPublished={true} />);
+      render(<PredictionsTable predictions={[prediction]} showGrades={true} />);
 
       const pick = screen.getByText('N/A', { selector: 'span.font-semibold' });
       expect(pick.closest('div')?.className).toContain('bg-gray-100');
@@ -205,7 +207,7 @@ describe('PredictionsTable', () => {
         overUnderGrade: 'Incorrect',
       });
 
-      render(<PredictionsTable predictions={[prediction]} resultsPublished={true} />);
+      render(<PredictionsTable predictions={[prediction]} showGrades={true} />);
 
       expect(screen.getByText('Correct: Under')).toBeInTheDocument();
     });

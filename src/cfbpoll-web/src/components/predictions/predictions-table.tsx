@@ -2,20 +2,36 @@ import { gradeClasses } from '../../lib/grade-classes';
 import { formatOverUnder, formatPick, formatSpread } from '../../lib/prediction-format-utils';
 import { TeamLogo } from '../rankings/team-logo';
 import { TableSkeleton } from '../ui/table-skeleton';
-import type { GamePredictionPublic } from '../../schemas';
 
 const COLUMN_COUNT = 6;
 
-interface PredictionsTableProps {
-  isLoading?: boolean;
-  predictions: GamePredictionPublic[];
-  resultsPublished?: boolean;
+interface PredictionTableRow {
+  actualAwayScore: number | null;
+  actualHomeScore: number | null;
+  actualOverUnderResult: string | null;
+  actualSpreadCoveringTeam: string | null;
+  actualWinner: string | null;
+  awayLogoURL: string;
+  awayTeam: string;
+  awayTeamScore: number;
+  bettingOverUnder: number | null;
+  bettingSpread: number | null;
+  homeLogoURL: string;
+  homeTeam: string;
+  homeTeamScore: number;
+  myOverUnderPick: string;
+  mySpreadPick: string;
+  neutralSite: boolean;
+  overUnderGrade: string;
+  predictedWinner: string;
+  spreadGrade: string;
+  winnerGrade: string;
 }
 
-function winnerTextClasses(grade: string): string {
-  if (grade === 'Correct') return 'text-green-700 dark:text-green-400 font-semibold';
-  if (grade === 'Incorrect') return 'line-through text-red-700 dark:text-red-400';
-  return '';
+interface PredictionsTableProps {
+  isLoading?: boolean;
+  predictions: PredictionTableRow[];
+  showGrades?: boolean;
 }
 
 interface GradedPickProps {
@@ -35,7 +51,7 @@ function GradedPick({ actualValue, grade, pick }: GradedPickProps) {
   );
 }
 
-export function PredictionsTable({ isLoading = false, predictions, resultsPublished = false }: PredictionsTableProps) {
+export function PredictionsTable({ isLoading = false, predictions, showGrades = false }: PredictionsTableProps) {
   if (isLoading) {
     return <TableSkeleton columns={COLUMN_COUNT} />;
   }
@@ -68,7 +84,7 @@ export function PredictionsTable({ isLoading = false, predictions, resultsPublis
                   {p.neutralSite && <span className="text-text-muted text-xs">(N)</span>}
                   <span className="font-semibold ml-auto">{p.homeTeamScore}</span>
                 </div>
-                {resultsPublished && p.actualHomeScore !== null && p.actualAwayScore !== null && (
+                {showGrades && p.actualHomeScore !== null && p.actualAwayScore !== null && (
                   <span className="text-sm font-semibold text-text-primary">
                     Final: {p.actualAwayScore}-{p.actualHomeScore}
                   </span>
@@ -82,9 +98,13 @@ export function PredictionsTable({ isLoading = false, predictions, resultsPublis
                     logoURL={p.predictedWinner === p.homeTeam ? p.homeLogoURL : p.awayLogoURL}
                     teamName={p.predictedWinner}
                   />
-                  <span className={resultsPublished ? winnerTextClasses(p.winnerGrade) : ''}>{p.predictedWinner}</span>
+                  {showGrades ? (
+                    <span className={`px-2 py-1 rounded-lg font-semibold ${gradeClasses(p.winnerGrade)}`}>{p.predictedWinner}</span>
+                  ) : (
+                    <span>{p.predictedWinner}</span>
+                  )}
                 </div>
-                {resultsPublished && p.winnerGrade === 'Incorrect' && p.actualWinner !== null && (
+                {showGrades && p.winnerGrade === 'Incorrect' && p.actualWinner !== null && (
                   <span className="text-xs font-medium text-green-700 dark:text-green-400">Actual: {p.actualWinner}</span>
                 )}
               </div>
@@ -93,7 +113,7 @@ export function PredictionsTable({ isLoading = false, predictions, resultsPublis
               {formatSpread(p)}
             </td>
             <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary align-middle">
-              {resultsPublished ? (
+              {showGrades ? (
                 <GradedPick actualValue={p.actualSpreadCoveringTeam} grade={p.spreadGrade} pick={p.mySpreadPick} />
               ) : (
                 formatPick(p.mySpreadPick)
@@ -103,7 +123,7 @@ export function PredictionsTable({ isLoading = false, predictions, resultsPublis
               {formatOverUnder(p.bettingOverUnder)}
             </td>
             <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary align-middle">
-              {resultsPublished ? (
+              {showGrades ? (
                 <GradedPick actualValue={p.actualOverUnderResult} grade={p.overUnderGrade} pick={p.myOverUnderPick} />
               ) : (
                 formatPick(p.myOverUnderPick)
