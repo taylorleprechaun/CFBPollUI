@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import {
   CartesianGrid,
   Line,
@@ -76,13 +76,15 @@ export function SeasonTrendsChart({ data }: SeasonTrendsChartProps) {
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const [activeWeek, setActiveWeek] = useState<number | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const [prevSeason, setPrevSeason] = useState(data.season);
 
-  useEffect(() => {
+  if (data.season !== prevSeason) {
+    setPrevSeason(data.season);
     setSelectedTeam(null);
     setHoveredTeam(null);
     setActiveWeek(null);
     setTooltipPos(null);
-  }, [data.season]);
+  }
 
   const chartData = useMemo(() => {
     return data.weeks.map((week) => {
@@ -166,15 +168,16 @@ export function SeasonTrendsChart({ data }: SeasonTrendsChartProps) {
     [data.teams, hoveredTeam, showTooltip]
   );
 
-  const lastTooltipRef = useRef<{ team: typeof tooltipTeamData; week: number | null; pos: { x: number; y: number } }>({
+  const [lastTooltip, setLastTooltip] = useState<{ team: typeof tooltipTeamData; week: number | null; pos: { x: number; y: number } }>({
     team: null, week: null, pos: { x: 0, y: 0 },
   });
 
-  useEffect(() => {
-    if (tooltipTeamData && tooltipPos) {
-      lastTooltipRef.current = { team: tooltipTeamData, week: activeWeek, pos: tooltipPos };
-    }
-  }, [tooltipTeamData, tooltipPos, activeWeek]);
+  if (
+    tooltipTeamData && tooltipPos &&
+    (tooltipTeamData !== lastTooltip.team || activeWeek !== lastTooltip.week || tooltipPos !== lastTooltip.pos)
+  ) {
+    setLastTooltip({ team: tooltipTeamData, week: activeWeek, pos: tooltipPos });
+  }
 
   if (data.teams.length === 0) return null;
 
@@ -282,16 +285,16 @@ export function SeasonTrendsChart({ data }: SeasonTrendsChartProps) {
         <div
           className="absolute pointer-events-none z-10"
           style={{
-            left: (tooltipPos?.x ?? lastTooltipRef.current.pos.x) + 16,
-            top: (tooltipPos?.y ?? lastTooltipRef.current.pos.y) - 16,
+            left: (tooltipPos?.x ?? lastTooltip.pos.x) + 16,
+            top: (tooltipPos?.y ?? lastTooltip.pos.y) - 16,
             opacity: tooltipTeamData ? 1 : 0,
             transform: tooltipTeamData ? 'translateY(0)' : 'translateY(4px)',
             transition: 'opacity 150ms ease-out, transform 150ms ease-out',
           }}
         >
           <SeasonTrendsTooltip
-            activeWeek={tooltipTeamData ? activeWeek : lastTooltipRef.current.week}
-            hoveredTeam={tooltipTeamData ?? lastTooltipRef.current.team}
+            activeWeek={tooltipTeamData ? activeWeek : lastTooltip.week}
+            hoveredTeam={tooltipTeamData ?? lastTooltip.team}
             weeks={data.weeks}
           />
         </div>

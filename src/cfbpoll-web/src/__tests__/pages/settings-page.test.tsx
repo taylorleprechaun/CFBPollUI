@@ -8,7 +8,7 @@ import { SettingsPage } from '../../pages/settings-page';
 const mockLogout = vi.fn();
 let mockToken: string | null = 'test-token';
 
-vi.mock('../../contexts/auth-context', () => ({
+vi.mock('../../hooks/use-auth', () => ({
   useAuth: () => ({
     isAuthenticated: mockToken !== null,
     login: vi.fn(),

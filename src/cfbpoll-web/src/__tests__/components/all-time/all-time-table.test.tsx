@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import {
-  AllTimeTable,
   allTimeRankColumn,
   teamNameColumn,
   seasonColumn,
@@ -10,7 +9,8 @@ import {
   rankColumn,
   ratingColumn,
   weightedSOSColumn,
-} from '../../../components/all-time/all-time-table';
+} from '../../../components/all-time/all-time-columns';
+import { AllTimeTable } from '../../../components/all-time/all-time-table';
 import type { AllTimeEntry } from '../../../types';
 
 const defaultColumns = [

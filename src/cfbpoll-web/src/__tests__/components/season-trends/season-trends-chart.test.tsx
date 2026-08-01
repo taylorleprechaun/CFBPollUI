@@ -5,7 +5,7 @@ import { rechartsMock } from '../../mocks/recharts';
 
 vi.mock('recharts', () => rechartsMock);
 
-vi.mock('../../../contexts/theme-context', () => ({
+vi.mock('../../../hooks/use-theme', () => ({
   useTheme: () => ({ resolvedTheme: 'light' }),
 }));
 

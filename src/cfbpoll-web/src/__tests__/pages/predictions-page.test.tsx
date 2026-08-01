@@ -10,7 +10,7 @@ let mockToken: string | null = 'test-token';
 
 const mockSetSelectedSeason = vi.fn();
 
-vi.mock('../../contexts/auth-context', () => ({
+vi.mock('../../hooks/use-auth', () => ({
   useAuth: () => ({
     isAuthenticated: mockToken !== null,
     login: vi.fn(),
@@ -19,7 +19,7 @@ vi.mock('../../contexts/auth-context', () => ({
   }),
 }));
 
-vi.mock('../../contexts/season-context', () => ({
+vi.mock('../../hooks/use-season', () => ({
   useSeason: () => ({
     seasons: [2024, 2023],
     seasonsLoading: false,

@@ -57,8 +57,8 @@ interface StatCardProps {
 }
 
 function StatCard({ label, numericValue, suffix }: StatCardProps) {
-  var { ref, inView } = useInView({ threshold: 0.2, triggerOnce: true });
-  var count = useCountUp({ end: numericValue, enabled: inView });
+  const { ref, inView } = useInView({ threshold: 0.2, triggerOnce: true });
+  const count = useCountUp({ end: numericValue, enabled: inView });
 
   return (
     <div
@@ -76,15 +76,15 @@ function StatCard({ label, numericValue, suffix }: StatCardProps) {
 export function HomePage() {
   useDocumentTitle('Taylor Steinberg - Home');
 
-  var { ref: featureGridRef, inView: featuresInView } = useInView({
+  const { ref: featureGridRef, inView: featuresInView } = useInView({
     threshold: 0.2,
     triggerOnce: true,
   });
 
-  var handleScrollToSection = useCallback(
+  const handleScrollToSection = useCallback(
     (e: React.MouseEvent<HTMLAnchorElement>) => {
       e.preventDefault();
-      var target = document.getElementById('how-it-works');
+      const target = document.getElementById('how-it-works');
       if (target) {
         target.scrollIntoView({ behavior: 'smooth' });
       }

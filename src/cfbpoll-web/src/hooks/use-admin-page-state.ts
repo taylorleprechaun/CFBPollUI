@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import type { UseMutationResult } from '@tanstack/react-query';
 
@@ -44,7 +44,7 @@ export function useAdminPageState<TCalcResult>({
   const [operationError, setOperationError] = useState<Error | null>(null);
   const [actionFeedback, setActionFeedback] = useState<ActionFeedback | null>(null);
   const [collapsedSeasons, setCollapsedSeasons] = useState<Set<number>>(new Set());
-  const initialCollapseApplied = useRef(false);
+  const [seenSeasons, setSeenSeasons] = useState<Set<number>>(new Set());
   const [deleteConfirm, setDeleteConfirm] = useState<SeasonWeekParams | null>(null);
   const [refreshCacheConfirm, setRefreshCacheConfirm] = useState<SeasonWeekParams | null>(null);
 
@@ -63,12 +63,11 @@ export function useAdminPageState<TCalcResult>({
     [items],
   );
 
-  useEffect(() => {
-    if (uniqueSeasons.length > 0 && !initialCollapseApplied.current) {
-      setCollapsedSeasons(new Set(uniqueSeasons));
-      initialCollapseApplied.current = true;
-    }
-  }, [uniqueSeasons]);
+  const hasNewSeason = uniqueSeasons.some((season) => !seenSeasons.has(season));
+  if (uniqueSeasons.length > 0 && hasNewSeason) {
+    setSeenSeasons(new Set(uniqueSeasons));
+    setCollapsedSeasons(new Set(uniqueSeasons));
+  }
 
   const handleCalculate = async () => {
     if (selectedSeason === null || selectedWeek === null) return;

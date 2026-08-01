@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 
-import { useSeason } from '../contexts/season-context';
+import { useSeason } from '../hooks/use-season';
 import { useWeeks } from '../hooks/use-weeks';
 import { useConferences } from '../hooks/use-conferences';
 import { useDocumentTitle } from '../hooks/use-document-title';
@@ -59,7 +59,7 @@ export function RankingsPage() {
 
   const rankingsLogoUrls = useMemo(
     () => rankingsData?.rankings ? collectLogoUrls(rankingsData.rankings) : [],
-    [rankingsData?.rankings]
+    [rankingsData]
   );
   usePreloadImages(rankingsLogoUrls);
 

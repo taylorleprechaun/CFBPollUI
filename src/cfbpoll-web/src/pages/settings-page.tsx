@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { useAuth } from '../contexts/auth-context';
+import { useAuth } from '../hooks/use-auth';
 import { usePageVisibility } from '../hooks/use-page-visibility';
 import { BUTTON_GHOST } from '../components/ui/button-styles';
 import { useDocumentTitle } from '../hooks/use-document-title';

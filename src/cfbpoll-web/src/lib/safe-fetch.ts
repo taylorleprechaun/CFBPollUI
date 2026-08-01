@@ -18,6 +18,7 @@ export async function safeFetch(url: string, options?: RequestInit): Promise<Res
     try {
       body = await response.json();
     } catch {
+      // Error body isn't guaranteed to be valid JSON; fall back to an undefined body.
     }
     throw ApiError.fromResponse(response, body);
   }

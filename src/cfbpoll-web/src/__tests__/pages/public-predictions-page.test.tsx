@@ -7,7 +7,7 @@ import { ApiError } from '../../lib/api-error';
 
 const mockSetSelectedSeason = vi.fn();
 
-vi.mock('../../contexts/season-context', () => ({
+vi.mock('../../hooks/use-season', () => ({
   useSeason: () => ({
     seasons: [2024, 2023],
     seasonsLoading: false,

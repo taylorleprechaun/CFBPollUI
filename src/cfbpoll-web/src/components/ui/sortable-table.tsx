@@ -28,6 +28,9 @@ export function SortableTable<T>({
 }: SortableTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
+  // TanStack Table's useReactTable() intentionally returns unstable function references on
+  // every call, so the compiler can't safely memoize this hook. Not fixable by restructuring.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,

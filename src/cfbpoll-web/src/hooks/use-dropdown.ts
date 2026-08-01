@@ -6,9 +6,11 @@ export function useDropdown() {
   const containerRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
-  useEffect(() => {
-    setIsOpen((prev) => prev ? false : prev);
-  }, [location.pathname]);
+  const [prevPathname, setPrevPathname] = useState(location.pathname);
+  if (location.pathname !== prevPathname) {
+    setPrevPathname(location.pathname);
+    setIsOpen(false);
+  }
 
   useEffect(() => {
     if (!isOpen) return;

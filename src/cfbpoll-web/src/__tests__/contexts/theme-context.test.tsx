@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
-import { ThemeProvider, useTheme } from '../../contexts/theme-context';
+import { ThemeProvider } from '../../contexts/theme-context';
+import { useTheme } from '../../hooks/use-theme';
 
 const mockMatchMedia = vi.fn();
 

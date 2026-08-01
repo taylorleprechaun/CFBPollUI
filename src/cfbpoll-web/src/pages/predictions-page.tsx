@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { useSeason } from '../contexts/season-context';
+import { useSeason } from '../hooks/use-season';
 import {
   ActivePredictionViewSection,
   CalculateSection,
@@ -19,7 +19,7 @@ import {
   useRefreshCache,
 } from '../hooks/use-admin-mutations';
 import { useAdminPageState } from '../hooks/use-admin-page-state';
-import { useAuth } from '../contexts/auth-context';
+import { useAuth } from '../hooks/use-auth';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { usePredictionsActiveView } from '../hooks/use-predictions-active-view';
 import { usePredictionsGradingState } from '../hooks/use-predictions-grading-state';

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { useSeason } from '../contexts/season-context';
+import { useSeason } from '../hooks/use-season';
 import { useWeeks } from '../hooks/use-weeks';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { usePublicPredictions } from '../hooks/use-public-predictions';

@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { Link, Outlet, useLocation } from 'react-router-dom';
 
-import { useAuth } from '../../contexts/auth-context';
+import { useAuth } from '../../hooks/use-auth';
 import { useDropdown } from '../../hooks/use-dropdown';
 import { usePageVisibility } from '../../hooks/use-page-visibility';
 import { isActiveLink } from '../../lib/route-utils';
@@ -41,12 +41,14 @@ export function Layout() {
   const { isAuthenticated } = useAuth();
   const { allTimeEnabled, pollLeadersEnabled, predictionsPageEnabled, seasonTrendsEnabled } = usePageVisibility();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const adminDropdown = useDropdown();
+  const { containerRef: adminDropdownRef, isOpen: isAdminDropdownOpen, toggle: toggleAdminDropdown } = useDropdown();
   const location = useLocation();
 
-  useEffect(() => {
-    setIsMobileMenuOpen((prev) => prev ? false : prev);
-  }, [location.pathname]);
+  const [prevPathname, setPrevPathname] = useState(location.pathname);
+  if (location.pathname !== prevPathname) {
+    setPrevPathname(location.pathname);
+    setIsMobileMenuOpen(false);
+  }
 
   const rankingsGroup: NavGroup = {
     items: [
@@ -117,18 +119,18 @@ export function Layout() {
               <div className="flex items-center space-x-1">
                 <ThemeToggle />
                 {isAuthenticated ? (
-                  <div ref={adminDropdown.containerRef} className="relative">
+                  <div ref={adminDropdownRef} className="relative">
                     <button
                       type="button"
-                      onClick={adminDropdown.toggle}
+                      onClick={toggleAdminDropdown}
                       className="hover:bg-nav-hover p-2 rounded-md transition-colors"
                       aria-label="Admin menu"
-                      aria-expanded={adminDropdown.isOpen}
+                      aria-expanded={isAdminDropdownOpen}
                       aria-haspopup="true"
                     >
                       <UnlockIcon />
                     </button>
-                    {adminDropdown.isOpen && (
+                    {isAdminDropdownOpen && (
                       <div className="absolute top-full right-0 mt-1 bg-nav-bg/95 backdrop-blur-md rounded-lg shadow-lg border border-white/10 py-1 z-50 min-w-36">
                         {ADMIN_ITEMS.map((item) => (
                           <Link

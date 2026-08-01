@@ -11,7 +11,7 @@ let mockPollLeadersEnabled = true;
 let mockPredictionsPageEnabled = false;
 let mockSeasonTrendsEnabled = true;
 
-vi.mock('../../contexts/auth-context', () => ({
+vi.mock('../../hooks/use-auth', () => ({
   useAuth: () => ({
     isAuthenticated: mockIsAuthenticated,
     login: vi.fn(),

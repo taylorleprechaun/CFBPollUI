@@ -1,15 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-
-type Theme = 'light' | 'dark' | 'system';
-type ResolvedTheme = 'light' | 'dark';
-
-interface ThemeContextValue {
-  resolvedTheme: ResolvedTheme;
-  setTheme: (theme: Theme) => void;
-  theme: Theme;
-}
-
-const ThemeContext = createContext<ThemeContextValue | null>(null);
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { ThemeContext, type Theme, type ResolvedTheme, type ThemeContextValue } from '../hooks/use-theme';
 
 const STORAGE_KEY = 'cfbpoll_theme';
 const MEDIA_QUERY = '(prefers-color-scheme: dark)';
@@ -65,12 +55,4 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       {children}
     </ThemeContext.Provider>
   );
-}
-
-export function useTheme(): ThemeContextValue {
-  const context = useContext(ThemeContext);
-  if (context === null) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
 }

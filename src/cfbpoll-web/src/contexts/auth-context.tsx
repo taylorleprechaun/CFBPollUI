@@ -1,14 +1,6 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { loginUser } from '../services/admin-api';
-
-interface AuthContextValue {
-  isAuthenticated: boolean;
-  login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
-  token: string | null;
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null);
+import { AuthContext, type AuthContextValue } from '../hooks/use-auth';
 
 const TOKEN_KEY = 'cfbpoll_token';
 const EXPIRY_KEY = 'cfbpoll_token_expiry';
@@ -51,11 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const scheduleExpiry = useCallback((expiryMs: number) => {
     clearExpiryTimer();
-    const remainingMs = expiryMs - Date.now();
-    if (remainingMs <= 0) {
-      logout();
-      return;
-    }
+    const remainingMs = Math.max(expiryMs - Date.now(), 0);
     expiryTimerRef.current = setTimeout(logout, remainingMs);
   }, [clearExpiryTimer, logout]);
 
@@ -88,12 +76,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth(): AuthContextValue {
-  const context = useContext(AuthContext);
-  if (context === null) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 }
