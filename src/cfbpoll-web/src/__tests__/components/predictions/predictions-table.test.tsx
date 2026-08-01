@@ -268,4 +268,58 @@ describe('PredictionsTable', () => {
       expect(winnerLink!.className).toContain('bg-green-100');
     });
   });
+
+  describe('inline rank badge', () => {
+    it('shows a rank badge for a team present in rankByTeam and ranked in the top 25', () => {
+      const rankByTeam = new Map([['ohio state', 3]]);
+
+      render(
+        <MemoryRouter>
+          <PredictionsTable predictions={[buildPrediction()]} season={2024} rankByTeam={rankByTeam} />
+        </MemoryRouter>
+      );
+
+      const homeLinks = screen.getAllByRole('link', { name: /Ohio State/ });
+      for (const link of homeLinks) {
+        expect(link.textContent).toBe('#3 Ohio State');
+      }
+    });
+
+    it('does not show a rank badge for a team absent from rankByTeam', () => {
+      const rankByTeam = new Map([['ohio state', 3]]);
+
+      render(
+        <MemoryRouter>
+          <PredictionsTable predictions={[buildPrediction()]} season={2024} rankByTeam={rankByTeam} />
+        </MemoryRouter>
+      );
+
+      const awayLink = screen.getByRole('link', { name: 'Michigan' });
+      expect(awayLink.textContent).toBe('Michigan');
+    });
+
+    it('does not show a rank badge for a team ranked outside the top 25', () => {
+      const rankByTeam = new Map([['ohio state', 30]]);
+
+      render(
+        <MemoryRouter>
+          <PredictionsTable predictions={[buildPrediction()]} season={2024} rankByTeam={rankByTeam} />
+        </MemoryRouter>
+      );
+
+      const homeLinks = screen.getAllByRole('link', { name: 'Ohio State' });
+      expect(homeLinks.length).toBeGreaterThan(0);
+    });
+
+    it('does not show a rank badge when rankByTeam is omitted', () => {
+      render(
+        <MemoryRouter>
+          <PredictionsTable predictions={[buildPrediction()]} season={2024} />
+        </MemoryRouter>
+      );
+
+      const homeLinks = screen.getAllByRole('link', { name: 'Ohio State' });
+      expect(homeLinks.length).toBeGreaterThan(0);
+    });
+  });
 });

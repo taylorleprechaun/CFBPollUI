@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 
+import { useRankings } from '../hooks/use-rankings';
 import { useSeason } from '../hooks/use-season';
 import { useWeeks } from '../hooks/use-weeks';
 import { useDocumentTitle } from '../hooks/use-document-title';
@@ -46,6 +47,13 @@ export function PublicPredictionsPage() {
     error: predictionsError,
     refetch: refetchPredictions,
   } = usePublicPredictions(selectedSeason, selectedWeek, maxSeason);
+
+  const { data: rankingsData } = useRankings(selectedSeason, selectedWeek, maxSeason);
+
+  const rankByTeam = useMemo(
+    () => new Map(rankingsData?.rankings.map((r) => [r.teamName.toLowerCase(), r.rank]) ?? []),
+    [rankingsData]
+  );
 
   const handleSeasonChange = (season: number) => {
     setSelectedSeason(season);
@@ -101,6 +109,7 @@ export function PublicPredictionsPage() {
           <PredictionsTable
             predictions={predictionsData?.predictions ?? []}
             isLoading={predictionsLoading}
+            rankByTeam={rankByTeam}
             season={selectedSeason}
             showGrades={predictionsData?.resultsPublished ?? false}
           />

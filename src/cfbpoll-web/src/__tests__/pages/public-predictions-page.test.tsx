@@ -49,6 +49,14 @@ vi.mock('../../hooks/use-public-predictions', () => ({
   }),
 }));
 
+let mockRankingsData: { season: number; week: number; rankings: { teamName: string; rank: number }[] } | undefined;
+
+vi.mock('../../hooks/use-rankings', () => ({
+  useRankings: () => ({
+    data: mockRankingsData,
+  }),
+}));
+
 vi.mock('../../hooks/use-document-title', () => ({
   useDocumentTitle: vi.fn(),
 }));
@@ -77,6 +85,7 @@ describe('PublicPredictionsPage', () => {
     mockPredictionsData = undefined;
     mockPredictionsLoading = false;
     mockPredictionsError = null;
+    mockRankingsData = undefined;
   });
 
   it('renders heading', () => {
@@ -162,6 +171,46 @@ describe('PublicPredictionsPage', () => {
       'href',
       `/team-details?team=${encodeURIComponent('Michigan')}&season=2024`
     );
+  });
+
+  it('shows an inline rank badge next to a team name that is ranked in the top 25', () => {
+    mockPredictionsData = {
+      season: 2024,
+      week: 1,
+      predictions: [
+        {
+          awayLogoURL: '',
+          awayTeam: 'Michigan',
+          awayTeamScore: 17,
+          bettingOverUnder: 45.5,
+          bettingSpread: -3.5,
+          homeLogoURL: '',
+          homeTeam: 'Ohio State',
+          homeTeamScore: 28,
+          myOverUnderPick: 'Over',
+          mySpreadPick: 'Ohio State',
+          neutralSite: false,
+          predictedMargin: 11,
+          predictedWinner: 'Ohio State',
+        },
+      ],
+    };
+    mockRankingsData = {
+      season: 2024,
+      week: 1,
+      rankings: [{ teamName: 'Ohio State', rank: 3 }],
+    };
+
+    renderPage();
+
+    const michiganLink = screen.getByRole('link', { name: 'Michigan' });
+    expect(michiganLink.textContent).toBe('Michigan');
+
+    const ohioStateLinks = screen.getAllByRole('link', { name: /Ohio State/ });
+    expect(ohioStateLinks.length).toBeGreaterThan(0);
+    for (const link of ohioStateLinks) {
+      expect(link.textContent).toBe('#3 Ohio State');
+    }
   });
 
   it('shows a loading skeleton while predictions are fetching', () => {
