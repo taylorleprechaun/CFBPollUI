@@ -277,35 +277,35 @@ The frontend runs at `http://localhost:5173`.
 
 ## Testing
 
-The project includes 1,863 unit and integration tests across backend and frontend.
+The project includes 1,889 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (857 tests)
+# Backend tests (871 tests)
 dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (1,006 tests)
+# Frontend tests (1,018 tests)
 cd src/cfbpoll-web
 npm test
 ```
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-857-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1006-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-871-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1018-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-98%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
-![Web Coverage](https://img.shields.io/badge/Web_Coverage-99%25-brightgreen)
+![Web Coverage](https://img.shields.io/badge/Web_Coverage-100%25-brightgreen)
 
 | Project | Line Coverage | Branch Coverage |
 |---------|---------------|-----------------|
-| CFBPoll.Core | 98% | 92% |
+| CFBPoll.Core | 98% | 94% |
 | CFBPoll.API | 100% | 97% |
-| cfbpoll-web | 99% | 93% |
+| cfbpoll-web | 100% | 95% |
 
 **Excluded from coverage:**
 - `RatingModule` and `PredictionCalculatorModule` - Proprietary algorithms, not included in the repository. Tests are maintained locally.

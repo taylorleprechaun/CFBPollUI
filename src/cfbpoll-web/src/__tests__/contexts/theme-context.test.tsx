@@ -191,4 +191,29 @@ describe('ThemeContext', () => {
 
     expect(screen.getByTestId('resolved').textContent).toBe('dark');
   });
+
+  it('switches back to light when the system preference changes back', () => {
+    let changeHandler: ((e: MediaQueryListEvent) => void) | undefined;
+    mockMatchMedia.mockReturnValue({
+      matches: true,
+      addEventListener: vi.fn((_event: string, handler: (e: MediaQueryListEvent) => void) => {
+        changeHandler = handler;
+      }),
+      removeEventListener: vi.fn(),
+    });
+
+    render(
+      <ThemeProvider>
+        <TestConsumer />
+      </ThemeProvider>
+    );
+
+    expect(screen.getByTestId('resolved').textContent).toBe('dark');
+
+    act(() => {
+      changeHandler!({ matches: false } as MediaQueryListEvent);
+    });
+
+    expect(screen.getByTestId('resolved').textContent).toBe('light');
+  });
 });

@@ -397,6 +397,49 @@ public class PredictionsDataTests
     }
 
     [Fact]
+    public async Task InitializeAsync_DatabaseDirectoryDoesNotExist_CreatesDirectory()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"cfbpoll_pred_test_dir_{Guid.NewGuid()}");
+        var tempPath = Path.Combine(directory, "predictions.db");
+        var options = new Mock<IOptions<DatabaseOptions>>();
+        options.Setup(x => x.Value).Returns(new DatabaseOptions
+        {
+            ConnectionString = $"Data Source={tempPath};Pooling=false"
+        });
+        var logger = new Mock<ILogger<PredictionsData>>();
+        var data = new PredictionsData(options.Object, logger.Object);
+
+        try
+        {
+            Assert.False(Directory.Exists(directory));
+
+            await data.InitializeAsync();
+
+            Assert.True(Directory.Exists(directory));
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+            if (Directory.Exists(directory))
+                Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task InitializeAsync_InMemoryConnectionString_DoesNotThrow()
+    {
+        var options = new Mock<IOptions<DatabaseOptions>>();
+        options.Setup(x => x.Value).Returns(new DatabaseOptions
+        {
+            ConnectionString = "Data Source=:memory:"
+        });
+        var logger = new Mock<ILogger<PredictionsData>>();
+        var data = new PredictionsData(options.Object, logger.Object);
+
+        await data.InitializeAsync();
+    }
+
+    [Fact]
     public async Task PublishAsync_ReturnsFalse_WhenNotFound()
     {
         var (data, tempPath) = CreatePredictionsDataWithFile();

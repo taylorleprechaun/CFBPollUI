@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CalculateSection } from '../../../components/admin';
 
@@ -135,6 +135,20 @@ describe('CalculateSection', () => {
     );
 
     expect(screen.getByText('Refresh failed')).toBeInTheDocument();
+  });
+
+  it('calls onClearRefreshFeedback once the success checkmark finishes', async () => {
+    const onClearRefreshFeedback = vi.fn();
+    render(
+      <CalculateSection
+        {...defaultProps}
+        onRefreshCache={vi.fn()}
+        onClearRefreshFeedback={onClearRefreshFeedback}
+        refreshFeedback={{ key: 'refresh-cache-2024-5', type: 'success', message: 'Removed 8 cached entries' }}
+      />
+    );
+
+    await waitFor(() => expect(onClearRefreshFeedback).toHaveBeenCalled(), { timeout: 3000 });
   });
 
   it('does not show feedback for a different season/week key', () => {

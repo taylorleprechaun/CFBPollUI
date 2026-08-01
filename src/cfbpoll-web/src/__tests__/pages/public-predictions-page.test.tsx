@@ -1,45 +1,51 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
 import { PublicPredictionsPage } from '../../pages/public-predictions-page';
 import { ApiError } from '../../lib/api-error';
 
 const mockSetSelectedSeason = vi.fn();
+const mockRefetchSeasons = vi.fn();
+let mockSeasonsError: Error | null = null;
 
 vi.mock('../../hooks/use-season', () => ({
   useSeason: () => ({
     seasons: [2024, 2023],
     seasonsLoading: false,
-    seasonsError: null,
+    seasonsError: mockSeasonsError,
     selectedSeason: 2024,
     setSelectedSeason: mockSetSelectedSeason,
-    refetchSeasons: vi.fn(),
+    refetchSeasons: mockRefetchSeasons,
   }),
 }));
 
 let mockWeeksData: { season: number; weeks: { weekNumber: number; label: string; predictionsPublished: boolean; rankingsPublished: boolean }[] } | undefined;
 let mockWeeksLoading = false;
+let mockWeeksError: Error | null = null;
+const mockRefetchWeeks = vi.fn();
 
 vi.mock('../../hooks/use-weeks', () => ({
   useWeeks: () => ({
     data: mockWeeksData,
     isLoading: mockWeeksLoading,
-    error: null,
-    refetch: vi.fn(),
+    error: mockWeeksError,
+    refetch: mockRefetchWeeks,
   }),
 }));
 
 let mockPredictionsData: { season: number; week: number; predictions: unknown[]; resultsPublished?: boolean } | undefined;
 let mockPredictionsLoading = false;
 let mockPredictionsError: Error | null = null;
+const mockRefetchPredictions = vi.fn();
 
 vi.mock('../../hooks/use-public-predictions', () => ({
   usePublicPredictions: () => ({
     data: mockPredictionsData,
     isLoading: mockPredictionsLoading,
     error: mockPredictionsError,
-    refetch: vi.fn(),
+    refetch: mockRefetchPredictions,
   }),
 }));
 
@@ -66,6 +72,8 @@ describe('PublicPredictionsPage', () => {
       ],
     };
     mockWeeksLoading = false;
+    mockWeeksError = null;
+    mockSeasonsError = null;
     mockPredictionsData = undefined;
     mockPredictionsLoading = false;
     mockPredictionsError = null;
@@ -221,5 +229,60 @@ describe('PublicPredictionsPage', () => {
     renderPage();
 
     expect(screen.getByText((_, element) => element?.textContent === 'Final: 17-28')).toBeInTheDocument();
+  });
+
+  it('resets the selected week when the season changes', async () => {
+    mockWeeksData = {
+      season: 2024,
+      weeks: [
+        { weekNumber: 1, label: 'Week 2', predictionsPublished: true, rankingsPublished: true },
+        { weekNumber: 5, label: 'Week 6', predictionsPublished: true, rankingsPublished: true },
+      ],
+    };
+
+    renderPage();
+
+    const weekSelect = screen.getByLabelText('Week:') as HTMLSelectElement;
+    expect(weekSelect.value).toBe('5');
+
+    await userEvent.selectOptions(weekSelect, '1');
+    expect(weekSelect.value).toBe('1');
+
+    await userEvent.selectOptions(screen.getByLabelText('Season:'), '2023');
+
+    expect(weekSelect.value).toBe('5');
+  });
+
+  it('retries only the seasons query when only it has errored', async () => {
+    mockSeasonsError = new Error('Seasons failed');
+
+    renderPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    expect(mockRefetchSeasons).toHaveBeenCalledTimes(1);
+    expect(mockRefetchWeeks).not.toHaveBeenCalled();
+    expect(mockRefetchPredictions).not.toHaveBeenCalled();
+  });
+
+  it('retries only the weeks query when only it has errored', async () => {
+    mockWeeksError = new Error('Weeks failed');
+
+    renderPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    expect(mockRefetchWeeks).toHaveBeenCalledTimes(1);
+    expect(mockRefetchSeasons).not.toHaveBeenCalled();
+    expect(mockRefetchPredictions).not.toHaveBeenCalled();
+  });
+
+  it('retries only the predictions query when only it has errored', async () => {
+    mockPredictionsError = new ApiError('Server error', 500);
+
+    renderPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    expect(mockRefetchPredictions).toHaveBeenCalledTimes(1);
+    expect(mockRefetchSeasons).not.toHaveBeenCalled();
+    expect(mockRefetchWeeks).not.toHaveBeenCalled();
   });
 });

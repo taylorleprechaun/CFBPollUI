@@ -6,9 +6,7 @@ import { fetchPrediction } from '../services/admin-api';
 export function usePrediction(token: string | null, season: number | null, week: number | null) {
   return useQuery({
     queryKey: ['admin-prediction', season, week],
-    queryFn: token && season !== null && week !== null
-      ? () => fetchPrediction(token, season, week)
-      : () => Promise.reject(new Error('No token')),
+    queryFn: () => fetchPrediction(token!, season!, week!),
     enabled: token !== null && season !== null && week !== null,
     staleTime: STALE_TIME_SNAPSHOTS,
   });

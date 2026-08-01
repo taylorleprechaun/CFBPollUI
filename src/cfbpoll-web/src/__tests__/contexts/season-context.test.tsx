@@ -136,6 +136,25 @@ describe('SeasonContext', () => {
     expect(screen.getByTestId('selected').textContent).toBe('2024');
   });
 
+  it('falls back to null when reading sessionStorage throws', () => {
+    const getItemSpy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+
+    vi.mocked(useSeasons).mockReturnValue({
+      data: { seasons: [2024, 2023] },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useSeasons>);
+
+    renderWithProvider();
+
+    expect(screen.getByTestId('selected').textContent).toBe('2024');
+
+    getItemSpy.mockRestore();
+  });
+
   it('throws error when useSeason is used outside SeasonProvider', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
