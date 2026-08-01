@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 
 import { TrackRecordPage } from '../../pages/track-record-page';
 
@@ -13,6 +14,14 @@ vi.mock('../../hooks/use-document-title', () => ({
 }));
 
 import { useTrackRecord } from '../../hooks/use-track-record';
+
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <TrackRecordPage />
+    </MemoryRouter>
+  );
+}
 
 const mockData = {
   overallOverUnder: { correct: 10, incorrect: 8, push: 1 },
@@ -52,7 +61,7 @@ describe('TrackRecordPage', () => {
       refetch: vi.fn(),
     } as unknown as ReturnType<typeof useTrackRecord>);
 
-    render(<TrackRecordPage />);
+    renderPage();
 
     expect(screen.getByRole('heading', { level: 1, name: 'Track Record' })).toBeInTheDocument();
   });
@@ -65,7 +74,7 @@ describe('TrackRecordPage', () => {
       refetch: vi.fn(),
     } as unknown as ReturnType<typeof useTrackRecord>);
 
-    render(<TrackRecordPage />);
+    renderPage();
 
     expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
@@ -79,7 +88,7 @@ describe('TrackRecordPage', () => {
       refetch: mockRefetch,
     } as unknown as ReturnType<typeof useTrackRecord>);
 
-    render(<TrackRecordPage />);
+    renderPage();
 
     expect(screen.getByRole('alert')).toBeInTheDocument();
     await userEvent.click(screen.getByText('Retry'));
@@ -99,7 +108,7 @@ describe('TrackRecordPage', () => {
       refetch: vi.fn(),
     } as unknown as ReturnType<typeof useTrackRecord>);
 
-    render(<TrackRecordPage />);
+    renderPage();
 
     expect(screen.getByText('No graded predictions have been published yet.')).toBeInTheDocument();
   });
@@ -112,7 +121,7 @@ describe('TrackRecordPage', () => {
       refetch: vi.fn(),
     } as unknown as ReturnType<typeof useTrackRecord>);
 
-    render(<TrackRecordPage />);
+    renderPage();
 
     expect(screen.getAllByText('Winner').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Spread').length).toBeGreaterThanOrEqual(1);
@@ -130,7 +139,7 @@ describe('TrackRecordPage', () => {
       refetch: vi.fn(),
     } as unknown as ReturnType<typeof useTrackRecord>);
 
-    render(<TrackRecordPage />);
+    renderPage();
 
     const rows = screen.getAllByRole('row');
     // First data row (after the header row) should be the most recently graded week (week 3).
@@ -146,7 +155,7 @@ describe('TrackRecordPage', () => {
       refetch: vi.fn(),
     } as unknown as ReturnType<typeof useTrackRecord>);
 
-    render(<TrackRecordPage />);
+    renderPage();
 
     const seasonSelect = screen.getByLabelText('Season:') as HTMLSelectElement;
     expect(seasonSelect.value).toBe('2024');
@@ -160,7 +169,7 @@ describe('TrackRecordPage', () => {
       refetch: vi.fn(),
     } as unknown as ReturnType<typeof useTrackRecord>);
 
-    render(<TrackRecordPage />);
+    renderPage();
 
     // Sum of the two 2024 weeks: winner 5-0 + 4-1 = 9-1, spread 4-1 + 3-2 = 7-3, O/U 3-2 + 2-1-1 = 5-3-1.
     expect(screen.getByText('9-1')).toBeInTheDocument();
@@ -176,7 +185,7 @@ describe('TrackRecordPage', () => {
       refetch: vi.fn(),
     } as unknown as ReturnType<typeof useTrackRecord>);
 
-    render(<TrackRecordPage />);
+    renderPage();
 
     await userEvent.selectOptions(screen.getByLabelText('Season:'), '2023');
 

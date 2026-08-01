@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { useRankings } from '../hooks/use-rankings';
 import { useSeason } from '../hooks/use-season';
@@ -15,6 +16,10 @@ import { getWeekLabel } from '../lib/week-utils';
 
 export function PublicPredictionsPage() {
   useDocumentTitle('Predictions - CFB Poll');
+
+  const [searchParams] = useSearchParams();
+  const initialSeasonApplied = useRef(false);
+  const initialWeekApplied = useRef(false);
 
   const {
     seasons,
@@ -67,6 +72,30 @@ export function PublicPredictionsPage() {
       return awayRank <= 25 || homeRank <= 25;
     });
   }, [predictionsData?.predictions, top25Only, rankByTeam]);
+
+  useEffect(() => {
+    if (initialSeasonApplied.current) return;
+    const param = searchParams.get('season');
+    if (param) {
+      const parsed = Number(param);
+      if (!Number.isNaN(parsed) && parsed !== selectedSeason) {
+        setSelectedSeason(parsed);
+      }
+    }
+    initialSeasonApplied.current = true;
+  }, [searchParams, selectedSeason, setSelectedSeason]);
+
+  useEffect(() => {
+    if (initialWeekApplied.current || publishedWeeks.length === 0) return;
+    const param = searchParams.get('week');
+    if (param) {
+      const parsed = Number(param);
+      if (publishedWeeks.some((w) => w.weekNumber === parsed)) {
+        setSelectedWeek(parsed);
+      }
+    }
+    initialWeekApplied.current = true;
+  }, [searchParams, publishedWeeks, setSelectedWeek]);
 
   const handleSeasonChange = (season: number) => {
     setSelectedSeason(season);

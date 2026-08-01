@@ -61,9 +61,9 @@ vi.mock('../../hooks/use-document-title', () => ({
   useDocumentTitle: vi.fn(),
 }));
 
-function renderPage() {
+function renderPage(initialRoute = '/predictions') {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[initialRoute]}>
       <PublicPredictionsPage />
     </MemoryRouter>
   );
@@ -444,5 +444,49 @@ describe('PublicPredictionsPage', () => {
     expect(mockRefetchPredictions).toHaveBeenCalledTimes(1);
     expect(mockRefetchSeasons).not.toHaveBeenCalled();
     expect(mockRefetchWeeks).not.toHaveBeenCalled();
+  });
+
+  describe('URL parameter handling', () => {
+    it('calls setSelectedSeason with the URL season param on mount', () => {
+      renderPage('/predictions?season=2023');
+
+      expect(mockSetSelectedSeason).toHaveBeenCalledWith(2023);
+    });
+
+    it('does not call setSelectedSeason when no season param is present', () => {
+      renderPage();
+
+      expect(mockSetSelectedSeason).not.toHaveBeenCalled();
+    });
+
+    it('sets the week selector to the URL week param once the published weeks load', () => {
+      mockWeeksData = {
+        season: 2024,
+        weeks: [
+          { weekNumber: 1, label: 'Week 2', predictionsPublished: true, rankingsPublished: true },
+          { weekNumber: 5, label: 'Week 6', predictionsPublished: true, rankingsPublished: true },
+        ],
+      };
+
+      renderPage('/predictions?week=1');
+
+      const weekSelect = screen.getByLabelText('Week:') as HTMLSelectElement;
+      expect(weekSelect.value).toBe('1');
+    });
+
+    it('ignores a week param that does not match a published week and keeps the default', () => {
+      mockWeeksData = {
+        season: 2024,
+        weeks: [
+          { weekNumber: 1, label: 'Week 2', predictionsPublished: true, rankingsPublished: true },
+          { weekNumber: 5, label: 'Week 6', predictionsPublished: true, rankingsPublished: true },
+        ],
+      };
+
+      renderPage('/predictions?week=99');
+
+      const weekSelect = screen.getByLabelText('Week:') as HTMLSelectElement;
+      expect(weekSelect.value).toBe('5');
+    });
   });
 });
