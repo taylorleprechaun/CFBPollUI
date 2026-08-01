@@ -213,6 +213,85 @@ describe('PublicPredictionsPage', () => {
     }
   });
 
+  describe('Top 25 Only filter', () => {
+    beforeEach(() => {
+      mockPredictionsData = {
+        season: 2024,
+        week: 1,
+        predictions: [
+          {
+            awayLogoURL: '',
+            awayTeam: 'Michigan',
+            awayTeamScore: 17,
+            bettingOverUnder: 45.5,
+            bettingSpread: -3.5,
+            homeLogoURL: '',
+            homeTeam: 'Ohio State',
+            homeTeamScore: 28,
+            myOverUnderPick: 'Over',
+            mySpreadPick: 'Ohio State',
+            neutralSite: false,
+            predictedMargin: 11,
+            predictedWinner: 'Ohio State',
+          },
+          {
+            awayLogoURL: '',
+            awayTeam: 'Nebraska',
+            awayTeamScore: 14,
+            bettingOverUnder: 40,
+            bettingSpread: -7,
+            homeLogoURL: '',
+            homeTeam: 'Iowa',
+            homeTeamScore: 21,
+            myOverUnderPick: 'Under',
+            mySpreadPick: 'Iowa',
+            neutralSite: false,
+            predictedMargin: 7,
+            predictedWinner: 'Iowa',
+          },
+        ],
+      };
+      mockRankingsData = {
+        season: 2024,
+        week: 1,
+        rankings: [{ teamName: 'Ohio State', rank: 3 }],
+      };
+    });
+
+    it('hides games where neither team is ranked in the top 25 once toggled on', async () => {
+      renderPage();
+
+      expect(screen.getByText('Nebraska')).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Top 25' }));
+
+      expect(screen.queryByText('Nebraska')).not.toBeInTheDocument();
+      expect(screen.queryByText('Iowa')).not.toBeInTheDocument();
+      expect(screen.getAllByText('Michigan').length).toBeGreaterThan(0);
+    });
+
+    it('shows all games again when toggled off', async () => {
+      renderPage();
+
+      const toggle = screen.getByRole('button', { name: 'Top 25' });
+      await userEvent.click(toggle);
+      expect(screen.queryByText('Nebraska')).not.toBeInTheDocument();
+
+      await userEvent.click(toggle);
+      expect(screen.getByText('Nebraska')).toBeInTheDocument();
+    });
+
+    it('marks the toggle as pressed only while the filter is active', async () => {
+      renderPage();
+
+      const toggle = screen.getByRole('button', { name: 'Top 25' });
+      expect(toggle).toHaveAttribute('aria-pressed', 'false');
+
+      await userEvent.click(toggle);
+      expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    });
+  });
+
   it('shows a loading skeleton while predictions are fetching', () => {
     mockPredictionsLoading = true;
 

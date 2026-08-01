@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { useRankings } from '../hooks/use-rankings';
 import { useSeason } from '../hooks/use-season';
@@ -55,6 +55,19 @@ export function PublicPredictionsPage() {
     [rankingsData]
   );
 
+  const [top25Only, setTop25Only] = useState(false);
+
+  const displayedPredictions = useMemo(() => {
+    const predictions = predictionsData?.predictions ?? [];
+    if (!top25Only) return predictions;
+
+    return predictions.filter((p) => {
+      const awayRank = rankByTeam.get(p.awayTeam.toLowerCase()) ?? Infinity;
+      const homeRank = rankByTeam.get(p.homeTeam.toLowerCase()) ?? Infinity;
+      return awayRank <= 25 || homeRank <= 25;
+    });
+  }, [predictionsData?.predictions, top25Only, rankByTeam]);
+
   const handleSeasonChange = (season: number) => {
     setSelectedSeason(season);
     setSelectedWeek(null);
@@ -85,6 +98,18 @@ export function PublicPredictionsPage() {
             onWeekChange={setSelectedWeek}
             isLoading={weeksLoading}
           />
+          <button
+            type="button"
+            aria-pressed={top25Only}
+            onClick={() => setTop25Only((prev) => !prev)}
+            className={`px-3 py-1 text-sm font-medium rounded-full transition-colors duration-150 ${
+              top25Only
+                ? 'bg-accent text-white shadow-sm'
+                : 'bg-surface-alt text-text-secondary hover:bg-surface-elevated border border-border'
+            }`}
+          >
+            Top 25
+          </button>
         </div>
       </div>
 
@@ -107,7 +132,7 @@ export function PublicPredictionsPage() {
       {!error && !isNotFound && (predictionsLoading || predictionsData) && (
         <div className="bg-surface shadow-md rounded-xl overflow-hidden animate-fade-in">
           <PredictionsTable
-            predictions={predictionsData?.predictions ?? []}
+            predictions={displayedPredictions}
             isLoading={predictionsLoading}
             rankByTeam={rankByTeam}
             season={selectedSeason}
