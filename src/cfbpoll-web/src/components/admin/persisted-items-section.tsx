@@ -5,6 +5,7 @@ import { getWeekLabel } from '../../lib/week-utils';
 import { BUTTON_DANGER_GHOST, BUTTON_GHOST } from '../ui/button-styles';
 import { ChevronIcon } from '../ui/chevron-icon';
 import { EmptyState } from '../ui/empty-state';
+import { StatusBadge } from '../ui/status-badge';
 import { SuccessCheckmark } from './success-checkmark';
 import type { ActionFeedback } from './types';
 
@@ -119,13 +120,12 @@ export function PersistedItemsSection<T extends { createdAt: string; isPublished
                               <td className="px-4 py-3 whitespace-nowrap text-sm text-text-primary">{getWeekLabel(item.week)}</td>
                               {renderExtraCells?.(item)}
                               <td className="px-4 py-3 whitespace-nowrap text-sm">
-                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                  item.isPublished
+                                <StatusBadge
+                                  className={item.isPublished
                                     ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300'
-                                    : 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300'
-                                }`}>
-                                  {item.isPublished ? 'Published' : 'Draft'}
-                                </span>
+                                    : 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300'}
+                                  label={item.isPublished ? 'Published' : 'Draft'}
+                                />
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-sm text-text-muted">
                                 {new Date(item.createdAt).toLocaleString()}

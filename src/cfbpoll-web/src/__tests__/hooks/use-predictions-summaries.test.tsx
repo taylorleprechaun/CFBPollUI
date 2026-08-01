@@ -32,7 +32,7 @@ describe('usePredictionsSummaries', () => {
 
   it('fetches when token is provided', async () => {
     const mockData = [
-      { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z', gameCount: 10 },
+      { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z', gameCount: 10, gradedAt: null, isGraded: false, resultsPublished: false },
     ];
     vi.mocked(fetchPredictionsSummaries).mockResolvedValue(mockData);
 

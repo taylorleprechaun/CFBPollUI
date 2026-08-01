@@ -46,8 +46,12 @@ const mockCalculateMutateAsync = vi.fn();
 const mockPublishMutateAsync = vi.fn();
 const mockDeleteMutateAsync = vi.fn();
 const mockRefreshCacheMutateAsync = vi.fn();
+const mockGradeMutateAsync = vi.fn();
+const mockPublishResultsMutateAsync = vi.fn();
 let mockCalculateIsPending = false;
 let mockRefreshCacheIsPending = false;
+let mockGradeIsPending = false;
+let mockPublishResultsIsPending = false;
 
 vi.mock('../../hooks/use-admin-mutations', () => ({
   useCalculatePredictions: () => ({
@@ -66,9 +70,19 @@ vi.mock('../../hooks/use-admin-mutations', () => ({
     mutateAsync: mockRefreshCacheMutateAsync,
     isPending: mockRefreshCacheIsPending,
   }),
+  useGradePredictions: () => ({
+    mutateAsync: mockGradeMutateAsync,
+    isPending: mockGradeIsPending,
+  }),
+  usePublishGradedResults: () => ({
+    mutateAsync: mockPublishResultsMutateAsync,
+    isPending: mockPublishResultsIsPending,
+  }),
 }));
 
-let mockSummariesData: { season: number; week: number; isPublished: boolean; createdAt: string; gameCount: number }[] | undefined = [];
+let mockSummariesData:
+  | { season: number; week: number; isPublished: boolean; createdAt: string; gameCount: number; gradedAt: string | null; isGraded: boolean; resultsPublished: boolean }[]
+  | undefined = [];
 let mockSummariesError: Error | null = null;
 const mockRefetchSummaries = vi.fn();
 
@@ -104,6 +118,30 @@ function renderPredictionsPage() {
   );
 }
 
+const gradedGamePrediction = {
+  actualAwayScore: 17,
+  actualHomeScore: 28,
+  actualOverUnderResult: 'Under',
+  actualSpreadCoveringTeam: 'Ohio State',
+  actualWinner: 'Ohio State',
+  awayLogoURL: 'https://example.com/michigan.png',
+  awayTeam: 'Michigan',
+  awayTeamScore: 17,
+  bettingOverUnder: 48.5,
+  bettingSpread: -7.5,
+  homeLogoURL: 'https://example.com/ohiostate.png',
+  homeTeam: 'Ohio State',
+  homeTeamScore: 28,
+  myOverUnderPick: 'Under',
+  mySpreadPick: 'Ohio State',
+  neutralSite: false,
+  overUnderGrade: 'Correct',
+  predictedMargin: 10.5,
+  predictedWinner: 'Ohio State',
+  spreadGrade: 'Correct',
+  winnerGrade: 'Correct',
+};
+
 describe('PredictionsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -112,6 +150,8 @@ describe('PredictionsPage', () => {
     mockSummariesError = null;
     mockCalculateIsPending = false;
     mockRefreshCacheIsPending = false;
+    mockGradeIsPending = false;
+    mockPublishResultsIsPending = false;
   });
 
   it('renders heading', () => {
@@ -135,7 +175,7 @@ describe('PredictionsPage', () => {
     const user = userEvent.setup();
     mockCalculateMutateAsync.mockResolvedValue({
       isPersisted: true,
-      predictions: { season: 2024, week: 1, predictions: [] },
+      predictions: { resultsPublished: false, season: 2024, week: 1, predictions: [] },
     });
 
     renderPredictionsPage();
@@ -149,10 +189,16 @@ describe('PredictionsPage', () => {
     mockCalculateMutateAsync.mockResolvedValue({
       isPersisted: true,
       predictions: {
+        resultsPublished: false,
         season: 2024,
         week: 1,
         predictions: [
           {
+            actualAwayScore: null,
+            actualHomeScore: null,
+            actualOverUnderResult: null,
+            actualSpreadCoveringTeam: null,
+            actualWinner: null,
             awayLogoURL: 'https://example.com/michigan.png',
             awayTeam: 'Michigan',
             awayTeamScore: 17,
@@ -164,8 +210,11 @@ describe('PredictionsPage', () => {
             myOverUnderPick: 'Under',
             mySpreadPick: 'Ohio State',
             neutralSite: false,
+            overUnderGrade: 'Ungraded',
             predictedMargin: 10.5,
             predictedWinner: 'Ohio State',
+            spreadGrade: 'Ungraded',
+            winnerGrade: 'Ungraded',
           },
         ],
       },
@@ -194,8 +243,8 @@ describe('PredictionsPage', () => {
 
   it('renders persisted summaries when data exists', () => {
     mockSummariesData = [
-      { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z', gameCount: 10 },
-      { season: 2024, week: 2, isPublished: false, createdAt: '2024-09-08T00:00:00Z', gameCount: 8 },
+      { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z', gameCount: 10, gradedAt: null, isGraded: false, resultsPublished: false },
+      { season: 2024, week: 2, isPublished: false, createdAt: '2024-09-08T00:00:00Z', gameCount: 8, gradedAt: null, isGraded: false, resultsPublished: false },
     ];
 
     renderPredictionsPage();
@@ -212,7 +261,7 @@ describe('PredictionsPage', () => {
   it('shows confirm modal for deleting published predictions', async () => {
     const user = userEvent.setup();
     mockSummariesData = [
-      { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z', gameCount: 10 },
+      { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z', gameCount: 10, gradedAt: null, isGraded: false, resultsPublished: false },
     ];
 
     renderPredictionsPage();
@@ -233,10 +282,16 @@ describe('PredictionsPage', () => {
     mockCalculateMutateAsync.mockResolvedValue({
       isPersisted: true,
       predictions: {
+        resultsPublished: false,
         season: 2024,
         week: 5,
         predictions: [
           {
+            actualAwayScore: null,
+            actualHomeScore: null,
+            actualOverUnderResult: null,
+            actualSpreadCoveringTeam: null,
+            actualWinner: null,
             awayLogoURL: 'https://example.com/nebraska.png',
             awayTeam: 'Nebraska',
             awayTeamScore: 14,
@@ -248,8 +303,11 @@ describe('PredictionsPage', () => {
             myOverUnderPick: 'Over',
             mySpreadPick: 'Texas',
             neutralSite: false,
+            overUnderGrade: 'Ungraded',
             predictedMargin: 17.0,
             predictedWinner: 'Texas',
+            spreadGrade: 'Ungraded',
+            winnerGrade: 'Ungraded',
           },
         ],
       },
@@ -272,7 +330,7 @@ describe('PredictionsPage', () => {
   it('confirms delete in modal and calls delete mutation', async () => {
     const user = userEvent.setup();
     mockSummariesData = [
-      { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z', gameCount: 10 },
+      { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z', gameCount: 10, gradedAt: null, isGraded: false, resultsPublished: false },
     ];
     mockDeleteMutateAsync.mockResolvedValue(undefined);
 
@@ -298,7 +356,7 @@ describe('PredictionsPage', () => {
   it('publishes predictions from persisted section', async () => {
     const user = userEvent.setup();
     mockSummariesData = [
-      { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z', gameCount: 10 },
+      { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z', gameCount: 10, gradedAt: null, isGraded: false, resultsPublished: false },
     ];
     mockPublishMutateAsync.mockResolvedValue(undefined);
 
@@ -318,10 +376,16 @@ describe('PredictionsPage', () => {
     mockCalculateMutateAsync.mockResolvedValue({
       isPersisted: true,
       predictions: {
+        resultsPublished: false,
         season: 2024,
         week: 1,
         predictions: [
           {
+            actualAwayScore: null,
+            actualHomeScore: null,
+            actualOverUnderResult: null,
+            actualSpreadCoveringTeam: null,
+            actualWinner: null,
             awayLogoURL: 'https://example.com/iowa.png',
             awayTeam: 'Iowa',
             awayTeamScore: 10,
@@ -333,15 +397,18 @@ describe('PredictionsPage', () => {
             myOverUnderPick: 'Under',
             mySpreadPick: 'Nebraska',
             neutralSite: false,
+            overUnderGrade: 'Ungraded',
             predictedMargin: 4.0,
             predictedWinner: 'Nebraska',
+            spreadGrade: 'Ungraded',
+            winnerGrade: 'Ungraded',
           },
         ],
       },
     });
     mockDeleteMutateAsync.mockResolvedValue(undefined);
     mockSummariesData = [
-      { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z', gameCount: 5 },
+      { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z', gameCount: 5, gradedAt: null, isGraded: false, resultsPublished: false },
     ];
 
     renderPredictionsPage();
@@ -365,7 +432,7 @@ describe('PredictionsPage', () => {
   it('cancels delete modal without calling delete mutation', async () => {
     const user = userEvent.setup();
     mockSummariesData = [
-      { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z', gameCount: 10 },
+      { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z', gameCount: 10, gradedAt: null, isGraded: false, resultsPublished: false },
     ];
 
     renderPredictionsPage();
@@ -447,5 +514,151 @@ describe('PredictionsPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Removed 6 cached entries')).toBeInTheDocument();
     });
+  });
+
+  it('renders grade results section', () => {
+    renderPredictionsPage();
+    expect(screen.getByText('Grade Results')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Grade' })).toBeInTheDocument();
+  });
+
+  it('calls grade mutation with selected season and week on Grade click', async () => {
+    const user = userEvent.setup();
+    mockGradeMutateAsync.mockResolvedValue({
+      isPersisted: true,
+      predictions: { resultsPublished: true, season: 2024, week: 5, predictions: [] },
+      unmatchedGameCount: 0,
+    });
+
+    renderPredictionsPage();
+    await user.click(screen.getByRole('button', { name: 'Grade' }));
+
+    expect(mockGradeMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
+  });
+
+  it('shows graded results preview after successful grading', async () => {
+    const user = userEvent.setup();
+    mockGradeMutateAsync.mockResolvedValue({
+      isPersisted: true,
+      predictions: { resultsPublished: true, season: 2024, week: 5, predictions: [gradedGamePrediction] },
+      unmatchedGameCount: 0,
+    });
+
+    renderPredictionsPage();
+    await user.click(screen.getByRole('button', { name: 'Grade' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Graded Results:/)).toBeInTheDocument();
+    });
+  });
+
+  it('shows unmatched games banner when grading leaves games unmatched', async () => {
+    const user = userEvent.setup();
+    mockGradeMutateAsync.mockResolvedValue({
+      isPersisted: true,
+      predictions: { resultsPublished: true, season: 2024, week: 5, predictions: [gradedGamePrediction] },
+      unmatchedGameCount: 2,
+    });
+
+    renderPredictionsPage();
+    await user.click(screen.getByRole('button', { name: 'Grade' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Unmatched games: 2')).toBeInTheDocument();
+    });
+  });
+
+  it('shows error feedback when grading fails', async () => {
+    const user = userEvent.setup();
+    mockGradeMutateAsync.mockRejectedValue(new Error('Grading failed'));
+
+    renderPredictionsPage();
+    await user.click(screen.getByRole('button', { name: 'Grade' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Grading failed')).toBeInTheDocument();
+    });
+  });
+
+  it('publishes graded results from graded results preview section', async () => {
+    const user = userEvent.setup();
+    mockGradeMutateAsync.mockResolvedValue({
+      isPersisted: true,
+      predictions: { resultsPublished: true, season: 2024, week: 5, predictions: [gradedGamePrediction] },
+      unmatchedGameCount: 0,
+    });
+    mockPublishResultsMutateAsync.mockResolvedValue(undefined);
+
+    renderPredictionsPage();
+    await user.click(screen.getByRole('button', { name: 'Grade' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Graded Results:/)).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Publish Results' }));
+
+    expect(mockPublishResultsMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
+  });
+
+  it('clears graded results preview when the matching persisted prediction is deleted', async () => {
+    const user = userEvent.setup();
+    mockGradeMutateAsync.mockResolvedValue({
+      isPersisted: true,
+      predictions: { resultsPublished: true, season: 2024, week: 5, predictions: [gradedGamePrediction] },
+      unmatchedGameCount: 0,
+    });
+    mockDeleteMutateAsync.mockResolvedValue(undefined);
+    mockSummariesData = [
+      { season: 2024, week: 5, isPublished: false, createdAt: '2024-09-01T00:00:00Z', gameCount: 1, gradedAt: '2024-09-02T00:00:00Z', isGraded: true, resultsPublished: false },
+    ];
+
+    renderPredictionsPage();
+    await user.click(screen.getByRole('button', { name: 'Grade' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Graded Results:/)).toBeInTheDocument();
+    });
+
+    const seasonButton = screen.getByRole('button', { name: /2024 Season/i });
+    await user.click(seasonButton);
+
+    const deleteButton = screen.getByRole('button', { name: 'Delete' });
+    await user.click(deleteButton);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/Graded Results:/)).not.toBeInTheDocument();
+    });
+  });
+
+  it('does not clear graded results preview when a different week is deleted', async () => {
+    const user = userEvent.setup();
+    mockGradeMutateAsync.mockResolvedValue({
+      isPersisted: true,
+      predictions: { resultsPublished: true, season: 2024, week: 5, predictions: [gradedGamePrediction] },
+      unmatchedGameCount: 0,
+    });
+    mockDeleteMutateAsync.mockResolvedValue(undefined);
+    mockSummariesData = [
+      { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z', gameCount: 1, gradedAt: null, isGraded: false, resultsPublished: false },
+    ];
+
+    renderPredictionsPage();
+    await user.click(screen.getByRole('button', { name: 'Grade' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Graded Results:/)).toBeInTheDocument();
+    });
+
+    const seasonButton = screen.getByRole('button', { name: /2024 Season/i });
+    await user.click(seasonButton);
+
+    const deleteButton = screen.getByRole('button', { name: 'Delete' });
+    await user.click(deleteButton);
+
+    await waitFor(() => {
+      expect(mockDeleteMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 1 });
+    });
+    expect(screen.getByText(/Graded Results:/)).toBeInTheDocument();
   });
 });

@@ -8,6 +8,8 @@ import {
   useDeleteSnapshot,
   useExportSnapshot,
   useCalculatePredictions,
+  useGradePredictions,
+  usePublishGradedResults,
   usePublishPredictions,
   useDeletePredictions,
   useRefreshCache,
@@ -19,6 +21,8 @@ vi.mock('../../services/admin-api', () => ({
   deletePredictions: vi.fn(),
   deleteSnapshot: vi.fn(),
   downloadExport: vi.fn(),
+  gradePredictions: vi.fn(),
+  publishGradedResults: vi.fn(),
   publishPredictions: vi.fn(),
   publishSnapshot: vi.fn(),
   refreshCache: vi.fn(),
@@ -30,6 +34,8 @@ import {
   deletePredictions,
   deleteSnapshot,
   downloadExport,
+  gradePredictions,
+  publishGradedResults,
   publishPredictions,
   publishSnapshot,
   refreshCache,
@@ -133,7 +139,7 @@ describe('useCalculatePredictions', () => {
   beforeEach(() => vi.resetAllMocks());
 
   it('calls calculatePredictions with token and params', async () => {
-    const mockResult = { isPersisted: true, predictions: { season: 2024, week: 3, predictions: [] } };
+    const mockResult = { isPersisted: true, predictions: { resultsPublished: false, season: 2024, week: 3, predictions: [] } };
     vi.mocked(calculatePredictions).mockResolvedValue(mockResult);
 
     const { result } = renderHook(() => useCalculatePredictions('test-token'), {
@@ -175,6 +181,59 @@ describe('usePublishPredictions', () => {
     });
 
     expect(publishPredictions).toHaveBeenCalledWith('test-token', 2024, 3);
+  });
+});
+
+describe('useGradePredictions', () => {
+  beforeEach(() => vi.resetAllMocks());
+
+  it('calls gradePredictions with token and params', async () => {
+    const mockResult = {
+      isPersisted: true,
+      predictions: { resultsPublished: true, season: 2024, week: 3, predictions: [] },
+      unmatchedGameCount: 0,
+    };
+    vi.mocked(gradePredictions).mockResolvedValue(mockResult);
+
+    const { result } = renderHook(() => useGradePredictions('test-token'), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ season: 2024, week: 3 });
+    });
+
+    expect(gradePredictions).toHaveBeenCalledWith('test-token', 2024, 3);
+  });
+
+  it('rejects on failure', async () => {
+    vi.mocked(gradePredictions).mockRejectedValue(new Error('Failed'));
+
+    const { result } = renderHook(() => useGradePredictions('test-token'), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(
+      act(() => result.current.mutateAsync({ season: 2024, week: 3 }))
+    ).rejects.toThrow('Failed');
+  });
+});
+
+describe('usePublishGradedResults', () => {
+  beforeEach(() => vi.resetAllMocks());
+
+  it('calls publishGradedResults with token and params', async () => {
+    vi.mocked(publishGradedResults).mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => usePublishGradedResults('test-token'), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ season: 2024, week: 3 });
+    });
+
+    expect(publishGradedResults).toHaveBeenCalledWith('test-token', 2024, 3);
   });
 });
 
@@ -288,6 +347,30 @@ describe('null token guard', () => {
     ).rejects.toThrow('Authentication required');
 
     expect(publishPredictions).not.toHaveBeenCalled();
+  });
+
+  it('useGradePredictions rejects with Authentication required when token is null', async () => {
+    const { result } = renderHook(() => useGradePredictions(null), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(
+      act(() => result.current.mutateAsync({ season: 2024, week: 3 }))
+    ).rejects.toThrow('Authentication required');
+
+    expect(gradePredictions).not.toHaveBeenCalled();
+  });
+
+  it('usePublishGradedResults rejects with Authentication required when token is null', async () => {
+    const { result } = renderHook(() => usePublishGradedResults(null), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(
+      act(() => result.current.mutateAsync({ season: 2024, week: 3 }))
+    ).rejects.toThrow('Authentication required');
+
+    expect(publishGradedResults).not.toHaveBeenCalled();
   });
 
   it('useDeletePredictions rejects with Authentication required when token is null', async () => {

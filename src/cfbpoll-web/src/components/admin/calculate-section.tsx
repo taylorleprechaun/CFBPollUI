@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import type { Week } from '../../types';
 import { BUTTON_PRIMARY, BUTTON_SECONDARY, SELECT_BASE } from '../ui/button-styles';
-import { SuccessCheckmark } from './success-checkmark';
+import { FeedbackIndicator } from './feedback-indicator';
 import type { ActionFeedback } from './types';
 
 interface CalculateSectionProps {
@@ -60,15 +60,11 @@ export function CalculateSection({
             >
               {isRefreshingCache ? 'Refreshing...' : 'Refresh Cached Data'}
             </button>
-            {refreshFeedback?.key === refreshFeedbackKey && refreshFeedback.type === 'success' && (
-              <span className="flex items-center gap-1 text-sm text-green-700">
-                <SuccessCheckmark onDone={() => onClearRefreshFeedback?.()} />
-                {refreshFeedback.message}
-              </span>
-            )}
-            {refreshFeedback?.key === refreshFeedbackKey && refreshFeedback.type === 'error' && (
-              <span className="text-red-600 text-sm">{refreshFeedback.message}</span>
-            )}
+            <FeedbackIndicator
+              feedback={refreshFeedback ?? null}
+              feedbackKey={refreshFeedbackKey}
+              onClear={() => onClearRefreshFeedback?.()}
+            />
           </div>
         )}
       </div>

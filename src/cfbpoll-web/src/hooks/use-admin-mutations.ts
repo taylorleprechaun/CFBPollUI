@@ -5,6 +5,8 @@ import {
   deletePredictions,
   deleteSnapshot,
   downloadExport,
+  gradePredictions,
+  publishGradedResults,
   publishPredictions,
   publishSnapshot,
   refreshCache,
@@ -87,6 +89,34 @@ export function useDeletePredictions(token: string | null) {
     mutationFn: ({ season, week }: { season: number; week: number }) => {
       if (!token) throw new Error('Authentication required');
       return deletePredictions(token, season, week);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['predictions-summaries'] });
+    },
+  });
+}
+
+export function useGradePredictions(token: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ season, week }: { season: number; week: number }) => {
+      if (!token) throw new Error('Authentication required');
+      return gradePredictions(token, season, week);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['predictions-summaries'] });
+    },
+  });
+}
+
+export function usePublishGradedResults(token: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ season, week }: { season: number; week: number }) => {
+      if (!token) throw new Error('Authentication required');
+      return publishGradedResults(token, season, week);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['predictions-summaries'] });

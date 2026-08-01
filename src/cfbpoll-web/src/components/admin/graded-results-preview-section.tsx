@@ -5,29 +5,44 @@ import { getWeekLabel } from '../../lib/week-utils';
 import { TeamLogo } from '../rankings/team-logo';
 import { BUTTON_PRIMARY } from '../ui/button-styles';
 import { ChevronIcon } from '../ui/chevron-icon';
+import { StatusBadge } from '../ui/status-badge';
 import { FeedbackIndicator } from './feedback-indicator';
 import type { ActionFeedback } from './types';
-import type { CalculatePredictionsResponse } from '../../schemas/admin';
+import type { GradePredictionsResponse } from '../../schemas/admin';
 
-interface PredictionsPreviewSectionProps {
-  calculatedResult: CalculatePredictionsResponse;
+interface GradedResultsPreviewSectionProps {
   actionFeedback: ActionFeedback | null;
+  gradedResult: GradePredictionsResponse;
   isActionPending: boolean;
   onClearFeedback: () => void;
-  onPublish: (season: number, week: number) => void;
+  onPublishResults: (season: number, week: number) => void;
 }
 
-export function PredictionsPreviewSection({
-  calculatedResult,
+const GRADE_BADGE_CLASSES: Record<string, string> = {
+  Correct: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300',
+  Incorrect: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300',
+  Push: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300',
+};
+
+function gradeBadgeClasses(grade: string): string {
+  return GRADE_BADGE_CLASSES[grade] ?? 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400';
+}
+
+function GradeBadge({ grade }: { grade: string }) {
+  return <StatusBadge className={gradeBadgeClasses(grade)} label={grade} />;
+}
+
+export function GradedResultsPreviewSection({
   actionFeedback,
+  gradedResult,
   isActionPending,
   onClearFeedback,
-  onPublish,
-}: PredictionsPreviewSectionProps) {
+  onPublishResults,
+}: GradedResultsPreviewSectionProps) {
   const [previewExpanded, setPreviewExpanded] = useState(true);
 
-  const { predictions } = calculatedResult;
-  const previewPublishKey = `preview-prediction-publish-${predictions.season}-${predictions.week}`;
+  const { predictions } = gradedResult;
+  const publishResultsKey = `publish-results-${predictions.season}-${predictions.week}`;
 
   return (
     <div className="bg-surface shadow-md rounded-xl overflow-hidden">
@@ -39,25 +54,30 @@ export function PredictionsPreviewSection({
             className="flex items-center gap-2 text-lg font-semibold text-text-primary hover:text-text-secondary"
           >
             <ChevronIcon open={previewExpanded} size="w-4 h-4" />
-            Preview: {predictions.season} {getWeekLabel(predictions.week)}
+            Graded Results: {predictions.season} {getWeekLabel(predictions.week)}
             <span className="text-sm font-normal text-text-muted">
               ({predictions.predictions.length} game{predictions.predictions.length !== 1 ? 's' : ''})
             </span>
           </button>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => onPublish(predictions.season, predictions.week)}
+              onClick={() => onPublishResults(predictions.season, predictions.week)}
               disabled={isActionPending}
               className={BUTTON_PRIMARY}
             >
-              Publish
+              Publish Results
             </button>
-            <FeedbackIndicator feedback={actionFeedback} feedbackKey={previewPublishKey} onClear={onClearFeedback} />
+            <FeedbackIndicator feedback={actionFeedback} feedbackKey={publishResultsKey} onClear={onClearFeedback} />
           </div>
         </div>
-        {!calculatedResult.isPersisted && (
+        {!gradedResult.isPersisted && (
           <p className="text-amber-600 text-sm mt-2">
-            Warning: Predictions were not persisted to the database.
+            Warning: Graded results were not persisted to the database.
+          </p>
+        )}
+        {gradedResult.unmatchedGameCount > 0 && (
+          <p className="text-amber-600 text-sm mt-2">
+            Unmatched games: {gradedResult.unmatchedGameCount}
           </p>
         )}
       </div>
@@ -93,28 +113,55 @@ export function PredictionsPreviewSection({
                         {p.neutralSite && <span className="text-text-muted text-xs">(N)</span>}
                         <span className="font-semibold ml-auto">{p.homeTeamScore}</span>
                       </div>
+                      {p.actualHomeScore !== null && p.actualAwayScore !== null && (
+                        <span className="text-xs text-text-muted">
+                          Final: {p.actualAwayScore}-{p.actualHomeScore}
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm font-medium text-text-primary align-middle">
-                    <div className="flex items-center gap-2">
-                      <TeamLogo
-                        logoURL={p.predictedWinner === p.homeTeam ? p.homeLogoURL : p.awayLogoURL}
-                        teamName={p.predictedWinner}
-                      />
-                      <span>{p.predictedWinner}</span>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <TeamLogo
+                          logoURL={p.predictedWinner === p.homeTeam ? p.homeLogoURL : p.awayLogoURL}
+                          teamName={p.predictedWinner}
+                        />
+                        <span>{p.predictedWinner}</span>
+                        <GradeBadge grade={p.winnerGrade} />
+                      </div>
+                      {p.actualWinner !== null && p.actualWinner !== p.predictedWinner && (
+                        <span className="text-xs text-text-muted">Actual: {p.actualWinner}</span>
+                      )}
                     </div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary align-middle">
                     {formatSpread(p)}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary align-middle">
-                    {formatPick(p.mySpreadPick)}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <span>{formatPick(p.mySpreadPick)}</span>
+                        <GradeBadge grade={p.spreadGrade} />
+                      </div>
+                      {p.spreadGrade === 'Incorrect' && p.actualSpreadCoveringTeam !== null && (
+                        <span className="text-xs text-text-muted">Actual: {p.actualSpreadCoveringTeam}</span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary text-right align-middle">
                     {formatOverUnder(p.bettingOverUnder)}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary align-middle">
-                    {formatPick(p.myOverUnderPick)}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <span>{formatPick(p.myOverUnderPick)}</span>
+                        <GradeBadge grade={p.overUnderGrade} />
+                      </div>
+                      {p.overUnderGrade === 'Incorrect' && p.actualOverUnderResult !== null && (
+                        <span className="text-xs text-text-muted">Actual: {p.actualOverUnderResult}</span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

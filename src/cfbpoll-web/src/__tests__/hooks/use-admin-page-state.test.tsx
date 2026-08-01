@@ -138,3 +138,57 @@ describe('useAdminPageState - refresh cache', () => {
     });
   });
 });
+
+describe('useAdminPageState - delete', () => {
+  it('executeDelete calls onDeleteSuccess with the deleted season and week', async () => {
+    const onDeleteSuccess = vi.fn();
+    const mutateAsync = vi.fn().mockResolvedValue(undefined);
+    const options = {
+      ...baseOptions(),
+      deleteMutation: fakeMutation<void, { season: number; week: number }>({ mutateAsync }),
+      onDeleteSuccess,
+    };
+
+    const { result } = renderHook(() => useAdminPageState<CalcResult>(options));
+
+    await act(async () => {
+      await result.current.executeDelete(2024, 5);
+    });
+
+    expect(onDeleteSuccess).toHaveBeenCalledWith(2024, 5);
+  });
+
+  it('executeDelete does not call onDeleteSuccess when the delete fails', async () => {
+    const onDeleteSuccess = vi.fn();
+    const mutateAsync = vi.fn().mockRejectedValue(new Error('Delete failed'));
+    const options = {
+      ...baseOptions(),
+      deleteMutation: fakeMutation<void, { season: number; week: number }>({ mutateAsync }),
+      onDeleteSuccess,
+    };
+
+    const { result } = renderHook(() => useAdminPageState<CalcResult>(options));
+
+    await act(async () => {
+      await result.current.executeDelete(2024, 5);
+    });
+
+    expect(onDeleteSuccess).not.toHaveBeenCalled();
+  });
+
+  it('executeDelete does not throw when onDeleteSuccess is not provided', async () => {
+    const mutateAsync = vi.fn().mockResolvedValue(undefined);
+    const options = {
+      ...baseOptions(),
+      deleteMutation: fakeMutation<void, { season: number; week: number }>({ mutateAsync }),
+    };
+
+    const { result } = renderHook(() => useAdminPageState<CalcResult>(options));
+
+    await expect(
+      act(async () => {
+        await result.current.executeDelete(2024, 5);
+      })
+    ).resolves.not.toThrow();
+  });
+});

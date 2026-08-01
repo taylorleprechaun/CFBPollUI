@@ -3,6 +3,7 @@ import {
   CalculatePredictionsResponseSchema,
   CalculateResponseSchema,
   GamePredictionSchema,
+  GradePredictionsResponseSchema,
   LoginResponseSchema,
   PredictionsResponseSchema,
   PredictionsSummarySchema,
@@ -86,6 +87,11 @@ describe('Admin schemas', () => {
   describe('GamePredictionSchema', () => {
     it('validates a valid game prediction', () => {
       const data = {
+        actualAwayScore: null,
+        actualHomeScore: null,
+        actualOverUnderResult: null,
+        actualSpreadCoveringTeam: null,
+        actualWinner: null,
         awayLogoURL: 'https://example.com/michigan.png',
         awayTeam: 'Michigan',
         awayTeamScore: 17,
@@ -97,8 +103,39 @@ describe('Admin schemas', () => {
         myOverUnderPick: 'Under',
         mySpreadPick: 'Ohio State',
         neutralSite: false,
+        overUnderGrade: 'Ungraded',
         predictedMargin: 10.5,
         predictedWinner: 'Ohio State',
+        spreadGrade: 'Ungraded',
+        winnerGrade: 'Ungraded',
+      };
+      const result = GamePredictionSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('validates a graded game prediction', () => {
+      const data = {
+        actualAwayScore: 17,
+        actualHomeScore: 28,
+        actualOverUnderResult: 'Under',
+        actualSpreadCoveringTeam: 'Ohio State',
+        actualWinner: 'Ohio State',
+        awayLogoURL: 'https://example.com/michigan.png',
+        awayTeam: 'Michigan',
+        awayTeamScore: 17,
+        bettingOverUnder: 48.5,
+        bettingSpread: -7.5,
+        homeLogoURL: 'https://example.com/ohiostate.png',
+        homeTeam: 'Ohio State',
+        homeTeamScore: 28,
+        myOverUnderPick: 'Under',
+        mySpreadPick: 'Ohio State',
+        neutralSite: false,
+        overUnderGrade: 'Correct',
+        predictedMargin: 10.5,
+        predictedWinner: 'Ohio State',
+        spreadGrade: 'Correct',
+        winnerGrade: 'Correct',
       };
       const result = GamePredictionSchema.safeParse(data);
       expect(result.success).toBe(true);
@@ -106,6 +143,11 @@ describe('Admin schemas', () => {
 
     it('validates null betting values', () => {
       const data = {
+        actualAwayScore: null,
+        actualHomeScore: null,
+        actualOverUnderResult: null,
+        actualSpreadCoveringTeam: null,
+        actualWinner: null,
         awayLogoURL: '',
         awayTeam: 'Texas',
         awayTeamScore: 24,
@@ -117,8 +159,11 @@ describe('Admin schemas', () => {
         myOverUnderPick: '',
         mySpreadPick: '',
         neutralSite: true,
+        overUnderGrade: 'NotApplicable',
         predictedMargin: 3.0,
         predictedWinner: 'Texas',
+        spreadGrade: 'NotApplicable',
+        winnerGrade: 'Ungraded',
       };
       const result = GamePredictionSchema.safeParse(data);
       expect(result.success).toBe(true);
@@ -126,6 +171,11 @@ describe('Admin schemas', () => {
 
     it('rejects missing predictedWinner', () => {
       const data = {
+        actualAwayScore: null,
+        actualHomeScore: null,
+        actualOverUnderResult: null,
+        actualSpreadCoveringTeam: null,
+        actualWinner: null,
         awayLogoURL: '',
         awayTeam: 'Michigan',
         awayTeamScore: 17,
@@ -137,7 +187,37 @@ describe('Admin schemas', () => {
         myOverUnderPick: 'Under',
         mySpreadPick: 'Ohio State',
         neutralSite: false,
+        overUnderGrade: 'Ungraded',
         predictedMargin: 10.5,
+        spreadGrade: 'Ungraded',
+        winnerGrade: 'Ungraded',
+      };
+      const result = GamePredictionSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects missing winnerGrade', () => {
+      const data = {
+        actualAwayScore: null,
+        actualHomeScore: null,
+        actualOverUnderResult: null,
+        actualSpreadCoveringTeam: null,
+        actualWinner: null,
+        awayLogoURL: '',
+        awayTeam: 'Michigan',
+        awayTeamScore: 17,
+        bettingOverUnder: 48.5,
+        bettingSpread: -7.5,
+        homeLogoURL: '',
+        homeTeam: 'Ohio State',
+        homeTeamScore: 28,
+        myOverUnderPick: 'Under',
+        mySpreadPick: 'Ohio State',
+        neutralSite: false,
+        overUnderGrade: 'Ungraded',
+        predictedMargin: 10.5,
+        predictedWinner: 'Ohio State',
+        spreadGrade: 'Ungraded',
       };
       const result = GamePredictionSchema.safeParse(data);
       expect(result.success).toBe(false);
@@ -147,10 +227,16 @@ describe('Admin schemas', () => {
   describe('PredictionsResponseSchema', () => {
     it('validates a valid predictions response', () => {
       const data = {
+        resultsPublished: false,
         season: 2024,
         week: 5,
         predictions: [
           {
+            actualAwayScore: null,
+            actualHomeScore: null,
+            actualOverUnderResult: null,
+            actualSpreadCoveringTeam: null,
+            actualWinner: null,
             awayLogoURL: 'https://example.com/iowa.png',
             awayTeam: 'Iowa',
             awayTeamScore: 21,
@@ -162,8 +248,11 @@ describe('Admin schemas', () => {
             myOverUnderPick: 'Over',
             mySpreadPick: 'Nebraska',
             neutralSite: false,
+            overUnderGrade: 'Ungraded',
             predictedMargin: 7.0,
             predictedWinner: 'Nebraska',
+            spreadGrade: 'Ungraded',
+            winnerGrade: 'Ungraded',
           },
         ],
       };
@@ -172,8 +261,35 @@ describe('Admin schemas', () => {
     });
 
     it('rejects missing predictions array', () => {
-      const data = { season: 2024, week: 5 };
+      const data = { resultsPublished: false, season: 2024, week: 5 };
       const result = PredictionsResponseSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects missing resultsPublished', () => {
+      const data = { season: 2024, week: 5, predictions: [] };
+      const result = PredictionsResponseSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('GradePredictionsResponseSchema', () => {
+    it('validates a valid grade predictions response', () => {
+      const data = {
+        isPersisted: true,
+        predictions: { resultsPublished: true, season: 2024, week: 5, predictions: [] },
+        unmatchedGameCount: 0,
+      };
+      const result = GradePredictionsResponseSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects missing unmatchedGameCount', () => {
+      const data = {
+        isPersisted: true,
+        predictions: { resultsPublished: true, season: 2024, week: 5, predictions: [] },
+      };
+      const result = GradePredictionsResponseSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
   });
@@ -183,6 +299,7 @@ describe('Admin schemas', () => {
       const data = {
         isPersisted: true,
         predictions: {
+          resultsPublished: false,
           season: 2024,
           week: 5,
           predictions: [],
@@ -194,7 +311,7 @@ describe('Admin schemas', () => {
 
     it('rejects missing isPersisted field', () => {
       const data = {
-        predictions: { season: 2024, week: 5, predictions: [] },
+        predictions: { resultsPublished: false, season: 2024, week: 5, predictions: [] },
       };
       const result = CalculatePredictionsResponseSchema.safeParse(data);
       expect(result.success).toBe(false);
@@ -206,7 +323,25 @@ describe('Admin schemas', () => {
       const data = {
         createdAt: '2024-11-01T12:00:00Z',
         gameCount: 15,
+        gradedAt: null,
+        isGraded: false,
         isPublished: true,
+        resultsPublished: false,
+        season: 2024,
+        week: 5,
+      };
+      const result = PredictionsSummarySchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('validates a graded predictions summary', () => {
+      const data = {
+        createdAt: '2024-11-01T12:00:00Z',
+        gameCount: 15,
+        gradedAt: '2024-11-05T12:00:00Z',
+        isGraded: true,
+        isPublished: true,
+        resultsPublished: true,
         season: 2024,
         week: 5,
       };
@@ -217,7 +352,24 @@ describe('Admin schemas', () => {
     it('rejects missing gameCount', () => {
       const data = {
         createdAt: '2024-11-01T12:00:00Z',
+        gradedAt: null,
+        isGraded: false,
         isPublished: true,
+        resultsPublished: false,
+        season: 2024,
+        week: 5,
+      };
+      const result = PredictionsSummarySchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects missing isGraded', () => {
+      const data = {
+        createdAt: '2024-11-01T12:00:00Z',
+        gameCount: 15,
+        gradedAt: null,
+        isPublished: true,
+        resultsPublished: false,
         season: 2024,
         week: 5,
       };
@@ -229,8 +381,8 @@ describe('Admin schemas', () => {
   describe('PredictionsSummariesResponseSchema', () => {
     it('validates an array of prediction summaries', () => {
       const data = [
-        { createdAt: '2024-09-01T12:00:00Z', gameCount: 10, isPublished: true, season: 2024, week: 1 },
-        { createdAt: '2024-09-08T12:00:00Z', gameCount: 8, isPublished: false, season: 2024, week: 2 },
+        { createdAt: '2024-09-01T12:00:00Z', gameCount: 10, gradedAt: null, isGraded: false, isPublished: true, resultsPublished: false, season: 2024, week: 1 },
+        { createdAt: '2024-09-08T12:00:00Z', gameCount: 8, gradedAt: null, isGraded: false, isPublished: false, resultsPublished: false, season: 2024, week: 2 },
       ];
       const result = PredictionsSummariesResponseSchema.safeParse(data);
       expect(result.success).toBe(true);

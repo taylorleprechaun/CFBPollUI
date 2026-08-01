@@ -1,4 +1,6 @@
 export { CalculateSection } from './calculate-section';
+export { GradedResultsPreviewSection } from './graded-results-preview-section';
+export { GradePredictionsSection } from './grade-predictions-section';
 export { PersistedItemsSection } from './persisted-items-section';
 export { PersistedPredictionsSection } from './persisted-predictions-section';
 export { PersistedSnapshotsSection } from './persisted-snapshots-section';

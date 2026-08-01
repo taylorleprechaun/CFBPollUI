@@ -3,12 +3,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { UseMutationResult } from '@tanstack/react-query';
 
 import type { ActionFeedback } from '../components/admin';
-import { toError, toErrorMessage } from '../lib/error-utils';
-
-interface SeasonWeekParams {
-  season: number;
-  week: number;
-}
+import { toError } from '../lib/error-utils';
+import { runMutationWithFeedback } from '../lib/feedback-utils';
+import type { SeasonWeekParams } from './types';
 
 interface UseAdminPageStateOptions<TCalcResult> {
   calculateMutation: UseMutationResult<TCalcResult, Error, SeasonWeekParams>;
@@ -16,6 +13,7 @@ interface UseAdminPageStateOptions<TCalcResult> {
   deleteMutation: UseMutationResult<void, Error, SeasonWeekParams>;
   getResultSeasonWeek: (result: TCalcResult) => SeasonWeekParams;
   items: { season: number }[] | undefined;
+  onDeleteSuccess?: (season: number, week: number) => void;
   publishMutation: UseMutationResult<void, Error, SeasonWeekParams>;
   queryError: Error | null;
   queryErrorLabel: string;
@@ -31,6 +29,7 @@ export function useAdminPageState<TCalcResult>({
   deleteMutation,
   getResultSeasonWeek,
   items,
+  onDeleteSuccess,
   publishMutation,
   queryError,
   queryErrorLabel,
@@ -84,14 +83,12 @@ export function useAdminPageState<TCalcResult>({
 
   const handlePublish = async (season: number, week: number, feedbackKeyPrefix: string) => {
     setOperationError(null);
-    setActionFeedback(null);
-
-    try {
-      await publishMutation.mutateAsync({ season, week });
-      setActionFeedback({ key: `${feedbackKeyPrefix}-${season}-${week}`, type: 'success' });
-    } catch (err) {
-      setActionFeedback({ key: `${feedbackKeyPrefix}-${season}-${week}`, type: 'error', message: toErrorMessage(err, 'Publish failed') });
-    }
+    await runMutationWithFeedback({
+      errorFallback: 'Publish failed',
+      key: `${feedbackKeyPrefix}-${season}-${week}`,
+      mutate: () => publishMutation.mutateAsync({ season, week }),
+      setFeedback: setActionFeedback,
+    });
   };
 
   const handleRefreshCache = (season: number, week: number) => {
@@ -102,14 +99,13 @@ export function useAdminPageState<TCalcResult>({
     if (!refreshCacheMutation) return;
     setRefreshCacheConfirm(null);
     setOperationError(null);
-    setActionFeedback(null);
-
-    try {
-      const result = await refreshCacheMutation.mutateAsync({ season, week });
-      setActionFeedback({ key: `refresh-cache-${season}-${week}`, type: 'success', message: `Removed ${result.removedCount} cached entries` });
-    } catch (err) {
-      setActionFeedback({ key: `refresh-cache-${season}-${week}`, type: 'error', message: toErrorMessage(err, 'Refresh failed') });
-    }
+    await runMutationWithFeedback({
+      errorFallback: 'Refresh failed',
+      key: `refresh-cache-${season}-${week}`,
+      mutate: () => refreshCacheMutation.mutateAsync({ season, week }),
+      setFeedback: setActionFeedback,
+      successMessage: (result) => `Removed ${result.removedCount} cached entries`,
+    });
   };
 
   const handleDelete = async (season: number, week: number, isPublished: boolean) => {
@@ -132,6 +128,7 @@ export function useAdminPageState<TCalcResult>({
           setCalculatedResult(null);
         }
       }
+      onDeleteSuccess?.(season, week);
     } catch (err) {
       setOperationError(toError(err, 'Delete failed'));
     }

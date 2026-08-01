@@ -11,12 +11,14 @@ import {
 import {
   CalculatePredictionsResponseSchema,
   CalculateResponseSchema,
+  GradePredictionsResponseSchema,
   LoginResponseSchema,
   PredictionsSummariesResponseSchema,
   RefreshCacheResponseSchema,
   SnapshotsResponseSchema,
   type CalculatePredictionsResponse,
   type CalculateResponse,
+  type GradePredictionsResponse,
   type LoginResponse,
   type PredictionsSummary,
   type RefreshCacheResponse,
@@ -147,6 +149,33 @@ export async function publishPredictions(
 ): Promise<void> {
   await safeFetch(
     `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction`,
+    withAuth(token, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isPublished: true }),
+    })
+  );
+}
+
+export async function gradePredictions(
+  token: string,
+  season: number,
+  week: number
+): Promise<GradePredictionsResponse> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction/grade`,
+    withAuth(token, { method: 'POST' })
+  );
+  return parseResponse(response, GradePredictionsResponseSchema);
+}
+
+export async function publishGradedResults(
+  token: string,
+  season: number,
+  week: number
+): Promise<void> {
+  await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction/results`,
     withAuth(token, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

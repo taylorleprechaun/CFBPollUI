@@ -1,6 +1,8 @@
 import { useSeason } from '../contexts/season-context';
 import {
   CalculateSection,
+  GradedResultsPreviewSection,
+  GradePredictionsSection,
   PersistedPredictionsSection,
   PredictionsPreviewSection,
 } from '../components/admin';
@@ -9,12 +11,15 @@ import { ConfirmModal } from '../components/ui/confirm-modal';
 import {
   useCalculatePredictions,
   useDeletePredictions,
+  useGradePredictions,
+  usePublishGradedResults,
   usePublishPredictions,
   useRefreshCache,
 } from '../hooks/use-admin-mutations';
 import { useAdminPageState } from '../hooks/use-admin-page-state';
 import { useAuth } from '../contexts/auth-context';
 import { useDocumentTitle } from '../hooks/use-document-title';
+import { usePredictionsGradingState } from '../hooks/use-predictions-grading-state';
 import { usePredictionsSummaries } from '../hooks/use-predictions-summaries';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
@@ -46,6 +51,22 @@ export function PredictionsPage() {
   const publishMutation = usePublishPredictions(token);
   const deleteMutation = useDeletePredictions(token);
   const refreshCacheMutation = useRefreshCache(token);
+  const gradeMutation = useGradePredictions(token);
+  const publishResultsMutation = usePublishGradedResults(token);
+
+  const {
+    actionFeedback: gradingActionFeedback,
+    clearFeedback: clearGradingFeedback,
+    clearGradedResult,
+    gradedResult,
+    handleGrade,
+    handlePublishResults,
+    isGrading,
+    isPublishingResults,
+  } = usePredictionsGradingState({
+    gradeMutation,
+    publishResultsMutation,
+  });
 
   const {
     actionFeedback,
@@ -75,6 +96,11 @@ export function PredictionsPage() {
     deleteMutation,
     getResultSeasonWeek: (r) => ({ season: r.predictions.season, week: r.predictions.week }),
     items: summaries,
+    onDeleteSuccess: (season, week) => {
+      if (gradedResult && gradedResult.predictions.season === season && gradedResult.predictions.week === week) {
+        clearGradedResult();
+      }
+    },
     publishMutation,
     queryError: summariesError,
     queryErrorLabel: 'Failed to load predictions',
@@ -122,6 +148,31 @@ export function PredictionsPage() {
             isActionPending={isActionPending}
             onClearFeedback={clearFeedback}
             onPublish={(season, week) => handlePublish(season, week, 'preview-prediction-publish')}
+          />
+        )}
+      </ErrorBoundary>
+
+      <GradePredictionsSection
+        actionFeedback={gradingActionFeedback}
+        isGrading={isGrading}
+        onClearFeedback={clearGradingFeedback}
+        onGrade={() => {
+          if (selectedSeason !== null && selectedWeek !== null) {
+            handleGrade(selectedSeason, selectedWeek);
+          }
+        }}
+        selectedSeason={selectedSeason}
+        selectedWeek={selectedWeek}
+      />
+
+      <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render graded results preview')} />}>
+        {gradedResult && (
+          <GradedResultsPreviewSection
+            actionFeedback={gradingActionFeedback}
+            gradedResult={gradedResult}
+            isActionPending={isPublishingResults}
+            onClearFeedback={clearGradingFeedback}
+            onPublishResults={handlePublishResults}
           />
         )}
       </ErrorBoundary>
