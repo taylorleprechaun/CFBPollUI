@@ -91,6 +91,45 @@ describe('usePredictionsActiveView', () => {
     expect(fetchPrediction).not.toHaveBeenCalled();
   });
 
+  it('applyGraded preserves an existing published cache value instead of resetting it to false', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData(['admin-prediction', 2024, 5], { isPublished: true, predictions });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>{children}</MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => usePredictionsActiveView('test-token'), { wrapper });
+
+    act(() => {
+      result.current.applyGraded({ isPersisted: true, predictions, unmatchedGameCount: 3 });
+    });
+
+    await waitFor(() => expect(result.current.view).not.toBeNull());
+
+    expect(queryClient.getQueryData(['admin-prediction', 2024, 5])).toMatchObject({ isPublished: true });
+  });
+
+  it('applyGraded defaults to unpublished when no prior cache entry exists for the week', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>{children}</MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => usePredictionsActiveView('test-token'), { wrapper });
+
+    act(() => {
+      result.current.applyGraded({ isPersisted: true, predictions, unmatchedGameCount: 3 });
+    });
+
+    await waitFor(() => expect(result.current.view).not.toBeNull());
+
+    expect(queryClient.getQueryData(['admin-prediction', 2024, 5])).toMatchObject({ isPublished: false });
+  });
+
   it('clearIfMatches clears the active view when season and week match', async () => {
     const { result } = renderHook(() => usePredictionsActiveView('test-token'), {
       wrapper: createWrapper(),

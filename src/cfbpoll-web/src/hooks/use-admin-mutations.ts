@@ -11,6 +11,7 @@ import {
   publishSnapshot,
   refreshCache,
 } from '../services/admin-api';
+import type { AdminPredictionsResponse } from '../schemas/admin';
 
 export function useCalculateRankings(token: string | null) {
   const queryClient = useQueryClient();
@@ -76,8 +77,12 @@ export function usePublishPredictions(token: string | null) {
       if (!token) throw new Error('Authentication required');
       return publishPredictions(token, season, week);
     },
-    onSuccess: () => {
+    onSuccess: (_data, { season, week }) => {
       queryClient.invalidateQueries({ queryKey: ['predictions-summaries'] });
+      queryClient.setQueryData(
+        ['admin-prediction', season, week],
+        (old: AdminPredictionsResponse | undefined) => old && { ...old, isPublished: true },
+      );
     },
   });
 }
@@ -118,8 +123,13 @@ export function usePublishGradedResults(token: string | null) {
       if (!token) throw new Error('Authentication required');
       return publishGradedResults(token, season, week);
     },
-    onSuccess: () => {
+    onSuccess: (_data, { season, week }) => {
       queryClient.invalidateQueries({ queryKey: ['predictions-summaries'] });
+      queryClient.setQueryData(
+        ['admin-prediction', season, week],
+        (old: AdminPredictionsResponse | undefined) =>
+          old && { ...old, predictions: { ...old.predictions, resultsPublished: true } },
+      );
     },
   });
 }

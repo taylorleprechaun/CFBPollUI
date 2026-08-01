@@ -63,10 +63,10 @@ export function useAdminPageState<TCalcResult>({
     [items],
   );
 
-  const hasNewSeason = uniqueSeasons.some((season) => !seenSeasons.has(season));
-  if (uniqueSeasons.length > 0 && hasNewSeason) {
+  const newSeasons = uniqueSeasons.filter((season) => !seenSeasons.has(season));
+  if (newSeasons.length > 0) {
     setSeenSeasons(new Set(uniqueSeasons));
-    setCollapsedSeasons(new Set(uniqueSeasons));
+    setCollapsedSeasons((prev) => new Set([...prev, ...newSeasons]));
   }
 
   const handleCalculate = async () => {

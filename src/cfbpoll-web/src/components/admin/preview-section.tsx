@@ -4,7 +4,7 @@ import { getWeekLabel } from '../../lib/week-utils';
 import { RankingsTable } from '../rankings/rankings-table';
 import { BUTTON_PRIMARY, BUTTON_SUCCESS } from '../ui/button-styles';
 import { ChevronIcon } from '../ui/chevron-icon';
-import { SuccessCheckmark } from './success-checkmark';
+import { FeedbackIndicator } from './feedback-indicator';
 import type { ActionFeedback } from './types';
 import type { CalculateResponse } from '../../schemas/admin';
 
@@ -57,12 +57,7 @@ export function PreviewSection({
             >
               Publish
             </button>
-            {actionFeedback?.key === previewPublishKey && actionFeedback.type === 'success' && (
-              <SuccessCheckmark onDone={onClearFeedback} />
-            )}
-            {actionFeedback?.key === previewPublishKey && actionFeedback.type === 'error' && (
-              <span className="text-red-600 text-sm">{actionFeedback.message}</span>
-            )}
+            <FeedbackIndicator feedback={actionFeedback} feedbackKey={previewPublishKey} onClear={onClearFeedback} />
           </div>
         </div>
         {!calculatedResult.isPersisted && (

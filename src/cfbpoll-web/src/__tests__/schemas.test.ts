@@ -369,6 +369,34 @@ describe('Zod Schemas', () => {
       const result = GamePredictionPublicSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
+
+    it('rejects an unrecognized spreadGrade value', () => {
+      const data = {
+        actualAwayScore: null,
+        actualHomeScore: null,
+        actualOverUnderResult: null,
+        actualSpreadCoveringTeam: null,
+        actualWinner: null,
+        awayLogoURL: '',
+        awayTeam: 'Michigan',
+        awayTeamScore: 17,
+        bettingOverUnder: null,
+        bettingSpread: null,
+        homeLogoURL: '',
+        homeTeam: 'Ohio State',
+        homeTeamScore: 28,
+        myOverUnderPick: '',
+        mySpreadPick: '',
+        neutralSite: false,
+        overUnderGrade: 'Ungraded',
+        predictedMargin: 11,
+        predictedWinner: 'Ohio State',
+        spreadGrade: 'Pending', // not a valid GameGrade value
+        winnerGrade: 'Ungraded',
+      };
+      const result = GamePredictionPublicSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
   });
 
   describe('PredictionsPublicResponseSchema', () => {

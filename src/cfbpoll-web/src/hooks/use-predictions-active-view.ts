@@ -4,7 +4,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 
 import { usePrediction } from './use-prediction';
-import type { CalculatePredictionsResponse, GradePredictionsResponse, PredictionsResponse } from '../schemas/admin';
+import type {
+  AdminPredictionsResponse,
+  CalculatePredictionsResponse,
+  GradePredictionsResponse,
+  PredictionsResponse,
+} from '../schemas/admin';
 
 export type PredictionViewSource = 'calculated' | 'graded' | 'viewed';
 
@@ -63,7 +68,10 @@ export function usePredictionsActiveView(token: string | null) {
 
   const applyGraded = useCallback((result: GradePredictionsResponse) => {
     const { season: s, week: w } = result.predictions;
-    queryClient.setQueryData(['admin-prediction', s, w], { isPublished: false, predictions: result.predictions });
+    queryClient.setQueryData(
+      ['admin-prediction', s, w],
+      (old: AdminPredictionsResponse | undefined) => ({ isPublished: old?.isPublished ?? false, predictions: result.predictions }),
+    );
     setMeta({
       isPersisted: result.isPersisted,
       season: s,

@@ -7,7 +7,7 @@ import { BUTTON_DANGER_GHOST, BUTTON_GHOST } from '../ui/button-styles';
 import { ChevronIcon } from '../ui/chevron-icon';
 import { EmptyState } from '../ui/empty-state';
 import { StatusBadge } from '../ui/status-badge';
-import { SuccessCheckmark } from './success-checkmark';
+import { FeedbackIndicator } from './feedback-indicator';
 import type { ActionFeedback } from './types';
 
 interface PersistedItemsSectionProps<T extends { createdAt: string; isPublished: boolean; season: number; week: number }> {
@@ -159,12 +159,7 @@ export function PersistedItemsSection<T extends { createdAt: string; isPublished
                                       Publish
                                     </button>
                                   )}
-                                  {actionFeedback?.key === publishKey && actionFeedback.type === 'success' && (
-                                    <SuccessCheckmark onDone={onClearFeedback} />
-                                  )}
-                                  {actionFeedback?.key === publishKey && actionFeedback.type === 'error' && (
-                                    <span className="text-red-600 text-sm">{actionFeedback.message}</span>
-                                  )}
+                                  <FeedbackIndicator feedback={actionFeedback} feedbackKey={publishKey} onClear={onClearFeedback} />
                                   {onExport && (
                                     <button
                                       onClick={() => onExport(item.season, item.week)}

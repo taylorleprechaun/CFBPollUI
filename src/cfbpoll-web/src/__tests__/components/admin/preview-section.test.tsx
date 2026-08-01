@@ -108,6 +108,18 @@ describe('PreviewSection', () => {
     expect(screen.getByLabelText('Success')).toBeInTheDocument();
   });
 
+  it('shows the success message text alongside the checkmark when provided', () => {
+    renderPreview({
+      actionFeedback: {
+        key: 'preview-publish-2024-5',
+        type: 'success',
+        message: 'Published successfully',
+      },
+    });
+
+    expect(screen.getByText('Published successfully')).toBeInTheDocument();
+  });
+
   it('shows error message for matching feedback', () => {
     renderPreview({
       actionFeedback: {

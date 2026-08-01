@@ -1,9 +1,9 @@
-import { gradeClasses } from '../../lib/grade-classes';
 import { formatOverUnder, formatPick, formatSpread } from '../../lib/prediction-format-utils';
-import { TeamLogo } from '../rankings/team-logo';
 import { GradedPick } from './graded-pick';
 import { PredictionCard } from './prediction-card';
-import { TeamNameLabel } from './team-name-label';
+import { PredictionScoreBlock } from './prediction-score-block';
+import { WinnerActualCaption } from './winner-actual-caption';
+import { WinnerPill } from './winner-pill';
 import { TableSkeleton } from '../ui/table-skeleton';
 import type { GamePredictionPublic } from '../../schemas';
 
@@ -40,42 +40,12 @@ export function PredictionsTable({ isLoading = false, predictions, rankByTeam, s
             {predictions.map((p) => (
               <tr key={`${p.awayTeam}-${p.homeTeam}`} className="even:bg-surface-alt/50">
                 <td className="px-4 py-3 text-sm text-text-primary">
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <TeamLogo logoURL={p.awayLogoURL} teamName={p.awayTeam} />
-                      <TeamNameLabel teamName={p.awayTeam} season={season} rank={rankByTeam?.get(p.awayTeam.toLowerCase())} />
-                      <span className="font-semibold ml-auto">{p.awayTeamScore}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <TeamLogo logoURL={p.homeLogoURL} teamName={p.homeTeam} />
-                      <TeamNameLabel teamName={p.homeTeam} season={season} rank={rankByTeam?.get(p.homeTeam.toLowerCase())} />
-                      {p.neutralSite && <span className="text-text-muted text-xs">(N)</span>}
-                      <span className="font-semibold ml-auto">{p.homeTeamScore}</span>
-                    </div>
-                    {showGrades && p.actualHomeScore !== null && p.actualAwayScore !== null && (
-                      <span className="text-sm font-semibold text-text-primary">
-                        Final: {p.actualAwayScore}-{p.actualHomeScore}
-                      </span>
-                    )}
-                  </div>
+                  <PredictionScoreBlock prediction={p} rankByTeam={rankByTeam} season={season} showGrades={showGrades} />
                 </td>
                 <td className="px-4 py-3 text-sm font-medium text-text-primary align-middle">
                   <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <TeamLogo
-                        logoURL={p.predictedWinner === p.homeTeam ? p.homeLogoURL : p.awayLogoURL}
-                        teamName={p.predictedWinner}
-                      />
-                      <TeamNameLabel
-                        className={showGrades ? `px-2 py-1 rounded-lg font-semibold ${gradeClasses(p.winnerGrade)}` : undefined}
-                        teamName={p.predictedWinner}
-                        season={season}
-                        rank={rankByTeam?.get(p.predictedWinner.toLowerCase())}
-                      />
-                    </div>
-                    {showGrades && p.winnerGrade === 'Incorrect' && p.actualWinner !== null && (
-                      <span className="text-xs font-medium text-green-700 dark:text-green-400">Actual: {p.actualWinner}</span>
-                    )}
+                    <WinnerPill prediction={p} rankByTeam={rankByTeam} season={season} showGrades={showGrades} />
+                    <WinnerActualCaption prediction={p} showGrades={showGrades} />
                   </div>
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary align-middle">

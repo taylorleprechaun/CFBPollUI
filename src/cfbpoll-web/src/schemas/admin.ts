@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { RankingsResponseSchema } from './index';
+import { GamePredictionPublicSchema, RankingsResponseSchema } from './index';
 
 export const LoginResponseSchema = z.object({
   expiresIn: z.number(),
@@ -20,29 +20,9 @@ export const SnapshotSchema = z.object({
 
 export const SnapshotsResponseSchema = z.array(SnapshotSchema);
 
-export const GamePredictionSchema = z.object({
-  actualAwayScore: z.number().nullable(),
-  actualHomeScore: z.number().nullable(),
-  actualOverUnderResult: z.string().nullable(),
-  actualSpreadCoveringTeam: z.string().nullable(),
-  actualWinner: z.string().nullable(),
-  awayLogoURL: z.string(),
-  awayTeam: z.string(),
-  awayTeamScore: z.number(),
-  bettingOverUnder: z.number().nullable(),
-  bettingSpread: z.number().nullable(),
-  homeLogoURL: z.string(),
-  homeTeam: z.string(),
-  homeTeamScore: z.number(),
-  myOverUnderPick: z.string(),
-  mySpreadPick: z.string(),
-  neutralSite: z.boolean(),
-  overUnderGrade: z.string(),
-  predictedMargin: z.number(),
-  predictedWinner: z.string(),
-  spreadGrade: z.string(),
-  winnerGrade: z.string(),
-});
+// Admin-side predictions have the same shape as the public predictions response;
+// reuse the public schema instead of redeclaring the 21 fields here.
+export const GamePredictionSchema = GamePredictionPublicSchema;
 
 export const PredictionsResponseSchema = z.object({
   isGraded: z.boolean(),

@@ -259,6 +259,24 @@ describe('PersistedPredictionsSection', () => {
     expect(screen.queryByRole('button', { name: 'View' })).not.toBeInTheDocument();
   });
 
+  it('shows the success message text alongside the checkmark when publish feedback includes one', () => {
+    const props = {
+      ...defaultProps,
+      actionFeedback: {
+        key: 'persisted-prediction-publish-2024-1',
+        type: 'success' as const,
+        message: 'Published successfully',
+      },
+      summaries: [
+        { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z', gameCount: 10, gradedAt: null, isGraded: false, resultsPublished: false },
+      ],
+    };
+
+    render(<PersistedPredictionsSection {...props} />);
+
+    expect(screen.getByText('Published successfully')).toBeInTheDocument();
+  });
+
   it('calls onView with season and week when View is clicked', async () => {
     const onView = vi.fn();
     const props = {

@@ -135,6 +135,8 @@ export const PageVisibilitySchema = z.object({
 });
 
 // Prediction schemas (public)
+export const GameGradeSchema = z.enum(['Correct', 'Incorrect', 'Push', 'Ungraded', 'NotApplicable']);
+
 export const GamePredictionPublicSchema = z.object({
   actualAwayScore: z.number().nullable(),
   actualHomeScore: z.number().nullable(),
@@ -152,11 +154,11 @@ export const GamePredictionPublicSchema = z.object({
   myOverUnderPick: z.string(),
   mySpreadPick: z.string(),
   neutralSite: z.boolean(),
-  overUnderGrade: z.string(),
+  overUnderGrade: GameGradeSchema,
   predictedMargin: z.number(),
   predictedWinner: z.string(),
-  spreadGrade: z.string(),
-  winnerGrade: z.string(),
+  spreadGrade: GameGradeSchema,
+  winnerGrade: GameGradeSchema,
 });
 
 export const PredictionsPublicResponseSchema = z.object({
@@ -237,6 +239,7 @@ export type AllTimeEntry = z.infer<typeof AllTimeEntrySchema>;
 export type AllTimeResponse = z.infer<typeof AllTimeResponseSchema>;
 export type Conference = z.infer<typeof ConferenceSchema>;
 export type ConferencesResponse = z.infer<typeof ConferencesResponseSchema>;
+export type GameGrade = z.infer<typeof GameGradeSchema>;
 export type GamePredictionPublic = z.infer<typeof GamePredictionPublicSchema>;
 export type PageVisibility = z.infer<typeof PageVisibilitySchema>;
 export type PollLeaderEntry = z.infer<typeof PollLeaderEntrySchema>;

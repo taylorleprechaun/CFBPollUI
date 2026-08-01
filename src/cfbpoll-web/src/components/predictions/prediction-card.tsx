@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 
-import { gradeClasses } from '../../lib/grade-classes';
 import { formatOverUnder, formatPick, formatSpread } from '../../lib/prediction-format-utils';
-import { TeamLogo } from '../rankings/team-logo';
 import { GradedPick } from './graded-pick';
-import { TeamNameLabel } from './team-name-label';
+import { PredictionScoreBlock } from './prediction-score-block';
+import { WinnerActualCaption } from './winner-actual-caption';
+import { WinnerPill } from './winner-pill';
 import type { GamePredictionPublic } from '../../schemas';
 
 interface PredictionCardProps {
@@ -38,47 +38,13 @@ export function PredictionCard({ prediction: p, rankByTeam, season = null, showG
   return (
     <div className="bg-surface border border-border rounded-xl divide-y divide-border">
       <div className="px-4 py-2">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <TeamLogo logoURL={p.awayLogoURL} teamName={p.awayTeam} />
-            <TeamNameLabel teamName={p.awayTeam} season={season} rank={rankByTeam?.get(p.awayTeam.toLowerCase())} />
-            <span className="font-semibold ml-auto">{p.awayTeamScore}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <TeamLogo logoURL={p.homeLogoURL} teamName={p.homeTeam} />
-            <TeamNameLabel teamName={p.homeTeam} season={season} rank={rankByTeam?.get(p.homeTeam.toLowerCase())} />
-            {p.neutralSite && <span className="text-text-muted text-xs">(N)</span>}
-            <span className="font-semibold ml-auto">{p.homeTeamScore}</span>
-          </div>
-          {showGrades && p.actualHomeScore !== null && p.actualAwayScore !== null && (
-            <span className="text-sm font-semibold text-text-primary">
-              Final: {p.actualAwayScore}-{p.actualHomeScore}
-            </span>
-          )}
-        </div>
+        <PredictionScoreBlock prediction={p} rankByTeam={rankByTeam} season={season} showGrades={showGrades} />
       </div>
 
       <FactRow
         label="Winner"
-        value={
-          <div className="flex items-center justify-end gap-2">
-            <TeamLogo
-              logoURL={p.predictedWinner === p.homeTeam ? p.homeLogoURL : p.awayLogoURL}
-              teamName={p.predictedWinner}
-            />
-            <TeamNameLabel
-              className={showGrades ? `px-2 py-1 rounded-lg font-semibold ${gradeClasses(p.winnerGrade)}` : undefined}
-              teamName={p.predictedWinner}
-              season={season}
-              rank={rankByTeam?.get(p.predictedWinner.toLowerCase())}
-            />
-          </div>
-        }
-        secondary={
-          showGrades && p.winnerGrade === 'Incorrect' && p.actualWinner !== null ? (
-            <span className="text-xs font-medium text-green-700 dark:text-green-400">Actual: {p.actualWinner}</span>
-          ) : undefined
-        }
+        value={<WinnerPill prediction={p} rankByTeam={rankByTeam} season={season} showGrades={showGrades} />}
+        secondary={<WinnerActualCaption prediction={p} showGrades={showGrades} />}
       />
 
       <FactRow

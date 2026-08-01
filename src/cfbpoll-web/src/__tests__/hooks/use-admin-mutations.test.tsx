@@ -182,6 +182,42 @@ describe('usePublishPredictions', () => {
 
     expect(publishPredictions).toHaveBeenCalledWith('test-token', 2024, 3);
   });
+
+  it('marks the admin-prediction cache entry as published on success', async () => {
+    vi.mocked(publishPredictions).mockResolvedValue(undefined);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData(['admin-prediction', 2024, 3], {
+      isPublished: false,
+      predictions: { isGraded: false, predictions: [], resultsPublished: false, season: 2024, week: 3 },
+    });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => usePublishPredictions('test-token'), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ season: 2024, week: 3 });
+    });
+
+    expect(queryClient.getQueryData(['admin-prediction', 2024, 3])).toMatchObject({ isPublished: true });
+  });
+
+  it('does not create an admin-prediction cache entry when none existed', async () => {
+    vi.mocked(publishPredictions).mockResolvedValue(undefined);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => usePublishPredictions('test-token'), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ season: 2024, week: 3 });
+    });
+
+    expect(queryClient.getQueryData(['admin-prediction', 2024, 3])).toBeUndefined();
+  });
 });
 
 describe('useGradePredictions', () => {
@@ -234,6 +270,45 @@ describe('usePublishGradedResults', () => {
     });
 
     expect(publishGradedResults).toHaveBeenCalledWith('test-token', 2024, 3);
+  });
+
+  it('marks the admin-prediction cache entry as having published results on success', async () => {
+    vi.mocked(publishGradedResults).mockResolvedValue(undefined);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData(['admin-prediction', 2024, 3], {
+      isPublished: true,
+      predictions: { isGraded: true, predictions: [], resultsPublished: false, season: 2024, week: 3 },
+    });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => usePublishGradedResults('test-token'), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ season: 2024, week: 3 });
+    });
+
+    expect(queryClient.getQueryData(['admin-prediction', 2024, 3])).toMatchObject({
+      isPublished: true,
+      predictions: { resultsPublished: true },
+    });
+  });
+
+  it('does not create an admin-prediction cache entry when none existed', async () => {
+    vi.mocked(publishGradedResults).mockResolvedValue(undefined);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => usePublishGradedResults('test-token'), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ season: 2024, week: 3 });
+    });
+
+    expect(queryClient.getQueryData(['admin-prediction', 2024, 3])).toBeUndefined();
   });
 });
 

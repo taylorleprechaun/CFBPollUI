@@ -223,6 +223,34 @@ describe('Admin schemas', () => {
       const result = GamePredictionSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
+
+    it('rejects an unrecognized winnerGrade value', () => {
+      const data = {
+        actualAwayScore: null,
+        actualHomeScore: null,
+        actualOverUnderResult: null,
+        actualSpreadCoveringTeam: null,
+        actualWinner: null,
+        awayLogoURL: '',
+        awayTeam: 'Michigan',
+        awayTeamScore: 17,
+        bettingOverUnder: 48.5,
+        bettingSpread: -7.5,
+        homeLogoURL: '',
+        homeTeam: 'Ohio State',
+        homeTeamScore: 28,
+        myOverUnderPick: 'Under',
+        mySpreadPick: 'Ohio State',
+        neutralSite: false,
+        overUnderGrade: 'Ungraded',
+        predictedMargin: 10.5,
+        predictedWinner: 'Ohio State',
+        spreadGrade: 'Ungraded',
+        winnerGrade: 'Won', // not a valid GameGrade value
+      };
+      const result = GamePredictionSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
   });
 
   describe('PredictionsResponseSchema', () => {

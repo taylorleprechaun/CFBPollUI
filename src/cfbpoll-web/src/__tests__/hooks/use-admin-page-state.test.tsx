@@ -139,6 +139,36 @@ describe('useAdminPageState - refresh cache', () => {
   });
 });
 
+describe('useAdminPageState - season collapse tracking', () => {
+  it('collapses every season present in items on first load', () => {
+    const options = { ...baseOptions(), items: [{ season: 2024 }, { season: 2023 }] };
+
+    const { result } = renderHook(() => useAdminPageState<CalcResult>(options));
+
+    expect(result.current.collapsedSeasons).toEqual(new Set([2024, 2023]));
+  });
+
+  it('does not re-collapse a season the admin has expanded when a brand-new season appears', () => {
+    const initialItems = [{ season: 2024 }, { season: 2023 }];
+
+    const { result, rerender } = renderHook(
+      (items: { season: number }[]) => useAdminPageState<CalcResult>({ ...baseOptions(), items }),
+      { initialProps: initialItems }
+    );
+
+    expect(result.current.collapsedSeasons).toEqual(new Set([2024, 2023]));
+
+    act(() => {
+      result.current.toggleSeason(2024);
+    });
+    expect(result.current.collapsedSeasons).toEqual(new Set([2023]));
+
+    rerender([{ season: 2025 }, { season: 2024 }, { season: 2023 }]);
+
+    expect(result.current.collapsedSeasons).toEqual(new Set([2023, 2025]));
+  });
+});
+
 describe('useAdminPageState - delete', () => {
   it('executeDelete calls onDeleteSuccess with the deleted season and week', async () => {
     const onDeleteSuccess = vi.fn();
