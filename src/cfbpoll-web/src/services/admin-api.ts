@@ -9,6 +9,7 @@ import {
 } from '../schemas';
 
 import {
+  AdminPredictionsResponseSchema,
   CalculatePredictionsResponseSchema,
   CalculateResponseSchema,
   GradePredictionsResponseSchema,
@@ -16,6 +17,7 @@ import {
   PredictionsSummariesResponseSchema,
   RefreshCacheResponseSchema,
   SnapshotsResponseSchema,
+  type AdminPredictionsResponse,
   type CalculatePredictionsResponse,
   type CalculateResponse,
   type GradePredictionsResponse,
@@ -119,6 +121,18 @@ export async function calculatePredictions(
     withAuth(token, { method: 'POST' })
   );
   return parseResponse(response, CalculatePredictionsResponseSchema);
+}
+
+export async function fetchPrediction(
+  token: string,
+  season: number,
+  week: number
+): Promise<AdminPredictionsResponse> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction`,
+    withAuth(token)
+  );
+  return parseResponse(response, AdminPredictionsResponseSchema);
 }
 
 export async function deletePredictions(

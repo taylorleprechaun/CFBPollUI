@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  AdminPredictionsResponseSchema,
   CalculatePredictionsResponseSchema,
   CalculateResponseSchema,
   GamePredictionSchema,
@@ -227,6 +228,7 @@ describe('Admin schemas', () => {
   describe('PredictionsResponseSchema', () => {
     it('validates a valid predictions response', () => {
       const data = {
+        isGraded: false,
         resultsPublished: false,
         season: 2024,
         week: 5,
@@ -267,8 +269,33 @@ describe('Admin schemas', () => {
     });
 
     it('rejects missing resultsPublished', () => {
-      const data = { season: 2024, week: 5, predictions: [] };
+      const data = { isGraded: false, season: 2024, week: 5, predictions: [] };
       const result = PredictionsResponseSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects missing isGraded', () => {
+      const data = { resultsPublished: false, season: 2024, week: 5, predictions: [] };
+      const result = PredictionsResponseSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('AdminPredictionsResponseSchema', () => {
+    it('validates a valid admin predictions response', () => {
+      const data = {
+        isPublished: true,
+        predictions: { isGraded: true, resultsPublished: false, season: 2024, week: 5, predictions: [] },
+      };
+      const result = AdminPredictionsResponseSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects missing isPublished', () => {
+      const data = {
+        predictions: { isGraded: true, resultsPublished: false, season: 2024, week: 5, predictions: [] },
+      };
+      const result = AdminPredictionsResponseSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
   });
@@ -277,7 +304,7 @@ describe('Admin schemas', () => {
     it('validates a valid grade predictions response', () => {
       const data = {
         isPersisted: true,
-        predictions: { resultsPublished: true, season: 2024, week: 5, predictions: [] },
+        predictions: { isGraded: true, resultsPublished: true, season: 2024, week: 5, predictions: [] },
         unmatchedGameCount: 0,
       };
       const result = GradePredictionsResponseSchema.safeParse(data);
@@ -287,7 +314,7 @@ describe('Admin schemas', () => {
     it('rejects missing unmatchedGameCount', () => {
       const data = {
         isPersisted: true,
-        predictions: { resultsPublished: true, season: 2024, week: 5, predictions: [] },
+        predictions: { isGraded: true, resultsPublished: true, season: 2024, week: 5, predictions: [] },
       };
       const result = GradePredictionsResponseSchema.safeParse(data);
       expect(result.success).toBe(false);
@@ -299,6 +326,7 @@ describe('Admin schemas', () => {
       const data = {
         isPersisted: true,
         predictions: {
+          isGraded: false,
           resultsPublished: false,
           season: 2024,
           week: 5,
@@ -311,7 +339,7 @@ describe('Admin schemas', () => {
 
     it('rejects missing isPersisted field', () => {
       const data = {
-        predictions: { resultsPublished: false, season: 2024, week: 5, predictions: [] },
+        predictions: { isGraded: false, resultsPublished: false, season: 2024, week: 5, predictions: [] },
       };
       const result = CalculatePredictionsResponseSchema.safeParse(data);
       expect(result.success).toBe(false);

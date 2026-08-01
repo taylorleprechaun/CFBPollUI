@@ -26,6 +26,7 @@ interface PersistedItemsSectionProps<T extends { createdAt: string; isPublished:
   onExport?: (season: number, week: number) => void;
   onPublish: (season: number, week: number) => void;
   onToggleSeason: (season: number) => void;
+  onView?: (season: number, week: number) => void;
   renderExtraCells?: (item: T) => ReactNode;
   title: string;
 }
@@ -47,6 +48,7 @@ export function PersistedItemsSection<T extends { createdAt: string; isPublished
   onExport,
   onPublish,
   onToggleSeason,
+  onView,
   renderExtraCells,
   title,
 }: PersistedItemsSectionProps<T>) {
@@ -132,6 +134,15 @@ export function PersistedItemsSection<T extends { createdAt: string; isPublished
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-sm">
                                 <div className="flex items-center gap-2">
+                                  {onView && (
+                                    <button
+                                      onClick={() => onView(item.season, item.week)}
+                                      disabled={isActionPending}
+                                      className={BUTTON_GHOST}
+                                    >
+                                      View
+                                    </button>
+                                  )}
                                   {!item.isPublished && (
                                     <button
                                       onClick={() => onPublish(item.season, item.week)}

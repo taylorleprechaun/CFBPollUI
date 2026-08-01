@@ -242,4 +242,47 @@ describe('PersistedPredictionsSection', () => {
     expect(screen.queryByText('Expand All')).not.toBeInTheDocument();
     expect(screen.queryByText('Collapse All')).not.toBeInTheDocument();
   });
+
+  it('shows View button when onView is provided', () => {
+    const props = {
+      ...defaultProps,
+      onView: vi.fn(),
+      summaries: [
+        { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z', gameCount: 10, gradedAt: null, isGraded: false, resultsPublished: false },
+      ],
+    };
+
+    render(<PersistedPredictionsSection {...props} />);
+
+    expect(screen.getByRole('button', { name: 'View' })).toBeInTheDocument();
+  });
+
+  it('hides View button when onView is omitted', () => {
+    const props = {
+      ...defaultProps,
+      summaries: [
+        { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z', gameCount: 10, gradedAt: null, isGraded: false, resultsPublished: false },
+      ],
+    };
+
+    render(<PersistedPredictionsSection {...props} />);
+
+    expect(screen.queryByRole('button', { name: 'View' })).not.toBeInTheDocument();
+  });
+
+  it('calls onView with season and week when View is clicked', async () => {
+    const onView = vi.fn();
+    const props = {
+      ...defaultProps,
+      onView,
+      summaries: [
+        { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z', gameCount: 10, gradedAt: null, isGraded: false, resultsPublished: false },
+      ],
+    };
+
+    render(<PersistedPredictionsSection {...props} />);
+    await userEvent.click(screen.getByRole('button', { name: 'View' }));
+
+    expect(onView).toHaveBeenCalledWith(2024, 1);
+  });
 });

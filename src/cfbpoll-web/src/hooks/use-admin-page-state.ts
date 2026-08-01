@@ -13,6 +13,7 @@ interface UseAdminPageStateOptions<TCalcResult> {
   deleteMutation: UseMutationResult<void, Error, SeasonWeekParams>;
   getResultSeasonWeek: (result: TCalcResult) => SeasonWeekParams;
   items: { season: number }[] | undefined;
+  onCalculateSuccess?: (result: TCalcResult) => void;
   onDeleteSuccess?: (season: number, week: number) => void;
   publishMutation: UseMutationResult<void, Error, SeasonWeekParams>;
   queryError: Error | null;
@@ -29,6 +30,7 @@ export function useAdminPageState<TCalcResult>({
   deleteMutation,
   getResultSeasonWeek,
   items,
+  onCalculateSuccess,
   onDeleteSuccess,
   publishMutation,
   queryError,
@@ -76,6 +78,7 @@ export function useAdminPageState<TCalcResult>({
     try {
       const result = await calculateMutation.mutateAsync({ season: selectedSeason, week: selectedWeek });
       setCalculatedResult(result);
+      onCalculateSuccess?.(result);
     } catch (err) {
       setOperationError(toError(err, calcErrorLabel));
     }

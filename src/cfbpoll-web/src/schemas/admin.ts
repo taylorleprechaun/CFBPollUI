@@ -45,10 +45,16 @@ export const GamePredictionSchema = z.object({
 });
 
 export const PredictionsResponseSchema = z.object({
+  isGraded: z.boolean(),
   predictions: z.array(GamePredictionSchema),
   resultsPublished: z.boolean(),
   season: z.number(),
   week: z.number(),
+});
+
+export const AdminPredictionsResponseSchema = z.object({
+  isPublished: z.boolean(),
+  predictions: PredictionsResponseSchema,
 });
 
 export const CalculatePredictionsResponseSchema = z.object({
@@ -81,6 +87,7 @@ export const RefreshCacheResponseSchema = z.object({
   week: z.number(),
 });
 
+export type AdminPredictionsResponse = z.infer<typeof AdminPredictionsResponseSchema>;
 export type CalculatePredictionsResponse = z.infer<typeof CalculatePredictionsResponseSchema>;
 export type CalculateResponse = z.infer<typeof CalculateResponseSchema>;
 export type GamePrediction = z.infer<typeof GamePredictionSchema>;

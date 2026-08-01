@@ -13,6 +13,7 @@ interface PersistedPredictionsSectionProps {
   onExpandAll: () => void;
   onPublish: (season: number, week: number) => void;
   onToggleSeason: (season: number) => void;
+  onView?: (season: number, week: number) => void;
   summaries: PredictionsSummary[];
 }
 
@@ -54,6 +55,7 @@ export function PersistedPredictionsSection({
   onExpandAll,
   onPublish,
   onToggleSeason,
+  onView,
   summaries,
 }: PersistedPredictionsSectionProps) {
   return (
@@ -73,6 +75,7 @@ export function PersistedPredictionsSection({
       onExpandAll={onExpandAll}
       onPublish={onPublish}
       onToggleSeason={onToggleSeason}
+      onView={onView}
       renderExtraCells={renderExtraCells}
       title="Persisted Predictions"
     />

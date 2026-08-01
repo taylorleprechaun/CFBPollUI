@@ -261,4 +261,17 @@ describe('PersistedSnapshotsSection', () => {
     const controlsId = seasonButton.getAttribute('aria-controls')!;
     expect(document.getElementById(controlsId)).toBeInTheDocument();
   });
+
+  it('does not show a View button since onView is not passed', () => {
+    render(
+      <PersistedSnapshotsSection
+        {...defaultProps}
+        snapshots={[
+          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+        ]}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'View' })).not.toBeInTheDocument();
+  });
 });

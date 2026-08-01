@@ -6,6 +6,7 @@ import {
   deletePredictions,
   deleteSnapshot,
   downloadExport,
+  fetchPrediction,
   fetchPredictionsSummaries,
   fetchSnapshots,
   gradePredictions,
@@ -301,7 +302,7 @@ describe('Admin API service', () => {
         json: () =>
           Promise.resolve({
             isPersisted: true,
-            predictions: { resultsPublished: false, season: 2024, week: 5, predictions: [] },
+            predictions: { isGraded: false, resultsPublished: false, season: 2024, week: 5, predictions: [] },
           }),
       });
       vi.stubGlobal('fetch', mockFetch);
@@ -363,6 +364,44 @@ describe('Admin API service', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await expect(publishPredictions('token', 2024, 5)).rejects.toThrow('Not found');
+    });
+  });
+
+  describe('fetchPrediction', () => {
+    it('sends GET to prediction endpoint with auth header', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            isPublished: true,
+            predictions: { isGraded: true, resultsPublished: false, season: 2024, week: 5, predictions: [] },
+          }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchPrediction('my-token', 2024, 5);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/prediction'),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+          }),
+        })
+      );
+      expect(result.isPublished).toBe(true);
+      expect(result.predictions.isGraded).toBe(true);
+    });
+
+    it('throws on failed fetch', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: () => Promise.resolve({ message: 'Not found' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(fetchPrediction('token', 2024, 5)).rejects.toThrow('Not found');
     });
   });
 
@@ -442,7 +481,7 @@ describe('Admin API service', () => {
         json: () =>
           Promise.resolve({
             isPersisted: true,
-            predictions: { resultsPublished: true, season: 2024, week: 5, predictions: [] },
+            predictions: { isGraded: true, resultsPublished: true, season: 2024, week: 5, predictions: [] },
             unmatchedGameCount: 0,
           }),
       });

@@ -15,23 +15,18 @@ function fakeMutation<TData, TVariables>(overrides: Partial<UseMutationResult<TD
 function baseOptions() {
   return {
     gradeMutation: fakeMutation<GradePredictionsResponse, { season: number; week: number }>(),
+    onGradeSuccess: vi.fn(),
     publishResultsMutation: fakeMutation<void, { season: number; week: number }>(),
   };
 }
 
 const gradeResult: GradePredictionsResponse = {
   isPersisted: true,
-  predictions: { predictions: [], resultsPublished: true, season: 2024, week: 5 },
+  predictions: { isGraded: true, predictions: [], resultsPublished: false, season: 2024, week: 5 },
   unmatchedGameCount: 0,
 };
 
 describe('usePredictionsGradingState', () => {
-  it('gradedResult is null initially', () => {
-    const { result } = renderHook(() => usePredictionsGradingState(baseOptions()));
-
-    expect(result.current.gradedResult).toBeNull();
-  });
-
   it('isGrading reflects gradeMutation.isPending', () => {
     const options = {
       ...baseOptions(),
@@ -54,11 +49,13 @@ describe('usePredictionsGradingState', () => {
     expect(result.current.isPublishingResults).toBe(true);
   });
 
-  it('handleGrade calls gradeMutation and stores the result with success feedback', async () => {
+  it('handleGrade calls gradeMutation and invokes onGradeSuccess with success feedback', async () => {
     const mutateAsync = vi.fn().mockResolvedValue(gradeResult);
+    const onGradeSuccess = vi.fn();
     const options = {
       ...baseOptions(),
       gradeMutation: fakeMutation<GradePredictionsResponse, { season: number; week: number }>({ mutateAsync }),
+      onGradeSuccess,
     };
 
     const { result } = renderHook(() => usePredictionsGradingState(options));
@@ -68,15 +65,17 @@ describe('usePredictionsGradingState', () => {
     });
 
     expect(mutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
-    expect(result.current.gradedResult).toEqual(gradeResult);
+    expect(onGradeSuccess).toHaveBeenCalledWith(gradeResult);
     expect(result.current.actionFeedback).toEqual({ key: 'grade-2024-5', type: 'success' });
   });
 
-  it('handleGrade sets error feedback on failure and does not set gradedResult', async () => {
+  it('handleGrade sets error feedback on failure and does not invoke onGradeSuccess', async () => {
     const mutateAsync = vi.fn().mockRejectedValue(new Error('Grading failed'));
+    const onGradeSuccess = vi.fn();
     const options = {
       ...baseOptions(),
       gradeMutation: fakeMutation<GradePredictionsResponse, { season: number; week: number }>({ mutateAsync }),
+      onGradeSuccess,
     };
 
     const { result } = renderHook(() => usePredictionsGradingState(options));
@@ -85,7 +84,7 @@ describe('usePredictionsGradingState', () => {
       await result.current.handleGrade(2024, 5);
     });
 
-    expect(result.current.gradedResult).toBeNull();
+    expect(onGradeSuccess).not.toHaveBeenCalled();
     expect(result.current.actionFeedback).toEqual({
       key: 'grade-2024-5',
       type: 'error',
@@ -149,26 +148,5 @@ describe('usePredictionsGradingState', () => {
     });
 
     expect(result.current.actionFeedback).toBeNull();
-  });
-
-  it('clearGradedResult resets gradedResult to null', async () => {
-    const mutateAsync = vi.fn().mockResolvedValue(gradeResult);
-    const options = {
-      ...baseOptions(),
-      gradeMutation: fakeMutation<GradePredictionsResponse, { season: number; week: number }>({ mutateAsync }),
-    };
-
-    const { result } = renderHook(() => usePredictionsGradingState(options));
-
-    await act(async () => {
-      await result.current.handleGrade(2024, 5);
-    });
-    expect(result.current.gradedResult).toEqual(gradeResult);
-
-    act(() => {
-      result.current.clearGradedResult();
-    });
-
-    expect(result.current.gradedResult).toBeNull();
   });
 });

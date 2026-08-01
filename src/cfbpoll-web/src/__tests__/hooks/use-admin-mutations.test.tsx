@@ -139,7 +139,7 @@ describe('useCalculatePredictions', () => {
   beforeEach(() => vi.resetAllMocks());
 
   it('calls calculatePredictions with token and params', async () => {
-    const mockResult = { isPersisted: true, predictions: { resultsPublished: false, season: 2024, week: 3, predictions: [] } };
+    const mockResult = { isPersisted: true, predictions: { isGraded: false, resultsPublished: false, season: 2024, week: 3, predictions: [] } };
     vi.mocked(calculatePredictions).mockResolvedValue(mockResult);
 
     const { result } = renderHook(() => useCalculatePredictions('test-token'), {
@@ -190,7 +190,7 @@ describe('useGradePredictions', () => {
   it('calls gradePredictions with token and params', async () => {
     const mockResult = {
       isPersisted: true,
-      predictions: { resultsPublished: true, season: 2024, week: 3, predictions: [] },
+      predictions: { isGraded: true, resultsPublished: true, season: 2024, week: 3, predictions: [] },
       unmatchedGameCount: 0,
     };
     vi.mocked(gradePredictions).mockResolvedValue(mockResult);
