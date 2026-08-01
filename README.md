@@ -268,6 +268,7 @@ The frontend runs at `http://localhost:5173`.
 | `DELETE /api/v1/admin/seasons/{season}/weeks/{week}/snapshot` | Delete a snapshot |
 | `GET /api/v1/admin/snapshots` | List all persisted snapshots |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/snapshot/export` | Download rankings as Excel |
+| `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Retrieve persisted predictions for a season/week without recalculating |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Calculate predictions for a season/week and save as draft |
 | `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Update a prediction (currently supports publishing) |
 | `DELETE /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Delete a prediction |
@@ -276,12 +277,12 @@ The frontend runs at `http://localhost:5173`.
 
 ## Testing
 
-The project includes 1,823 unit and integration tests across backend and frontend.
+The project includes 1,832 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (848 tests)
+# Backend tests (857 tests)
 dotnet test
 
 # Run with coverage
@@ -294,7 +295,7 @@ npm test
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-848-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-857-blue)
 ![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-975-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-98%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)

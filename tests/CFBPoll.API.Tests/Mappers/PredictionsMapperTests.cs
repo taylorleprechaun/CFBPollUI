@@ -7,6 +7,47 @@ namespace CFBPoll.API.Tests.Mappers;
 public class PredictionsMapperTests
 {
     [Fact]
+    public void ToAdminResponseDTO_MapsIsPublishedAndDelegatesToToResponseDTO()
+    {
+        var getResult = new GetPredictionsResult
+        {
+            IsGraded = true,
+            IsPublished = true,
+            ResultsPublished = false,
+            Predictions = new PredictionsResult
+            {
+                Season = 2024,
+                Week = 5,
+                Predictions =
+                [
+                    new GamePrediction
+                    {
+                        AwayTeam = "Michigan",
+                        HomeTeam = "Ohio State",
+                        WinnerGrade = PredictionGradeStatus.Correct,
+                        ActualWinner = "Ohio State"
+                    }
+                ]
+            }
+        };
+
+        var result = PredictionsMapper.ToAdminResponseDTO(getResult);
+
+        Assert.True(result.IsPublished);
+        Assert.True(result.Predictions.IsGraded);
+        Assert.False(result.Predictions.ResultsPublished);
+        var prediction = Assert.Single(result.Predictions.Predictions);
+        Assert.Equal("Correct", prediction.WinnerGrade);
+        Assert.Equal("Ohio State", prediction.ActualWinner);
+    }
+
+    [Fact]
+    public void ToAdminResponseDTO_NullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => PredictionsMapper.ToAdminResponseDTO(null!));
+    }
+
+    [Fact]
     public void ToDTO_IncludeGradeDetailsFalse_SuppressesGradeFields()
     {
         var prediction = new GamePrediction
@@ -225,6 +266,21 @@ public class PredictionsMapperTests
     }
 
     [Fact]
+    public void ToGradeResponseDTO_SetsResultsPublishedFalseAndIsGradedTrue()
+    {
+        var gradeResult = new GradePredictionsResult
+        {
+            IsPersisted = true,
+            Predictions = new PredictionsResult { Season = 2024, Week = 5 }
+        };
+
+        var result = PredictionsMapper.ToGradeResponseDTO(gradeResult);
+
+        Assert.False(result.Predictions.ResultsPublished);
+        Assert.True(result.Predictions.IsGraded);
+    }
+
+    [Fact]
     public void ToResponseDTO_MapsAllProperties()
     {
         var predictionsResult = new PredictionsResult
@@ -245,23 +301,18 @@ public class PredictionsMapperTests
             ]
         };
 
-        var result = PredictionsMapper.ToResponseDTO(predictionsResult, resultsPublished: true);
+        var result = PredictionsMapper.ToResponseDTO(predictionsResult, resultsPublished: true, isGraded: true);
 
         Assert.Equal(2024, result.Season);
         Assert.Equal(5, result.Week);
         Assert.True(result.ResultsPublished);
+        Assert.True(result.IsGraded);
         var prediction = Assert.Single(result.Predictions);
         Assert.Equal("Nebraska", prediction.PredictedWinner);
     }
 
     [Fact]
-    public void ToResponseDTO_NullInput_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() => PredictionsMapper.ToResponseDTO(null!, true));
-    }
-
-    [Fact]
-    public void ToResponseDTO_ResultsNotPublished_SuppressesGradeFields()
+    public void ToResponseDTO_NotGraded_SuppressesGradeFields()
     {
         var predictionsResult = new PredictionsResult
         {
@@ -280,12 +331,19 @@ public class PredictionsMapperTests
             ]
         };
 
-        var result = PredictionsMapper.ToResponseDTO(predictionsResult, resultsPublished: false);
+        var result = PredictionsMapper.ToResponseDTO(predictionsResult, resultsPublished: false, isGraded: false);
 
         Assert.False(result.ResultsPublished);
+        Assert.False(result.IsGraded);
         var prediction = Assert.Single(result.Predictions);
         Assert.Null(prediction.ActualWinner);
         Assert.Equal("Ungraded", prediction.WinnerGrade);
+    }
+
+    [Fact]
+    public void ToResponseDTO_NullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => PredictionsMapper.ToResponseDTO(null!, resultsPublished: true, isGraded: true));
     }
 
     [Fact]

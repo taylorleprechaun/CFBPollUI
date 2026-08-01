@@ -614,6 +614,71 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task GetPredictionsAsync_CallsBothPredictionsModuleMethods()
+    {
+        _mockPredictionsModule.Setup(x => x.GetAsync(2024, 5))
+            .ReturnsAsync(new PredictionsResult { Season = 2024, Week = 5 });
+        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync())
+            .ReturnsAsync(new List<PredictionsSummary>());
+
+        await _adminModule.GetPredictionsAsync(2024, 5);
+
+        _mockPredictionsModule.Verify(x => x.GetAsync(2024, 5), Times.Once);
+        _mockPredictionsModule.Verify(x => x.GetAllSummariesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetPredictionsAsync_DefaultsFlags_WhenNoMatchingSummaryFound()
+    {
+        _mockPredictionsModule.Setup(x => x.GetAsync(2024, 5))
+            .ReturnsAsync(new PredictionsResult { Season = 2024, Week = 5 });
+        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync())
+            .ReturnsAsync(new List<PredictionsSummary>
+            {
+                new() { Season = 2024, Week = 1, IsGraded = true, IsPublished = true, ResultsPublished = true }
+            });
+
+        var result = await _adminModule.GetPredictionsAsync(2024, 5);
+
+        Assert.NotNull(result);
+        Assert.False(result.IsGraded);
+        Assert.False(result.IsPublished);
+        Assert.False(result.ResultsPublished);
+    }
+
+    [Fact]
+    public async Task GetPredictionsAsync_ReturnsComposedResult_WhenMatchingSummaryExists()
+    {
+        var predictions = new PredictionsResult { Season = 2024, Week = 5 };
+        _mockPredictionsModule.Setup(x => x.GetAsync(2024, 5)).ReturnsAsync(predictions);
+        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync())
+            .ReturnsAsync(new List<PredictionsSummary>
+            {
+                new() { Season = 2024, Week = 5, IsGraded = true, IsPublished = true, ResultsPublished = false }
+            });
+
+        var result = await _adminModule.GetPredictionsAsync(2024, 5);
+
+        Assert.NotNull(result);
+        Assert.Same(predictions, result.Predictions);
+        Assert.True(result.IsGraded);
+        Assert.True(result.IsPublished);
+        Assert.False(result.ResultsPublished);
+    }
+
+    [Fact]
+    public async Task GetPredictionsAsync_ReturnsNull_WhenNoPredictionsExist()
+    {
+        _mockPredictionsModule.Setup(x => x.GetAsync(2024, 5)).ReturnsAsync((PredictionsResult?)null);
+        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync())
+            .ReturnsAsync(new List<PredictionsSummary>());
+
+        var result = await _adminModule.GetPredictionsAsync(2024, 5);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
     public async Task GetPredictionsSummariesAsync_DelegatesToPredictionsModule()
     {
         var summaries = new List<PredictionsSummary>

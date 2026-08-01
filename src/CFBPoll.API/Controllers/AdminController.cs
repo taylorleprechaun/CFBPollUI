@@ -58,7 +58,7 @@ public class AdminController : ControllerBase
         return Ok(new CalculatePredictionsResponseDTO
         {
             IsPersisted = result.IsPersisted,
-            Predictions = PredictionsMapper.ToResponseDTO(result.Predictions, resultsPublished: false)
+            Predictions = PredictionsMapper.ToResponseDTO(result.Predictions, resultsPublished: false, isGraded: false)
         });
     }
     /// <summary>
@@ -109,6 +109,24 @@ public class AdminController : ControllerBase
         return File(bytes,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             $"Rankings_{season}_Week{week}.xlsx");
+    }
+
+    /// <summary>
+    /// Retrieves the persisted predictions for the specified season and week without recalculating
+    /// or re-grading. Returns full grade detail whenever the week has been graded, regardless of
+    /// public publish state.
+    /// </summary>
+    [HttpGet("seasons/{season}/weeks/{week}/prediction")]
+    public async Task<ActionResult<AdminPredictionsResponseDTO>> GetPrediction(int season, int week)
+    {
+        _logger.LogInformation("Admin fetching persisted predictions for season {Season}, week {Week}", season, week);
+
+        var result = await _adminModule.GetPredictionsAsync(season, week);
+
+        if (result is null)
+            return NotFound(new ErrorResponseDTO { Message = PREDICTION_NOT_FOUND, StatusCode = 404 });
+
+        return Ok(PredictionsMapper.ToAdminResponseDTO(result));
     }
 
     /// <summary>

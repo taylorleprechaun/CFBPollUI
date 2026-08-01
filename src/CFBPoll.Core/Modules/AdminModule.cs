@@ -188,6 +188,27 @@ public class AdminModule : IAdminModule
         return _excelExportModule.GenerateRankingsWorkbook(snapshot);
     }
 
+    public async Task<GetPredictionsResult?> GetPredictionsAsync(int season, int week)
+    {
+        var predictionsTask = _predictionsModule.GetAsync(season, week);
+        var summariesTask = _predictionsModule.GetAllSummariesAsync();
+        await Task.WhenAll(predictionsTask, summariesTask).ConfigureAwait(false);
+
+        var predictions = predictionsTask.Result;
+        if (predictions is null)
+            return null;
+
+        var summary = summariesTask.Result.FirstOrDefault(s => s.Season == season && s.Week == week);
+
+        return new GetPredictionsResult
+        {
+            IsGraded = summary?.IsGraded ?? false,
+            IsPublished = summary?.IsPublished ?? false,
+            Predictions = predictions,
+            ResultsPublished = summary?.ResultsPublished ?? false
+        };
+    }
+
     public async Task<IEnumerable<PredictionsSummary>> GetPredictionsSummariesAsync()
     {
         return await _predictionsModule.GetAllSummariesAsync().ConfigureAwait(false);

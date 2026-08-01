@@ -35,6 +35,17 @@ public static class PredictionsMapper
         };
     }
 
+    public static AdminPredictionsResponseDTO ToAdminResponseDTO(GetPredictionsResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        return new AdminPredictionsResponseDTO
+        {
+            IsPublished = result.IsPublished,
+            Predictions = ToResponseDTO(result.Predictions, resultsPublished: result.ResultsPublished, isGraded: result.IsGraded)
+        };
+    }
+
     public static GradePredictionsResponseDTO ToGradeResponseDTO(GradePredictionsResult result)
     {
         ArgumentNullException.ThrowIfNull(result);
@@ -42,18 +53,19 @@ public static class PredictionsMapper
         return new GradePredictionsResponseDTO
         {
             IsPersisted = result.IsPersisted,
-            Predictions = ToResponseDTO(result.Predictions, resultsPublished: true),
+            Predictions = ToResponseDTO(result.Predictions, resultsPublished: false, isGraded: true),
             UnmatchedGameCount = result.UnmatchedGameCount
         };
     }
 
-    public static PredictionsResponseDTO ToResponseDTO(PredictionsResult result, bool resultsPublished)
+    public static PredictionsResponseDTO ToResponseDTO(PredictionsResult result, bool resultsPublished, bool isGraded)
     {
         ArgumentNullException.ThrowIfNull(result);
 
         return new PredictionsResponseDTO
         {
-            Predictions = result.Predictions.Select(p => ToDTO(p, resultsPublished)),
+            IsGraded = isGraded,
+            Predictions = result.Predictions.Select(p => ToDTO(p, isGraded)),
             ResultsPublished = resultsPublished,
             Season = result.Season,
             Week = result.Week

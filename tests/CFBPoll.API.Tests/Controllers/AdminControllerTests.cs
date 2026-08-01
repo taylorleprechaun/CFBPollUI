@@ -188,6 +188,54 @@ public class AdminControllerTests
     }
 
     [Fact]
+    public async Task GetPrediction_NullResult_ReturnsNotFound()
+    {
+        _mockAdminModule.Setup(x => x.GetPredictionsAsync(2024, 5)).ReturnsAsync((GetPredictionsResult?)null);
+
+        var result = await _controller.GetPrediction(2024, 5);
+
+        Assert.IsType<NotFoundObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task GetPrediction_Success_ReturnsOk()
+    {
+        var getResult = new GetPredictionsResult
+        {
+            IsGraded = true,
+            IsPublished = true,
+            ResultsPublished = false,
+            Predictions = new PredictionsResult
+            {
+                Season = 2024,
+                Week = 5,
+                Predictions =
+                [
+                    new GamePrediction
+                    {
+                        AwayTeam = "Michigan",
+                        HomeTeam = "Ohio State",
+                        PredictedWinner = "Ohio State",
+                        WinnerGrade = PredictionGradeStatus.Correct
+                    }
+                ]
+            }
+        };
+
+        _mockAdminModule.Setup(x => x.GetPredictionsAsync(2024, 5)).ReturnsAsync(getResult);
+
+        var result = await _controller.GetPrediction(2024, 5);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<AdminPredictionsResponseDTO>(okResult.Value);
+        Assert.True(response.IsPublished);
+        Assert.True(response.Predictions.IsGraded);
+        Assert.False(response.Predictions.ResultsPublished);
+        var prediction = Assert.Single(response.Predictions.Predictions);
+        Assert.Equal("Correct", prediction.WinnerGrade);
+    }
+
+    [Fact]
     public async Task GetPredictions_ReturnsList()
     {
         var summaries = new List<PredictionsSummary>
