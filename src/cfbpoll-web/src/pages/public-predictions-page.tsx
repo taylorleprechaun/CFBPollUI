@@ -101,6 +101,7 @@ export function PublicPredictionsPage() {
           <PredictionsTable
             predictions={predictionsData?.predictions ?? []}
             isLoading={predictionsLoading}
+            season={selectedSeason}
             showGrades={predictionsData?.resultsPublished ?? false}
           />
         </div>

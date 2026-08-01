@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { PredictionsTable } from '../../../components/predictions/predictions-table';
 import type { GamePredictionPublic } from '../../../schemas';
 
@@ -210,6 +211,61 @@ describe('PredictionsTable', () => {
       render(<PredictionsTable predictions={[prediction]} showGrades={true} />);
 
       expect(screen.getByText('Correct: Under')).toBeInTheDocument();
+    });
+  });
+
+  describe('team name links', () => {
+    it('renders team names as links to team-details when season is provided', () => {
+      render(
+        <MemoryRouter>
+          <PredictionsTable predictions={[buildPrediction()]} season={2024} />
+        </MemoryRouter>
+      );
+
+      const homeLinks = screen.getAllByRole('link', { name: 'Ohio State' });
+      expect(homeLinks.length).toBeGreaterThanOrEqual(1);
+      for (const link of homeLinks) {
+        expect(link).toHaveAttribute(
+          'href',
+          `/team-details?team=${encodeURIComponent('Ohio State')}&season=2024`
+        );
+      }
+
+      const awayLink = screen.getByRole('link', { name: 'Michigan' });
+      expect(awayLink).toHaveAttribute(
+        'href',
+        `/team-details?team=${encodeURIComponent('Michigan')}&season=2024`
+      );
+    });
+
+    it('renders team names as plain text when season is omitted', () => {
+      render(<PredictionsTable predictions={[buildPrediction()]} />);
+
+      expect(screen.queryByRole('link')).not.toBeInTheDocument();
+      expect(screen.getAllByText('Ohio State').length).toBeGreaterThan(0);
+      expect(screen.getByText('Michigan')).toBeInTheDocument();
+    });
+
+    it('renders the predicted winner as a link, preserving grade pill styling', () => {
+      const gradedPrediction = buildPrediction({
+        overUnderGrade: 'Correct',
+        spreadGrade: 'Correct',
+        winnerGrade: 'Correct',
+      });
+
+      render(
+        <MemoryRouter>
+          <PredictionsTable predictions={[gradedPrediction]} season={2024} showGrades={true} />
+        </MemoryRouter>
+      );
+
+      const winnerLink = screen.getAllByRole('link', { name: 'Ohio State' }).find((el) => el.className.includes('rounded-lg'));
+      expect(winnerLink).toBeDefined();
+      expect(winnerLink).toHaveAttribute(
+        'href',
+        `/team-details?team=${encodeURIComponent('Ohio State')}&season=2024`
+      );
+      expect(winnerLink!.className).toContain('bg-green-100');
     });
   });
 });

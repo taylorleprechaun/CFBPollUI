@@ -14,7 +14,7 @@ export const teamNameColumn = columnHelper.accessor('teamName', {
   header: 'Team',
   cell: (info) => {
     const entry = info.row.original;
-    const teamDetailUrl = `/team-details?team=${encodeURIComponent(info.getValue())}&season=${entry.season}&week=${entry.week}`;
+    const teamDetailUrl = `/team-details?team=${encodeURIComponent(info.getValue())}&season=${entry.season}`;
     return (
       <div className="flex items-center space-x-3">
         <TeamLogo logoURL={entry.logoURL} teamName={info.getValue()} />

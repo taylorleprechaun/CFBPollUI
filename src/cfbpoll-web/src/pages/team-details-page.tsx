@@ -308,7 +308,6 @@ export function TeamDetailsPage() {
                         fbsTeamNames={fbsTeamNames}
                         game={game}
                         selectedSeason={selectedSeason}
-                        selectedWeek={selectedWeek}
                         onTeamClick={handleTeamChange}
                       />
                     ))}

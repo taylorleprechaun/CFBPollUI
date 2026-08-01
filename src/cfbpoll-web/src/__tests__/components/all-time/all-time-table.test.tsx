@@ -111,13 +111,13 @@ describe('AllTimeTable', () => {
     const floridaLink = screen.getByRole('link', { name: 'Florida' });
     expect(floridaLink).toHaveAttribute(
       'href',
-      '/team-details?team=Florida&season=2023&week=5'
+      '/team-details?team=Florida&season=2023'
     );
 
     const alabamaLink = screen.getByRole('link', { name: 'Alabama' });
     expect(alabamaLink).toHaveAttribute(
       'href',
-      '/team-details?team=Alabama&season=2022&week=5'
+      '/team-details?team=Alabama&season=2022'
     );
   });
 
@@ -154,7 +154,7 @@ describe('AllTimeTable', () => {
     const link = screen.getByRole('link', { name: 'Iowa' });
     expect(link).toHaveAttribute(
       'href',
-      `/team-details?team=${encodeURIComponent('Iowa')}&season=2023&week=5`
+      `/team-details?team=${encodeURIComponent('Iowa')}&season=2023`
     );
   });
 

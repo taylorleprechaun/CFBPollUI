@@ -132,6 +132,38 @@ describe('PublicPredictionsPage', () => {
     expect(screen.getByText('Michigan')).toBeInTheDocument();
   });
 
+  it('links team names to the currently selected season', () => {
+    mockPredictionsData = {
+      season: 2024,
+      week: 1,
+      predictions: [
+        {
+          awayLogoURL: '',
+          awayTeam: 'Michigan',
+          awayTeamScore: 17,
+          bettingOverUnder: 45.5,
+          bettingSpread: -3.5,
+          homeLogoURL: '',
+          homeTeam: 'Ohio State',
+          homeTeamScore: 28,
+          myOverUnderPick: 'Over',
+          mySpreadPick: 'Ohio State',
+          neutralSite: false,
+          predictedMargin: 11,
+          predictedWinner: 'Ohio State',
+        },
+      ],
+    };
+
+    renderPage();
+
+    const michiganLink = screen.getByRole('link', { name: 'Michigan' });
+    expect(michiganLink).toHaveAttribute(
+      'href',
+      `/team-details?team=${encodeURIComponent('Michigan')}&season=2024`
+    );
+  });
+
   it('shows a loading skeleton while predictions are fetching', () => {
     mockPredictionsLoading = true;
 

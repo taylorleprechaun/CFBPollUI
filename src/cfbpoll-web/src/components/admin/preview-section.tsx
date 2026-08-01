@@ -81,7 +81,6 @@ export function PreviewSection({
             isLoading={false}
             selectedConference={null}
             selectedSeason={previewRankings.season}
-            selectedWeek={previewRankings.week}
           />
         </div>
       </div>

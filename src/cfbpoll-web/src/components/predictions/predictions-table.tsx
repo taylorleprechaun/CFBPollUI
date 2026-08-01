@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { gradeClasses } from '../../lib/grade-classes';
 import { formatOverUnder, formatPick, formatSpread } from '../../lib/prediction-format-utils';
 import { TeamLogo } from '../rankings/team-logo';
@@ -31,6 +32,7 @@ interface PredictionTableRow {
 interface PredictionsTableProps {
   isLoading?: boolean;
   predictions: PredictionTableRow[];
+  season?: number | null;
   showGrades?: boolean;
 }
 
@@ -51,7 +53,28 @@ function GradedPick({ actualValue, grade, pick }: GradedPickProps) {
   );
 }
 
-export function PredictionsTable({ isLoading = false, predictions, showGrades = false }: PredictionsTableProps) {
+interface TeamNameLabelProps {
+  className?: string;
+  season?: number | null;
+  teamName: string;
+}
+
+function TeamNameLabel({ className, season, teamName }: TeamNameLabelProps) {
+  if (season == null) {
+    return <span className={className}>{teamName}</span>;
+  }
+
+  return (
+    <Link
+      to={`/team-details?team=${encodeURIComponent(teamName)}&season=${season}`}
+      className={`hover:text-accent hover:underline ${className ?? ''}`}
+    >
+      {teamName}
+    </Link>
+  );
+}
+
+export function PredictionsTable({ isLoading = false, predictions, season = null, showGrades = false }: PredictionsTableProps) {
   if (isLoading) {
     return <TableSkeleton columns={COLUMN_COUNT} />;
   }
@@ -75,12 +98,12 @@ export function PredictionsTable({ isLoading = false, predictions, showGrades = 
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
                   <TeamLogo logoURL={p.awayLogoURL} teamName={p.awayTeam} />
-                  <span>{p.awayTeam}</span>
+                  <TeamNameLabel teamName={p.awayTeam} season={season} />
                   <span className="font-semibold ml-auto">{p.awayTeamScore}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <TeamLogo logoURL={p.homeLogoURL} teamName={p.homeTeam} />
-                  <span>{p.homeTeam}</span>
+                  <TeamNameLabel teamName={p.homeTeam} season={season} />
                   {p.neutralSite && <span className="text-text-muted text-xs">(N)</span>}
                   <span className="font-semibold ml-auto">{p.homeTeamScore}</span>
                 </div>
@@ -98,11 +121,11 @@ export function PredictionsTable({ isLoading = false, predictions, showGrades = 
                     logoURL={p.predictedWinner === p.homeTeam ? p.homeLogoURL : p.awayLogoURL}
                     teamName={p.predictedWinner}
                   />
-                  {showGrades ? (
-                    <span className={`px-2 py-1 rounded-lg font-semibold ${gradeClasses(p.winnerGrade)}`}>{p.predictedWinner}</span>
-                  ) : (
-                    <span>{p.predictedWinner}</span>
-                  )}
+                  <TeamNameLabel
+                    className={showGrades ? `px-2 py-1 rounded-lg font-semibold ${gradeClasses(p.winnerGrade)}` : undefined}
+                    teamName={p.predictedWinner}
+                    season={season}
+                  />
                 </div>
                 {showGrades && p.winnerGrade === 'Incorrect' && p.actualWinner !== null && (
                   <span className="text-xs font-medium text-green-700 dark:text-green-400">Actual: {p.actualWinner}</span>

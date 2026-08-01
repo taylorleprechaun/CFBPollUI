@@ -128,7 +128,6 @@ export function RankingsPage() {
           isLoading={rankingsLoading}
           selectedConference={selectedConference}
           selectedSeason={selectedSeason}
-          selectedWeek={selectedWeek}
         />
       </div>
 

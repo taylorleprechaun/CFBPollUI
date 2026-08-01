@@ -7,7 +7,6 @@ interface ScheduleRowProps {
   game: ScheduleGame;
   onTeamClick: (teamName: string) => void;
   selectedSeason: number | null;
-  selectedWeek: number | null;
 }
 
 export function ScheduleRow({
@@ -15,7 +14,6 @@ export function ScheduleRow({
   game,
   onTeamClick,
   selectedSeason,
-  selectedWeek,
 }: ScheduleRowProps) {
   const gameDate = game.gameDate ? new Date(game.gameDate) : null;
   const dateStr = gameDate
@@ -38,7 +36,7 @@ export function ScheduleRow({
   const showRank = game.opponentRank != null && game.opponentRank >= 1 && game.opponentRank <= 25;
 
   const isFbs = fbsTeamNames.has(game.opponentName);
-  const teamDetailUrl = `/team-details?team=${encodeURIComponent(game.opponentName)}${selectedSeason != null ? `&season=${selectedSeason}` : ''}${selectedWeek != null ? `&week=${selectedWeek}` : ''}`;
+  const teamDetailUrl = `/team-details?team=${encodeURIComponent(game.opponentName)}${selectedSeason != null ? `&season=${selectedSeason}` : ''}`;
 
   const opponentLabel = (
     <span className="text-text-primary">
