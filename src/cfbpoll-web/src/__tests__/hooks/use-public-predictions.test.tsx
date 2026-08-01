@@ -42,7 +42,7 @@ describe('usePublicPredictions', () => {
   });
 
   it('fetches when both season and week are provided', async () => {
-    const mockResponse = { season: 2024, week: 5, predictions: [] };
+    const mockResponse = { resultsPublished: false, season: 2024, week: 5, predictions: [] };
 
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
@@ -79,6 +79,11 @@ describe('usePublicPredictions', () => {
   it('returns predictions data on success', async () => {
     const mockPredictions = [
       {
+        actualAwayScore: null,
+        actualHomeScore: null,
+        actualOverUnderResult: null,
+        actualSpreadCoveringTeam: null,
+        actualWinner: null,
         awayLogoURL: 'https://example.com/away.png',
         awayTeam: 'Michigan',
         awayTeamScore: 17,
@@ -90,15 +95,18 @@ describe('usePublicPredictions', () => {
         myOverUnderPick: 'Over',
         mySpreadPick: 'Ohio State',
         neutralSite: false,
+        overUnderGrade: 'Ungraded',
         predictedMargin: 11,
         predictedWinner: 'Ohio State',
+        spreadGrade: 'Ungraded',
+        winnerGrade: 'Ungraded',
       },
     ];
 
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       json: () =>
-        Promise.resolve({ season: 2024, week: 5, predictions: mockPredictions }),
+        Promise.resolve({ resultsPublished: false, season: 2024, week: 5, predictions: mockPredictions }),
     } as Response);
 
     const { result } = renderHook(() => usePublicPredictions(2024, 5), {
@@ -113,7 +121,7 @@ describe('usePublicPredictions', () => {
   it('changing week triggers new fetch', async () => {
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ season: 2024, week: 5, predictions: [] }),
+      json: () => Promise.resolve({ resultsPublished: false, season: 2024, week: 5, predictions: [] }),
     } as Response);
 
     const { result, rerender } = renderHook(
@@ -129,7 +137,7 @@ describe('usePublicPredictions', () => {
 
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ season: 2024, week: 3, predictions: [] }),
+      json: () => Promise.resolve({ resultsPublished: false, season: 2024, week: 3, predictions: [] }),
     } as Response);
 
     rerender({ season: 2024, week: 3 });
@@ -145,7 +153,7 @@ describe('usePublicPredictions', () => {
   it('accepts optional maxSeason parameter', async () => {
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ season: 2023, week: 5, predictions: [] }),
+      json: () => Promise.resolve({ resultsPublished: false, season: 2023, week: 5, predictions: [] }),
     } as Response);
 
     const { result } = renderHook(() => usePublicPredictions(2023, 5, 2024), {

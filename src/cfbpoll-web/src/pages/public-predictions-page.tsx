@@ -98,7 +98,11 @@ export function PublicPredictionsPage() {
 
       {!error && !isNotFound && (predictionsLoading || predictionsData) && (
         <div className="bg-surface shadow-md rounded-xl overflow-hidden animate-fade-in">
-          <PredictionsTable predictions={predictionsData?.predictions ?? []} isLoading={predictionsLoading} />
+          <PredictionsTable
+            predictions={predictionsData?.predictions ?? []}
+            isLoading={predictionsLoading}
+            resultsPublished={predictionsData?.resultsPublished ?? false}
+          />
         </div>
       )}
 

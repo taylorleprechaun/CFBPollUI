@@ -136,6 +136,11 @@ export const PageVisibilitySchema = z.object({
 
 // Prediction schemas (public)
 export const GamePredictionPublicSchema = z.object({
+  actualAwayScore: z.number().nullable(),
+  actualHomeScore: z.number().nullable(),
+  actualOverUnderResult: z.string().nullable(),
+  actualSpreadCoveringTeam: z.string().nullable(),
+  actualWinner: z.string().nullable(),
   awayLogoURL: z.string(),
   awayTeam: z.string(),
   awayTeamScore: z.number(),
@@ -147,12 +152,16 @@ export const GamePredictionPublicSchema = z.object({
   myOverUnderPick: z.string(),
   mySpreadPick: z.string(),
   neutralSite: z.boolean(),
+  overUnderGrade: z.string(),
   predictedMargin: z.number(),
   predictedWinner: z.string(),
+  spreadGrade: z.string(),
+  winnerGrade: z.string(),
 });
 
 export const PredictionsPublicResponseSchema = z.object({
   predictions: z.array(GamePredictionPublicSchema),
+  resultsPublished: z.boolean(),
   season: z.number(),
   week: z.number(),
 });

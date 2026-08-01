@@ -252,6 +252,11 @@ describe('Zod Schemas', () => {
   describe('GamePredictionPublicSchema', () => {
     it('validates a valid prediction', () => {
       const data = {
+        actualAwayScore: null,
+        actualHomeScore: null,
+        actualOverUnderResult: null,
+        actualSpreadCoveringTeam: null,
+        actualWinner: null,
         awayLogoURL: 'https://example.com/away.png',
         awayTeam: 'Michigan',
         awayTeamScore: 17,
@@ -263,8 +268,39 @@ describe('Zod Schemas', () => {
         myOverUnderPick: 'Over',
         mySpreadPick: 'Ohio State',
         neutralSite: false,
+        overUnderGrade: 'Ungraded',
         predictedMargin: 11,
         predictedWinner: 'Ohio State',
+        spreadGrade: 'Ungraded',
+        winnerGrade: 'Ungraded',
+      };
+      const result = GamePredictionPublicSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('validates a graded prediction', () => {
+      const data = {
+        actualAwayScore: 17,
+        actualHomeScore: 28,
+        actualOverUnderResult: 'Under',
+        actualSpreadCoveringTeam: 'Ohio State',
+        actualWinner: 'Ohio State',
+        awayLogoURL: 'https://example.com/away.png',
+        awayTeam: 'Michigan',
+        awayTeamScore: 17,
+        bettingOverUnder: 45.5,
+        bettingSpread: -3.5,
+        homeLogoURL: 'https://example.com/home.png',
+        homeTeam: 'Ohio State',
+        homeTeamScore: 28,
+        myOverUnderPick: 'Over',
+        mySpreadPick: 'Ohio State',
+        neutralSite: false,
+        overUnderGrade: 'Correct',
+        predictedMargin: 11,
+        predictedWinner: 'Ohio State',
+        spreadGrade: 'Correct',
+        winnerGrade: 'Correct',
       };
       const result = GamePredictionPublicSchema.safeParse(data);
       expect(result.success).toBe(true);
@@ -272,6 +308,11 @@ describe('Zod Schemas', () => {
 
     it('allows null betting lines', () => {
       const data = {
+        actualAwayScore: null,
+        actualHomeScore: null,
+        actualOverUnderResult: null,
+        actualSpreadCoveringTeam: null,
+        actualWinner: null,
         awayLogoURL: '',
         awayTeam: 'Michigan',
         awayTeamScore: 17,
@@ -283,8 +324,11 @@ describe('Zod Schemas', () => {
         myOverUnderPick: '',
         mySpreadPick: '',
         neutralSite: false,
+        overUnderGrade: 'NotApplicable',
         predictedMargin: 11,
         predictedWinner: 'Ohio State',
+        spreadGrade: 'NotApplicable',
+        winnerGrade: 'Ungraded',
       };
       const result = GamePredictionPublicSchema.safeParse(data);
       expect(result.success).toBe(true);
@@ -295,17 +339,50 @@ describe('Zod Schemas', () => {
       const result = GamePredictionPublicSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
+
+    it('rejects a prediction missing winnerGrade', () => {
+      const data = {
+        actualAwayScore: null,
+        actualHomeScore: null,
+        actualOverUnderResult: null,
+        actualSpreadCoveringTeam: null,
+        actualWinner: null,
+        awayLogoURL: '',
+        awayTeam: 'Michigan',
+        awayTeamScore: 17,
+        bettingOverUnder: null,
+        bettingSpread: null,
+        homeLogoURL: '',
+        homeTeam: 'Ohio State',
+        homeTeamScore: 28,
+        myOverUnderPick: '',
+        mySpreadPick: '',
+        neutralSite: false,
+        overUnderGrade: 'Ungraded',
+        predictedMargin: 11,
+        predictedWinner: 'Ohio State',
+        spreadGrade: 'Ungraded',
+      };
+      const result = GamePredictionPublicSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
   });
 
   describe('PredictionsPublicResponseSchema', () => {
     it('validates a valid response', () => {
-      const data = { season: 2024, week: 5, predictions: [] };
+      const data = { resultsPublished: false, season: 2024, week: 5, predictions: [] };
       const result = PredictionsPublicResponseSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
 
     it('rejects a response without season', () => {
-      const data = { week: 5, predictions: [] };
+      const data = { resultsPublished: false, week: 5, predictions: [] };
+      const result = PredictionsPublicResponseSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects a response without resultsPublished', () => {
+      const data = { season: 2024, week: 5, predictions: [] };
       const result = PredictionsPublicResponseSchema.safeParse(data);
       expect(result.success).toBe(false);
     });

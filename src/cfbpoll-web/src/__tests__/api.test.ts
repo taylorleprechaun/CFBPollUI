@@ -65,6 +65,7 @@ describe('API service', () => {
       ok: true,
       json: () =>
         Promise.resolve({
+          resultsPublished: false,
           season: 2024,
           week: 12,
           predictions: [],

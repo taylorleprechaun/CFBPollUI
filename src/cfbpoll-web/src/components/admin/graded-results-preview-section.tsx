@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { gradeClasses } from '../../lib/grade-classes';
 import { formatOverUnder, formatPick, formatSpread } from '../../lib/prediction-format-utils';
 import { getWeekLabel } from '../../lib/week-utils';
 import { TeamLogo } from '../rankings/team-logo';
@@ -18,18 +19,8 @@ interface GradedResultsPreviewSectionProps {
   onPublishResults: (season: number, week: number) => void;
 }
 
-const GRADE_BADGE_CLASSES: Record<string, string> = {
-  Correct: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300',
-  Incorrect: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300',
-  Push: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300',
-};
-
-function gradeBadgeClasses(grade: string): string {
-  return GRADE_BADGE_CLASSES[grade] ?? 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400';
-}
-
 function GradeBadge({ grade }: { grade: string }) {
-  return <StatusBadge className={gradeBadgeClasses(grade)} label={grade} />;
+  return <StatusBadge className={gradeClasses(grade)} label={grade} />;
 }
 
 export function GradedResultsPreviewSection({

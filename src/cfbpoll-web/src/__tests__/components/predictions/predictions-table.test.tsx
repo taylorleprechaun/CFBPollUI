@@ -5,6 +5,11 @@ import type { GamePredictionPublic } from '../../../schemas';
 
 function buildPrediction(overrides: Partial<GamePredictionPublic> = {}): GamePredictionPublic {
   return {
+    actualAwayScore: null,
+    actualHomeScore: null,
+    actualOverUnderResult: null,
+    actualSpreadCoveringTeam: null,
+    actualWinner: null,
     awayLogoURL: 'https://example.com/away.png',
     awayTeam: 'Michigan',
     awayTeamScore: 17,
@@ -16,8 +21,11 @@ function buildPrediction(overrides: Partial<GamePredictionPublic> = {}): GamePre
     myOverUnderPick: 'Over',
     mySpreadPick: 'Ohio State',
     neutralSite: false,
+    overUnderGrade: 'Ungraded',
     predictedMargin: 11,
     predictedWinner: 'Ohio State',
+    spreadGrade: 'Ungraded',
+    winnerGrade: 'Ungraded',
     ...overrides,
   };
 }
@@ -95,5 +103,111 @@ describe('PredictionsTable', () => {
     render(<PredictionsTable predictions={[buildPrediction()]} isLoading={false} />);
 
     expect(screen.getByText('Score')).toBeInTheDocument();
+  });
+
+  describe('graded display', () => {
+    const gradedPrediction = buildPrediction({
+      actualAwayScore: 17,
+      actualHomeScore: 28,
+      actualOverUnderResult: 'Under',
+      actualSpreadCoveringTeam: 'Ohio State',
+      actualWinner: 'Ohio State',
+      overUnderGrade: 'Correct',
+      spreadGrade: 'Correct',
+      winnerGrade: 'Correct',
+    });
+
+    it('does not apply grading styles when resultsPublished is false', () => {
+      render(<PredictionsTable predictions={[gradedPrediction]} resultsPublished={false} />);
+
+      expect(screen.queryByText(/Final:/)).not.toBeInTheDocument();
+      for (const el of screen.getAllByText('Ohio State')) {
+        expect(el.className).not.toContain('text-green-700');
+        expect(el.className).not.toContain('line-through');
+      }
+    });
+
+    it('shows the final score when resultsPublished is true', () => {
+      render(<PredictionsTable predictions={[gradedPrediction]} resultsPublished={true} />);
+
+      expect(screen.getByText((_, element) => element?.textContent === 'Final: 17-28')).toBeInTheDocument();
+    });
+
+    it('highlights a correct winner pick in green', () => {
+      render(<PredictionsTable predictions={[gradedPrediction]} resultsPublished={true} />);
+
+      const winner = screen.getByText('Ohio State', { selector: 'span.text-green-700' });
+      expect(winner).toBeInTheDocument();
+    });
+
+    it('strikes through an incorrect winner pick and shows the actual winner', () => {
+      const prediction = buildPrediction({
+        actualWinner: 'Michigan',
+        winnerGrade: 'Incorrect',
+      });
+
+      render(<PredictionsTable predictions={[prediction]} resultsPublished={true} />);
+
+      const winner = screen.getByText('Ohio State', { selector: 'span.line-through' });
+      expect(winner).toBeInTheDocument();
+      expect(screen.getByText('Actual: Michigan')).toBeInTheDocument();
+    });
+
+    it('highlights a correct spread pick in green with no actual-value line', () => {
+      render(<PredictionsTable predictions={[gradedPrediction]} resultsPublished={true} />);
+
+      const picks = screen.getAllByText('Ohio State', { selector: 'span.font-semibold' });
+      const spreadPick = picks.find((el) => el.closest('div')?.className.includes('rounded-lg'));
+      expect(spreadPick).toBeDefined();
+      expect(spreadPick!.closest('div')?.className).toContain('bg-green-100');
+      expect(screen.queryByText(/Correct:/)).not.toBeInTheDocument();
+    });
+
+    it('highlights an incorrect spread pick in red and shows the covering team', () => {
+      const prediction = buildPrediction({
+        actualSpreadCoveringTeam: 'Michigan',
+        spreadGrade: 'Incorrect',
+      });
+
+      render(<PredictionsTable predictions={[prediction]} resultsPublished={true} />);
+
+      expect(screen.getByText('Correct: Michigan')).toBeInTheDocument();
+    });
+
+    it('highlights a Push spread grade in gray', () => {
+      const prediction = buildPrediction({
+        actualSpreadCoveringTeam: 'Push',
+        spreadGrade: 'Push',
+      });
+
+      render(<PredictionsTable predictions={[prediction]} resultsPublished={true} />);
+
+      const pick = screen.getByText('Ohio State', { selector: 'span.font-semibold' });
+      expect(pick.closest('div')?.className).toContain('bg-gray-100');
+    });
+
+    it('highlights a NotApplicable over/under grade in gray', () => {
+      const prediction = buildPrediction({
+        bettingOverUnder: null,
+        myOverUnderPick: '',
+        overUnderGrade: 'NotApplicable',
+      });
+
+      render(<PredictionsTable predictions={[prediction]} resultsPublished={true} />);
+
+      const pick = screen.getByText('N/A', { selector: 'span.font-semibold' });
+      expect(pick.closest('div')?.className).toContain('bg-gray-100');
+    });
+
+    it('highlights an incorrect over/under pick in red and shows the actual result', () => {
+      const prediction = buildPrediction({
+        actualOverUnderResult: 'Under',
+        overUnderGrade: 'Incorrect',
+      });
+
+      render(<PredictionsTable predictions={[prediction]} resultsPublished={true} />);
+
+      expect(screen.getByText('Correct: Under')).toBeInTheDocument();
+    });
   });
 });

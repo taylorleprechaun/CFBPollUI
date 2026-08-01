@@ -30,7 +30,7 @@ vi.mock('../../hooks/use-weeks', () => ({
   }),
 }));
 
-let mockPredictionsData: { season: number; week: number; predictions: unknown[] } | undefined;
+let mockPredictionsData: { season: number; week: number; predictions: unknown[]; resultsPublished?: boolean } | undefined;
 let mockPredictionsLoading = false;
 let mockPredictionsError: Error | null = null;
 
@@ -147,5 +147,79 @@ describe('PublicPredictionsPage', () => {
     renderPage();
 
     expect(screen.getByText(/Showing predictions for 2024 Season/)).toBeInTheDocument();
+  });
+
+  it('does not show graded styling when results are published but not graded', () => {
+    mockPredictionsData = {
+      season: 2024,
+      week: 1,
+      resultsPublished: false,
+      predictions: [
+        {
+          actualAwayScore: null,
+          actualHomeScore: null,
+          actualOverUnderResult: null,
+          actualSpreadCoveringTeam: null,
+          actualWinner: null,
+          awayLogoURL: '',
+          awayTeam: 'Michigan',
+          awayTeamScore: 17,
+          bettingOverUnder: 45.5,
+          bettingSpread: -3.5,
+          homeLogoURL: '',
+          homeTeam: 'Ohio State',
+          homeTeamScore: 28,
+          myOverUnderPick: 'Over',
+          mySpreadPick: 'Ohio State',
+          neutralSite: false,
+          overUnderGrade: 'Ungraded',
+          predictedMargin: 11,
+          predictedWinner: 'Ohio State',
+          spreadGrade: 'Ungraded',
+          winnerGrade: 'Ungraded',
+        },
+      ],
+    };
+
+    renderPage();
+
+    expect(screen.queryByText(/Final:/)).not.toBeInTheDocument();
+  });
+
+  it('shows graded styling when results are graded and published', () => {
+    mockPredictionsData = {
+      season: 2024,
+      week: 1,
+      resultsPublished: true,
+      predictions: [
+        {
+          actualAwayScore: 17,
+          actualHomeScore: 28,
+          actualOverUnderResult: 'Under',
+          actualSpreadCoveringTeam: 'Ohio State',
+          actualWinner: 'Ohio State',
+          awayLogoURL: '',
+          awayTeam: 'Michigan',
+          awayTeamScore: 17,
+          bettingOverUnder: 45.5,
+          bettingSpread: -3.5,
+          homeLogoURL: '',
+          homeTeam: 'Ohio State',
+          homeTeamScore: 28,
+          myOverUnderPick: 'Over',
+          mySpreadPick: 'Ohio State',
+          neutralSite: false,
+          overUnderGrade: 'Correct',
+          predictedMargin: 11,
+          predictedWinner: 'Ohio State',
+          spreadGrade: 'Correct',
+          winnerGrade: 'Correct',
+        },
+      ],
+    };
+
+    renderPage();
+
+    expect(screen.getByText((_, element) => element?.textContent === 'Final: 17-28')).toBeInTheDocument();
   });
 });
