@@ -170,6 +170,17 @@ describe('Layout', () => {
     expect(predictionsLink).toBeDefined();
   });
 
+  it('shows Track Record link in Predictions dropdown when enabled', async () => {
+    mockPredictionsPageEnabled = true;
+    renderLayout();
+
+    const predictionsButton = screen.getByRole('button', { name: /^Predictions$/i });
+    await userEvent.click(predictionsButton);
+
+    const trackRecordLink = screen.getAllByRole('link').find((l) => l.getAttribute('href') === '/track-record');
+    expect(trackRecordLink).toBeDefined();
+  });
+
   it('shows Predictions section in mobile menu when enabled', async () => {
     mockPredictionsPageEnabled = true;
     const user = userEvent.setup();
@@ -181,6 +192,17 @@ describe('Layout', () => {
     expect(predictionsLink).toBeDefined();
   });
 
+  it('shows Track Record link in mobile menu when enabled', async () => {
+    mockPredictionsPageEnabled = true;
+    const user = userEvent.setup();
+    renderLayout();
+
+    await user.click(screen.getByLabelText('Open menu'));
+
+    const trackRecordLink = screen.getAllByRole('link').find((l) => l.getAttribute('href') === '/track-record');
+    expect(trackRecordLink).toBeDefined();
+  });
+
   it('hides Predictions section in mobile menu when disabled', async () => {
     mockPredictionsPageEnabled = false;
     const user = userEvent.setup();
@@ -190,6 +212,9 @@ describe('Layout', () => {
 
     const predictionsLink = screen.queryAllByRole('link').find((l) => l.getAttribute('href') === '/predictions');
     expect(predictionsLink).toBeUndefined();
+
+    const trackRecordLink = screen.queryAllByRole('link').find((l) => l.getAttribute('href') === '/track-record');
+    expect(trackRecordLink).toBeUndefined();
   });
 
   it('shows lock icon linking to login when not authenticated', () => {

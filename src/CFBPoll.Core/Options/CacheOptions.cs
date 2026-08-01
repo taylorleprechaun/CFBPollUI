@@ -15,4 +15,5 @@ public class CacheOptions
     public int SeasonBoundaryGraceMonth { get; set; } = 3;
     public int SeasonDataExpirationHours { get; set; } = 144;
     public int SeasonTrendsExpirationHours { get; set; } = 24;
+    public int TrackRecordExpirationHours { get; set; } = 24;
 }

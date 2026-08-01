@@ -22,6 +22,7 @@ public class AdminModuleTests
     private readonly Mock<IRankingsModule> _mockRankingsModule;
     private readonly Mock<IRatingModule> _mockRatingModule;
     private readonly Mock<ISeasonTrendsModule> _mockSeasonTrendsModule;
+    private readonly Mock<ITrackRecordModule> _mockTrackRecordModule;
     public AdminModuleTests()
     {
         _mockCache = new Mock<IPersistentCache>();
@@ -35,6 +36,7 @@ public class AdminModuleTests
         _mockRankingsModule = new Mock<IRankingsModule>();
         _mockRatingModule = new Mock<IRatingModule>();
         _mockSeasonTrendsModule = new Mock<ISeasonTrendsModule>();
+        _mockTrackRecordModule = new Mock<ITrackRecordModule>();
 
         _mockDataService.Setup(x => x.GetBettingLinesAsync(It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(new List<BettingLine>());
@@ -50,6 +52,7 @@ public class AdminModuleTests
             _mockRankingsModule.Object,
             _mockRatingModule.Object,
             _mockSeasonTrendsModule.Object,
+            _mockTrackRecordModule.Object,
             _mockLogger.Object);
     }
 
@@ -493,6 +496,26 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task DeletePredictionsAsync_Failure_DoesNotInvalidateTrackRecordCache()
+    {
+        _mockPredictionsModule.Setup(x => x.DeleteAsync(2024, 5)).ReturnsAsync(false);
+
+        await _adminModule.DeletePredictionsAsync(2024, 5);
+
+        _mockTrackRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeletePredictionsAsync_Success_InvalidatesTrackRecordCache()
+    {
+        _mockPredictionsModule.Setup(x => x.DeleteAsync(2024, 5)).ReturnsAsync(true);
+
+        await _adminModule.DeletePredictionsAsync(2024, 5);
+
+        _mockTrackRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
+    }
+
+    [Fact]
     public async Task DeleteSnapshotAsync_DelegatesToRankingsModule()
     {
         _mockRankingsModule.Setup(x => x.DeleteSnapshotAsync(2024, 5)).ReturnsAsync(true);
@@ -658,6 +681,26 @@ public class AdminModuleTests
 
         Assert.True(result);
         _mockPredictionsModule.Verify(x => x.PublishGradedResultsAsync(2024, 5), Times.Once);
+    }
+
+    [Fact]
+    public async Task PublishGradedResultsAsync_Failure_DoesNotInvalidateTrackRecordCache()
+    {
+        _mockPredictionsModule.Setup(x => x.PublishGradedResultsAsync(2024, 5)).ReturnsAsync(false);
+
+        await _adminModule.PublishGradedResultsAsync(2024, 5);
+
+        _mockTrackRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task PublishGradedResultsAsync_Success_InvalidatesTrackRecordCache()
+    {
+        _mockPredictionsModule.Setup(x => x.PublishGradedResultsAsync(2024, 5)).ReturnsAsync(true);
+
+        await _adminModule.PublishGradedResultsAsync(2024, 5);
+
+        _mockTrackRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
     }
 
     [Fact]

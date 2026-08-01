@@ -15,6 +15,7 @@ const SeasonTrendsPage = lazy(() => import('./pages/season-trends-page'));
 const SettingsPage = lazy(() => import('./pages/settings-page'));
 const SnapshotsPage = lazy(() => import('./pages/snapshots-page'));
 const TeamDetailsPage = lazy(() => import('./pages/team-details-page'));
+const TrackRecordPage = lazy(() => import('./pages/track-record-page'));
 
 function PageLoader() {
   return (
@@ -61,6 +62,11 @@ function App() {
         <Route path="predictions" element={
           <RequirePageEnabled enabled={predictionsPageEnabled}>
             <LazyPage><PublicPredictionsPage /></LazyPage>
+          </RequirePageEnabled>
+        } />
+        <Route path="track-record" element={
+          <RequirePageEnabled enabled={predictionsPageEnabled}>
+            <LazyPage><TrackRecordPage /></LazyPage>
           </RequirePageEnabled>
         } />
         <Route element={<RequireGuest />}>

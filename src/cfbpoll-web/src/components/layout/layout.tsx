@@ -67,7 +67,13 @@ export function Layout() {
     : null;
 
   const predictionsGroup: NavGroup | null = predictionsPageEnabled
-    ? { items: [{ label: 'Predictions', to: '/predictions' }], label: 'Predictions' }
+    ? {
+        items: [
+          { label: 'Predictions', to: '/predictions' },
+          { label: 'Track Record', to: '/track-record' },
+        ],
+        label: 'Predictions',
+      }
     : null;
 
   return (

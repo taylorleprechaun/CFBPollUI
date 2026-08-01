@@ -49,6 +49,12 @@ vi.mock('../pages/public-predictions-page', () => ({
   default: MockPublicPredictionsPage,
 }));
 
+const MockTrackRecordPage = () => <div>Track Record Page Content</div>;
+vi.mock('../pages/track-record-page', () => ({
+  TrackRecordPage: MockTrackRecordPage,
+  default: MockTrackRecordPage,
+}));
+
 const MockSettingsPage = () => <div>Settings Page Content</div>;
 vi.mock('../pages/settings-page', () => ({
   SettingsPage: MockSettingsPage,
@@ -134,6 +140,22 @@ describe('App', () => {
     mockPredictionsPageEnabled = false;
 
     renderApp('/predictions');
+    await waitFor(() => {
+      expect(screen.getByText('Home Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('renders track record page at /track-record route when enabled', async () => {
+    renderApp('/track-record');
+    await waitFor(() => {
+      expect(screen.getByText('Track Record Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('redirects /track-record to home when predictions page is disabled', async () => {
+    mockPredictionsPageEnabled = false;
+
+    renderApp('/track-record');
     await waitFor(() => {
       expect(screen.getByText('Home Page Content')).toBeInTheDocument();
     });

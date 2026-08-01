@@ -18,6 +18,7 @@ public class AdminModule : IAdminModule
     private readonly IRankingsModule _rankingsModule;
     private readonly IRatingModule _ratingModule;
     private readonly ISeasonTrendsModule _seasonTrendsModule;
+    private readonly ITrackRecordModule _trackRecordModule;
 
     public AdminModule(
         ICFBDataService dataService,
@@ -30,6 +31,7 @@ public class AdminModule : IAdminModule
         IRankingsModule rankingsModule,
         IRatingModule ratingModule,
         ISeasonTrendsModule seasonTrendsModule,
+        ITrackRecordModule trackRecordModule,
         ILogger<AdminModule> logger)
     {
         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
@@ -43,6 +45,7 @@ public class AdminModule : IAdminModule
         _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
         _ratingModule = ratingModule ?? throw new ArgumentNullException(nameof(ratingModule));
         _seasonTrendsModule = seasonTrendsModule ?? throw new ArgumentNullException(nameof(seasonTrendsModule));
+        _trackRecordModule = trackRecordModule ?? throw new ArgumentNullException(nameof(trackRecordModule));
     }
 
     public async Task<CalculatePredictionsResult> CalculatePredictionsAsync(int season, int week)
@@ -148,7 +151,14 @@ public class AdminModule : IAdminModule
     {
         _logger.LogInformation("Deleting predictions for season {Season}, week {Week}", season, week);
 
-        return await _predictionsModule.DeleteAsync(season, week).ConfigureAwait(false);
+        var result = await _predictionsModule.DeleteAsync(season, week).ConfigureAwait(false);
+
+        if (result)
+        {
+            await _trackRecordModule.InvalidateCacheAsync().ConfigureAwait(false);
+        }
+
+        return result;
     }
 
     public async Task<bool> DeleteSnapshotAsync(int season, int week)
@@ -197,7 +207,14 @@ public class AdminModule : IAdminModule
     {
         _logger.LogInformation("Publishing graded results for season {Season}, week {Week}", season, week);
 
-        return await _predictionsModule.PublishGradedResultsAsync(season, week).ConfigureAwait(false);
+        var result = await _predictionsModule.PublishGradedResultsAsync(season, week).ConfigureAwait(false);
+
+        if (result)
+        {
+            await _trackRecordModule.InvalidateCacheAsync().ConfigureAwait(false);
+        }
+
+        return result;
     }
 
     public async Task<bool> PublishPredictionsAsync(int season, int week)

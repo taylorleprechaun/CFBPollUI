@@ -9,6 +9,9 @@ import {
   TeamDetailResponseSchema,
   GamePredictionPublicSchema,
   PredictionsPublicResponseSchema,
+  TrackRecordTotalsSchema,
+  TrackRecordWeekSchema,
+  TrackRecordResponseSchema,
 } from '../schemas';
 
 describe('Zod Schemas', () => {
@@ -384,6 +387,68 @@ describe('Zod Schemas', () => {
     it('rejects a response without resultsPublished', () => {
       const data = { season: 2024, week: 5, predictions: [] };
       const result = PredictionsPublicResponseSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('TrackRecordTotalsSchema', () => {
+    it('validates valid totals', () => {
+      const data = { correct: 10, incorrect: 4, push: 1 };
+      const result = TrackRecordTotalsSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects totals missing a field', () => {
+      const data = { correct: 10, incorrect: 4 };
+      const result = TrackRecordTotalsSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('TrackRecordWeekSchema', () => {
+    it('validates a valid week', () => {
+      const data = {
+        overUnder: { correct: 3, incorrect: 2, push: 0 },
+        season: 2024,
+        spread: { correct: 4, incorrect: 1, push: 0 },
+        week: 3,
+        winner: { correct: 5, incorrect: 0, push: 0 },
+      };
+      const result = TrackRecordWeekSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects a week missing totals for a category', () => {
+      const data = {
+        overUnder: { correct: 3, incorrect: 2, push: 0 },
+        season: 2024,
+        week: 3,
+        winner: { correct: 5, incorrect: 0, push: 0 },
+      };
+      const result = TrackRecordWeekSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('TrackRecordResponseSchema', () => {
+    it('validates a valid response', () => {
+      const data = {
+        overallOverUnder: { correct: 10, incorrect: 8, push: 1 },
+        overallSpread: { correct: 12, incorrect: 6, push: 0 },
+        overallWinner: { correct: 15, incorrect: 3, push: 0 },
+        weeks: [],
+      };
+      const result = TrackRecordResponseSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects a response missing an overall category', () => {
+      const data = {
+        overallOverUnder: { correct: 10, incorrect: 8, push: 1 },
+        overallWinner: { correct: 15, incorrect: 3, push: 0 },
+        weeks: [],
+      };
+      const result = TrackRecordResponseSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
   });

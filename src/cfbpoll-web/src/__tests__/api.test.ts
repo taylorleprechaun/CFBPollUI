@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchSeasons, fetchWeeks, fetchRankings, fetchPredictions, fetchConferences, fetchTeamDetail, fetchPageVisibility, fetchPollLeaders } from '../services/api';
+import { fetchSeasons, fetchWeeks, fetchRankings, fetchPredictions, fetchConferences, fetchTeamDetail, fetchPageVisibility, fetchPollLeaders, fetchTrackRecord } from '../services/api';
 
 describe('API service', () => {
   beforeEach(() => {
@@ -272,6 +272,40 @@ describe('API service', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await expect(fetchPollLeaders()).rejects.toThrow('Internal error');
+    });
+  });
+
+  describe('fetchTrackRecord', () => {
+    it('constructs correct URL', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            overallOverUnder: { correct: 0, incorrect: 0, push: 0 },
+            overallSpread: { correct: 0, incorrect: 0, push: 0 },
+            overallWinner: { correct: 0, incorrect: 0, push: 0 },
+            weeks: [],
+          }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await fetchTrackRecord();
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/track-record'),
+        undefined
+      );
+    });
+
+    it('throws on failed fetch', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ message: 'Internal error' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(fetchTrackRecord()).rejects.toThrow('Internal error');
     });
   });
 });

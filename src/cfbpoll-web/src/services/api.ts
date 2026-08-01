@@ -12,6 +12,7 @@ import {
   SeasonTrendsResponseSchema,
   SeasonsResponseSchema,
   TeamDetailResponseSchema,
+  TrackRecordResponseSchema,
   WeeksResponseSchema,
   type AllTimeResponse,
   type ConferencesResponse,
@@ -22,6 +23,7 @@ import {
   type SeasonTrendsResponse,
   type SeasonsResponse,
   type TeamDetailResponse,
+  type TrackRecordResponse,
   type WeeksResponse,
 } from '../schemas';
 
@@ -93,4 +95,9 @@ export async function fetchPollLeaders(
   const url = `${API_BASE_URL}/api/v1/poll-leaders${query ? `?${query}` : ''}`;
   const response = await safeFetch(url);
   return parseResponse(response, PollLeadersResponseSchema);
+}
+
+export async function fetchTrackRecord(): Promise<TrackRecordResponse> {
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/track-record`);
+  return parseResponse(response, TrackRecordResponseSchema);
 }

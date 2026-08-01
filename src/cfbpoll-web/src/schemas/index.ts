@@ -210,6 +210,28 @@ export const SeasonTrendsResponseSchema = z.object({
   weeks: z.array(SeasonTrendWeekSchema),
 });
 
+// Track record schemas
+export const TrackRecordTotalsSchema = z.object({
+  correct: z.number(),
+  incorrect: z.number(),
+  push: z.number(),
+});
+
+export const TrackRecordWeekSchema = z.object({
+  overUnder: TrackRecordTotalsSchema,
+  season: z.number(),
+  spread: TrackRecordTotalsSchema,
+  week: z.number(),
+  winner: TrackRecordTotalsSchema,
+});
+
+export const TrackRecordResponseSchema = z.object({
+  overallOverUnder: TrackRecordTotalsSchema,
+  overallSpread: TrackRecordTotalsSchema,
+  overallWinner: TrackRecordTotalsSchema,
+  weeks: z.array(TrackRecordWeekSchema),
+});
+
 // Type exports inferred from schemas
 export type AllTimeEntry = z.infer<typeof AllTimeEntrySchema>;
 export type AllTimeResponse = z.infer<typeof AllTimeResponseSchema>;
@@ -231,5 +253,8 @@ export type SeasonTrendsResponse = z.infer<typeof SeasonTrendsResponseSchema>;
 export type SeasonsResponse = z.infer<typeof SeasonsResponseSchema>;
 export type TeamDetailResponse = z.infer<typeof TeamDetailResponseSchema>;
 export type TeamDetails = z.infer<typeof TeamDetailsSchema>;
+export type TrackRecordResponse = z.infer<typeof TrackRecordResponseSchema>;
+export type TrackRecordTotals = z.infer<typeof TrackRecordTotalsSchema>;
+export type TrackRecordWeek = z.infer<typeof TrackRecordWeekSchema>;
 export type Week = z.infer<typeof WeekSchema>;
 export type WeeksResponse = z.infer<typeof WeeksResponseSchema>;
