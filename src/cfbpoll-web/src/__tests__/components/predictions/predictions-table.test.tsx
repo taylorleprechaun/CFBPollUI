@@ -1,8 +1,31 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { PredictionsTable } from '../../../components/predictions/predictions-table';
 import type { GamePredictionPublic } from '../../../schemas';
+
+vi.mock('../../../components/predictions/prediction-card', () => ({
+  PredictionCard: ({
+    prediction,
+    rankByTeam,
+    season,
+    showGrades,
+  }: {
+    prediction: GamePredictionPublic;
+    rankByTeam?: Map<string, number>;
+    season?: number | null;
+    showGrades?: boolean;
+  }) => (
+    <div
+      data-testid="prediction-card"
+      data-away-team={prediction.awayTeam}
+      data-home-team={prediction.homeTeam}
+      data-season={String(season)}
+      data-show-grades={String(showGrades)}
+      data-has-rank-by-team={String(rankByTeam !== undefined)}
+    />
+  ),
+}));
 
 function buildPrediction(overrides: Partial<GamePredictionPublic> = {}): GamePredictionPublic {
   return {
@@ -84,6 +107,7 @@ describe('PredictionsTable', () => {
 
     expect(screen.getByText('Score')).toBeInTheDocument();
     expect(screen.queryByText('Ohio State')).not.toBeInTheDocument();
+    expect(screen.queryAllByTestId('prediction-card')).toHaveLength(0);
   });
 
   it('renders distinct headers for the spread pick and over/under pick columns', () => {
@@ -104,6 +128,44 @@ describe('PredictionsTable', () => {
     render(<PredictionsTable predictions={[buildPrediction()]} isLoading={false} />);
 
     expect(screen.getByText('Score')).toBeInTheDocument();
+  });
+
+  it('wraps the table in a horizontally scrollable container hidden below the md breakpoint', () => {
+    const { container } = render(<PredictionsTable predictions={[buildPrediction()]} />);
+
+    expect(container.querySelector('.hidden.md\\:block.overflow-x-auto table')).toBeInTheDocument();
+  });
+
+  describe('mobile card list', () => {
+    it('renders one PredictionCard per prediction', () => {
+      render(
+        <PredictionsTable
+          predictions={[buildPrediction(), buildPrediction({ homeTeam: 'Iowa', awayTeam: 'Nebraska' })]}
+        />
+      );
+
+      expect(screen.getAllByTestId('prediction-card')).toHaveLength(2);
+    });
+
+    it('passes season, showGrades, and rankByTeam through to each card', () => {
+      const rankByTeam = new Map([['ohio state', 3]]);
+
+      render(
+        <MemoryRouter>
+          <PredictionsTable
+            predictions={[buildPrediction()]}
+            season={2024}
+            showGrades={true}
+            rankByTeam={rankByTeam}
+          />
+        </MemoryRouter>
+      );
+
+      const card = screen.getByTestId('prediction-card');
+      expect(card).toHaveAttribute('data-season', '2024');
+      expect(card).toHaveAttribute('data-show-grades', 'true');
+      expect(card).toHaveAttribute('data-has-rank-by-team', 'true');
+    });
   });
 
   describe('graded display', () => {

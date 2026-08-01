@@ -73,4 +73,10 @@ describe('TrackRecordTable', () => {
     const link = screen.getByRole('link', { name: '2023 Week 5' });
     expect(link).toHaveAttribute('href', '/predictions?season=2023&week=4');
   });
+
+  it('wraps the table in a horizontally scrollable container for mobile viewports', () => {
+    const { container } = renderTable({ weeks: [buildWeek()] });
+
+    expect(container.querySelector('.overflow-x-auto table')).toBeInTheDocument();
+  });
 });

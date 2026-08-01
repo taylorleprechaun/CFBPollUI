@@ -138,7 +138,7 @@ describe('PublicPredictionsPage', () => {
     renderPage();
 
     expect(screen.getAllByText('Ohio State').length).toBeGreaterThan(0);
-    expect(screen.getByText('Michigan')).toBeInTheDocument();
+    expect(screen.getAllByText('Michigan').length).toBeGreaterThan(0);
   });
 
   it('links team names to the currently selected season', () => {
@@ -166,11 +166,14 @@ describe('PublicPredictionsPage', () => {
 
     renderPage();
 
-    const michiganLink = screen.getByRole('link', { name: 'Michigan' });
-    expect(michiganLink).toHaveAttribute(
-      'href',
-      `/team-details?team=${encodeURIComponent('Michigan')}&season=2024`
-    );
+    const michiganLinks = screen.getAllByRole('link', { name: 'Michigan' });
+    expect(michiganLinks.length).toBeGreaterThan(0);
+    for (const link of michiganLinks) {
+      expect(link).toHaveAttribute(
+        'href',
+        `/team-details?team=${encodeURIComponent('Michigan')}&season=2024`
+      );
+    }
   });
 
   it('shows an inline rank badge next to a team name that is ranked in the top 25', () => {
@@ -203,8 +206,11 @@ describe('PublicPredictionsPage', () => {
 
     renderPage();
 
-    const michiganLink = screen.getByRole('link', { name: 'Michigan' });
-    expect(michiganLink.textContent).toBe('Michigan');
+    const michiganLinks = screen.getAllByRole('link', { name: 'Michigan' });
+    expect(michiganLinks.length).toBeGreaterThan(0);
+    for (const link of michiganLinks) {
+      expect(link.textContent).toBe('Michigan');
+    }
 
     const ohioStateLinks = screen.getAllByRole('link', { name: /Ohio State/ });
     expect(ohioStateLinks.length).toBeGreaterThan(0);
@@ -261,7 +267,7 @@ describe('PublicPredictionsPage', () => {
     it('hides games where neither team is ranked in the top 25 once toggled on', async () => {
       renderPage();
 
-      expect(screen.getByText('Nebraska')).toBeInTheDocument();
+      expect(screen.getAllByText('Nebraska').length).toBeGreaterThan(0);
 
       await userEvent.click(screen.getByRole('button', { name: 'Top 25' }));
 
@@ -278,7 +284,7 @@ describe('PublicPredictionsPage', () => {
       expect(screen.queryByText('Nebraska')).not.toBeInTheDocument();
 
       await userEvent.click(toggle);
-      expect(screen.getByText('Nebraska')).toBeInTheDocument();
+      expect(screen.getAllByText('Nebraska').length).toBeGreaterThan(0);
     });
 
     it('marks the toggle as pressed only while the filter is active', async () => {
@@ -388,7 +394,9 @@ describe('PublicPredictionsPage', () => {
 
     renderPage();
 
-    expect(screen.getByText((_, element) => element?.textContent === 'Final: 17-28')).toBeInTheDocument();
+    expect(
+      screen.getAllByText((_, element) => element?.textContent === 'Final: 17-28').length
+    ).toBeGreaterThan(0);
   });
 
   it('resets the selected week when the season changes', async () => {
