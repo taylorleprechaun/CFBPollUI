@@ -6,6 +6,17 @@ export function formatTotals(totals: TrackRecordTotals): string {
     : `${totals.correct}-${totals.incorrect}`;
 }
 
+export function sumTotals(totals: TrackRecordTotals[]): TrackRecordTotals {
+  return totals.reduce(
+    (acc, t) => ({
+      correct: acc.correct + t.correct,
+      incorrect: acc.incorrect + t.incorrect,
+      push: acc.push + t.push,
+    }),
+    { correct: 0, incorrect: 0, push: 0 }
+  );
+}
+
 export function winPercentage(totals: TrackRecordTotals): number | null {
   const decided = totals.correct + totals.incorrect;
   if (decided === 0) return null;

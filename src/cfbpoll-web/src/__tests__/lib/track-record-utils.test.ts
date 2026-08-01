@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatTotals, winPercentage } from '../../lib/track-record-utils';
+import { formatTotals, sumTotals, winPercentage } from '../../lib/track-record-utils';
 
 describe('formatTotals', () => {
   it('formats correct-incorrect without a push segment when push is zero', () => {
@@ -12,6 +12,24 @@ describe('formatTotals', () => {
 
   it('formats all zeros without a push segment', () => {
     expect(formatTotals({ correct: 0, incorrect: 0, push: 0 })).toBe('0-0');
+  });
+});
+
+describe('sumTotals', () => {
+  it('sums correct, incorrect, and push across multiple totals', () => {
+    expect(sumTotals([
+      { correct: 5, incorrect: 0, push: 0 },
+      { correct: 4, incorrect: 1, push: 0 },
+      { correct: 2, incorrect: 1, push: 1 },
+    ])).toEqual({ correct: 11, incorrect: 2, push: 1 });
+  });
+
+  it('returns all zeros for an empty array', () => {
+    expect(sumTotals([])).toEqual({ correct: 0, incorrect: 0, push: 0 });
+  });
+
+  it('returns a copy of the single totals object when given one entry', () => {
+    expect(sumTotals([{ correct: 3, incorrect: 2, push: 1 }])).toEqual({ correct: 3, incorrect: 2, push: 1 });
   });
 });
 
