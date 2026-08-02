@@ -177,6 +177,29 @@ describe('TrackRecordPage', () => {
     expect(screen.getByText('5-3-1')).toBeInTheDocument();
   });
 
+  it('sorts weeks by season/week explicitly instead of relying on the API returning them in order', () => {
+    const outOfOrderData = {
+      ...mockData,
+      weeks: [
+        { overUnder: { correct: 2, incorrect: 1, push: 1 }, season: 2024, spread: { correct: 3, incorrect: 2, push: 0 }, week: 3, winner: { correct: 4, incorrect: 1, push: 0 } },
+        { overUnder: { correct: 1, incorrect: 1, push: 0 }, season: 2023, spread: { correct: 2, incorrect: 0, push: 0 }, week: 2, winner: { correct: 2, incorrect: 0, push: 0 } },
+        { overUnder: { correct: 3, incorrect: 2, push: 0 }, season: 2024, spread: { correct: 4, incorrect: 1, push: 0 }, week: 1, winner: { correct: 5, incorrect: 0, push: 0 } },
+      ],
+    };
+    vi.mocked(useTrackRecord).mockReturnValue({
+      data: outOfOrderData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useTrackRecord>);
+
+    renderPage();
+
+    const rows = screen.getAllByRole('row');
+    expect(rows[1]).toHaveTextContent('2024 Week 4');
+    expect(rows[2]).toHaveTextContent('2024 Week 2');
+  });
+
   it('updates the table and season-overall cards when the season changes, without altering the all-time cards', async () => {
     vi.mocked(useTrackRecord).mockReturnValue({
       data: mockData,

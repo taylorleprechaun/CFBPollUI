@@ -41,6 +41,7 @@ export function SnapshotsPage() {
   const {
     data: snapshots,
     error: snapshotsError,
+    isLoading: snapshotsLoading,
     refetch: refetchSnapshots,
   } = useSnapshots(token);
 
@@ -142,6 +143,7 @@ export function SnapshotsPage() {
         actionFeedback={actionFeedback}
         collapsedSeasons={collapsedSeasons}
         isActionPending={isActionPending}
+        isLoading={snapshotsLoading}
         onClearFeedback={clearFeedback}
         onCollapseAll={handleCollapseAll}
         onDelete={handleDelete}

@@ -15,7 +15,7 @@ export function TrackRecordPage() {
   const { data, isLoading, error, refetch } = useTrackRecord();
 
   const weeksDescending = useMemo(
-    () => data ? [...data.weeks].reverse() : [],
+    () => data ? [...data.weeks].sort((a, b) => b.season - a.season || b.week - a.week) : [],
     [data]
   );
 

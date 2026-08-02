@@ -8,6 +8,7 @@ interface PersistedPredictionsSectionProps {
   actionFeedback: ActionFeedback | null;
   collapsedSeasons: Set<number>;
   isActionPending: boolean;
+  isLoading?: boolean;
   onClearFeedback: () => void;
   onCollapseAll: () => void;
   onDelete: (season: number, week: number, isPublished: boolean) => void;
@@ -17,6 +18,8 @@ interface PersistedPredictionsSectionProps {
   onView?: (season: number, week: number) => void;
   summaries: PredictionsSummary[];
 }
+
+const COLUMN_COUNT = 5;
 
 const EXTRA_COLUMN_HEADERS = (
   <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Games</th>
@@ -37,6 +40,7 @@ export function PersistedPredictionsSection({
   actionFeedback,
   collapsedSeasons,
   isActionPending,
+  isLoading = false,
   onClearFeedback,
   onCollapseAll,
   onDelete,
@@ -50,11 +54,13 @@ export function PersistedPredictionsSection({
     <PersistedItemsSection
       actionFeedback={actionFeedback}
       collapsedSeasons={collapsedSeasons}
+      columnCount={COLUMN_COUNT}
       contentIdPrefix="predictions-season"
       emptyMessage="No persisted predictions found."
       extraColumnHeaders={EXTRA_COLUMN_HEADERS}
       feedbackKeyPrefix="persisted-prediction-publish"
       isActionPending={isActionPending}
+      isLoading={isLoading}
       itemLabel="prediction"
       items={summaries}
       onClearFeedback={onClearFeedback}

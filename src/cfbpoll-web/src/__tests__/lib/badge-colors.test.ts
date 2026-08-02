@@ -4,6 +4,7 @@ import type { BadgeColor } from '../../lib/badge-colors';
 
 describe('badgeColorClasses', () => {
   const cases: [BadgeColor, string][] = [
+    ['blue', 'bg-blue-100'],
     ['gray', 'bg-gray-100'],
     ['green', 'bg-green-100'],
     ['red', 'bg-red-100'],

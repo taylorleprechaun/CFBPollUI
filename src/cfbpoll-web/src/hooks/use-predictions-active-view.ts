@@ -102,7 +102,11 @@ export function usePredictionsActiveView(token: string | null) {
     return {
       isGraded: query.data.predictions.isGraded,
       isPersisted: freshMeta ? freshMeta.isPersisted : null,
-      isPublished: freshMeta ? null : query.data.isPublished,
+      // Always read live from the query cache rather than masking it while freshMeta is set -
+      // the cache is kept accurate through every transition (generate, grade, publish), and a
+      // week can be published/graded more than once within the same session without navigating
+      // away, so "haven't left the page" must not be conflated with "definitely unpublished".
+      isPublished: query.data.isPublished,
       predictions: query.data.predictions,
       resultsPublished: query.data.predictions.resultsPublished,
       season,

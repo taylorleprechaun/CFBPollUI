@@ -8,7 +8,7 @@ function buildView(overrides: Partial<ActivePredictionView> = {}): ActivePredict
   return {
     isGraded: false,
     isPersisted: true,
-    isPublished: null,
+    isPublished: false,
     predictions: {
       isGraded: false,
       predictions: [
@@ -51,9 +51,13 @@ function buildView(overrides: Partial<ActivePredictionView> = {}): ActivePredict
 
 function defaultProps() {
   return {
+    gradeFeedback: null,
     isActionPending: false,
+    isGrading: false,
+    onClearGradeFeedback: vi.fn(),
     onClearPublishFeedback: vi.fn(),
     onClearPublishResultsFeedback: vi.fn(),
+    onGrade: vi.fn(),
     onPublish: vi.fn(),
     onPublishResults: vi.fn(),
     publishFeedback: null,
@@ -120,10 +124,68 @@ describe('ActivePredictionViewSection', () => {
     expect(screen.queryByRole('button', { name: 'Publish Results' })).not.toBeInTheDocument();
   });
 
-  it('shows Publish Results for a graded view', () => {
-    render(<ActivePredictionViewSection {...defaultProps()} view={buildView({ source: 'graded' })} />);
+  it('shows Publish Results for a graded, published, not-yet-results-published view', () => {
+    render(
+      <ActivePredictionViewSection
+        {...defaultProps()}
+        view={buildView({ source: 'graded', isGraded: true, isPublished: true, resultsPublished: false })}
+      />
+    );
 
     expect(screen.getByRole('button', { name: 'Publish Results' })).toBeInTheDocument();
+  });
+
+  it('does not revive Publish when grading a week whose picks are already published (regression)', () => {
+    render(
+      <ActivePredictionViewSection
+        {...defaultProps()}
+        view={buildView({ source: 'graded', isGraded: true, isPublished: true, resultsPublished: false })}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'Publish' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Publish Results' })).toBeInTheDocument();
+  });
+
+  it('does not show Publish Results for a freshly-calculated (ungraded) view even though its label reads "graded" source', () => {
+    // Guards against re-introducing the old "source === 'graded' shows the button unconditionally"
+    // logic - Publish Results must depend on isGraded/isPublished/resultsPublished, not source.
+    render(
+      <ActivePredictionViewSection
+        {...defaultProps()}
+        view={buildView({ source: 'graded', isGraded: false, isPublished: true, resultsPublished: false })}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'Publish Results' })).not.toBeInTheDocument();
+  });
+
+  it('shows Grade for an ungraded view', () => {
+    render(<ActivePredictionViewSection {...defaultProps()} view={buildView({ isGraded: false })} />);
+
+    expect(screen.getByRole('button', { name: 'Grade' })).toBeInTheDocument();
+  });
+
+  it('does not show Grade for an already-graded view', () => {
+    render(<ActivePredictionViewSection {...defaultProps()} view={buildView({ isGraded: true, isPublished: true })} />);
+
+    expect(screen.queryByRole('button', { name: 'Grade' })).not.toBeInTheDocument();
+  });
+
+  it('shows a Grading... label while isGrading is true', () => {
+    render(<ActivePredictionViewSection {...defaultProps()} isGrading={true} view={buildView({ isGraded: false })} />);
+
+    expect(screen.getByRole('button', { name: 'Grading...' })).toBeInTheDocument();
+  });
+
+  it('calls onGrade with season and week when Grade is clicked', async () => {
+    const user = userEvent.setup();
+    const onGrade = vi.fn();
+
+    render(<ActivePredictionViewSection {...defaultProps()} onGrade={onGrade} view={buildView({ isGraded: false })} />);
+    await user.click(screen.getByRole('button', { name: 'Grade' }));
+
+    expect(onGrade).toHaveBeenCalledWith(2024, 5);
   });
 
   it('for a viewed week that is unpublished, shows Publish but not Publish Results', () => {
@@ -177,7 +239,11 @@ describe('ActivePredictionViewSection', () => {
     const onPublishResults = vi.fn();
 
     render(
-      <ActivePredictionViewSection {...defaultProps()} onPublishResults={onPublishResults} view={buildView({ source: 'graded' })} />
+      <ActivePredictionViewSection
+        {...defaultProps()}
+        onPublishResults={onPublishResults}
+        view={buildView({ source: 'graded', isGraded: true, isPublished: true, resultsPublished: false })}
+      />
     );
     await user.click(screen.getByRole('button', { name: 'Publish Results' }));
 
@@ -202,5 +268,23 @@ describe('ActivePredictionViewSection', () => {
     await user.click(headerButton!);
 
     expect(screen.getAllByText('Ohio State').length).toBeGreaterThan(0);
+  });
+
+  it('toggles aria-expanded on the header button and points aria-controls at the content region', async () => {
+    const user = userEvent.setup();
+    render(<ActivePredictionViewSection {...defaultProps()} />);
+
+    const headerButton = screen.getByText('(1 game)').closest('button')!;
+    expect(headerButton).toHaveAttribute('aria-expanded', 'true');
+
+    const contentId = headerButton.getAttribute('aria-controls');
+    expect(contentId).toBeTruthy();
+    expect(document.getElementById(contentId!)).not.toBeNull();
+
+    await user.click(headerButton);
+    expect(headerButton).toHaveAttribute('aria-expanded', 'false');
+
+    await user.click(headerButton);
+    expect(headerButton).toHaveAttribute('aria-expanded', 'true');
   });
 });

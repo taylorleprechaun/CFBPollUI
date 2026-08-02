@@ -6,6 +6,7 @@ interface PersistedSnapshotsSectionProps {
   actionFeedback: ActionFeedback | null;
   collapsedSeasons: Set<number>;
   isActionPending: boolean;
+  isLoading?: boolean;
   onClearFeedback: () => void;
   onCollapseAll: () => void;
   onDelete: (season: number, week: number, isPublished: boolean) => void;
@@ -16,10 +17,13 @@ interface PersistedSnapshotsSectionProps {
   snapshots: Snapshot[];
 }
 
+const COLUMN_COUNT = 4;
+
 export function PersistedSnapshotsSection({
   actionFeedback,
   collapsedSeasons,
   isActionPending,
+  isLoading = false,
   onClearFeedback,
   onCollapseAll,
   onDelete,
@@ -33,10 +37,12 @@ export function PersistedSnapshotsSection({
     <PersistedItemsSection
       actionFeedback={actionFeedback}
       collapsedSeasons={collapsedSeasons}
+      columnCount={COLUMN_COUNT}
       contentIdPrefix="snapshots-season"
       emptyMessage="No persisted snapshots found."
       feedbackKeyPrefix="snapshot-publish"
       isActionPending={isActionPending}
+      isLoading={isLoading}
       itemLabel="snapshot"
       items={snapshots}
       onClearFeedback={onClearFeedback}

@@ -29,6 +29,12 @@ describe('PersistedSnapshotsSection', () => {
     expect(screen.getByText('No persisted snapshots found.')).toBeInTheDocument();
   });
 
+  it('shows a loading skeleton instead of the empty state while isLoading is true', () => {
+    render(<PersistedSnapshotsSection {...defaultProps} isLoading={true} />);
+
+    expect(screen.queryByText('No persisted snapshots found.')).not.toBeInTheDocument();
+  });
+
   it('groups snapshots by season', () => {
     render(
       <PersistedSnapshotsSection

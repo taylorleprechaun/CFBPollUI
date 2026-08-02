@@ -70,7 +70,7 @@ describe('usePredictionsActiveView', () => {
 
     expect(result.current.view?.source).toBe('calculated');
     expect(result.current.view?.isPersisted).toBe(true);
-    expect(result.current.view?.isPublished).toBeNull();
+    expect(result.current.view?.isPublished).toBe(false);
     expect(result.current.view?.unmatchedGameCount).toBeNull();
     expect(fetchPrediction).not.toHaveBeenCalled();
   });
@@ -145,6 +145,54 @@ describe('usePredictionsActiveView', () => {
     });
 
     await waitFor(() => expect(result.current.view).toBeNull());
+  });
+
+  it('view.isPublished reflects a same-session publish immediately, without navigating away', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>{children}</MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => usePredictionsActiveView('test-token'), { wrapper });
+
+    act(() => {
+      result.current.applyCalculated({ isPersisted: true, predictions });
+    });
+    await waitFor(() => expect(result.current.view?.isPublished).toBe(false));
+
+    // Simulate the publish mutation's onSuccess cache patch (see usePublishPredictions) without
+    // ever calling showView/leaving the page - view.isPublished must pick this up immediately
+    // since it's read live from the cache rather than masked while 'calculated' meta is active.
+    act(() => {
+      queryClient.setQueryData(['admin-prediction', 2024, 5], (old: { isPublished: boolean; predictions: typeof predictions } | undefined) =>
+        old && { ...old, isPublished: true }
+      );
+    });
+
+    await waitFor(() => expect(result.current.view?.isPublished).toBe(true));
+  });
+
+  it('applyGraded does not reset isPublished to false for a week whose picks are already published', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData(['admin-prediction', 2024, 5], { isPublished: true, predictions });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>{children}</MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => usePredictionsActiveView('test-token'), { wrapper });
+
+    act(() => {
+      result.current.applyGraded({ isPersisted: true, predictions, unmatchedGameCount: 0 });
+    });
+
+    // Regression: grading an already-published week must not make its Publish button reappear -
+    // view.isPublished must stay true immediately after grading, in the same render.
+    await waitFor(() => expect(result.current.view).not.toBeNull());
+    expect(result.current.view?.isPublished).toBe(true);
   });
 
   it('clearIfMatches does not clear the active view for a non-matching week', async () => {

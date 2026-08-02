@@ -90,6 +90,20 @@ describe('PreviewSection', () => {
     expect(chevron().classList.toString()).not.toContain('-rotate-90');
   });
 
+  it('toggles aria-expanded on the header button and points aria-controls at the content region', () => {
+    renderPreview();
+
+    const headerButton = screen.getByText(/Preview: 2024 Week 6/).closest('button')!;
+    expect(headerButton).toHaveAttribute('aria-expanded', 'true');
+
+    const contentId = headerButton.getAttribute('aria-controls');
+    expect(contentId).toBeTruthy();
+    expect(document.getElementById(contentId!)).not.toBeNull();
+
+    fireEvent.click(headerButton);
+    expect(headerButton).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('disables buttons when isActionPending is true', () => {
     renderPreview({ isActionPending: true });
 

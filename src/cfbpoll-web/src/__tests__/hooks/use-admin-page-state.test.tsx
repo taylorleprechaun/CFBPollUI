@@ -169,6 +169,45 @@ describe('useAdminPageState - season collapse tracking', () => {
   });
 });
 
+describe('useAdminPageState - publish', () => {
+  it('handlePublish calls publishMutation.mutateAsync and sets success feedback', async () => {
+    const mutateAsync = vi.fn().mockResolvedValue(undefined);
+    const options = {
+      ...baseOptions(),
+      publishMutation: fakeMutation<void, { season: number; week: number }>({ mutateAsync }),
+    };
+
+    const { result } = renderHook(() => useAdminPageState<CalcResult>(options));
+
+    await act(async () => {
+      await result.current.handlePublish(2024, 5, 'active-view-publish');
+    });
+
+    expect(mutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
+    expect(result.current.actionFeedback).toEqual({ key: 'active-view-publish-2024-5', type: 'success' });
+  });
+
+  it('handlePublish sets error feedback on failure', async () => {
+    const mutateAsync = vi.fn().mockRejectedValue(new Error('Publish failed'));
+    const options = {
+      ...baseOptions(),
+      publishMutation: fakeMutation<void, { season: number; week: number }>({ mutateAsync }),
+    };
+
+    const { result } = renderHook(() => useAdminPageState<CalcResult>(options));
+
+    await act(async () => {
+      await result.current.handlePublish(2024, 5, 'active-view-publish');
+    });
+
+    expect(result.current.actionFeedback).toEqual({
+      key: 'active-view-publish-2024-5',
+      type: 'error',
+      message: 'Publish failed',
+    });
+  });
+});
+
 describe('useAdminPageState - delete', () => {
   it('executeDelete calls onDeleteSuccess with the deleted season and week', async () => {
     const onDeleteSuccess = vi.fn();

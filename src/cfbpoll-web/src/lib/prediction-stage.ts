@@ -19,7 +19,7 @@ const STAGE_LABELS: Record<PredictionStage, string> = {
 const STAGE_COLORS: Record<PredictionStage, BadgeColor> = {
   draft: 'gray',
   'picks-published': 'yellow',
-  graded: 'red',
+  graded: 'blue',
   'results-published': 'green',
 };
 

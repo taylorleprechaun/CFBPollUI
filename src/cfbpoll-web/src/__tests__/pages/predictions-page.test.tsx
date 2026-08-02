@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -54,13 +55,27 @@ let mockRefreshCacheIsPending = false;
 let mockGradeIsPending = false;
 let mockPublishResultsIsPending = false;
 
+// Bridges the mocked publish mutations to the mocked active-view state below, mirroring how the
+// real usePublishPredictions/usePublishGradedResults patch the same query cache that
+// usePredictionsActiveView reads live from. Without this bridge, a publish succeeding here
+// wouldn't be reflected in the mocked view at all, and these page tests couldn't have caught the
+// "Publish button doesn't disappear/reappears" regressions - they'd just be exercising two
+// disconnected mocks instead of the real cross-hook interaction.
+let mockViewSetter: Dispatch<SetStateAction<MockActiveView | null>> | null = null;
+
 vi.mock('../../hooks/use-admin-mutations', () => ({
   useCalculatePredictions: () => ({
     mutateAsync: mockCalculateMutateAsync,
     isPending: mockCalculateIsPending,
   }),
   usePublishPredictions: () => ({
-    mutateAsync: mockPublishMutateAsync,
+    mutateAsync: async (params: { season: number; week: number }) => {
+      const result = await mockPublishMutateAsync(params);
+      mockViewSetter?.((prev) =>
+        prev && prev.season === params.season && prev.week === params.week ? { ...prev, isPublished: true } : prev
+      );
+      return result;
+    },
     isPending: false,
   }),
   useDeletePredictions: () => ({
@@ -76,7 +91,13 @@ vi.mock('../../hooks/use-admin-mutations', () => ({
     isPending: mockGradeIsPending,
   }),
   usePublishGradedResults: () => ({
-    mutateAsync: mockPublishResultsMutateAsync,
+    mutateAsync: async (params: { season: number; week: number }) => {
+      const result = await mockPublishResultsMutateAsync(params);
+      mockViewSetter?.((prev) =>
+        prev && prev.season === params.season && prev.week === params.week ? { ...prev, resultsPublished: true } : prev
+      );
+      return result;
+    },
     isPending: mockPublishResultsIsPending,
   }),
 }));
@@ -85,13 +106,14 @@ let mockSummariesData:
   | { season: number; week: number; isPublished: boolean; createdAt: string; gameCount: number; gradedAt: string | null; isGraded: boolean; resultsPublished: boolean }[]
   | undefined = [];
 let mockSummariesError: Error | null = null;
+let mockSummariesLoading = false;
 const mockRefetchSummaries = vi.fn();
 
 vi.mock('../../hooks/use-predictions-summaries', () => ({
   usePredictionsSummaries: () => ({
     data: mockSummariesData,
     error: mockSummariesError,
-    isLoading: false,
+    isLoading: mockSummariesLoading,
     refetch: mockRefetchSummaries,
   }),
 }));
@@ -116,7 +138,7 @@ interface MockPredictionsResponse {
 interface MockActiveView {
   isGraded: boolean;
   isPersisted: boolean | null;
-  isPublished: boolean | null;
+  isPublished: boolean;
   predictions: MockPredictionsResponse;
   resultsPublished: boolean;
   season: number;
@@ -130,13 +152,14 @@ interface MockActiveView {
 vi.mock('../../hooks/use-predictions-active-view', () => ({
   usePredictionsActiveView: () => {
     const [view, setView] = useState<MockActiveView | null>(null);
+    mockViewSetter = setView;
 
     return {
       applyCalculated: (result: { isPersisted: boolean; predictions: MockPredictionsResponse }) => {
         setView({
           isGraded: result.predictions.isGraded,
           isPersisted: result.isPersisted,
-          isPublished: null,
+          isPublished: false,
           predictions: result.predictions,
           resultsPublished: result.predictions.resultsPublished,
           season: result.predictions.season,
@@ -146,17 +169,20 @@ vi.mock('../../hooks/use-predictions-active-view', () => ({
         });
       },
       applyGraded: (result: { isPersisted: boolean; predictions: MockPredictionsResponse; unmatchedGameCount: number }) => {
-        setView({
+        setView((prev) => ({
           isGraded: result.predictions.isGraded,
+          // Mirrors the real applyGraded: preserve the already-known published state for this
+          // exact season/week instead of resetting it - grading a published week must not make
+          // its Publish button reappear.
           isPersisted: result.isPersisted,
-          isPublished: null,
+          isPublished: prev && prev.season === result.predictions.season && prev.week === result.predictions.week ? prev.isPublished : false,
           predictions: result.predictions,
           resultsPublished: result.predictions.resultsPublished,
           season: result.predictions.season,
           source: 'graded',
           unmatchedGameCount: result.unmatchedGameCount,
           week: result.predictions.week,
-        });
+        }));
       },
       clearIfMatches: (season: number, week: number) => {
         setView((prev) => (prev && prev.season === season && prev.week === week ? null : prev));
@@ -166,10 +192,10 @@ vi.mock('../../hooks/use-predictions-active-view', () => ({
       season: view?.season ?? null,
       showView: (season: number, week: number) => {
         setView({
-          isGraded: true,
+          isGraded: false,
           isPersisted: null,
           isPublished: true,
-          predictions: { isGraded: true, predictions: [], resultsPublished: false, season, week },
+          predictions: { isGraded: false, predictions: [], resultsPublished: false, season, week },
           resultsPublished: false,
           season,
           source: 'viewed',
@@ -227,6 +253,7 @@ describe('PredictionsPage', () => {
     mockToken = 'test-token';
     mockSummariesData = [];
     mockSummariesError = null;
+    mockSummariesLoading = false;
     mockCalculateIsPending = false;
     mockRefreshCacheIsPending = false;
     mockGradeIsPending = false;
@@ -248,6 +275,12 @@ describe('PredictionsPage', () => {
     renderPredictionsPage();
     expect(screen.getByText('Persisted Predictions')).toBeInTheDocument();
     expect(screen.getByText('No persisted predictions found.')).toBeInTheDocument();
+  });
+
+  it('does not show the empty-state message while summaries are still loading', () => {
+    mockSummariesLoading = true;
+    renderPredictionsPage();
+    expect(screen.queryByText('No persisted predictions found.')).not.toBeInTheDocument();
   });
 
   it('calls calculate mutation on Generate click', async () => {
@@ -507,6 +540,62 @@ describe('PredictionsPage', () => {
     await user.click(publishButton);
 
     expect(mockPublishMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
+
+    // Regression: publishing right after Generate (without ever navigating away) must hide the
+    // Publish button immediately - it must not require a View round-trip to pick up the new state.
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'Publish' })).not.toBeInTheDocument();
+    });
+  });
+
+  it('does not revive the Publish button when grading a week whose picks are already published', async () => {
+    const user = userEvent.setup();
+    const gamePrediction = {
+      actualAwayScore: null,
+      actualHomeScore: null,
+      actualOverUnderResult: null,
+      actualSpreadCoveringTeam: null,
+      actualWinner: null,
+      awayLogoURL: 'https://example.com/nebraska.png',
+      awayTeam: 'Nebraska',
+      awayTeamScore: 14,
+      bettingOverUnder: 45.0,
+      bettingSpread: -10.0,
+      homeLogoURL: 'https://example.com/texas.png',
+      homeTeam: 'Texas',
+      homeTeamScore: 31,
+      myOverUnderPick: 'Over',
+      mySpreadPick: 'Texas',
+      neutralSite: false,
+      overUnderGrade: 'Ungraded',
+      predictedMargin: 17.0,
+      predictedWinner: 'Texas',
+      spreadGrade: 'Ungraded',
+      winnerGrade: 'Ungraded',
+    };
+    mockCalculateMutateAsync.mockResolvedValue({
+      isPersisted: true,
+      predictions: { isGraded: false, resultsPublished: false, season: 2024, week: 5, predictions: [gamePrediction] },
+    });
+    mockPublishMutateAsync.mockResolvedValue(undefined);
+    mockGradeMutateAsync.mockResolvedValue({
+      isPersisted: true,
+      predictions: { isGraded: true, resultsPublished: false, season: 2024, week: 5, predictions: [gamePrediction] },
+      unmatchedGameCount: 0,
+    });
+
+    renderPredictionsPage();
+    await user.click(screen.getByRole('button', { name: 'Generate' }));
+    await waitFor(() => expect(screen.getAllByText('Texas').length).toBeGreaterThanOrEqual(1));
+
+    await user.click(screen.getByRole('button', { name: 'Publish' }));
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Publish' })).not.toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: 'Grade' }));
+    await waitFor(() => expect(screen.getByText(/Just Graded/)).toBeInTheDocument());
+
+    // Regression: grading an already-published week must not bring the Publish button back.
+    expect(screen.queryByRole('button', { name: 'Publish' })).not.toBeInTheDocument();
   });
 
   it('confirms delete in modal and calls delete mutation', async () => {
@@ -575,10 +664,10 @@ describe('PredictionsPage', () => {
     expect(mockGradeMutateAsync).not.toHaveBeenCalled();
   });
 
-  it('syncs the season/week selectors to the viewed week so Generate and Grade no longer target the default week', async () => {
+  it('syncs the Generate selectors to the viewed week (Grade is decoupled from them - it acts on the active view directly)', async () => {
     const user = userEvent.setup();
     mockSummariesData = [
-      { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z', gameCount: 10, gradedAt: null, isGraded: true, resultsPublished: false },
+      { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z', gameCount: 10, gradedAt: null, isGraded: false, resultsPublished: false },
     ];
     mockGradeMutateAsync.mockResolvedValue({
       isPersisted: true,
@@ -589,9 +678,7 @@ describe('PredictionsPage', () => {
     renderPredictionsPage();
 
     // Defaults to the last week in the mocked list (week 5) before any view is loaded.
-    await user.click(screen.getByRole('button', { name: 'Grade' }));
-    expect(mockGradeMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
-    mockGradeMutateAsync.mockClear();
+    expect(screen.getByLabelText('Week')).toHaveValue('5');
 
     const seasonButton = screen.getByRole('button', { name: /2024 Season/i });
     await user.click(seasonButton);
@@ -601,7 +688,10 @@ describe('PredictionsPage', () => {
       expect(screen.getByText('Score')).toBeInTheDocument();
     });
 
-    // Grade should now act on the viewed week (1), not the stale default (5).
+    // The Generate selectors sync to the viewed week...
+    expect(screen.getByLabelText('Week')).toHaveValue('1');
+
+    // ...but Grade targets the viewed week directly, not through those selectors.
     await user.click(screen.getByRole('button', { name: 'Grade' }));
     expect(mockGradeMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 1 });
   });
@@ -780,14 +870,17 @@ describe('PredictionsPage', () => {
     });
   });
 
-  it('renders grade results section', () => {
+  it('does not show a Grade button when no prediction has been generated or viewed yet', () => {
     renderPredictionsPage();
-    expect(screen.getByText('Grade Results')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Grade' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Grade' })).not.toBeInTheDocument();
   });
 
-  it('calls grade mutation with selected season and week on Grade click', async () => {
+  it('calls grade mutation with the active view\'s season and week on Grade click', async () => {
     const user = userEvent.setup();
+    mockCalculateMutateAsync.mockResolvedValue({
+      isPersisted: true,
+      predictions: { isGraded: false, resultsPublished: false, season: 2024, week: 5, predictions: [] },
+    });
     mockGradeMutateAsync.mockResolvedValue({
       isPersisted: true,
       predictions: { isGraded: true, resultsPublished: false, season: 2024, week: 5, predictions: [] },
@@ -795,6 +888,9 @@ describe('PredictionsPage', () => {
     });
 
     renderPredictionsPage();
+    await user.click(screen.getByRole('button', { name: 'Generate' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Grade' })).toBeInTheDocument());
+
     await user.click(screen.getByRole('button', { name: 'Grade' }));
 
     expect(mockGradeMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
@@ -802,6 +898,10 @@ describe('PredictionsPage', () => {
 
   it('shows graded results in the active view after successful grading', async () => {
     const user = userEvent.setup();
+    mockCalculateMutateAsync.mockResolvedValue({
+      isPersisted: true,
+      predictions: { isGraded: false, resultsPublished: false, season: 2024, week: 5, predictions: [gradedGamePrediction] },
+    });
     mockGradeMutateAsync.mockResolvedValue({
       isPersisted: true,
       predictions: { isGraded: true, resultsPublished: false, season: 2024, week: 5, predictions: [gradedGamePrediction] },
@@ -809,6 +909,9 @@ describe('PredictionsPage', () => {
     });
 
     renderPredictionsPage();
+    await user.click(screen.getByRole('button', { name: 'Generate' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Grade' })).toBeInTheDocument());
+
     await user.click(screen.getByRole('button', { name: 'Grade' }));
 
     await waitFor(() => {
@@ -818,6 +921,10 @@ describe('PredictionsPage', () => {
 
   it('shows unmatched games banner when grading leaves games unmatched', async () => {
     const user = userEvent.setup();
+    mockCalculateMutateAsync.mockResolvedValue({
+      isPersisted: true,
+      predictions: { isGraded: false, resultsPublished: false, season: 2024, week: 5, predictions: [gradedGamePrediction] },
+    });
     mockGradeMutateAsync.mockResolvedValue({
       isPersisted: true,
       predictions: { isGraded: true, resultsPublished: false, season: 2024, week: 5, predictions: [gradedGamePrediction] },
@@ -825,6 +932,9 @@ describe('PredictionsPage', () => {
     });
 
     renderPredictionsPage();
+    await user.click(screen.getByRole('button', { name: 'Generate' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Grade' })).toBeInTheDocument());
+
     await user.click(screen.getByRole('button', { name: 'Grade' }));
 
     await waitFor(() => {
@@ -834,9 +944,16 @@ describe('PredictionsPage', () => {
 
   it('shows error feedback when grading fails', async () => {
     const user = userEvent.setup();
+    mockCalculateMutateAsync.mockResolvedValue({
+      isPersisted: true,
+      predictions: { isGraded: false, resultsPublished: false, season: 2024, week: 5, predictions: [] },
+    });
     mockGradeMutateAsync.mockRejectedValue(new Error('Grading failed'));
 
     renderPredictionsPage();
+    await user.click(screen.getByRole('button', { name: 'Generate' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Grade' })).toBeInTheDocument());
+
     await user.click(screen.getByRole('button', { name: 'Grade' }));
 
     await waitFor(() => {
@@ -846,14 +963,26 @@ describe('PredictionsPage', () => {
 
   it('publishes graded results from the active view section', async () => {
     const user = userEvent.setup();
+    mockCalculateMutateAsync.mockResolvedValue({
+      isPersisted: true,
+      predictions: { isGraded: false, resultsPublished: false, season: 2024, week: 5, predictions: [gradedGamePrediction] },
+    });
     mockGradeMutateAsync.mockResolvedValue({
       isPersisted: true,
       predictions: { isGraded: true, resultsPublished: false, season: 2024, week: 5, predictions: [gradedGamePrediction] },
       unmatchedGameCount: 0,
     });
+    mockPublishMutateAsync.mockResolvedValue(undefined);
     mockPublishResultsMutateAsync.mockResolvedValue(undefined);
 
     renderPredictionsPage();
+    await user.click(screen.getByRole('button', { name: 'Generate' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Publish' })).toBeInTheDocument());
+
+    // Publish Results requires picks to already be published - grading alone doesn't imply that.
+    await user.click(screen.getByRole('button', { name: 'Publish' }));
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Publish' })).not.toBeInTheDocument());
+
     await user.click(screen.getByRole('button', { name: 'Grade' }));
 
     await waitFor(() => {
@@ -863,21 +992,39 @@ describe('PredictionsPage', () => {
     await user.click(screen.getByRole('button', { name: 'Publish Results' }));
 
     expect(mockPublishResultsMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
+
+    // Regression: publishing results right after Grade (without navigating away) must hide the
+    // Publish Results button immediately, the same way the picks-publish flow must.
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'Publish Results' })).not.toBeInTheDocument();
+    });
   });
 
   it('clears graded results preview when the matching persisted prediction is deleted', async () => {
     const user = userEvent.setup();
+    mockCalculateMutateAsync.mockResolvedValue({
+      isPersisted: true,
+      predictions: { isGraded: false, resultsPublished: false, season: 2024, week: 5, predictions: [gradedGamePrediction] },
+    });
     mockGradeMutateAsync.mockResolvedValue({
       isPersisted: true,
       predictions: { isGraded: true, resultsPublished: false, season: 2024, week: 5, predictions: [gradedGamePrediction] },
       unmatchedGameCount: 0,
     });
     mockDeleteMutateAsync.mockResolvedValue(undefined);
+    // Already has a graded summary for this exact season/week - Generate will need to go
+    // through the overwrite-confirmation modal rather than calculating immediately.
     mockSummariesData = [
       { season: 2024, week: 5, isPublished: false, createdAt: '2024-09-01T00:00:00Z', gameCount: 1, gradedAt: '2024-09-02T00:00:00Z', isGraded: true, resultsPublished: false },
     ];
 
     renderPredictionsPage();
+    await user.click(screen.getByRole('button', { name: 'Generate' }));
+    const confirmDialog = await screen.findByRole('dialog');
+    await user.click(within(confirmDialog).getByRole('button', { name: 'Generate' }));
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Grade' })).toBeInTheDocument());
+
     await user.click(screen.getByRole('button', { name: 'Grade' }));
 
     await waitFor(() => {
@@ -897,6 +1044,10 @@ describe('PredictionsPage', () => {
 
   it('does not clear graded results preview when a different week is deleted', async () => {
     const user = userEvent.setup();
+    mockCalculateMutateAsync.mockResolvedValue({
+      isPersisted: true,
+      predictions: { isGraded: false, resultsPublished: false, season: 2024, week: 5, predictions: [gradedGamePrediction] },
+    });
     mockGradeMutateAsync.mockResolvedValue({
       isPersisted: true,
       predictions: { isGraded: true, resultsPublished: false, season: 2024, week: 5, predictions: [gradedGamePrediction] },
@@ -908,6 +1059,9 @@ describe('PredictionsPage', () => {
     ];
 
     renderPredictionsPage();
+    await user.click(screen.getByRole('button', { name: 'Generate' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Grade' })).toBeInTheDocument());
+
     await user.click(screen.getByRole('button', { name: 'Grade' }));
 
     await waitFor(() => {

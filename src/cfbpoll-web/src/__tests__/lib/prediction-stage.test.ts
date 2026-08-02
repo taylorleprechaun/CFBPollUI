@@ -50,8 +50,9 @@ describe('predictionStageClasses', () => {
     expect(predictionStageClasses('picks-published')).toContain('bg-yellow-100');
   });
 
-  it('returns red classes for graded', () => {
-    expect(predictionStageClasses('graded')).toContain('bg-red-100');
+  it('returns blue classes for graded, not red, since graded is not an error state', () => {
+    expect(predictionStageClasses('graded')).toContain('bg-blue-100');
+    expect(predictionStageClasses('graded')).not.toContain('bg-red-100');
   });
 
   it('returns green classes for results-published', () => {

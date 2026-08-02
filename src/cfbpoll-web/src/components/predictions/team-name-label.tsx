@@ -23,7 +23,7 @@ export function TeamNameLabel({ className, rank, season, teamName }: TeamNameLab
   return (
     <Link
       to={`/team-details?team=${encodeURIComponent(teamName)}&season=${season}`}
-      className={`hover:text-accent hover:underline ${className ?? ''}`}
+      className={className ?? 'hover:text-accent hover:underline'}
     >
       {label}
     </Link>

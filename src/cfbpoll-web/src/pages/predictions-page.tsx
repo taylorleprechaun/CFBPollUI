@@ -4,7 +4,6 @@ import { useSeason } from '../hooks/use-season';
 import {
   ActivePredictionViewSection,
   CalculateSection,
-  GradePredictionsSection,
   PersistedPredictionsSection,
 } from '../components/admin';
 import { ErrorAlert, ErrorBoundary } from '../components/error';
@@ -48,6 +47,7 @@ export function PredictionsPage() {
   const {
     data: summaries,
     error: summariesError,
+    isLoading: summariesLoading,
     refetch: refetchSummaries,
   } = usePredictionsSummaries(token);
 
@@ -70,11 +70,12 @@ export function PredictionsPage() {
   // since the matching week is already on screen, not merely available to look up.
   const selectionMatchesActiveView = activeView.season === selectedSeason && activeView.week === selectedWeek;
 
-  // Keep the Generate/Grade season+week selectors pointed at whatever the active view is
-  // currently showing (on load from the URL, after Generate/Grade, or after clicking View) so
-  // Grade never silently acts on a stale, unrelated dropdown selection. Deliberately depends only
-  // on activeView.season/week (not selectedSeason/selectedWeek) - the sync is one-directional, so
-  // it must not re-fire just because the user manually changes the dropdown afterward.
+  // Keep the Generate season+week selectors pointed at whatever the active view is currently
+  // showing (on load from the URL, after Generate/Grade, or after clicking View) so Regenerate
+  // targets the displayed week rather than a stale, unrelated dropdown selection. Deliberately
+  // depends only on activeView.season/week (not selectedSeason/selectedWeek) - the sync is
+  // one-directional, so it must not re-fire just because the user manually changes the dropdown
+  // afterward.
   useEffect(() => {
     if (activeView.season === null || activeView.week === null) return;
     setSelectedSeason(activeView.season);
@@ -190,25 +191,16 @@ export function PredictionsPage() {
         </div>
       )}
 
-      <GradePredictionsSection
-        actionFeedback={gradingActionFeedback}
-        isGrading={isGrading}
-        onClearFeedback={clearGradingFeedback}
-        onGrade={() => {
-          if (selectedSeason !== null && selectedWeek !== null) {
-            handleGrade(selectedSeason, selectedWeek);
-          }
-        }}
-        selectedSeason={selectedSeason}
-        selectedWeek={selectedWeek}
-      />
-
       <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render predictions view')} />}>
         {activeView.view && (
           <ActivePredictionViewSection
-            isActionPending={isActionPending || isPublishingResults}
+            gradeFeedback={gradingActionFeedback}
+            isActionPending={isActionPending || isPublishingResults || isGrading}
+            isGrading={isGrading}
+            onClearGradeFeedback={clearGradingFeedback}
             onClearPublishFeedback={clearFeedback}
             onClearPublishResultsFeedback={clearGradingFeedback}
+            onGrade={handleGrade}
             onPublish={(season, week) => handlePublish(season, week, 'active-view-publish')}
             onPublishResults={handlePublishResults}
             publishFeedback={actionFeedback}
@@ -223,6 +215,7 @@ export function PredictionsPage() {
         actionFeedback={actionFeedback}
         collapsedSeasons={collapsedSeasons}
         isActionPending={isActionPending}
+        isLoading={summariesLoading}
         onClearFeedback={clearFeedback}
         onCollapseAll={handleCollapseAll}
         onDelete={handleDelete}

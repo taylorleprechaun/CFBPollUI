@@ -78,6 +78,7 @@ vi.mock('../../hooks/use-admin-mutations', () => ({
 
 let mockSnapshotsData: { season: number; week: number; isPublished: boolean; createdAt: string }[] | undefined = [];
 let mockSnapshotsError: Error | null = null;
+let mockSnapshotsLoading = false;
 
 const mockRefetchSnapshots = vi.fn();
 
@@ -85,7 +86,7 @@ vi.mock('../../hooks/use-snapshots', () => ({
   useSnapshots: () => ({
     data: mockSnapshotsData,
     error: mockSnapshotsError,
-    isLoading: false,
+    isLoading: mockSnapshotsLoading,
     refetch: mockRefetchSnapshots,
   }),
 }));
@@ -119,6 +120,7 @@ describe('SnapshotsPage', () => {
     mockToken = 'test-token';
     mockSnapshotsData = [];
     mockSnapshotsError = null;
+    mockSnapshotsLoading = false;
     mockCalculateIsPending = false;
     mockPublishIsPending = false;
     mockDeleteIsPending = false;
@@ -212,6 +214,12 @@ describe('SnapshotsPage', () => {
   it('shows empty state for persisted snapshots', () => {
     renderSnapshotsPage();
     expect(screen.getByText('No persisted snapshots found.')).toBeInTheDocument();
+  });
+
+  it('does not show the empty-state message while snapshots are still loading', () => {
+    mockSnapshotsLoading = true;
+    renderSnapshotsPage();
+    expect(screen.queryByText('No persisted snapshots found.')).not.toBeInTheDocument();
   });
 
   it('renders persisted weeks grouped by season', () => {

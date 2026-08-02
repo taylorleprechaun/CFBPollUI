@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { getWeekLabel } from '../../lib/week-utils';
 import { RankingsTable } from '../rankings/rankings-table';
 import { BUTTON_PRIMARY, BUTTON_SUCCESS } from '../ui/button-styles';
-import { ChevronIcon } from '../ui/chevron-icon';
+import { CollapsibleContent } from '../ui/collapsible-content';
+import { CollapsibleTrigger } from '../ui/collapsible-trigger';
 import { FeedbackIndicator } from './feedback-indicator';
 import type { ActionFeedback } from './types';
 import type { CalculateResponse } from '../../schemas/admin';
@@ -29,19 +30,20 @@ export function PreviewSection({
 
   const previewRankings = calculatedResult.rankings;
   const previewPublishKey = `preview-publish-${previewRankings.season}-${previewRankings.week}`;
+  const contentId = `preview-${previewRankings.season}-${previewRankings.week}`;
 
   return (
     <div className="bg-surface shadow-md rounded-xl overflow-hidden">
       <div className="p-6 border-b border-border">
         <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => setPreviewExpanded(!previewExpanded)}
+          <CollapsibleTrigger
+            contentId={contentId}
+            isOpen={previewExpanded}
+            onToggle={() => setPreviewExpanded(!previewExpanded)}
             className="flex items-center gap-2 text-lg font-semibold text-text-primary hover:text-text-secondary"
           >
-            <ChevronIcon open={previewExpanded} size="w-4 h-4" />
             Preview: {previewRankings.season} {getWeekLabel(previewRankings.week)}
-          </button>
+          </CollapsibleTrigger>
           <div className="flex items-center gap-2">
             <button
               onClick={() => onExport(previewRankings.season, previewRankings.week)}
@@ -66,19 +68,14 @@ export function PreviewSection({
           </p>
         )}
       </div>
-      <div
-        className="grid transition-[grid-template-rows] duration-300 ease-in-out"
-        style={{ gridTemplateRows: previewExpanded ? '1fr' : '0fr' }}
-      >
-        <div className="overflow-hidden">
-          <RankingsTable
-            rankings={previewRankings.rankings}
-            isLoading={false}
-            selectedConference={null}
-            selectedSeason={previewRankings.season}
-          />
-        </div>
-      </div>
+      <CollapsibleContent id={contentId} isOpen={previewExpanded}>
+        <RankingsTable
+          rankings={previewRankings.rankings}
+          isLoading={false}
+          selectedConference={null}
+          selectedSeason={previewRankings.season}
+        />
+      </CollapsibleContent>
     </div>
   );
 }

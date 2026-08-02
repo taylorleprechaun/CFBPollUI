@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { getWeekLabel } from '../../lib/week-utils';
 import { PredictionsTable } from '../predictions/predictions-table';
 import { BUTTON_PRIMARY } from '../ui/button-styles';
-import { ChevronIcon } from '../ui/chevron-icon';
+import { CollapsibleContent } from '../ui/collapsible-content';
+import { CollapsibleTrigger } from '../ui/collapsible-trigger';
 import { FeedbackIndicator } from './feedback-indicator';
 import type { ActivePredictionView } from '../../hooks/use-predictions-active-view';
 import type { ActionFeedback } from './types';
@@ -15,9 +16,13 @@ const SOURCE_LABELS: Record<ActivePredictionView['source'], string | null> = {
 };
 
 interface ActivePredictionViewSectionProps {
+  gradeFeedback: ActionFeedback | null;
   isActionPending: boolean;
+  isGrading: boolean;
+  onClearGradeFeedback: () => void;
   onClearPublishFeedback: () => void;
   onClearPublishResultsFeedback: () => void;
+  onGrade: (season: number, week: number) => void;
   onPublish: (season: number, week: number) => void;
   onPublishResults: (season: number, week: number) => void;
   publishFeedback: ActionFeedback | null;
@@ -26,9 +31,13 @@ interface ActivePredictionViewSectionProps {
 }
 
 export function ActivePredictionViewSection({
+  gradeFeedback,
   isActionPending,
+  isGrading,
+  onClearGradeFeedback,
   onClearPublishFeedback,
   onClearPublishResultsFeedback,
+  onGrade,
   onPublish,
   onPublishResults,
   publishFeedback,
@@ -39,28 +48,30 @@ export function ActivePredictionViewSection({
 
   const { predictions } = view;
   const sourceLabel = SOURCE_LABELS[view.source];
-  const showPublish = view.source !== 'viewed' || view.isPublished === false;
-  const showPublishResults = view.source === 'graded'
-    || (view.source === 'viewed' && view.isGraded && view.isPublished === true && !view.resultsPublished);
+  const showGrade = !view.isGraded;
+  const showPublish = view.isPublished === false;
+  const showPublishResults = view.isGraded && view.isPublished === true && !view.resultsPublished;
+  const gradeKey = `grade-${predictions.season}-${predictions.week}`;
   const publishKey = `active-view-publish-${predictions.season}-${predictions.week}`;
   const publishResultsKey = `publish-results-${predictions.season}-${predictions.week}`;
+  const contentId = `active-view-${predictions.season}-${predictions.week}`;
 
   return (
     <div className="bg-surface shadow-md rounded-xl overflow-hidden">
       <div className="p-6 border-b border-border">
         <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => setExpanded(!expanded)}
+          <CollapsibleTrigger
+            contentId={contentId}
+            isOpen={expanded}
+            onToggle={() => setExpanded(!expanded)}
             className="flex items-center gap-2 text-lg font-semibold text-text-primary hover:text-text-secondary"
           >
-            <ChevronIcon open={expanded} size="w-4 h-4" />
             {predictions.season} {getWeekLabel(predictions.week)}
             <span className="text-sm font-normal text-text-muted">
               ({predictions.predictions.length} game{predictions.predictions.length !== 1 ? 's' : ''})
             </span>
             {sourceLabel && <span className="text-sm font-normal text-text-muted">&middot; {sourceLabel}</span>}
-          </button>
+          </CollapsibleTrigger>
           <div className="flex items-center gap-2">
             {showPublish && (
               <>
@@ -72,6 +83,18 @@ export function ActivePredictionViewSection({
                   Publish
                 </button>
                 <FeedbackIndicator feedback={publishFeedback} feedbackKey={publishKey} onClear={onClearPublishFeedback} />
+              </>
+            )}
+            {showGrade && (
+              <>
+                <button
+                  onClick={() => onGrade(predictions.season, predictions.week)}
+                  disabled={isActionPending}
+                  className={BUTTON_PRIMARY}
+                >
+                  {isGrading ? 'Grading...' : 'Grade'}
+                </button>
+                <FeedbackIndicator feedback={gradeFeedback} feedbackKey={gradeKey} onClear={onClearGradeFeedback} />
               </>
             )}
             {showPublishResults && (
@@ -99,14 +122,9 @@ export function ActivePredictionViewSection({
           </p>
         )}
       </div>
-      <div
-        className="grid transition-[grid-template-rows] duration-300 ease-in-out"
-        style={{ gridTemplateRows: expanded ? '1fr' : '0fr' }}
-      >
-        <div className="overflow-hidden">
-          <PredictionsTable predictions={predictions.predictions} showGrades={view.isGraded} />
-        </div>
-      </div>
+      <CollapsibleContent id={contentId} isOpen={expanded}>
+        <PredictionsTable predictions={predictions.predictions} showGrades={view.isGraded} />
+      </CollapsibleContent>
     </div>
   );
 }

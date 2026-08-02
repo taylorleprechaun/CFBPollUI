@@ -40,6 +40,12 @@ describe('PersistedPredictionsSection', () => {
     expect(screen.getByText('No persisted predictions found.')).toBeInTheDocument();
   });
 
+  it('shows a loading skeleton instead of the empty state while isLoading is true', () => {
+    render(<PersistedPredictionsSection {...defaultProps} isLoading={true} />);
+
+    expect(screen.queryByText('No persisted predictions found.')).not.toBeInTheDocument();
+  });
+
   it('renders season groups when summaries exist', () => {
     const props = {
       ...defaultProps,
