@@ -10,7 +10,7 @@ export function useWeekSelection(weeks: Week[] | undefined): {
 
   const effectiveWeek = selectedWeek !== null
     ? selectedWeek
-    : weeks?.length ? weeks[weeks.length - 1].weekNumber : null;
+    : weeks?.length ? weeks.reduce((max, w) => (w.weekNumber > max.weekNumber ? w : max)).weekNumber : null;
 
   return { selectedWeek: effectiveWeek, setSelectedWeek };
 }

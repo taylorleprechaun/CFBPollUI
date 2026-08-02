@@ -12,12 +12,12 @@ export function FeedbackIndicator({ feedback, feedbackKey, onClear }: FeedbackIn
 
   if (feedback.type === 'success') {
     return (
-      <span className="flex items-center gap-1 text-sm text-green-700">
+      <span role="status" className="flex items-center gap-1 text-sm text-green-700">
         <SuccessCheckmark onDone={onClear} />
         {feedback.message}
       </span>
     );
   }
 
-  return <span className="text-red-600 text-sm">{feedback.message}</span>;
+  return <span role="alert" className="text-red-600 text-sm">{feedback.message}</span>;
 }

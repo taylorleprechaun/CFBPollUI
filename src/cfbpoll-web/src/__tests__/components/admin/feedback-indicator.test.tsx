@@ -35,6 +35,30 @@ describe('FeedbackIndicator', () => {
     expect(screen.getByLabelText('Success')).toBeInTheDocument();
   });
 
+  it('announces success feedback to screen readers via a status live region', () => {
+    render(
+      <FeedbackIndicator
+        feedback={{ key: 'action-2024-5', type: 'success', message: 'Published' }}
+        feedbackKey="action-2024-5"
+        onClear={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('status')).toHaveTextContent('Published');
+  });
+
+  it('announces error feedback to screen readers via an alert live region', () => {
+    render(
+      <FeedbackIndicator
+        feedback={{ key: 'action-2024-5', type: 'error', message: 'Publish failed' }}
+        feedbackKey="action-2024-5"
+        onClear={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Publish failed');
+  });
+
   it('renders the success message when provided', () => {
     render(
       <FeedbackIndicator

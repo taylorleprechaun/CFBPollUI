@@ -24,7 +24,7 @@ interface ActiveViewMeta {
 export interface ActivePredictionView {
   isGraded: boolean;
   isPersisted: boolean | null;
-  isPublished: boolean | null;
+  isPublished: boolean;
   predictions: PredictionsResponse;
   resultsPublished: boolean;
   season: number;

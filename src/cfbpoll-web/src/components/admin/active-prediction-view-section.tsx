@@ -49,8 +49,8 @@ export function ActivePredictionViewSection({
   const { predictions } = view;
   const sourceLabel = SOURCE_LABELS[view.source];
   const showGrade = !view.isGraded;
-  const showPublish = view.isPublished === false;
-  const showPublishResults = view.isGraded && view.isPublished === true && !view.resultsPublished;
+  const showPublish = !view.isPublished;
+  const showPublishResults = view.isGraded && view.isPublished && !view.resultsPublished;
   const gradeKey = `grade-${predictions.season}-${predictions.week}`;
   const publishKey = `active-view-publish-${predictions.season}-${predictions.week}`;
   const publishResultsKey = `publish-results-${predictions.season}-${predictions.week}`;

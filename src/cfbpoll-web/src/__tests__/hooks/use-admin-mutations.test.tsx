@@ -328,6 +328,46 @@ describe('useDeletePredictions', () => {
 
     expect(deletePredictions).toHaveBeenCalledWith('test-token', 2024, 3);
   });
+
+  it('removes the admin-prediction cache entry for the deleted week on success', async () => {
+    vi.mocked(deletePredictions).mockResolvedValue(undefined);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData(['admin-prediction', 2024, 3], {
+      isPublished: true,
+      predictions: { isGraded: false, predictions: [], resultsPublished: false, season: 2024, week: 3 },
+    });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => useDeletePredictions('test-token'), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ season: 2024, week: 3 });
+    });
+
+    expect(queryClient.getQueryData(['admin-prediction', 2024, 3])).toBeUndefined();
+  });
+
+  it('does not remove admin-prediction cache entries for other weeks', async () => {
+    vi.mocked(deletePredictions).mockResolvedValue(undefined);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData(['admin-prediction', 2024, 5], {
+      isPublished: true,
+      predictions: { isGraded: false, predictions: [], resultsPublished: false, season: 2024, week: 5 },
+    });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => useDeletePredictions('test-token'), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ season: 2024, week: 3 });
+    });
+
+    expect(queryClient.getQueryData(['admin-prediction', 2024, 5])).toBeDefined();
+  });
 });
 
 describe('useRefreshCache', () => {

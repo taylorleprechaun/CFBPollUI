@@ -27,6 +27,18 @@ describe('useWeekSelection', () => {
     expect(result.current.selectedWeek).toBe(5);
   });
 
+  it('auto-selects the highest week number even when weeks arrive out of order', () => {
+    const weeks: Week[] = [
+      { weekNumber: 5, label: 'Week 5', predictionsPublished: false, rankingsPublished: false },
+      { weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: true },
+      { weekNumber: 3, label: 'Week 3', predictionsPublished: false, rankingsPublished: true },
+    ];
+
+    const { result } = renderHook(() => useWeekSelection(weeks));
+
+    expect(result.current.selectedWeek).toBe(5);
+  });
+
   it('preserves manual selection', () => {
     const weeks: Week[] = [
       { weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: true },
