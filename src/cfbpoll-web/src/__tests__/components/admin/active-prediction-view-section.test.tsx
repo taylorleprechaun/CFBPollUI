@@ -93,6 +93,50 @@ describe('ActivePredictionViewSection', () => {
     expect(screen.queryByText(/Just Graded/)).not.toBeInTheDocument();
   });
 
+  it('shows a Draft stage badge for an unpublished, ungraded view', () => {
+    render(
+      <ActivePredictionViewSection
+        {...defaultProps()}
+        view={buildView({ isGraded: false, isPublished: false, resultsPublished: false })}
+      />
+    );
+
+    expect(screen.getByText('Draft')).toBeInTheDocument();
+  });
+
+  it('shows a Picks Published stage badge once published but not yet graded', () => {
+    render(
+      <ActivePredictionViewSection
+        {...defaultProps()}
+        view={buildView({ isGraded: false, isPublished: true, resultsPublished: false })}
+      />
+    );
+
+    expect(screen.getByText('Picks Published')).toBeInTheDocument();
+  });
+
+  it('shows a Graded stage badge once graded but results are not yet published', () => {
+    render(
+      <ActivePredictionViewSection
+        {...defaultProps()}
+        view={buildView({ isGraded: true, isPublished: true, resultsPublished: false })}
+      />
+    );
+
+    expect(screen.getByText('Graded')).toBeInTheDocument();
+  });
+
+  it('shows a Results Published stage badge once results are published', () => {
+    render(
+      <ActivePredictionViewSection
+        {...defaultProps()}
+        view={buildView({ isGraded: true, isPublished: true, resultsPublished: true })}
+      />
+    );
+
+    expect(screen.getByText('Results Published')).toBeInTheDocument();
+  });
+
   it('shows a not-persisted warning when isPersisted is false', () => {
     render(<ActivePredictionViewSection {...defaultProps()} view={buildView({ isPersisted: false })} />);
 

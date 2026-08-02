@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { ErrorAlert } from '../components/error';
 import { SeasonSelector } from '../components/rankings/season-selector';
@@ -14,6 +15,8 @@ export function TrackRecordPage() {
 
   const { data, isLoading, error, refetch } = useTrackRecord();
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const weeksDescending = useMemo(
     () => data ? [...data.weeks].sort((a, b) => b.season - a.season || b.week - a.week) : [],
     [data]
@@ -24,8 +27,22 @@ export function TrackRecordPage() {
     [data]
   );
 
-  const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
-  const effectiveSeason = selectedSeason ?? seasons[0] ?? null;
+  const [selectedSeason, setSelectedSeason] = useState<number | null>(() => {
+    const param = searchParams.get('season');
+    if (!param) return null;
+    const parsed = Number(param);
+    return Number.isNaN(parsed) ? null : parsed;
+  });
+  const effectiveSeason = selectedSeason !== null && seasons.includes(selectedSeason) ? selectedSeason : seasons[0] ?? null;
+
+  const handleSeasonChange = (season: number) => {
+    setSelectedSeason(season);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('season', String(season));
+      return next;
+    });
+  };
 
   const seasonWeeksDescending = useMemo(
     () => weeksDescending.filter((w) => w.season === effectiveSeason),
@@ -78,7 +95,7 @@ export function TrackRecordPage() {
               <SeasonSelector
                 seasons={seasons}
                 selectedSeason={effectiveSeason}
-                onSeasonChange={setSelectedSeason}
+                onSeasonChange={handleSeasonChange}
                 isLoading={false}
               />
             </div>

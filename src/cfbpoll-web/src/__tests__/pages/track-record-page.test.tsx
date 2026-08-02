@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 
 import { TrackRecordPage } from '../../pages/track-record-page';
 
@@ -15,10 +15,15 @@ vi.mock('../../hooks/use-document-title', () => ({
 
 import { useTrackRecord } from '../../hooks/use-track-record';
 
-function renderPage() {
+function LocationDisplay() {
+  return <div data-testid="location-search">{useLocation().search}</div>;
+}
+
+function renderPage(initialRoute = '/track-record') {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[initialRoute]}>
       <TrackRecordPage />
+      <LocationDisplay />
     </MemoryRouter>
   );
 }
@@ -159,6 +164,49 @@ describe('TrackRecordPage', () => {
 
     const seasonSelect = screen.getByLabelText('Season:') as HTMLSelectElement;
     expect(seasonSelect.value).toBe('2024');
+  });
+
+  it('selects the season from a ?season= URL param on load', () => {
+    vi.mocked(useTrackRecord).mockReturnValue({
+      data: mockData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useTrackRecord>);
+
+    renderPage('/track-record?season=2023');
+
+    const seasonSelect = screen.getByLabelText('Season:') as HTMLSelectElement;
+    expect(seasonSelect.value).toBe('2023');
+  });
+
+  it('ignores a ?season= URL param for a season with no data', () => {
+    vi.mocked(useTrackRecord).mockReturnValue({
+      data: mockData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useTrackRecord>);
+
+    renderPage('/track-record?season=2019');
+
+    const seasonSelect = screen.getByLabelText('Season:') as HTMLSelectElement;
+    expect(seasonSelect.value).toBe('2024');
+  });
+
+  it('updates the URL when the season selector changes, so the current view can be shared', async () => {
+    vi.mocked(useTrackRecord).mockReturnValue({
+      data: mockData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useTrackRecord>);
+
+    renderPage();
+
+    await userEvent.selectOptions(screen.getByLabelText('Season:'), '2023');
+
+    expect(screen.getByTestId('location-search')).toHaveTextContent('?season=2023');
   });
 
   it('shows the season-overall summary for the currently selected season, summed from its weeks', () => {

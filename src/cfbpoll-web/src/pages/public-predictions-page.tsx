@@ -102,6 +102,8 @@ export function PublicPredictionsPage() {
     setSelectedWeek(null);
   };
 
+  const showTop25Empty = top25Only && !predictionsLoading && predictionsData !== undefined && displayedPredictions.length === 0;
+
   const isNotFound = predictionsError instanceof ApiError && predictionsError.statusCode === 404;
   const error = seasonsError || weeksError || (isNotFound ? null : predictionsError);
   const handleRetry = () => {
@@ -158,7 +160,13 @@ export function PublicPredictionsPage() {
         </div>
       )}
 
-      {!error && !isNotFound && (predictionsLoading || predictionsData) && (
+      {!error && !isNotFound && showTop25Empty && (
+        <div className="bg-surface border border-border rounded-xl p-6 text-center text-text-muted">
+          No Top 25 matchups this week.
+        </div>
+      )}
+
+      {!error && !isNotFound && !showTop25Empty && (predictionsLoading || predictionsData) && (
         <div className="bg-surface shadow-md rounded-xl overflow-hidden animate-fade-in">
           <PredictionsTable
             predictions={displayedPredictions}

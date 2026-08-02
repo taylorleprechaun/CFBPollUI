@@ -283,6 +283,37 @@ describe('PersistedPredictionsSection', () => {
     expect(screen.getByText('Published successfully')).toBeInTheDocument();
   });
 
+  it('marks the row matching activeItem as currently being viewed', () => {
+    const props = {
+      ...defaultProps,
+      activeItem: { season: 2024, week: 1 },
+      summaries: [
+        { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z', gameCount: 10, gradedAt: null, isGraded: false, resultsPublished: false },
+        { season: 2024, week: 2, isPublished: false, createdAt: '2024-09-08T00:00:00Z', gameCount: 8, gradedAt: null, isGraded: false, resultsPublished: false },
+      ],
+    };
+
+    render(<PersistedPredictionsSection {...props} />);
+
+    const activeRow = screen.getByText('Week 2').closest('tr');
+    const otherRow = screen.getByText('Week 3').closest('tr');
+    expect(within(activeRow!).getByText('(Viewing)')).toBeInTheDocument();
+    expect(within(otherRow!).queryByText('(Viewing)')).not.toBeInTheDocument();
+  });
+
+  it('does not mark any row as being viewed when activeItem is omitted', () => {
+    const props = {
+      ...defaultProps,
+      summaries: [
+        { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z', gameCount: 10, gradedAt: null, isGraded: false, resultsPublished: false },
+      ],
+    };
+
+    render(<PersistedPredictionsSection {...props} />);
+
+    expect(screen.queryByText('(Viewing)')).not.toBeInTheDocument();
+  });
+
   it('calls onView with season and week when View is clicked', async () => {
     const onView = vi.fn();
     const props = {

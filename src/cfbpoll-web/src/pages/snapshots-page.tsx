@@ -1,3 +1,5 @@
+import { useMemo, useState } from 'react';
+
 import { useSeason } from '../hooks/use-season';
 import {
   CalculateSection,
@@ -98,6 +100,21 @@ export function SnapshotsPage() {
     }
   };
 
+  const existingSnapshotForSelection = useMemo(
+    () => snapshots?.find((s) => s.season === selectedSeason && s.week === selectedWeek) ?? null,
+    [snapshots, selectedSeason, selectedWeek]
+  );
+
+  const [calculateConfirm, setCalculateConfirm] = useState<{ season: number; week: number } | null>(null);
+
+  const handleCalculateClick = () => {
+    if (existingSnapshotForSelection?.isPublished && selectedSeason !== null && selectedWeek !== null) {
+      setCalculateConfirm({ season: selectedSeason, week: selectedWeek });
+      return;
+    }
+    handleCalculate();
+  };
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-text-primary">Snapshots</h1>
@@ -107,7 +124,7 @@ export function SnapshotsPage() {
       <CalculateSection
         isCalculating={calculateMutation.isPending}
         isRefreshingCache={isRefreshingCache}
-        onCalculate={handleCalculate}
+        onCalculate={handleCalculateClick}
         onClearRefreshFeedback={clearFeedback}
         onRefreshCache={() => {
           if (selectedSeason !== null && selectedWeek !== null) {
@@ -161,6 +178,19 @@ export function SnapshotsPage() {
           message={`This snapshot (${deleteConfirm.season} ${getWeekLabel(deleteConfirm.week)}) is published and visible to users. Are you sure you want to delete it?`}
           onConfirm={() => executeDelete(deleteConfirm.season, deleteConfirm.week)}
           onCancel={() => setDeleteConfirm(null)}
+        />
+      )}
+
+      {calculateConfirm && (
+        <ConfirmModal
+          title="Overwrite Published Snapshot"
+          message={`The snapshot for ${calculateConfirm.season} ${getWeekLabel(calculateConfirm.week)} is already published and visible to users. Recalculating will overwrite it and reset it to draft. Continue?`}
+          confirmLabel="Calculate"
+          onConfirm={() => {
+            setCalculateConfirm(null);
+            handleCalculate();
+          }}
+          onCancel={() => setCalculateConfirm(null)}
         />
       )}
 

@@ -6,6 +6,7 @@ import type { PredictionsSummary } from '../../schemas/admin';
 
 interface PersistedPredictionsSectionProps {
   actionFeedback: ActionFeedback | null;
+  activeItem?: { season: number; week: number } | null;
   collapsedSeasons: Set<number>;
   isActionPending: boolean;
   isLoading?: boolean;
@@ -38,6 +39,7 @@ function renderStatusCell(item: PredictionsSummary) {
 
 export function PersistedPredictionsSection({
   actionFeedback,
+  activeItem = null,
   collapsedSeasons,
   isActionPending,
   isLoading = false,
@@ -53,6 +55,7 @@ export function PersistedPredictionsSection({
   return (
     <PersistedItemsSection
       actionFeedback={actionFeedback}
+      activeItem={activeItem}
       collapsedSeasons={collapsedSeasons}
       columnCount={COLUMN_COUNT}
       contentIdPrefix="predictions-season"

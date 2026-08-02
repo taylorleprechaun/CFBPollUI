@@ -14,6 +14,7 @@ import type { ActionFeedback } from './types';
 
 interface PersistedItemsSectionProps<T extends { createdAt: string; isPublished: boolean; season: number; week: number }> {
   actionFeedback: ActionFeedback | null;
+  activeItem?: { season: number; week: number } | null;
   collapsedSeasons: Set<number>;
   columnCount: number;
   contentIdPrefix: string;
@@ -48,6 +49,7 @@ function defaultStatusCell<T extends { isPublished: boolean }>(item: T) {
 
 export function PersistedItemsSection<T extends { createdAt: string; isPublished: boolean; season: number; week: number }>({
   actionFeedback,
+  activeItem = null,
   collapsedSeasons,
   columnCount,
   contentIdPrefix,
@@ -130,9 +132,18 @@ export function PersistedItemsSection<T extends { createdAt: string; isPublished
                     <tbody className="bg-surface divide-y divide-border">
                       {group.weeks.map((item) => {
                         const publishKey = `${feedbackKeyPrefix}-${item.season}-${item.week}`;
+                        const isActiveItem = activeItem !== null && activeItem.season === item.season && activeItem.week === item.week;
                         return (
-                          <tr key={`${item.season}-${item.week}`} className="even:bg-surface-alt/50">
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-text-primary">{getWeekLabel(item.week)}</td>
+                          <tr
+                            key={`${item.season}-${item.week}`}
+                            className={isActiveItem ? 'bg-accent-light/50 border-l-4 border-accent' : 'even:bg-surface-alt/50'}
+                          >
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-text-primary">
+                              {getWeekLabel(item.week)}
+                              {isActiveItem && (
+                                <span className="ml-2 text-xs font-medium text-accent">(Viewing)</span>
+                              )}
+                            </td>
                             {renderExtraCells?.(item)}
                             <td className="px-4 py-3 whitespace-nowrap text-sm">
                               {renderStatusCell(item)}

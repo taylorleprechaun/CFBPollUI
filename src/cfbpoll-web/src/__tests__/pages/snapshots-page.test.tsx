@@ -160,6 +160,73 @@ describe('SnapshotsPage', () => {
     });
   });
 
+  it('shows a confirm modal instead of calculating immediately when the selected week already has a published snapshot', async () => {
+    mockSnapshotsData = [
+      { season: 2024, week: 5, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+    ];
+
+    renderSnapshotsPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('Overwrite Published Snapshot')).toBeInTheDocument();
+    expect(mockCalculateMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('calculates after confirming the overwrite of a published snapshot', async () => {
+    mockSnapshotsData = [
+      { season: 2024, week: 5, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+    ];
+    mockCalculateMutateAsync.mockResolvedValue({
+      isPersisted: true,
+      rankings: { season: 2024, week: 5, rankings: [] },
+    });
+
+    renderSnapshotsPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+
+    const dialog = screen.getByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Calculate' }));
+
+    await waitFor(() => {
+      expect(mockCalculateMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
+    });
+  });
+
+  it('does not calculate when the overwrite confirm modal is cancelled', async () => {
+    mockSnapshotsData = [
+      { season: 2024, week: 5, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+    ];
+
+    renderSnapshotsPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText('Cancel'));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(mockCalculateMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('calculates immediately without a confirm modal when the selected week has only a draft (unpublished) snapshot', async () => {
+    mockSnapshotsData = [
+      { season: 2024, week: 5, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
+    ];
+    mockCalculateMutateAsync.mockResolvedValue({
+      isPersisted: true,
+      rankings: { season: 2024, week: 5, rankings: [] },
+    });
+
+    renderSnapshotsPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockCalculateMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
+    });
+  });
+
   it('shows preview after calculation', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
       isPersisted: true,

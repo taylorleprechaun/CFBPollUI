@@ -213,6 +213,7 @@ export function PredictionsPage() {
       <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render persisted predictions')} />}>
         <PersistedPredictionsSection
         actionFeedback={actionFeedback}
+        activeItem={activeView.view ? { season: activeView.view.season, week: activeView.view.week } : null}
         collapsedSeasons={collapsedSeasons}
         isActionPending={isActionPending}
         isLoading={summariesLoading}

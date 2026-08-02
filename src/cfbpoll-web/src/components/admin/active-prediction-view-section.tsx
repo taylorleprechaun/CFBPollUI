@@ -1,10 +1,12 @@
 import { useState } from 'react';
 
+import { derivePredictionStage, predictionStageClasses, predictionStageLabel } from '../../lib/prediction-stage';
 import { getWeekLabel } from '../../lib/week-utils';
 import { PredictionsTable } from '../predictions/predictions-table';
 import { BUTTON_PRIMARY } from '../ui/button-styles';
 import { CollapsibleContent } from '../ui/collapsible-content';
 import { CollapsibleTrigger } from '../ui/collapsible-trigger';
+import { StatusBadge } from '../ui/status-badge';
 import { FeedbackIndicator } from './feedback-indicator';
 import type { ActivePredictionView } from '../../hooks/use-predictions-active-view';
 import type { ActionFeedback } from './types';
@@ -48,6 +50,7 @@ export function ActivePredictionViewSection({
 
   const { predictions } = view;
   const sourceLabel = SOURCE_LABELS[view.source];
+  const stage = derivePredictionStage(view);
   const showGrade = !view.isGraded;
   const showPublish = !view.isPublished;
   const showPublishResults = view.isGraded && view.isPublished && !view.resultsPublished;
@@ -60,18 +63,21 @@ export function ActivePredictionViewSection({
     <div className="bg-surface shadow-md rounded-xl overflow-hidden">
       <div className="p-6 border-b border-border">
         <div className="flex items-center justify-between">
-          <CollapsibleTrigger
-            contentId={contentId}
-            isOpen={expanded}
-            onToggle={() => setExpanded(!expanded)}
-            className="flex items-center gap-2 text-lg font-semibold text-text-primary hover:text-text-secondary"
-          >
-            {predictions.season} {getWeekLabel(predictions.week)}
-            <span className="text-sm font-normal text-text-muted">
-              ({predictions.predictions.length} game{predictions.predictions.length !== 1 ? 's' : ''})
-            </span>
-            {sourceLabel && <span className="text-sm font-normal text-text-muted">&middot; {sourceLabel}</span>}
-          </CollapsibleTrigger>
+          <div className="flex items-center gap-3">
+            <CollapsibleTrigger
+              contentId={contentId}
+              isOpen={expanded}
+              onToggle={() => setExpanded(!expanded)}
+              className="flex items-center gap-2 text-lg font-semibold text-text-primary hover:text-text-secondary"
+            >
+              {predictions.season} {getWeekLabel(predictions.week)}
+              <span className="text-sm font-normal text-text-muted">
+                ({predictions.predictions.length} game{predictions.predictions.length !== 1 ? 's' : ''})
+              </span>
+              {sourceLabel && <span className="text-sm font-normal text-text-muted">&middot; {sourceLabel}</span>}
+            </CollapsibleTrigger>
+            <StatusBadge className={predictionStageClasses(stage)} label={predictionStageLabel(stage)} />
+          </div>
           <div className="flex items-center gap-2">
             {showPublish && (
               <>

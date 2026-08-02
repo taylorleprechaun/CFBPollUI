@@ -296,6 +296,29 @@ describe('PublicPredictionsPage', () => {
       await userEvent.click(toggle);
       expect(toggle).toHaveAttribute('aria-pressed', 'true');
     });
+
+    it('shows a message instead of an empty table when no games involve a ranked team', async () => {
+      mockRankingsData = { season: 2024, week: 1, rankings: [] };
+      renderPage();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Top 25' }));
+
+      expect(screen.getByText('No Top 25 matchups this week.')).toBeInTheDocument();
+      expect(screen.queryByText('Score')).not.toBeInTheDocument();
+    });
+
+    it('shows the table again when Top 25 is toggled off after showing the no-matchups message', async () => {
+      mockRankingsData = { season: 2024, week: 1, rankings: [] };
+      renderPage();
+
+      const toggle = screen.getByRole('button', { name: 'Top 25' });
+      await userEvent.click(toggle);
+      expect(screen.getByText('No Top 25 matchups this week.')).toBeInTheDocument();
+
+      await userEvent.click(toggle);
+      expect(screen.queryByText('No Top 25 matchups this week.')).not.toBeInTheDocument();
+      expect(screen.getAllByText('Nebraska').length).toBeGreaterThan(0);
+    });
   });
 
   it('shows a loading skeleton while predictions are fetching', () => {
