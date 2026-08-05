@@ -16,7 +16,7 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-vi.mock('../../contexts/auth-context', () => ({
+vi.mock('../../hooks/use-auth', () => ({
   useAuth: () => ({
     isAuthenticated: mockIsAuthenticated,
     login: mockLogin,
@@ -96,7 +96,7 @@ describe('LoginPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Log In' }));
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/admin');
+      expect(mockNavigate).toHaveBeenCalledWith('/admin/snapshots');
     });
   });
 

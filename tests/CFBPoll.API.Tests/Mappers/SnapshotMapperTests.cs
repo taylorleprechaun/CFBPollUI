@@ -12,7 +12,7 @@ public class SnapshotMapperTests
         var summary = new SnapshotSummary
         {
             CreatedAt = new DateTime(2024, 9, 1, 12, 0, 0, DateTimeKind.Utc),
-            Published = true,
+            IsPublished = true,
             Season = 2024,
             Week = 5
         };
@@ -31,7 +31,7 @@ public class SnapshotMapperTests
         var summary = new SnapshotSummary
         {
             CreatedAt = new DateTime(2024, 9, 8, 12, 0, 0, DateTimeKind.Utc),
-            Published = false,
+            IsPublished = false,
             Season = 2024,
             Week = 2
         };

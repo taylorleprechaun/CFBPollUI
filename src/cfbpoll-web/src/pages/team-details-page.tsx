@@ -7,7 +7,7 @@ import { RecordRow, ScheduleRow } from '../components/team-details';
 import { SELECT_BASE } from '../components/ui/button-styles';
 import { EmptyState } from '../components/ui/empty-state';
 import { Skeleton } from '../components/ui/skeleton';
-import { useSeason } from '../contexts/season-context';
+import { useSeason } from '../hooks/use-season';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { usePreloadImages } from '../hooks/use-preload-images';
 import { useRankings } from '../hooks/use-rankings';
@@ -134,12 +134,12 @@ export function TeamDetailsPage() {
     if (!rankingsData?.rankings) return [];
     return [...rankingsData.rankings]
       .sort((a, b) => a.teamName.localeCompare(b.teamName));
-  }, [rankingsData?.rankings]);
+  }, [rankingsData]);
 
   const fbsTeamNames = useMemo(() => {
     if (!rankingsData?.rankings) return new Set<string>();
     return new Set(rankingsData.rankings.map((t) => t.teamName));
-  }, [rankingsData?.rankings]);
+  }, [rankingsData]);
 
   const handleTeamChange = useCallback((teamName: string) => {
     const params: Record<string, string> = {};
@@ -308,7 +308,6 @@ export function TeamDetailsPage() {
                         fbsTeamNames={fbsTeamNames}
                         game={game}
                         selectedSeason={selectedSeason}
-                        selectedWeek={selectedWeek}
                         onTeamClick={handleTeamChange}
                       />
                     ))}
@@ -368,3 +367,5 @@ export function TeamDetailsPage() {
     </div>
   );
 }
+
+export default TeamDetailsPage;

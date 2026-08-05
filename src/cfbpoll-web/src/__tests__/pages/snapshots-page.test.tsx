@@ -1,25 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, waitForElementToBeRemoved } from '@testing-library/react';
+import { render, screen, waitFor, waitForElementToBeRemoved, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AdminPage } from '../../pages/admin-page';
+import { SnapshotsPage } from '../../pages/snapshots-page';
 
-const mockLogout = vi.fn();
 let mockToken: string | null = 'test-token';
 
 const mockSetSelectedSeason = vi.fn();
 
-vi.mock('../../contexts/auth-context', () => ({
+vi.mock('../../hooks/use-auth', () => ({
   useAuth: () => ({
     isAuthenticated: mockToken !== null,
     login: vi.fn(),
-    logout: mockLogout,
+    logout: vi.fn(),
     token: mockToken,
   }),
 }));
 
-vi.mock('../../contexts/season-context', () => ({
+vi.mock('../../hooks/use-season', () => ({
   useSeason: () => ({
     seasons: [2024, 2023],
     seasonsLoading: false,
@@ -47,10 +46,12 @@ const mockCalculateMutateAsync = vi.fn();
 const mockPublishMutateAsync = vi.fn();
 const mockDeleteMutateAsync = vi.fn();
 const mockExportMutateAsync = vi.fn();
+const mockRefreshCacheMutateAsync = vi.fn();
 let mockCalculateIsPending = false;
 let mockPublishIsPending = false;
 let mockDeleteIsPending = false;
 let mockExportIsPending = false;
+let mockRefreshCacheIsPending = false;
 
 vi.mock('../../hooks/use-admin-mutations', () => ({
   useCalculateRankings: () => ({
@@ -69,10 +70,15 @@ vi.mock('../../hooks/use-admin-mutations', () => ({
     mutateAsync: mockExportMutateAsync,
     isPending: mockExportIsPending,
   }),
+  useRefreshCache: () => ({
+    mutateAsync: mockRefreshCacheMutateAsync,
+    isPending: mockRefreshCacheIsPending,
+  }),
 }));
 
 let mockSnapshotsData: { season: number; week: number; isPublished: boolean; createdAt: string }[] | undefined = [];
 let mockSnapshotsError: Error | null = null;
+let mockSnapshotsLoading = false;
 
 const mockRefetchSnapshots = vi.fn();
 
@@ -80,31 +86,21 @@ vi.mock('../../hooks/use-snapshots', () => ({
   useSnapshots: () => ({
     data: mockSnapshotsData,
     error: mockSnapshotsError,
-    isLoading: false,
+    isLoading: mockSnapshotsLoading,
     refetch: mockRefetchSnapshots,
   }),
 }));
 
-let mockAllTimeEnabled = true;
-let mockPollLeadersEnabled = true;
-let mockSeasonTrendsEnabled = true;
-
 vi.mock('../../hooks/use-page-visibility', () => ({
   usePageVisibility: () => ({
-    allTimeEnabled: mockAllTimeEnabled,
+    allTimeEnabled: true,
     isLoading: false,
-    pollLeadersEnabled: mockPollLeadersEnabled,
-    seasonTrendsEnabled: mockSeasonTrendsEnabled,
+    pollLeadersEnabled: true,
+    seasonTrendsEnabled: true,
   }),
 }));
 
-const mockUpdatePageVisibility = vi.fn();
-
-vi.mock('../../services/admin-api', () => ({
-  updatePageVisibility: (...args: unknown[]) => mockUpdatePageVisibility(...args),
-}));
-
-function renderAdminPage() {
+function renderSnapshotsPage() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -112,52 +108,51 @@ function renderAdminPage() {
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
-        <AdminPage />
+        <SnapshotsPage />
       </MemoryRouter>
     </QueryClientProvider>
   );
 }
 
-describe('AdminPage', () => {
+describe('SnapshotsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockToken = 'test-token';
     mockSnapshotsData = [];
     mockSnapshotsError = null;
+    mockSnapshotsLoading = false;
     mockCalculateIsPending = false;
     mockPublishIsPending = false;
     mockDeleteIsPending = false;
     mockExportIsPending = false;
-    mockAllTimeEnabled = true;
-    mockPollLeadersEnabled = true;
-    mockSeasonTrendsEnabled = true;
+    mockRefreshCacheIsPending = false;
   });
 
-  it('renders admin dashboard when authenticated', () => {
-    renderAdminPage();
-    expect(screen.getByText('Admin Dashboard')).toBeInTheDocument();
+  it('renders snapshots page heading', () => {
+    renderSnapshotsPage();
+    expect(screen.getByText('Snapshots')).toBeInTheDocument();
     expect(screen.getByText('Calculate Rankings')).toBeInTheDocument();
     expect(screen.getByText('Persisted Snapshots')).toBeInTheDocument();
   });
 
   it('renders season and week dropdowns', () => {
-    renderAdminPage();
+    renderSnapshotsPage();
     expect(screen.getByLabelText('Season')).toBeInTheDocument();
     expect(screen.getByLabelText('Week')).toBeInTheDocument();
   });
 
   it('renders calculate button', () => {
-    renderAdminPage();
+    renderSnapshotsPage();
     expect(screen.getByRole('button', { name: 'Calculate' })).toBeInTheDocument();
   });
 
   it('calls calculateRankings on calculate button click', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
-      persisted: true,
+      isPersisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
 
-    renderAdminPage();
+    renderSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -165,13 +160,80 @@ describe('AdminPage', () => {
     });
   });
 
-  it('shows preview after calculation', async () => {
+  it('shows a confirm modal instead of calculating immediately when the selected week already has a published snapshot', async () => {
+    mockSnapshotsData = [
+      { season: 2024, week: 5, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+    ];
+
+    renderSnapshotsPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('Overwrite Published Snapshot')).toBeInTheDocument();
+    expect(mockCalculateMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('calculates after confirming the overwrite of a published snapshot', async () => {
+    mockSnapshotsData = [
+      { season: 2024, week: 5, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+    ];
     mockCalculateMutateAsync.mockResolvedValue({
-      persisted: true,
+      isPersisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
 
-    renderAdminPage();
+    renderSnapshotsPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+
+    const dialog = screen.getByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Calculate' }));
+
+    await waitFor(() => {
+      expect(mockCalculateMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
+    });
+  });
+
+  it('does not calculate when the overwrite confirm modal is cancelled', async () => {
+    mockSnapshotsData = [
+      { season: 2024, week: 5, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+    ];
+
+    renderSnapshotsPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText('Cancel'));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(mockCalculateMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('calculates immediately without a confirm modal when the selected week has only a draft (unpublished) snapshot', async () => {
+    mockSnapshotsData = [
+      { season: 2024, week: 5, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
+    ];
+    mockCalculateMutateAsync.mockResolvedValue({
+      isPersisted: true,
+      rankings: { season: 2024, week: 5, rankings: [] },
+    });
+
+    renderSnapshotsPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockCalculateMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
+    });
+  });
+
+  it('shows preview after calculation', async () => {
+    mockCalculateMutateAsync.mockResolvedValue({
+      isPersisted: true,
+      rankings: { season: 2024, week: 5, rankings: [] },
+    });
+
+    renderSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -181,11 +243,11 @@ describe('AdminPage', () => {
 
   it('collapses and expands preview', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
-      persisted: true,
+      isPersisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
 
-    renderAdminPage();
+    renderSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -204,11 +266,11 @@ describe('AdminPage', () => {
 
   it('shows persist warning when not persisted', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
-      persisted: false,
+      isPersisted: false,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
 
-    renderAdminPage();
+    renderSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -217,8 +279,14 @@ describe('AdminPage', () => {
   });
 
   it('shows empty state for persisted snapshots', () => {
-    renderAdminPage();
+    renderSnapshotsPage();
     expect(screen.getByText('No persisted snapshots found.')).toBeInTheDocument();
+  });
+
+  it('does not show the empty-state message while snapshots are still loading', () => {
+    mockSnapshotsLoading = true;
+    renderSnapshotsPage();
+    expect(screen.queryByText('No persisted snapshots found.')).not.toBeInTheDocument();
   });
 
   it('renders persisted weeks grouped by season', () => {
@@ -228,7 +296,7 @@ describe('AdminPage', () => {
       { season: 2023, week: 1, isPublished: true, createdAt: '2023-09-01T00:00:00Z' },
     ];
 
-    renderAdminPage();
+    renderSnapshotsPage();
 
     expect(screen.getByText('2024 Season')).toBeInTheDocument();
     expect(screen.getByText('2023 Season')).toBeInTheDocument();
@@ -241,7 +309,7 @@ describe('AdminPage', () => {
       { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
     ];
 
-    renderAdminPage();
+    renderSnapshotsPage();
 
     const seasonButton = screen.getByText('2024 Season').closest('button')!;
     const chevron = seasonButton.querySelector('svg')!;
@@ -253,7 +321,7 @@ describe('AdminPage', () => {
       { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
     ];
 
-    renderAdminPage();
+    renderSnapshotsPage();
 
     const seasonButton = screen.getByText('2024 Season').closest('button')!;
     const chevron = () => seasonButton.querySelector('svg')!;
@@ -271,7 +339,7 @@ describe('AdminPage', () => {
       { season: 2023, week: 1, isPublished: true, createdAt: '2023-09-01T00:00:00Z' },
     ];
 
-    renderAdminPage();
+    renderSnapshotsPage();
 
     const button2024 = screen.getByText('2024 Season').closest('button')!;
     const button2023 = screen.getByText('2023 Season').closest('button')!;
@@ -292,23 +360,15 @@ describe('AdminPage', () => {
     expect(chevron2023().classList.toString()).toContain('-rotate-90');
   });
 
-  it('calls logout when Log Out is clicked', async () => {
-    renderAdminPage();
-    await userEvent.click(screen.getByText('Log Out'));
-    expect(mockLogout).toHaveBeenCalled();
-  });
-
   it('calls deleteSnapshot when delete is clicked on draft', async () => {
     mockSnapshotsData = [
       { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockDeleteMutateAsync.mockResolvedValue(undefined);
 
-    renderAdminPage();
+    renderSnapshotsPage();
 
-    // Expand to see Delete button
     await userEvent.click(screen.getByText('2024 Season'));
-
     await userEvent.click(screen.getByText('Delete'));
 
     await waitFor(() => {
@@ -322,19 +382,15 @@ describe('AdminPage', () => {
     ];
     mockDeleteMutateAsync.mockResolvedValue(undefined);
 
-    renderAdminPage();
+    renderSnapshotsPage();
 
-    // Expand to see Delete button
     await userEvent.click(screen.getByText('2024 Season'));
-
     await userEvent.click(screen.getByText('Delete'));
 
-    // Confirm modal should appear
     const dialog = screen.getByRole('dialog');
     expect(dialog).toBeInTheDocument();
     expect(screen.getByText('Delete Published Snapshot')).toBeInTheDocument();
 
-    // Click "Delete" in the modal to confirm
     const modalDeleteButton = screen.getAllByText('Delete').find(
       (btn) => btn.closest('[role="dialog"]') !== null
     )!;
@@ -350,20 +406,15 @@ describe('AdminPage', () => {
       { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
     ];
 
-    renderAdminPage();
+    renderSnapshotsPage();
 
-    // Expand to see Delete button
     await userEvent.click(screen.getByText('2024 Season'));
-
     await userEvent.click(screen.getByText('Delete'));
 
-    // Confirm modal should appear
     expect(screen.getByRole('dialog')).toBeInTheDocument();
 
-    // Click "Cancel" in the modal
     await userEvent.click(screen.getByText('Cancel'));
 
-    // Modal should be dismissed and delete should not have been called
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(mockDeleteMutateAsync).not.toHaveBeenCalled();
   });
@@ -374,11 +425,9 @@ describe('AdminPage', () => {
     ];
     mockPublishMutateAsync.mockResolvedValue(undefined);
 
-    renderAdminPage();
+    renderSnapshotsPage();
 
-    // Expand to see Publish button
     await userEvent.click(screen.getByText('2024 Season'));
-
     await userEvent.click(screen.getByText('Publish'));
 
     await waitFor(() => {
@@ -392,11 +441,9 @@ describe('AdminPage', () => {
     ];
     mockPublishMutateAsync.mockResolvedValue(undefined);
 
-    renderAdminPage();
+    renderSnapshotsPage();
 
-    // Expand to see Publish button
     await userEvent.click(screen.getByText('2024 Season'));
-
     await userEvent.click(screen.getByText('Publish'));
 
     await waitFor(() => {
@@ -410,11 +457,9 @@ describe('AdminPage', () => {
     ];
     mockPublishMutateAsync.mockRejectedValue(new Error('Snapshot not found'));
 
-    renderAdminPage();
+    renderSnapshotsPage();
 
-    // Expand to see Publish button
     await userEvent.click(screen.getByText('2024 Season'));
-
     await userEvent.click(screen.getByText('Publish'));
 
     await waitFor(() => {
@@ -424,12 +469,12 @@ describe('AdminPage', () => {
 
   it('shows success checkmark on preview publish', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
-      persisted: true,
+      isPersisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
     mockPublishMutateAsync.mockResolvedValue(undefined);
 
-    renderAdminPage();
+    renderSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -446,12 +491,12 @@ describe('AdminPage', () => {
 
   it('shows error message on preview publish failure', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
-      persisted: true,
+      isPersisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
     mockPublishMutateAsync.mockRejectedValue(new Error('Server error'));
 
-    renderAdminPage();
+    renderSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -472,11 +517,9 @@ describe('AdminPage', () => {
     ];
     mockPublishMutateAsync.mockResolvedValue(undefined);
 
-    renderAdminPage();
+    renderSnapshotsPage();
 
-    // Expand to see Publish button
     await userEvent.click(screen.getByText('2024 Season'));
-
     await userEvent.click(screen.getByText('Publish'));
 
     await waitFor(() => {
@@ -494,11 +537,9 @@ describe('AdminPage', () => {
     ];
     mockExportMutateAsync.mockResolvedValue(undefined);
 
-    renderAdminPage();
+    renderSnapshotsPage();
 
-    // Expand to see Export button
     await userEvent.click(screen.getByText('2024 Season'));
-
     await userEvent.click(screen.getByText('Export'));
 
     await waitFor(() => {
@@ -509,7 +550,7 @@ describe('AdminPage', () => {
   it('shows error when calculation fails', async () => {
     mockCalculateMutateAsync.mockRejectedValue(new Error('Network error'));
 
-    renderAdminPage();
+    renderSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -518,7 +559,7 @@ describe('AdminPage', () => {
   });
 
   it('changes season on season dropdown change', async () => {
-    renderAdminPage();
+    renderSnapshotsPage();
 
     const seasonSelect = screen.getByLabelText('Season');
     await userEvent.selectOptions(seasonSelect, '2023');
@@ -527,7 +568,7 @@ describe('AdminPage', () => {
   });
 
   it('changes week on week dropdown change', async () => {
-    renderAdminPage();
+    renderSnapshotsPage();
 
     const weekSelect = screen.getByLabelText('Week');
     await userEvent.selectOptions(weekSelect, '1');
@@ -541,11 +582,9 @@ describe('AdminPage', () => {
     ];
     mockDeleteMutateAsync.mockRejectedValue(new Error('Delete failed'));
 
-    renderAdminPage();
+    renderSnapshotsPage();
 
-    // Expand to see Delete button
     await userEvent.click(screen.getByText('2024 Season'));
-
     await userEvent.click(screen.getByText('Delete'));
 
     await waitFor(() => {
@@ -559,11 +598,9 @@ describe('AdminPage', () => {
     ];
     mockExportMutateAsync.mockRejectedValue(new Error('Export failed'));
 
-    renderAdminPage();
+    renderSnapshotsPage();
 
-    // Expand to see Export button
     await userEvent.click(screen.getByText('2024 Season'));
-
     await userEvent.click(screen.getByText('Export'));
 
     await waitFor(() => {
@@ -573,12 +610,12 @@ describe('AdminPage', () => {
 
   it('calls downloadExport for preview Download Excel button', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
-      persisted: true,
+      isPersisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
     mockExportMutateAsync.mockResolvedValue(undefined);
 
-    renderAdminPage();
+    renderSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -594,7 +631,7 @@ describe('AdminPage', () => {
 
   it('clears calculated result when matching snapshot is deleted', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
-      persisted: true,
+      isPersisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
     mockSnapshotsData = [
@@ -602,7 +639,7 @@ describe('AdminPage', () => {
     ];
     mockDeleteMutateAsync.mockResolvedValue(undefined);
 
-    renderAdminPage();
+    renderSnapshotsPage();
 
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
@@ -610,9 +647,7 @@ describe('AdminPage', () => {
       expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
     });
 
-    // Expand to see Delete button
     await userEvent.click(screen.getByText('2024 Season'));
-
     await userEvent.click(screen.getByText('Delete'));
 
     await waitFor(() => {
@@ -631,7 +666,7 @@ describe('AdminPage', () => {
     ];
     mockPublishMutateAsync.mockResolvedValue(undefined);
 
-    renderAdminPage();
+    renderSnapshotsPage();
 
     await userEvent.click(screen.getByText('2024 Season'));
     const seasonButton = screen.getByText('2024 Season').closest('button')!;
@@ -651,14 +686,14 @@ describe('AdminPage', () => {
   it('shows error when fetching snapshots fails', () => {
     mockSnapshotsError = new Error('Server unavailable');
 
-    renderAdminPage();
+    renderSnapshotsPage();
 
     expect(screen.getByText(/Server unavailable/)).toBeInTheDocument();
   });
 
   it('preview publish checkmark does not appear in snapshot section', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
-      persisted: true,
+      isPersisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
     mockSnapshotsData = [
@@ -666,7 +701,7 @@ describe('AdminPage', () => {
     ];
     mockPublishMutateAsync.mockResolvedValue(undefined);
 
-    renderAdminPage();
+    renderSnapshotsPage();
 
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
@@ -693,7 +728,7 @@ describe('AdminPage', () => {
   it('calls refetchSnapshots when retry is clicked on a snapshots error', async () => {
     mockSnapshotsError = new Error('Server unavailable');
 
-    renderAdminPage();
+    renderSnapshotsPage();
 
     await userEvent.click(screen.getByText('Retry'));
 
@@ -703,7 +738,7 @@ describe('AdminPage', () => {
   it('does not call refetchSnapshots when retry is clicked on an operation error', async () => {
     mockCalculateMutateAsync.mockRejectedValue(new Error('Network error'));
 
-    renderAdminPage();
+    renderSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -716,105 +751,71 @@ describe('AdminPage', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('renders page visibility toggles', () => {
-    renderAdminPage();
-
-    expect(screen.getByText('Page Visibility')).toBeInTheDocument();
-    expect(screen.getByText('All-Time Rankings')).toBeInTheDocument();
-    expect(screen.getByText('Poll Leaders')).toBeInTheDocument();
-    expect(screen.getByText('Season Trends')).toBeInTheDocument();
+  it('renders refresh cached data button', () => {
+    renderSnapshotsPage();
+    expect(screen.getByRole('button', { name: 'Refresh Cached Data' })).toBeInTheDocument();
   });
 
-  it('renders page visibility toggles with correct checked state', () => {
-    mockAllTimeEnabled = true;
-    mockPollLeadersEnabled = false;
+  it('shows confirm modal instead of calling refreshCache immediately when refresh button is clicked', async () => {
+    renderSnapshotsPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
 
-    renderAdminPage();
-
-    const allTimeToggle = screen.getByLabelText('All-Time Rankings');
-    const pollLeadersToggle = screen.getByLabelText('Poll Leaders');
-
-    expect(allTimeToggle).toHaveAttribute('aria-checked', 'true');
-    expect(pollLeadersToggle).toHaveAttribute('aria-checked', 'false');
+    const dialog = screen.getByRole('dialog');
+    expect(within(dialog).getByText('Refresh Cached Data')).toBeInTheDocument();
+    expect(mockRefreshCacheMutateAsync).not.toHaveBeenCalled();
   });
 
-  it('calls updatePageVisibility when toggle is changed', async () => {
-    mockAllTimeEnabled = true;
-    mockPollLeadersEnabled = true;
-    mockSeasonTrendsEnabled = true;
-    mockUpdatePageVisibility.mockResolvedValue({
-      allTimeEnabled: false,
-      pollLeadersEnabled: true,
-      seasonTrendsEnabled: true,
-    });
+  it('does not call refreshCache when confirm modal is cancelled', async () => {
+    renderSnapshotsPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
 
-    renderAdminPage();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
 
-    const allTimeCheckbox = screen.getByLabelText('All-Time Rankings');
-    await userEvent.click(allTimeCheckbox);
+    await userEvent.click(screen.getByText('Cancel'));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(mockRefreshCacheMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('calls refreshCache with selected season and week when confirmed', async () => {
+    mockRefreshCacheMutateAsync.mockResolvedValue({ removedCount: 8, season: 2024, week: 5 });
+
+    renderSnapshotsPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
+
+    const dialog = screen.getByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Refresh' }));
 
     await waitFor(() => {
-      expect(mockUpdatePageVisibility).toHaveBeenCalledWith(
-        'test-token',
-        { allTimeEnabled: false, pollLeadersEnabled: true, seasonTrendsEnabled: true }
-      );
+      expect(mockRefreshCacheMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
     });
   });
 
-  it('shows success feedback after visibility update', async () => {
-    mockUpdatePageVisibility.mockResolvedValue({
-      allTimeEnabled: false,
-      pollLeadersEnabled: true,
-    });
+  it('shows removed count feedback after a successful confirmed refresh', async () => {
+    mockRefreshCacheMutateAsync.mockResolvedValue({ removedCount: 8, season: 2024, week: 5 });
 
-    renderAdminPage();
+    renderSnapshotsPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
 
-    await userEvent.click(screen.getByLabelText('All-Time Rankings'));
+    const dialog = screen.getByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Refresh' }));
 
     await waitFor(() => {
-      expect(screen.getByText('Page visibility updated')).toBeInTheDocument();
+      expect(screen.getByText('Removed 8 cached entries')).toBeInTheDocument();
     });
   });
 
-  it('renders season trends toggle with correct checked state', () => {
-    mockSeasonTrendsEnabled = false;
+  it('shows error feedback when confirmed refresh fails', async () => {
+    mockRefreshCacheMutateAsync.mockRejectedValue(new Error('Refresh failed'));
 
-    renderAdminPage();
+    renderSnapshotsPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
 
-    const seasonTrendsToggle = screen.getByLabelText('Season Trends');
-    expect(seasonTrendsToggle).toHaveAttribute('aria-checked', 'false');
-  });
-
-  it('calls updatePageVisibility when season trends toggle is changed', async () => {
-    mockSeasonTrendsEnabled = true;
-    mockUpdatePageVisibility.mockResolvedValue({
-      allTimeEnabled: true,
-      pollLeadersEnabled: true,
-      seasonTrendsEnabled: false,
-    });
-
-    renderAdminPage();
-
-    const seasonTrendsToggle = screen.getByLabelText('Season Trends');
-    await userEvent.click(seasonTrendsToggle);
+    const dialog = screen.getByRole('dialog');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Refresh' }));
 
     await waitFor(() => {
-      expect(mockUpdatePageVisibility).toHaveBeenCalledWith(
-        'test-token',
-        { allTimeEnabled: true, pollLeadersEnabled: true, seasonTrendsEnabled: false }
-      );
-    });
-  });
-
-  it('shows error feedback when visibility update fails', async () => {
-    mockUpdatePageVisibility.mockRejectedValue(new Error('Update failed'));
-
-    renderAdminPage();
-
-    await userEvent.click(screen.getByLabelText('Poll Leaders'));
-
-    await waitFor(() => {
-      expect(screen.getByText('Failed to update page visibility')).toBeInTheDocument();
+      expect(screen.getByText('Refresh failed')).toBeInTheDocument();
     });
   });
 });

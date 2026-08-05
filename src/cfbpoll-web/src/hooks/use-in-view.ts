@@ -36,7 +36,7 @@ export function useInView({
 
       if (!node) return;
 
-      var observer = new IntersectionObserver(
+      const observer = new IntersectionObserver(
         ([entry]) => {
           if (entry.isIntersecting) {
             setInView(true);

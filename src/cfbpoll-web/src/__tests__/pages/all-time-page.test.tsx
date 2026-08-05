@@ -131,7 +131,7 @@ describe('AllTimePage', () => {
     const floridaLink = screen.getByRole('link', { name: 'Florida' });
     expect(floridaLink).toHaveAttribute(
       'href',
-      '/team-details?team=Florida&season=2023&week=5'
+      '/team-details?team=Florida&season=2023'
     );
   });
 

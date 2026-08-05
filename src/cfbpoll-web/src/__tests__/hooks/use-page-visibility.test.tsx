@@ -1,18 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import type { PageVisibilityContextValue } from '../../contexts/page-visibility-context';
-
-vi.mock('../../contexts/page-visibility-context', async () => {
-  const { createContext: createCtx } = await import('react');
-  const ctx = createCtx<PageVisibilityContextValue | null>(null);
-  return {
-    PageVisibilityContext: ctx,
-    __testContext: ctx,
-  };
-});
-
-import { usePageVisibility } from '../../hooks/use-page-visibility';
-import { PageVisibilityContext } from '../../contexts/page-visibility-context';
+import { PageVisibilityContext, usePageVisibility, type PageVisibilityContextValue } from '../../hooks/use-page-visibility';
 
 describe('usePageVisibility', () => {
   it('throws when used outside PageVisibilityProvider', () => {
@@ -30,6 +18,7 @@ describe('usePageVisibility', () => {
       allTimeEnabled: false,
       isLoading: false,
       pollLeadersEnabled: true,
+      predictionsPageEnabled: true,
       seasonTrendsEnabled: true,
     };
 

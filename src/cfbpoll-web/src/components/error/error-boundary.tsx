@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import { ErrorBoundary as ReactErrorBoundary, type FallbackProps } from 'react-error-boundary';
+import { toErrorMessage } from '../../lib/error-utils';
 import { BUTTON_PRIMARY } from '../ui/button-styles';
 import { WarningTriangleIcon } from '../ui/icons';
 
@@ -9,7 +10,7 @@ interface Props {
 }
 
 function DefaultFallback({ error, resetErrorBoundary }: FallbackProps) {
-  const message = error instanceof Error ? error.message : 'An unexpected error occurred';
+  const message = toErrorMessage(error, 'An unexpected error occurred');
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-page-bg p-4">

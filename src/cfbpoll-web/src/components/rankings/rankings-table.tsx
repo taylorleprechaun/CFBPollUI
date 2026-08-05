@@ -10,7 +10,6 @@ interface RankingsTableProps {
   isLoading: boolean;
   selectedConference: string | null;
   selectedSeason: number | null;
-  selectedWeek: number | null;
 }
 
 interface DisplayRankedTeam extends RankedTeam {
@@ -22,7 +21,7 @@ const DELTA_ARROW_PATH = "M11.96 24.231l8.344-8.49-0.893-0.916-6.801 6.897v-18.6
 
 const columnHelper = createColumnHelper<DisplayRankedTeam>();
 
-export function RankingsTable({ rankings, isLoading, selectedConference, selectedSeason, selectedWeek }: RankingsTableProps) {
+export function RankingsTable({ rankings, isLoading, selectedConference, selectedSeason }: RankingsTableProps) {
   const displayData: DisplayRankedTeam[] = useMemo(() => {
     if (!selectedConference) {
       return rankings.map((team) => ({
@@ -67,8 +66,8 @@ export function RankingsTable({ rankings, isLoading, selectedConference, selecte
       header: 'Team',
       cell: (info) => {
         const team = info.row.original;
-        const teamDetailUrl = selectedSeason && selectedWeek
-          ? `/team-details?team=${encodeURIComponent(info.getValue())}&season=${selectedSeason}&week=${selectedWeek}`
+        const teamDetailUrl = selectedSeason
+          ? `/team-details?team=${encodeURIComponent(info.getValue())}&season=${selectedSeason}`
           : `/team-details?team=${encodeURIComponent(info.getValue())}`;
         return (
           <div className="flex items-center space-x-3">
@@ -141,7 +140,7 @@ export function RankingsTable({ rankings, isLoading, selectedConference, selecte
         return a - b;
       },
     }),
-  ], [selectedSeason, selectedWeek]);
+  ], [selectedSeason]);
 
   return (
     <SortableTable

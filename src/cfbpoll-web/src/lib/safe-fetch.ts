@@ -1,4 +1,5 @@
 import { ApiError } from './api-error';
+import { toErrorMessage } from './error-utils';
 
 export async function safeFetch(url: string, options?: RequestInit): Promise<Response> {
   let response: Response;
@@ -7,7 +8,7 @@ export async function safeFetch(url: string, options?: RequestInit): Promise<Res
     response = await fetch(url, options);
   } catch (error) {
     throw new ApiError(
-      error instanceof Error ? error.message : 'Network request failed',
+      toErrorMessage(error, 'Network request failed'),
       0
     );
   }
@@ -17,6 +18,7 @@ export async function safeFetch(url: string, options?: RequestInit): Promise<Res
     try {
       body = await response.json();
     } catch {
+      // Error body isn't guaranteed to be valid JSON; fall back to an undefined body.
     }
     throw ApiError.fromResponse(response, body);
   }

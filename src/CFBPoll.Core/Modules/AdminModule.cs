@@ -12,18 +12,26 @@ public class AdminModule : IAdminModule
     private readonly IExcelExportModule _excelExportModule;
     private readonly ILogger<AdminModule> _logger;
     private readonly IPollLeadersModule _pollLeadersModule;
+    private readonly IPredictionCalculatorModule _predictionCalculatorModule;
+    private readonly IPredictionGradingModule _predictionGradingModule;
+    private readonly IPredictionsModule _predictionsModule;
     private readonly IRankingsModule _rankingsModule;
     private readonly IRatingModule _ratingModule;
     private readonly ISeasonTrendsModule _seasonTrendsModule;
+    private readonly ITrackRecordModule _trackRecordModule;
 
     public AdminModule(
         ICFBDataService dataService,
         IExcelExportModule excelExportModule,
         IPersistentCache cache,
         IPollLeadersModule pollLeadersModule,
+        IPredictionCalculatorModule predictionCalculatorModule,
+        IPredictionGradingModule predictionGradingModule,
+        IPredictionsModule predictionsModule,
         IRankingsModule rankingsModule,
         IRatingModule ratingModule,
         ISeasonTrendsModule seasonTrendsModule,
+        ITrackRecordModule trackRecordModule,
         ILogger<AdminModule> logger)
     {
         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
@@ -31,17 +39,87 @@ public class AdminModule : IAdminModule
         _excelExportModule = excelExportModule ?? throw new ArgumentNullException(nameof(excelExportModule));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _pollLeadersModule = pollLeadersModule ?? throw new ArgumentNullException(nameof(pollLeadersModule));
+        _predictionCalculatorModule = predictionCalculatorModule ?? throw new ArgumentNullException(nameof(predictionCalculatorModule));
+        _predictionGradingModule = predictionGradingModule ?? throw new ArgumentNullException(nameof(predictionGradingModule));
+        _predictionsModule = predictionsModule ?? throw new ArgumentNullException(nameof(predictionsModule));
         _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
         _ratingModule = ratingModule ?? throw new ArgumentNullException(nameof(ratingModule));
         _seasonTrendsModule = seasonTrendsModule ?? throw new ArgumentNullException(nameof(seasonTrendsModule));
+        _trackRecordModule = trackRecordModule ?? throw new ArgumentNullException(nameof(trackRecordModule));
+    }
+
+    public async Task<CalculatePredictionsResult> CalculatePredictionsAsync(int season, int week)
+    {
+        _logger.LogInformation("Calculating predictions for season {Season}, week {Week}", season, week);
+
+        await RefreshSeasonCacheAsync(season, week).ConfigureAwait(false);
+
+        var seasonDataTask = _dataService.GetSeasonDataAsync(season, week);
+        var fullScheduleTask = _dataService.GetFullSeasonScheduleAsync(season);
+        await Task.WhenAll(seasonDataTask, fullScheduleTask).ConfigureAwait(false);
+
+        var seasonData = seasonDataTask.Result;
+        var fullSchedule = fullScheduleTask.Result;
+        var (gameWeek, isPostseason) = GameWeekResolver.Resolve(week, fullSchedule);
+        var fbsTeamNames = new HashSet<string>(seasonData.Teams.Keys, StringComparer.OrdinalIgnoreCase);
+        var scoic = StringComparison.OrdinalIgnoreCase;
+
+        // CFBD API serves all postseason betting lines under week 1
+        var bettingLinesWeek = isPostseason ? 1 : gameWeek;
+
+        var ratingsTask = _ratingModule.RateTeamsAsync(seasonData);
+        var bettingLinesTask = _dataService.GetBettingLinesAsync(season, bettingLinesWeek);
+        await Task.WhenAll(ratingsTask, bettingLinesTask).ConfigureAwait(false);
+
+        var ratings = ratingsTask.Result;
+        var bettingLines = bettingLinesTask.Result;
+
+        var upcomingGames = fullSchedule
+            .Where(g => g.HomeTeam is not null && fbsTeamNames.Contains(g.HomeTeam)
+                && g.AwayTeam is not null && fbsTeamNames.Contains(g.AwayTeam)
+                && (isPostseason
+                    ? g.SeasonType is not null && g.SeasonType.Equals("postseason", scoic)
+                    : g.Week == gameWeek))
+            .ToList();
+
+        _logger.LogDebug("Found {GameCount} FBS vs FBS games for season {Season}, week {Week}",
+            upcomingGames.Count, season, week);
+
+        var gamePredictions = await _predictionCalculatorModule
+            .GeneratePredictionsAsync(seasonData, ratings, upcomingGames, bettingLines)
+            .ConfigureAwait(false);
+
+        var predictionsResult = new PredictionsResult
+        {
+            Predictions = gamePredictions.ToList(),
+            Season = season,
+            Week = week
+        };
+
+        var persisted = true;
+        try
+        {
+            await _predictionsModule.SaveAsync(predictionsResult).ConfigureAwait(false);
+            _logger.LogInformation("Saved draft predictions for season {Season}, week {Week}", season, week);
+        }
+        catch (Exception ex)
+        {
+            persisted = false;
+            _logger.LogWarning(ex, "Failed to persist predictions for season {Season}, week {Week}", season, week);
+        }
+
+        return new CalculatePredictionsResult
+        {
+            IsPersisted = persisted,
+            Predictions = predictionsResult
+        };
     }
 
     public async Task<CalculateRankingsResult> CalculateRankingsAsync(int season, int week)
     {
         _logger.LogInformation("Calculating rankings for season {Season}, week {Week}", season, week);
 
-        await ClearSeasonCacheAsync(season, week).ConfigureAwait(false);
-        _logger.LogDebug("Cleared component caches for season {Season} to force fresh API data", season);
+        await RefreshSeasonCacheAsync(season, week).ConfigureAwait(false);
 
         var seasonData = await _dataService.GetSeasonDataAsync(season, week).ConfigureAwait(false);
         var ratings = await _ratingModule.RateTeamsAsync(seasonData).ConfigureAwait(false);
@@ -64,9 +142,23 @@ public class AdminModule : IAdminModule
 
         return new CalculateRankingsResult
         {
-            Persisted = persisted,
+            IsPersisted = persisted,
             Rankings = rankings
         };
+    }
+
+    public async Task<bool> DeletePredictionsAsync(int season, int week)
+    {
+        _logger.LogInformation("Deleting predictions for season {Season}, week {Week}", season, week);
+
+        var result = await _predictionsModule.DeleteAsync(season, week).ConfigureAwait(false);
+
+        if (result)
+        {
+            await _trackRecordModule.InvalidateCacheAsync().ConfigureAwait(false);
+        }
+
+        return result;
     }
 
     public async Task<bool> DeleteSnapshotAsync(int season, int week)
@@ -96,9 +188,61 @@ public class AdminModule : IAdminModule
         return _excelExportModule.GenerateRankingsWorkbook(snapshot);
     }
 
+    public async Task<GetPredictionsResult?> GetPredictionsAsync(int season, int week)
+    {
+        var predictionsTask = _predictionsModule.GetAsync(season, week);
+        var summariesTask = _predictionsModule.GetAllSummariesAsync();
+        await Task.WhenAll(predictionsTask, summariesTask).ConfigureAwait(false);
+
+        var predictions = predictionsTask.Result;
+        if (predictions is null)
+            return null;
+
+        var summary = summariesTask.Result.FirstOrDefault(s => s.Season == season && s.Week == week);
+
+        return new GetPredictionsResult
+        {
+            IsGraded = summary?.IsGraded ?? false,
+            IsPublished = summary?.IsPublished ?? false,
+            Predictions = predictions,
+            ResultsPublished = summary?.ResultsPublished ?? false
+        };
+    }
+
+    public async Task<IEnumerable<PredictionsSummary>> GetPredictionsSummariesAsync()
+    {
+        return await _predictionsModule.GetAllSummariesAsync().ConfigureAwait(false);
+    }
+
     public async Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync()
     {
         return await _rankingsModule.GetSnapshotsAsync().ConfigureAwait(false);
+    }
+
+    public async Task<GradePredictionsResult?> GradePredictionsAsync(int season, int week)
+    {
+        return await _predictionGradingModule.GradeAsync(season, week).ConfigureAwait(false);
+    }
+
+    public async Task<bool> PublishGradedResultsAsync(int season, int week)
+    {
+        _logger.LogInformation("Publishing graded results for season {Season}, week {Week}", season, week);
+
+        var result = await _predictionsModule.PublishGradedResultsAsync(season, week).ConfigureAwait(false);
+
+        if (result)
+        {
+            await _trackRecordModule.InvalidateCacheAsync().ConfigureAwait(false);
+        }
+
+        return result;
+    }
+
+    public async Task<bool> PublishPredictionsAsync(int season, int week)
+    {
+        _logger.LogInformation("Publishing predictions for season {Season}, week {Week}", season, week);
+
+        return await _predictionsModule.PublishAsync(season, week).ConfigureAwait(false);
     }
 
     public async Task<bool> PublishSnapshotAsync(int season, int week)
@@ -116,22 +260,20 @@ public class AdminModule : IAdminModule
         return result;
     }
 
-    private async Task ClearSeasonCacheAsync(int season, int week)
+    public async Task<int> RefreshSeasonCacheAsync(int season, int week)
     {
-        var cacheKeys = new[]
-        {
-            $"teams_{season}",
-            $"games_{season}_regular",
-            $"games_{season}_postseason",
-            $"advancedGameStats_{season}_regular",
-            $"advancedGameStats_{season}_postseason",
-            $"seasonStats_{season}",
-            $"seasonStats_{season}_week_{week}"
-        };
+        _logger.LogInformation("Refreshing cached CFBD data for season {Season}, week {Week}", season, week);
 
-        foreach (var key in cacheKeys)
+        var removed = 0;
+        foreach (var key in CacheKeys.GetSeasonScopedKeys(season, week))
         {
-            await _cache.RemoveAsync(key).ConfigureAwait(false);
+            if (await _cache.RemoveAsync(key).ConfigureAwait(false))
+            {
+                removed++;
+            }
         }
+
+        _logger.LogInformation("Removed {Count} cached entries for season {Season}, week {Week}", removed, season, week);
+        return removed;
     }
 }

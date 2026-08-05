@@ -22,23 +22,15 @@ export function useCountUp({
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   useEffect(() => {
-    if (!enabled) {
-      setCurrent(0);
-      return;
-    }
+    if (!enabled || prefersReducedMotion) return;
 
-    if (prefersReducedMotion) {
-      setCurrent(end);
-      return;
-    }
-
-    var startTime: number | null = null;
+    let startTime: number | null = null;
 
     function animate(timestamp: number) {
       if (startTime === null) startTime = timestamp;
-      var elapsed = timestamp - startTime;
-      var progress = Math.min(elapsed / duration, 1);
-      var easedProgress = easeOutCubic(progress);
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easedProgress = easeOutCubic(progress);
 
       setCurrent(Math.round(easedProgress * end));
 
@@ -57,5 +49,7 @@ export function useCountUp({
     };
   }, [end, duration, enabled, prefersReducedMotion]);
 
+  if (!enabled) return 0;
+  if (prefersReducedMotion) return end;
   return current;
 }

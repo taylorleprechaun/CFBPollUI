@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 
 import { ErrorAlert } from '../components/error';
 import { SeasonTrendsChart } from '../components/season-trends/season-trends-chart';
-import { useSeason } from '../contexts/season-context';
+import { useSeason } from '../hooks/use-season';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { usePreloadImages } from '../hooks/use-preload-images';
 import { useSeasonTrends } from '../hooks/use-season-trends';
@@ -64,3 +64,5 @@ export function SeasonTrendsPage() {
     </div>
   );
 }
+
+export default SeasonTrendsPage;

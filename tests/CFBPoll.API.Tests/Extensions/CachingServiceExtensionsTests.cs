@@ -8,6 +8,7 @@ using CFBPoll.Core.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
@@ -17,7 +18,7 @@ namespace CFBPoll.API.Tests.Extensions;
 public class CachingServiceExtensionsTests
 {
     [Fact]
-    public void AddCFBDataServiceWithCaching_RegistersIPersistentCache()
+    public void AddCFBDataServiceWithCaching_CachingServiceWrapsInnerService()
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -26,57 +27,32 @@ public class CachingServiceExtensionsTests
         services.AddCFBDataServiceWithCaching(configuration);
 
         var provider = services.BuildServiceProvider();
-        var cache = provider.GetService<IPersistentCache>();
 
-        Assert.NotNull(cache);
-        Assert.IsType<CacheModule>(cache);
+        var cachingService = provider.GetService<ICFBDataService>();
+        var innerService = provider.GetService<CFBDataService>();
+
+        Assert.NotNull(cachingService);
+        Assert.NotNull(innerService);
+        Assert.IsType<CachingCFBDataService>(cachingService);
+        Assert.IsType<CFBDataService>(innerService);
     }
 
     [Fact]
-    public void AddCFBDataServiceWithCaching_RegistersICacheData()
+    public void AddCFBDataServiceWithCaching_ConfiguresCacheConnectionString()
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        var configuration = BuildConfiguration(apiKey: "test-api-key");
+        var configuration = BuildConfiguration(
+            apiKey: "test-api-key",
+            connectionString: "Data Source=test/cache.db");
 
         services.AddCFBDataServiceWithCaching(configuration);
 
         var provider = services.BuildServiceProvider();
-        var cacheData = provider.GetService<ICacheData>();
+        var options = provider.GetService<IOptions<CacheOptions>>();
 
-        Assert.NotNull(cacheData);
-        Assert.IsType<CacheData>(cacheData);
-    }
-
-    [Fact]
-    public void AddCFBDataServiceWithCaching_RegistersCFBDataService()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        var configuration = BuildConfiguration(apiKey: "test-api-key");
-
-        services.AddCFBDataServiceWithCaching(configuration);
-
-        var provider = services.BuildServiceProvider();
-        var service = provider.GetService<CFBDataService>();
-
-        Assert.NotNull(service);
-    }
-
-    [Fact]
-    public void AddCFBDataServiceWithCaching_RegistersICFBDataServiceAsCachingService()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        var configuration = BuildConfiguration(apiKey: "test-api-key");
-
-        services.AddCFBDataServiceWithCaching(configuration);
-
-        var provider = services.BuildServiceProvider();
-        var service = provider.GetService<ICFBDataService>();
-
-        Assert.NotNull(service);
-        Assert.IsType<CachingCFBDataService>(service);
+        Assert.NotNull(options);
+        Assert.Equal("Data Source=test/cache.db", options.Value.ConnectionString);
     }
 
     [Fact]
@@ -102,13 +78,16 @@ public class CachingServiceExtensionsTests
     }
 
     [Fact]
-    public void AddCFBDataServiceWithCaching_ConfiguresCacheConnectionString()
+    public void AddCFBDataServiceWithCaching_ConfiguresNewCacheOptions()
     {
         var services = new ServiceCollection();
         services.AddLogging();
         var configuration = BuildConfiguration(
             apiKey: "test-api-key",
-            connectionString: "Data Source=test/cache.db");
+            seasonBoundaryGraceMonth: 6,
+            seasonBoundaryGraceDay: 15,
+            cleanupIntervalMinutes: 30,
+            cleanupStartupDelayMinutes: 2);
 
         services.AddCFBDataServiceWithCaching(configuration);
 
@@ -116,64 +95,89 @@ public class CachingServiceExtensionsTests
         var options = provider.GetService<IOptions<CacheOptions>>();
 
         Assert.NotNull(options);
-        Assert.Equal("Data Source=test/cache.db", options.Value.ConnectionString);
+        Assert.Equal(6, options.Value.SeasonBoundaryGraceMonth);
+        Assert.Equal(15, options.Value.SeasonBoundaryGraceDay);
+        Assert.Equal(30, options.Value.CleanupIntervalMinutes);
+        Assert.Equal(2, options.Value.CleanupStartupDelayMinutes);
     }
 
     [Fact]
-    public void AddCFBDataServiceWithCaching_ThrowsWhenApiKeyMissing()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        var configuration = BuildConfiguration(apiKey: null);
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            services.AddCFBDataServiceWithCaching(configuration));
-
-        Assert.Contains("API key not configured", exception.Message);
-    }
-
-    [Fact]
-    public void AddCFBDataServiceWithCaching_UsesDefaultMinimumYear()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        var configuration = BuildConfiguration(apiKey: "test-api-key", minimumYear: null);
-
-        services.AddCFBDataServiceWithCaching(configuration);
-
-        var provider = services.BuildServiceProvider();
-        var service = provider.GetService<CFBDataService>();
-
-        Assert.NotNull(service);
-    }
-
-    [Fact]
-    public void AddCFBDataServiceWithCaching_UsesConfiguredMinimumYear()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        var configuration = BuildConfiguration(apiKey: "test-api-key", minimumYear: 2010);
-
-        services.AddCFBDataServiceWithCaching(configuration);
-
-        var provider = services.BuildServiceProvider();
-        var service = provider.GetService<CFBDataService>();
-
-        Assert.NotNull(service);
-    }
-
-    [Fact]
-    public void AddCFBDataServiceWithCaching_ReturnsServiceCollection()
+    public void AddCFBDataServiceWithCaching_RegistersCacheCleanupHostedService()
     {
         var services = new ServiceCollection();
         services.AddLogging();
         var configuration = BuildConfiguration(apiKey: "test-api-key");
 
-        var result = services.AddCFBDataServiceWithCaching(configuration);
+        services.AddCFBDataServiceWithCaching(configuration);
 
-        Assert.Same(services, result);
+        var provider = services.BuildServiceProvider();
+        var hostedServices = provider.GetServices<IHostedService>();
+
+        Assert.Contains(hostedServices, s => s is CacheCleanupHostedService);
     }
 
+    [Fact]
+    public void AddCFBDataServiceWithCaching_RegistersCFBDataService()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration(apiKey: "test-api-key");
+
+        services.AddCFBDataServiceWithCaching(configuration);
+
+        var provider = services.BuildServiceProvider();
+        var service = provider.GetService<CFBDataService>();
+
+        Assert.NotNull(service);
+    }
+
+    [Fact]
+    public void AddCFBDataServiceWithCaching_RegistersICacheData()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration(apiKey: "test-api-key");
+
+        services.AddCFBDataServiceWithCaching(configuration);
+
+        var provider = services.BuildServiceProvider();
+        var cacheData = provider.GetService<ICacheData>();
+
+        Assert.NotNull(cacheData);
+        Assert.IsType<CacheData>(cacheData);
+    }
+
+    [Fact]
+    public void AddCFBDataServiceWithCaching_RegistersICFBDataServiceAsCachingService()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration(apiKey: "test-api-key");
+
+        services.AddCFBDataServiceWithCaching(configuration);
+
+        var provider = services.BuildServiceProvider();
+        var service = provider.GetService<ICFBDataService>();
+
+        Assert.NotNull(service);
+        Assert.IsType<CachingCFBDataService>(service);
+    }
+
+    [Fact]
+    public void AddCFBDataServiceWithCaching_RegistersIPersistentCache()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration(apiKey: "test-api-key");
+
+        services.AddCFBDataServiceWithCaching(configuration);
+
+        var provider = services.BuildServiceProvider();
+        var cache = provider.GetService<IPersistentCache>();
+
+        Assert.NotNull(cache);
+        Assert.IsType<CacheModule>(cache);
+    }
     [Fact]
     public void AddCFBDataServiceWithCaching_RegistersServicesAsSingletons()
     {
@@ -192,41 +196,103 @@ public class CachingServiceExtensionsTests
     }
 
     [Fact]
-    public void AddCFBDataServiceWithCaching_CachingServiceWrapsInnerService()
+    public void AddCFBDataServiceWithCaching_ReturnsServiceCollection()
     {
         var services = new ServiceCollection();
         services.AddLogging();
         var configuration = BuildConfiguration(apiKey: "test-api-key");
 
-        services.AddCFBDataServiceWithCaching(configuration);
+        var result = services.AddCFBDataServiceWithCaching(configuration);
 
-        var provider = services.BuildServiceProvider();
-
-        var cachingService = provider.GetService<ICFBDataService>();
-        var innerService = provider.GetService<CFBDataService>();
-
-        Assert.NotNull(cachingService);
-        Assert.NotNull(innerService);
-        Assert.IsType<CachingCFBDataService>(cachingService);
-        Assert.IsType<CFBDataService>(innerService);
+        Assert.Same(services, result);
     }
 
     [Fact]
-    public async Task InitializeCacheAsync_CallsInitialize()
+    public void AddCFBDataServiceWithCaching_ThrowsWhenApiKeyMissing()
     {
-        var mockCacheData = new Mock<ICacheData>();
-        mockCacheData.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
-
         var services = new ServiceCollection();
-        services.AddSingleton(mockCacheData.Object);
+        services.AddLogging();
+        var configuration = BuildConfiguration(apiKey: null);
 
-        var builder = WebApplication.CreateBuilder();
-        builder.Services.AddSingleton(mockCacheData.Object);
-        var app = builder.Build();
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            services.AddCFBDataServiceWithCaching(configuration));
 
-        await app.InitializeCacheAsync();
+        Assert.Contains("API key not configured", exception.Message);
+    }
 
-        mockCacheData.Verify(x => x.InitializeAsync(), Times.Once);
+    [Fact]
+    public void AddCFBDataServiceWithCaching_UsesConfiguredMinimumYear()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration(apiKey: "test-api-key", minimumYear: 2010);
+
+        services.AddCFBDataServiceWithCaching(configuration);
+
+        var provider = services.BuildServiceProvider();
+        var service = provider.GetService<CFBDataService>();
+
+        Assert.NotNull(service);
+    }
+
+    [Fact]
+    public void AddCFBDataServiceWithCaching_UsesConfiguredPreferredProvider()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration(apiKey: "test-api-key", preferredProvider: "DraftKings");
+
+        services.AddCFBDataServiceWithCaching(configuration);
+
+        var provider = services.BuildServiceProvider();
+        var service = provider.GetService<CFBDataService>();
+
+        Assert.NotNull(service);
+    }
+
+    [Fact]
+    public void AddCFBDataServiceWithCaching_UsesDefaultMinimumYear()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration(apiKey: "test-api-key", minimumYear: null);
+
+        services.AddCFBDataServiceWithCaching(configuration);
+
+        var provider = services.BuildServiceProvider();
+        var service = provider.GetService<CFBDataService>();
+
+        Assert.NotNull(service);
+    }
+    [Fact]
+    public void AddCFBDataServiceWithCaching_UsesDefaultPreferredProvider()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration(apiKey: "test-api-key", preferredProvider: null);
+
+        services.AddCFBDataServiceWithCaching(configuration);
+
+        var provider = services.BuildServiceProvider();
+        var service = provider.GetService<CFBDataService>();
+
+        Assert.NotNull(service);
+    }
+    [Fact]
+    public void AddRankingsModule_RegistersAsSingleton()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton(new Mock<IRankingsData>().Object);
+        services.AddSingleton(new Mock<ISeasonModule>().Object);
+
+        services.AddRankingsModule();
+
+        var provider = services.BuildServiceProvider();
+
+        var module1 = provider.GetService<IRankingsModule>();
+        var module2 = provider.GetService<IRankingsModule>();
+
+        Assert.Same(module1, module2);
     }
 
     [Fact]
@@ -256,29 +322,34 @@ public class CachingServiceExtensionsTests
     }
 
     [Fact]
-    public void AddRankingsModule_RegistersAsSingleton()
+    public async Task InitializeCacheAsync_CallsInitialize()
     {
+        var mockCacheData = new Mock<ICacheData>();
+        mockCacheData.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+
         var services = new ServiceCollection();
-        services.AddSingleton(new Mock<IRankingsData>().Object);
-        services.AddSingleton(new Mock<ISeasonModule>().Object);
+        services.AddSingleton(mockCacheData.Object);
 
-        services.AddRankingsModule();
+        var builder = WebApplication.CreateBuilder();
+        builder.Services.AddSingleton(mockCacheData.Object);
+        var app = builder.Build();
 
-        var provider = services.BuildServiceProvider();
+        await app.InitializeCacheAsync();
 
-        var module1 = provider.GetService<IRankingsModule>();
-        var module2 = provider.GetService<IRankingsModule>();
-
-        Assert.Same(module1, module2);
+        mockCacheData.Verify(x => x.InitializeAsync(), Times.Once);
     }
-
     private static IConfiguration BuildConfiguration(
         string? apiKey,
         int? calendarExpirationHours = null,
         string? connectionString = null,
         int? maxSeasonYearExpirationHours = null,
         int? seasonDataExpirationHours = null,
-        int? minimumYear = null)
+        int? minimumYear = null,
+        string? preferredProvider = null,
+        int? seasonBoundaryGraceMonth = null,
+        int? seasonBoundaryGraceDay = null,
+        int? cleanupIntervalMinutes = null,
+        int? cleanupStartupDelayMinutes = null)
     {
         var configValues = new Dictionary<string, string?>();
 
@@ -310,6 +381,31 @@ public class CachingServiceExtensionsTests
         if (minimumYear.HasValue)
         {
             configValues["HistoricalData:MinimumYear"] = minimumYear.Value.ToString();
+        }
+
+        if (preferredProvider is not null)
+        {
+            configValues["BettingLines:PreferredProvider"] = preferredProvider;
+        }
+
+        if (seasonBoundaryGraceMonth.HasValue)
+        {
+            configValues["Cache:SeasonBoundaryGraceMonth"] = seasonBoundaryGraceMonth.Value.ToString();
+        }
+
+        if (seasonBoundaryGraceDay.HasValue)
+        {
+            configValues["Cache:SeasonBoundaryGraceDay"] = seasonBoundaryGraceDay.Value.ToString();
+        }
+
+        if (cleanupIntervalMinutes.HasValue)
+        {
+            configValues["Cache:CleanupIntervalMinutes"] = cleanupIntervalMinutes.Value.ToString();
+        }
+
+        if (cleanupStartupDelayMinutes.HasValue)
+        {
+            configValues["Cache:CleanupStartupDelayMinutes"] = cleanupStartupDelayMinutes.Value.ToString();
         }
 
         return new ConfigurationBuilder()

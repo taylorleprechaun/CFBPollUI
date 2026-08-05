@@ -70,8 +70,7 @@ interface LogoOverlayProps {
 
 function LogoOverlay({ data }: LogoOverlayProps) {
   const [fadingIn, setFadingIn] = useState<Set<string>>(new Set());
-
-  const prevTeamsRef = useRef<Set<string> | null>(null);
+  const [prevTeams, setPrevTeams] = useState<Set<string> | null>(null);
 
   const plotArea = usePlotArea();
   const xDomain = useXAxisDomain();
@@ -79,28 +78,29 @@ function LogoOverlay({ data }: LogoOverlayProps) {
 
   const currentTeams = useMemo(() => new Set(data.map((p) => p.teamName)), [data]);
 
-  useEffect(() => {
-    if (prevTeamsRef.current === null) {
-      prevTeamsRef.current = currentTeams;
-      return;
-    }
-
+  if (currentTeams !== prevTeams) {
     const newTeams = new Set<string>();
-    for (const team of currentTeams) {
-      if (!prevTeamsRef.current.has(team)) {
-        newTeams.add(team);
+    if (prevTeams !== null) {
+      for (const team of currentTeams) {
+        if (!prevTeams.has(team)) {
+          newTeams.add(team);
+        }
       }
     }
-    prevTeamsRef.current = currentTeams;
+    setPrevTeams(currentTeams);
+    if (newTeams.size > 0) {
+      setFadingIn(newTeams);
+    }
+  }
 
-    if (newTeams.size === 0) return;
+  useEffect(() => {
+    if (fadingIn.size === 0) return;
 
-    setFadingIn(newTeams);
     const frameId = requestAnimationFrame(() => {
       setFadingIn(new Set());
     });
     return () => cancelAnimationFrame(frameId);
-  }, [currentTeams]);
+  }, [fadingIn]);
 
   if (!plotArea || !xDomain || !yDomain) return null;
 

@@ -7,24 +7,58 @@ import { SeasonProvider } from '../contexts/season-context';
 import { ThemeProvider } from '../contexts/theme-context';
 import App from '../App';
 
+const MockHomePage = () => <div>Home Page Content</div>;
 vi.mock('../pages/home-page', () => ({
-  HomePage: () => <div>Home Page Content</div>
+  HomePage: MockHomePage,
+  default: MockHomePage,
 }));
 
+const MockRankingsPage = () => <div>Rankings Page Content</div>;
 vi.mock('../pages/rankings-page', () => ({
-  RankingsPage: () => <div>Rankings Page Content</div>
+  RankingsPage: MockRankingsPage,
+  default: MockRankingsPage,
 }));
 
+const MockTeamDetailsPage = () => <div>Team Details Page Content</div>;
 vi.mock('../pages/team-details-page', () => ({
-  TeamDetailsPage: () => <div>Team Details Page Content</div>
+  TeamDetailsPage: MockTeamDetailsPage,
+  default: MockTeamDetailsPage,
 }));
 
+const MockLoginPage = () => <div>Login Page Content</div>;
 vi.mock('../pages/login-page', () => ({
-  LoginPage: () => <div>Login Page Content</div>
+  LoginPage: MockLoginPage,
+  default: MockLoginPage,
 }));
 
-vi.mock('../pages/admin-page', () => ({
-  AdminPage: () => <div>Admin Page Content</div>
+const MockSnapshotsPage = () => <div>Snapshots Page Content</div>;
+vi.mock('../pages/snapshots-page', () => ({
+  SnapshotsPage: MockSnapshotsPage,
+  default: MockSnapshotsPage,
+}));
+
+const MockPredictionsPage = () => <div>Predictions Page Content</div>;
+vi.mock('../pages/predictions-page', () => ({
+  PredictionsPage: MockPredictionsPage,
+  default: MockPredictionsPage,
+}));
+
+const MockPublicPredictionsPage = () => <div>Public Predictions Page Content</div>;
+vi.mock('../pages/public-predictions-page', () => ({
+  PublicPredictionsPage: MockPublicPredictionsPage,
+  default: MockPublicPredictionsPage,
+}));
+
+const MockTrackRecordPage = () => <div>Track Record Page Content</div>;
+vi.mock('../pages/track-record-page', () => ({
+  TrackRecordPage: MockTrackRecordPage,
+  default: MockTrackRecordPage,
+}));
+
+const MockSettingsPage = () => <div>Settings Page Content</div>;
+vi.mock('../pages/settings-page', () => ({
+  SettingsPage: MockSettingsPage,
+  default: MockSettingsPage,
 }));
 
 vi.mock('../hooks/use-seasons', () => ({
@@ -36,17 +70,21 @@ vi.mock('../hooks/use-seasons', () => ({
   }),
 }));
 
+let mockPredictionsPageEnabled = true;
+
 vi.mock('../hooks/use-page-visibility', () => ({
   usePageVisibility: () => ({
     allTimeEnabled: true,
     isLoading: false,
     pollLeadersEnabled: true,
+    predictionsPageEnabled: mockPredictionsPageEnabled,
     seasonTrendsEnabled: true,
   }),
 }));
 
 afterEach(() => {
   sessionStorage.clear();
+  mockPredictionsPageEnabled = true;
 });
 
 function renderApp(initialRoute = '/') {
@@ -91,6 +129,38 @@ describe('App', () => {
     });
   });
 
+  it('renders public predictions page at /predictions route when enabled', async () => {
+    renderApp('/predictions');
+    await waitFor(() => {
+      expect(screen.getByText('Public Predictions Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('redirects /predictions to home when predictions page is disabled', async () => {
+    mockPredictionsPageEnabled = false;
+
+    renderApp('/predictions');
+    await waitFor(() => {
+      expect(screen.getByText('Home Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('renders track record page at /track-record route when enabled', async () => {
+    renderApp('/track-record');
+    await waitFor(() => {
+      expect(screen.getByText('Track Record Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('redirects /track-record to home when predictions page is disabled', async () => {
+    mockPredictionsPageEnabled = false;
+
+    renderApp('/track-record');
+    await waitFor(() => {
+      expect(screen.getByText('Home Page Content')).toBeInTheDocument();
+    });
+  });
+
   it('renders login page at /login route when not authenticated', async () => {
     renderApp('/login');
     await waitFor(() => {
@@ -98,28 +168,65 @@ describe('App', () => {
     });
   });
 
-  it('redirects /login to admin when authenticated', async () => {
+  it('redirects /login to admin/snapshots when authenticated', async () => {
     sessionStorage.setItem('cfbpoll_token', 'test-token');
     sessionStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
 
     renderApp('/login');
     await waitFor(() => {
-      expect(screen.getByText('Admin Page Content')).toBeInTheDocument();
+      expect(screen.getByText('Snapshots Page Content')).toBeInTheDocument();
     });
   });
 
-  it('renders admin page at /admin route when authenticated', async () => {
+  it('redirects /admin to /admin/snapshots when authenticated', async () => {
     sessionStorage.setItem('cfbpoll_token', 'test-token');
     sessionStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
 
     renderApp('/admin');
     await waitFor(() => {
-      expect(screen.getByText('Admin Page Content')).toBeInTheDocument();
+      expect(screen.getByText('Snapshots Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('renders snapshots page at /admin/snapshots when authenticated', async () => {
+    sessionStorage.setItem('cfbpoll_token', 'test-token');
+    sessionStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
+
+    renderApp('/admin/snapshots');
+    await waitFor(() => {
+      expect(screen.getByText('Snapshots Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('renders predictions page at /admin/predictions when authenticated', async () => {
+    sessionStorage.setItem('cfbpoll_token', 'test-token');
+    sessionStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
+
+    renderApp('/admin/predictions');
+    await waitFor(() => {
+      expect(screen.getByText('Predictions Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('renders settings page at /admin/settings when authenticated', async () => {
+    sessionStorage.setItem('cfbpoll_token', 'test-token');
+    sessionStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
+
+    renderApp('/admin/settings');
+    await waitFor(() => {
+      expect(screen.getByText('Settings Page Content')).toBeInTheDocument();
     });
   });
 
   it('redirects /admin to login when not authenticated', async () => {
     renderApp('/admin');
+    await waitFor(() => {
+      expect(screen.getByText('Login Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('redirects /admin/snapshots to login when not authenticated', async () => {
+    renderApp('/admin/snapshots');
     await waitFor(() => {
       expect(screen.getByText('Login Page Content')).toBeInTheDocument();
     });

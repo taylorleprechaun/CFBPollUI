@@ -3,11 +3,11 @@ import { renderHook } from '@testing-library/react';
 
 import { useChartColors } from '../../hooks/use-chart-colors';
 
-vi.mock('../../contexts/theme-context', () => ({
+vi.mock('../../hooks/use-theme', () => ({
   useTheme: vi.fn(),
 }));
 
-import { useTheme } from '../../contexts/theme-context';
+import { useTheme } from '../../hooks/use-theme';
 
 const mockUseTheme = vi.mocked(useTheme);
 

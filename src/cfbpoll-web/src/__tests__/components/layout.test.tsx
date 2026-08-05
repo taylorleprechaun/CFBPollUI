@@ -8,9 +8,10 @@ import { ThemeProvider } from '../../contexts/theme-context';
 let mockIsAuthenticated = false;
 let mockAllTimeEnabled = true;
 let mockPollLeadersEnabled = true;
+let mockPredictionsPageEnabled = false;
 let mockSeasonTrendsEnabled = true;
 
-vi.mock('../../contexts/auth-context', () => ({
+vi.mock('../../hooks/use-auth', () => ({
   useAuth: () => ({
     isAuthenticated: mockIsAuthenticated,
     login: vi.fn(),
@@ -24,6 +25,7 @@ vi.mock('../../hooks/use-page-visibility', () => ({
     allTimeEnabled: mockAllTimeEnabled,
     isLoading: false,
     pollLeadersEnabled: mockPollLeadersEnabled,
+    predictionsPageEnabled: mockPredictionsPageEnabled,
     seasonTrendsEnabled: mockSeasonTrendsEnabled,
   }),
 }));
@@ -43,6 +45,7 @@ describe('Layout', () => {
     mockIsAuthenticated = false;
     mockAllTimeEnabled = true;
     mockPollLeadersEnabled = true;
+    mockPredictionsPageEnabled = false;
     mockSeasonTrendsEnabled = true;
   });
 
@@ -147,6 +150,73 @@ describe('Layout', () => {
     expect(screen.queryByText('Leaders')).not.toBeInTheDocument();
   });
 
+  it('hides Predictions dropdown when predictionsPageEnabled is false', () => {
+    mockPredictionsPageEnabled = false;
+    renderLayout();
+
+    expect(screen.queryByRole('button', { name: /^Predictions$/i })).not.toBeInTheDocument();
+  });
+
+  it('shows Predictions dropdown when predictionsPageEnabled is true', async () => {
+    mockPredictionsPageEnabled = true;
+    renderLayout();
+
+    const predictionsButton = screen.getByRole('button', { name: /^Predictions$/i });
+    expect(predictionsButton).toBeInTheDocument();
+
+    await userEvent.click(predictionsButton);
+
+    const predictionsLink = screen.getAllByRole('link').find((l) => l.getAttribute('href') === '/predictions');
+    expect(predictionsLink).toBeDefined();
+  });
+
+  it('shows Track Record link in Predictions dropdown when enabled', async () => {
+    mockPredictionsPageEnabled = true;
+    renderLayout();
+
+    const predictionsButton = screen.getByRole('button', { name: /^Predictions$/i });
+    await userEvent.click(predictionsButton);
+
+    const trackRecordLink = screen.getAllByRole('link').find((l) => l.getAttribute('href') === '/track-record');
+    expect(trackRecordLink).toBeDefined();
+  });
+
+  it('shows Predictions section in mobile menu when enabled', async () => {
+    mockPredictionsPageEnabled = true;
+    const user = userEvent.setup();
+    renderLayout();
+
+    await user.click(screen.getByLabelText('Open menu'));
+
+    const predictionsLink = screen.getAllByRole('link').find((l) => l.getAttribute('href') === '/predictions');
+    expect(predictionsLink).toBeDefined();
+  });
+
+  it('shows Track Record link in mobile menu when enabled', async () => {
+    mockPredictionsPageEnabled = true;
+    const user = userEvent.setup();
+    renderLayout();
+
+    await user.click(screen.getByLabelText('Open menu'));
+
+    const trackRecordLink = screen.getAllByRole('link').find((l) => l.getAttribute('href') === '/track-record');
+    expect(trackRecordLink).toBeDefined();
+  });
+
+  it('hides Predictions section in mobile menu when disabled', async () => {
+    mockPredictionsPageEnabled = false;
+    const user = userEvent.setup();
+    renderLayout();
+
+    await user.click(screen.getByLabelText('Open menu'));
+
+    const predictionsLink = screen.queryAllByRole('link').find((l) => l.getAttribute('href') === '/predictions');
+    expect(predictionsLink).toBeUndefined();
+
+    const trackRecordLink = screen.queryAllByRole('link').find((l) => l.getAttribute('href') === '/track-record');
+    expect(trackRecordLink).toBeUndefined();
+  });
+
   it('shows lock icon linking to login when not authenticated', () => {
     mockIsAuthenticated = false;
     renderLayout();
@@ -156,13 +226,13 @@ describe('Layout', () => {
     expect(lockLink).toHaveAttribute('href', '/login');
   });
 
-  it('shows unlock icon linking to admin when authenticated', () => {
+  it('shows unlock icon as admin menu button when authenticated', () => {
     mockIsAuthenticated = true;
     renderLayout();
 
-    const unlockLink = screen.getByLabelText('Admin dashboard');
-    expect(unlockLink).toBeInTheDocument();
-    expect(unlockLink).toHaveAttribute('href', '/admin');
+    const adminMenuButton = screen.getByLabelText('Admin menu');
+    expect(adminMenuButton).toBeInTheDocument();
+    expect(adminMenuButton.tagName).toBe('BUTTON');
   });
 
   it('renders hamburger menu button', () => {
@@ -219,6 +289,48 @@ describe('Layout', () => {
     expect(screen.queryByText('Leaders')).not.toBeInTheDocument();
     // Trends should be hidden
     expect(screen.queryByText('Trends')).not.toBeInTheDocument();
+  });
+
+  it('shows admin menu dropdown on unlock icon click', async () => {
+    mockIsAuthenticated = true;
+    renderLayout();
+
+    await userEvent.click(screen.getByLabelText('Admin menu'));
+
+    expect(screen.getByText('Snapshots')).toBeInTheDocument();
+    expect(screen.getByText('Predictions')).toBeInTheDocument();
+    expect(screen.getByText('Settings')).toBeInTheDocument();
+  });
+
+  it('hides admin menu button when not authenticated', () => {
+    mockIsAuthenticated = false;
+    renderLayout();
+
+    expect(screen.queryByLabelText('Admin menu')).not.toBeInTheDocument();
+  });
+
+  it('shows admin section in mobile menu when authenticated', async () => {
+    mockIsAuthenticated = true;
+    const user = userEvent.setup();
+    renderLayout();
+
+    await user.click(screen.getByLabelText('Open menu'));
+
+    expect(screen.getByText('Snapshots')).toBeInTheDocument();
+    expect(screen.getByText('Predictions')).toBeInTheDocument();
+    expect(screen.getByText('Settings')).toBeInTheDocument();
+  });
+
+  it('hides admin section in mobile menu when not authenticated', async () => {
+    mockIsAuthenticated = false;
+    const user = userEvent.setup();
+    renderLayout();
+
+    await user.click(screen.getByLabelText('Open menu'));
+
+    expect(screen.queryByText('Snapshots')).not.toBeInTheDocument();
+    expect(screen.queryByText('Predictions')).not.toBeInTheDocument();
+    expect(screen.queryByText('Settings')).not.toBeInTheDocument();
   });
 
   it('renders footer with name and social links', () => {

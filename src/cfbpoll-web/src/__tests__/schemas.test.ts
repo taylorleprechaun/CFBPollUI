@@ -7,6 +7,11 @@ import {
   RankedTeamSchema,
   ScheduleGameSchema,
   TeamDetailResponseSchema,
+  GamePredictionPublicSchema,
+  PredictionsPublicResponseSchema,
+  TrackRecordTotalsSchema,
+  TrackRecordWeekSchema,
+  TrackRecordResponseSchema,
 } from '../schemas';
 
 describe('Zod Schemas', () => {
@@ -32,7 +37,7 @@ describe('Zod Schemas', () => {
 
   describe('WeekSchema', () => {
     it('validates valid week', () => {
-      const data = { weekNumber: 5, label: 'Week 5', rankingsPublished: false };
+      const data = { weekNumber: 5, label: 'Week 5', predictionsPublished: false, rankingsPublished: false };
       const result = WeekSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
@@ -49,8 +54,8 @@ describe('Zod Schemas', () => {
       const data = {
         season: 2024,
         weeks: [
-          { weekNumber: 1, label: 'Week 1', rankingsPublished: true },
-          { weekNumber: 2, label: 'Week 2', rankingsPublished: false },
+          { weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: true },
+          { weekNumber: 2, label: 'Week 2', predictionsPublished: true, rankingsPublished: false },
         ],
       };
       const result = WeeksResponseSchema.safeParse(data);
@@ -59,7 +64,7 @@ describe('Zod Schemas', () => {
 
     it('rejects response without season', () => {
       const data = {
-        weeks: [{ weekNumber: 1, label: 'Week 1', rankingsPublished: false }],
+        weeks: [{ weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: false }],
       };
       const result = WeeksResponseSchema.safeParse(data);
       expect(result.success).toBe(false);
@@ -243,6 +248,235 @@ describe('Zod Schemas', () => {
     it('rejects response with missing required fields', () => {
       const data = { teamName: 'USC' };
       const result = TeamDetailResponseSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('GamePredictionPublicSchema', () => {
+    it('validates a valid prediction', () => {
+      const data = {
+        actualAwayScore: null,
+        actualHomeScore: null,
+        actualOverUnderResult: null,
+        actualSpreadCoveringTeam: null,
+        actualWinner: null,
+        awayLogoURL: 'https://example.com/away.png',
+        awayTeam: 'Michigan',
+        awayTeamScore: 17,
+        bettingOverUnder: 45.5,
+        bettingSpread: -3.5,
+        homeLogoURL: 'https://example.com/home.png',
+        homeTeam: 'Ohio State',
+        homeTeamScore: 28,
+        myOverUnderPick: 'Over',
+        mySpreadPick: 'Ohio State',
+        neutralSite: false,
+        overUnderGrade: 'Ungraded',
+        predictedMargin: 11,
+        predictedWinner: 'Ohio State',
+        spreadGrade: 'Ungraded',
+        winnerGrade: 'Ungraded',
+      };
+      const result = GamePredictionPublicSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('validates a graded prediction', () => {
+      const data = {
+        actualAwayScore: 17,
+        actualHomeScore: 28,
+        actualOverUnderResult: 'Under',
+        actualSpreadCoveringTeam: 'Ohio State',
+        actualWinner: 'Ohio State',
+        awayLogoURL: 'https://example.com/away.png',
+        awayTeam: 'Michigan',
+        awayTeamScore: 17,
+        bettingOverUnder: 45.5,
+        bettingSpread: -3.5,
+        homeLogoURL: 'https://example.com/home.png',
+        homeTeam: 'Ohio State',
+        homeTeamScore: 28,
+        myOverUnderPick: 'Over',
+        mySpreadPick: 'Ohio State',
+        neutralSite: false,
+        overUnderGrade: 'Correct',
+        predictedMargin: 11,
+        predictedWinner: 'Ohio State',
+        spreadGrade: 'Correct',
+        winnerGrade: 'Correct',
+      };
+      const result = GamePredictionPublicSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('allows null betting lines', () => {
+      const data = {
+        actualAwayScore: null,
+        actualHomeScore: null,
+        actualOverUnderResult: null,
+        actualSpreadCoveringTeam: null,
+        actualWinner: null,
+        awayLogoURL: '',
+        awayTeam: 'Michigan',
+        awayTeamScore: 17,
+        bettingOverUnder: null,
+        bettingSpread: null,
+        homeLogoURL: '',
+        homeTeam: 'Ohio State',
+        homeTeamScore: 28,
+        myOverUnderPick: '',
+        mySpreadPick: '',
+        neutralSite: false,
+        overUnderGrade: 'NotApplicable',
+        predictedMargin: 11,
+        predictedWinner: 'Ohio State',
+        spreadGrade: 'NotApplicable',
+        winnerGrade: 'Ungraded',
+      };
+      const result = GamePredictionPublicSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects a prediction missing required fields', () => {
+      const data = { homeTeam: 'Ohio State' };
+      const result = GamePredictionPublicSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects a prediction missing winnerGrade', () => {
+      const data = {
+        actualAwayScore: null,
+        actualHomeScore: null,
+        actualOverUnderResult: null,
+        actualSpreadCoveringTeam: null,
+        actualWinner: null,
+        awayLogoURL: '',
+        awayTeam: 'Michigan',
+        awayTeamScore: 17,
+        bettingOverUnder: null,
+        bettingSpread: null,
+        homeLogoURL: '',
+        homeTeam: 'Ohio State',
+        homeTeamScore: 28,
+        myOverUnderPick: '',
+        mySpreadPick: '',
+        neutralSite: false,
+        overUnderGrade: 'Ungraded',
+        predictedMargin: 11,
+        predictedWinner: 'Ohio State',
+        spreadGrade: 'Ungraded',
+      };
+      const result = GamePredictionPublicSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects an unrecognized spreadGrade value', () => {
+      const data = {
+        actualAwayScore: null,
+        actualHomeScore: null,
+        actualOverUnderResult: null,
+        actualSpreadCoveringTeam: null,
+        actualWinner: null,
+        awayLogoURL: '',
+        awayTeam: 'Michigan',
+        awayTeamScore: 17,
+        bettingOverUnder: null,
+        bettingSpread: null,
+        homeLogoURL: '',
+        homeTeam: 'Ohio State',
+        homeTeamScore: 28,
+        myOverUnderPick: '',
+        mySpreadPick: '',
+        neutralSite: false,
+        overUnderGrade: 'Ungraded',
+        predictedMargin: 11,
+        predictedWinner: 'Ohio State',
+        spreadGrade: 'Pending', // not a valid GameGrade value
+        winnerGrade: 'Ungraded',
+      };
+      const result = GamePredictionPublicSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('PredictionsPublicResponseSchema', () => {
+    it('validates a valid response', () => {
+      const data = { resultsPublished: false, season: 2024, week: 5, predictions: [] };
+      const result = PredictionsPublicResponseSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects a response without season', () => {
+      const data = { resultsPublished: false, week: 5, predictions: [] };
+      const result = PredictionsPublicResponseSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects a response without resultsPublished', () => {
+      const data = { season: 2024, week: 5, predictions: [] };
+      const result = PredictionsPublicResponseSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('TrackRecordTotalsSchema', () => {
+    it('validates valid totals', () => {
+      const data = { correct: 10, incorrect: 4, push: 1 };
+      const result = TrackRecordTotalsSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects totals missing a field', () => {
+      const data = { correct: 10, incorrect: 4 };
+      const result = TrackRecordTotalsSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('TrackRecordWeekSchema', () => {
+    it('validates a valid week', () => {
+      const data = {
+        overUnder: { correct: 3, incorrect: 2, push: 0 },
+        season: 2024,
+        spread: { correct: 4, incorrect: 1, push: 0 },
+        week: 3,
+        winner: { correct: 5, incorrect: 0, push: 0 },
+      };
+      const result = TrackRecordWeekSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects a week missing totals for a category', () => {
+      const data = {
+        overUnder: { correct: 3, incorrect: 2, push: 0 },
+        season: 2024,
+        week: 3,
+        winner: { correct: 5, incorrect: 0, push: 0 },
+      };
+      const result = TrackRecordWeekSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('TrackRecordResponseSchema', () => {
+    it('validates a valid response', () => {
+      const data = {
+        overallOverUnder: { correct: 10, incorrect: 8, push: 1 },
+        overallSpread: { correct: 12, incorrect: 6, push: 0 },
+        overallWinner: { correct: 15, incorrect: 3, push: 0 },
+        weeks: [],
+      };
+      const result = TrackRecordResponseSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects a response missing an overall category', () => {
+      const data = {
+        overallOverUnder: { correct: 10, incorrect: 8, push: 1 },
+        overallWinner: { correct: 15, incorrect: 3, push: 0 },
+        weeks: [],
+      };
+      const result = TrackRecordResponseSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
   });

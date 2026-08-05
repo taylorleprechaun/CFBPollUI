@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import { SeasonProvider, useSeason } from '../../contexts/season-context';
+import { SeasonProvider } from '../../contexts/season-context';
+import { useSeason } from '../../hooks/use-season';
 
 vi.mock('../../hooks/use-seasons', () => ({
   useSeasons: vi.fn(),
@@ -133,6 +134,25 @@ describe('SeasonContext', () => {
     renderWithProvider();
 
     expect(screen.getByTestId('selected').textContent).toBe('2024');
+  });
+
+  it('falls back to null when reading sessionStorage throws', () => {
+    const getItemSpy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+
+    vi.mocked(useSeasons).mockReturnValue({
+      data: { seasons: [2024, 2023] },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useSeasons>);
+
+    renderWithProvider();
+
+    expect(screen.getByTestId('selected').textContent).toBe('2024');
+
+    getItemSpy.mockRestore();
   });
 
   it('throws error when useSeason is used outside SeasonProvider', () => {

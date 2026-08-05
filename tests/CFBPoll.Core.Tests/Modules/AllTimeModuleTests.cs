@@ -77,7 +77,7 @@ public class AllTimeModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2023, Week = 1, Published = false }
+                new() { Season = 2023, Week = 1, IsPublished = false }
             });
 
         var result = await _module.GetAllTimeRankingsAsync();
@@ -94,7 +94,7 @@ public class AllTimeModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2023, Week = 5, Published = true }
+                new() { Season = 2023, Week = 5, IsPublished = true }
             });
 
         _mockDataService
@@ -119,7 +119,7 @@ public class AllTimeModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2023, Week = 5, Published = true }
+                new() { Season = 2023, Week = 5, IsPublished = true }
             });
 
         _mockDataService
@@ -370,8 +370,8 @@ public class AllTimeModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2022, Week = 5, Published = true },
-                new() { Season = 2023, Week = 6, Published = true }
+                new() { Season = 2022, Week = 5, IsPublished = true },
+                new() { Season = 2023, Week = 6, IsPublished = true }
             });
 
         _mockDataService
@@ -428,8 +428,8 @@ public class AllTimeModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2023, Week = 3, Published = true },
-                new() { Season = 2023, Week = 5, Published = true }
+                new() { Season = 2023, Week = 3, IsPublished = true },
+                new() { Season = 2023, Week = 5, IsPublished = true }
             });
 
         _mockDataService
@@ -614,7 +614,7 @@ public class AllTimeModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2023, Week = 5, Published = true }
+                new() { Season = 2023, Week = 5, IsPublished = true }
             });
 
         _mockDataService
@@ -632,7 +632,7 @@ public class AllTimeModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2023, Week = 5, Published = true }
+                new() { Season = 2023, Week = 5, IsPublished = true }
             });
 
         _mockDataService
@@ -657,9 +657,9 @@ public class AllTimeModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2022, Week = 3, Published = true },
-                new() { Season = 2022, Week = 5, Published = true },
-                new() { Season = 2023, Week = 6, Published = true }
+                new() { Season = 2022, Week = 3, IsPublished = true },
+                new() { Season = 2022, Week = 5, IsPublished = true },
+                new() { Season = 2023, Week = 6, IsPublished = true }
             });
 
         _mockDataService
@@ -706,7 +706,7 @@ public class AllTimeModuleTests
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = season, Week = 5, Published = true }
+                new() { Season = season, Week = 5, IsPublished = true }
             });
 
         _mockDataService

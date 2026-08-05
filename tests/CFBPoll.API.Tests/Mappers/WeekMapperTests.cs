@@ -23,6 +23,32 @@ public class WeekMapperTests
     }
 
     [Fact]
+    public void ToDTO_WithNullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => WeekMapper.ToDTO(null!));
+    }
+
+    [Fact]
+    public void ToDTO_WithNullPublishedPredictionWeekNumbers_ReturnsFalsePredictionsPublished()
+    {
+        var weekInfo = new WeekInfo { WeekNumber = 1, Label = "Week 1" };
+
+        var result = WeekMapper.ToDTO(weekInfo);
+
+        Assert.False(result.PredictionsPublished);
+    }
+
+    [Fact]
+    public void ToDTO_WithNullPublishedWeekNumbers_ReturnsFalseRankingsPublished()
+    {
+        var weekInfo = new WeekInfo { WeekNumber = 1, Label = "Week 1" };
+
+        var result = WeekMapper.ToDTO(weekInfo, null);
+
+        Assert.False(result.RankingsPublished);
+    }
+
+    [Fact]
     public void ToDTO_WithPostseasonLabel_MapsCorrectly()
     {
         var weekInfo = new WeekInfo
@@ -38,21 +64,27 @@ public class WeekMapperTests
     }
 
     [Fact]
-    public void ToDTO_WithNullInput_ThrowsArgumentNullException()
+    public void ToDTO_WithPublishedPredictionWeekNumbers_SetsPredictionsPublishedFalse()
     {
-        Assert.Throws<ArgumentNullException>(() => WeekMapper.ToDTO(null!));
+        var weekInfo = new WeekInfo { WeekNumber = 2, Label = "Week 2" };
+        var publishedPredictionWeeks = new HashSet<int> { 1, 3, 5 } as IReadOnlySet<int>;
+
+        var result = WeekMapper.ToDTO(weekInfo, publishedPredictionWeekNumbers: publishedPredictionWeeks);
+
+        Assert.Equal(2, result.WeekNumber);
+        Assert.False(result.PredictionsPublished);
     }
 
     [Fact]
-    public void ToDTO_WithPublishedWeekNumbers_SetsRankingsPublishedTrue()
+    public void ToDTO_WithPublishedPredictionWeekNumbers_SetsPredictionsPublishedTrue()
     {
         var weekInfo = new WeekInfo { WeekNumber = 3, Label = "Week 3" };
-        var publishedWeeks = new HashSet<int> { 1, 3, 5 } as IReadOnlySet<int>;
+        var publishedPredictionWeeks = new HashSet<int> { 1, 3, 5 } as IReadOnlySet<int>;
 
-        var result = WeekMapper.ToDTO(weekInfo, publishedWeeks);
+        var result = WeekMapper.ToDTO(weekInfo, publishedPredictionWeekNumbers: publishedPredictionWeeks);
 
         Assert.Equal(3, result.WeekNumber);
-        Assert.True(result.RankingsPublished);
+        Assert.True(result.PredictionsPublished);
     }
 
     [Fact]
@@ -68,13 +100,15 @@ public class WeekMapperTests
     }
 
     [Fact]
-    public void ToDTO_WithNullPublishedWeekNumbers_ReturnsFalseRankingsPublished()
+    public void ToDTO_WithPublishedWeekNumbers_SetsRankingsPublishedTrue()
     {
-        var weekInfo = new WeekInfo { WeekNumber = 1, Label = "Week 1" };
+        var weekInfo = new WeekInfo { WeekNumber = 3, Label = "Week 3" };
+        var publishedWeeks = new HashSet<int> { 1, 3, 5 } as IReadOnlySet<int>;
 
-        var result = WeekMapper.ToDTO(weekInfo, null);
+        var result = WeekMapper.ToDTO(weekInfo, publishedWeeks);
 
-        Assert.False(result.RankingsPublished);
+        Assert.Equal(3, result.WeekNumber);
+        Assert.True(result.RankingsPublished);
     }
 
     [Fact]
@@ -98,23 +132,6 @@ public class WeekMapperTests
     }
 
     [Fact]
-    public void ToResponseDTO_WithEmptyList_ReturnsEmptyWeeks()
-    {
-        var weeks = new List<WeekInfo>();
-
-        var result = WeekMapper.ToResponseDTO(2024, weeks);
-
-        Assert.Equal(2024, result.Season);
-        Assert.Empty(result.Weeks);
-    }
-
-    [Fact]
-    public void ToResponseDTO_WithNullWeeks_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() => WeekMapper.ToResponseDTO(2024, null!));
-    }
-
-    [Fact]
     public void ToResponseDTO_PreservesWeekOrder()
     {
         var weeks = new List<WeekInfo>
@@ -130,6 +147,56 @@ public class WeekMapperTests
         Assert.Equal(10, weekList[0].WeekNumber);
         Assert.Equal(5, weekList[1].WeekNumber);
         Assert.Equal(15, weekList[2].WeekNumber);
+    }
+
+    [Fact]
+    public void ToResponseDTO_WithEmptyList_ReturnsEmptyWeeks()
+    {
+        var weeks = new List<WeekInfo>();
+
+        var result = WeekMapper.ToResponseDTO(2024, weeks);
+
+        Assert.Equal(2024, result.Season);
+        Assert.Empty(result.Weeks);
+    }
+
+    [Fact]
+    public void ToResponseDTO_WithNullPublishedWeekNumbers_ReturnsFalseRankingsPublished()
+    {
+        var weeks = new List<WeekInfo>
+        {
+            new() { WeekNumber = 1, Label = "Week 1" }
+        };
+
+        var result = WeekMapper.ToResponseDTO(2024, weeks, null);
+
+        var weekList = result.Weeks.ToList();
+        Assert.False(weekList[0].RankingsPublished);
+    }
+
+    [Fact]
+    public void ToResponseDTO_WithNullWeeks_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => WeekMapper.ToResponseDTO(2024, null!));
+    }
+
+    [Fact]
+    public void ToResponseDTO_WithPublishedPredictionWeekNumbers_SetsPredictionsPublished()
+    {
+        var weeks = new List<WeekInfo>
+        {
+            new() { WeekNumber = 1, Label = "Week 1" },
+            new() { WeekNumber = 2, Label = "Week 2" },
+            new() { WeekNumber = 3, Label = "Week 3" }
+        };
+        var publishedPredictionWeeks = new HashSet<int> { 1, 3 } as IReadOnlySet<int>;
+
+        var result = WeekMapper.ToResponseDTO(2024, weeks, publishedPredictionWeekNumbers: publishedPredictionWeeks);
+
+        var weekList = result.Weeks.ToList();
+        Assert.True(weekList[0].PredictionsPublished);
+        Assert.False(weekList[1].PredictionsPublished);
+        Assert.True(weekList[2].PredictionsPublished);
     }
 
     [Fact]
@@ -150,19 +217,5 @@ public class WeekMapperTests
         Assert.True(weekList[0].RankingsPublished);
         Assert.False(weekList[1].RankingsPublished);
         Assert.True(weekList[2].RankingsPublished);
-    }
-
-    [Fact]
-    public void ToResponseDTO_WithNullPublishedWeekNumbers_ReturnsFalseRankingsPublished()
-    {
-        var weeks = new List<WeekInfo>
-        {
-            new() { WeekNumber = 1, Label = "Week 1" }
-        };
-
-        var result = WeekMapper.ToResponseDTO(2024, weeks, null);
-
-        var weekList = result.Weeks.ToList();
-        Assert.False(weekList[0].RankingsPublished);
     }
 }

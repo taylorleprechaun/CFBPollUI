@@ -10,16 +10,19 @@ namespace CFBPoll.Core.Tests.Modules;
 
 public class AdminModuleTests
 {
+    private readonly AdminModule _adminModule;
     private readonly Mock<IPersistentCache> _mockCache;
     private readonly Mock<ICFBDataService> _mockDataService;
     private readonly Mock<IExcelExportModule> _mockExcelExportModule;
     private readonly Mock<ILogger<AdminModule>> _mockLogger;
     private readonly Mock<IPollLeadersModule> _mockPollLeadersModule;
+    private readonly Mock<IPredictionCalculatorModule> _mockPredictionCalculatorModule;
+    private readonly Mock<IPredictionGradingModule> _mockPredictionGradingModule;
+    private readonly Mock<IPredictionsModule> _mockPredictionsModule;
     private readonly Mock<IRankingsModule> _mockRankingsModule;
     private readonly Mock<IRatingModule> _mockRatingModule;
     private readonly Mock<ISeasonTrendsModule> _mockSeasonTrendsModule;
-    private readonly AdminModule _adminModule;
-
+    private readonly Mock<ITrackRecordModule> _mockTrackRecordModule;
     public AdminModuleTests()
     {
         _mockCache = new Mock<IPersistentCache>();
@@ -27,19 +30,506 @@ public class AdminModuleTests
         _mockExcelExportModule = new Mock<IExcelExportModule>();
         _mockLogger = new Mock<ILogger<AdminModule>>();
         _mockPollLeadersModule = new Mock<IPollLeadersModule>();
+        _mockPredictionCalculatorModule = new Mock<IPredictionCalculatorModule>();
+        _mockPredictionGradingModule = new Mock<IPredictionGradingModule>();
+        _mockPredictionsModule = new Mock<IPredictionsModule>();
         _mockRankingsModule = new Mock<IRankingsModule>();
         _mockRatingModule = new Mock<IRatingModule>();
         _mockSeasonTrendsModule = new Mock<ISeasonTrendsModule>();
+        _mockTrackRecordModule = new Mock<ITrackRecordModule>();
+
+        _mockDataService.Setup(x => x.GetBettingLinesAsync(It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(new List<BettingLine>());
 
         _adminModule = new AdminModule(
             _mockDataService.Object,
             _mockExcelExportModule.Object,
             _mockCache.Object,
             _mockPollLeadersModule.Object,
+            _mockPredictionCalculatorModule.Object,
+            _mockPredictionGradingModule.Object,
+            _mockPredictionsModule.Object,
             _mockRankingsModule.Object,
             _mockRatingModule.Object,
             _mockSeasonTrendsModule.Object,
+            _mockTrackRecordModule.Object,
             _mockLogger.Object);
+    }
+
+    [Fact]
+    public void Constructor_NullDataService_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                null!,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullExcelExportModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                null!,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullCache_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                null!,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullPollLeadersModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                null!,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullPredictionCalculatorModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                null!,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullPredictionGradingModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                null!,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullPredictionsModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                null!,
+                _mockRankingsModule.Object,
+                _mockRatingModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullRankingsModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                null!,
+                _mockRatingModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullRatingModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                null!,
+                _mockSeasonTrendsModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullSeasonTrendsModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingModule.Object,
+                null!,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullTrackRecordModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingModule.Object,
+                _mockSeasonTrendsModule.Object,
+                null!,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullLogger_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTrackRecordModule.Object,
+                null!));
+    }
+
+    [Fact]
+    public async Task CalculatePredictionsAsync_CallsServicesInOrder()
+    {
+        var fbsTeams = new Dictionary<string, TeamInfo>
+        {
+            ["Texas"] = new(),
+            ["Oklahoma"] = new(),
+            ["Ohio State"] = new(),
+            ["Michigan"] = new(),
+            ["Alabama"] = new(),
+            ["Florida"] = new()
+        };
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = fbsTeams };
+        var ratings = new Dictionary<string, RatingDetails>
+        {
+            ["Texas"] = new() { Rating = 90 },
+            ["Oklahoma"] = new() { Rating = 80 }
+        };
+        var schedule = new List<ScheduleGame>
+        {
+            new() { Week = 6, SeasonType = "regular", HomeTeam = "Texas", AwayTeam = "Oklahoma" },
+            new() { Week = 6, SeasonType = "regular", HomeTeam = "Ohio State", AwayTeam = "Michigan" },
+            new() { Week = 5, SeasonType = "regular", HomeTeam = "Alabama", AwayTeam = "Florida" }
+        };
+        var predictions = new List<GamePrediction>
+        {
+            new() { HomeTeam = "Texas", AwayTeam = "Oklahoma", PredictedWinner = "Texas" }
+        };
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(schedule);
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.Is<IEnumerable<ScheduleGame>>(g => g.Count() == 2), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(predictions);
+
+        var result = await _adminModule.CalculatePredictionsAsync(2024, 5);
+
+        Assert.NotNull(result);
+        Assert.True(result.IsPersisted);
+        Assert.Equal(2024, result.Predictions.Season);
+        Assert.Equal(5, result.Predictions.Week);
+        Assert.Single(result.Predictions.Predictions);
+        _mockPredictionsModule.Verify(x => x.SaveAsync(It.IsAny<PredictionsResult>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CalculatePredictionsAsync_ClearsComponentCachesBeforeFetching()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+
+        var callOrder = new List<string>();
+        _mockCache.Setup(x => x.RemoveAsync(It.IsAny<string>()))
+            .Callback<string>(key => callOrder.Add($"cache_remove:{key}"))
+            .ReturnsAsync(true);
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5))
+            .Callback(() => callOrder.Add("get_season_data"))
+            .ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(new List<ScheduleGame>());
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(new List<GamePrediction>());
+
+        await _adminModule.CalculatePredictionsAsync(2024, 5);
+
+        _mockCache.Verify(x => x.RemoveAsync("teams_2024"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("fullSchedule_2024"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("bettingLines_2024_6"), Times.Once);
+        Assert.True(callOrder.IndexOf("get_season_data") > callOrder.IndexOf("cache_remove:teams_2024"));
+    }
+
+    [Fact]
+    public async Task CalculatePredictionsAsync_ExcludesNonFBSGames()
+    {
+        var fbsTeams = new Dictionary<string, TeamInfo>
+        {
+            ["Ohio State"] = new(),
+            ["Michigan"] = new()
+        };
+        var seasonData = new SeasonData { Season = 2024, Week = 4, Teams = fbsTeams };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var schedule = new List<ScheduleGame>
+        {
+            new() { Week = 5, SeasonType = "regular", HomeTeam = "Ohio State", AwayTeam = "Michigan" },
+            new() { Week = 5, SeasonType = "regular", HomeTeam = "Ohio State", AwayTeam = "Youngstown State" },
+            new() { Week = 5, SeasonType = "regular", HomeTeam = "North Dakota State", AwayTeam = "Michigan" }
+        };
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 4)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(schedule);
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(new List<GamePrediction>());
+
+        await _adminModule.CalculatePredictionsAsync(2024, 4);
+
+        _mockPredictionCalculatorModule.Verify(x =>
+            x.GeneratePredictionsAsync(seasonData, ratings,
+                It.Is<IEnumerable<ScheduleGame>>(g =>
+                    g.Count() == 1 && g.First().HomeTeam == "Ohio State" && g.First().AwayTeam == "Michigan"),
+                It.IsAny<IEnumerable<BettingLine>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task CalculatePredictionsAsync_FiltersGamesToNextWeekAndFBSOnly()
+    {
+        var fbsTeams = new Dictionary<string, TeamInfo>
+        {
+            ["Nebraska"] = new(),
+            ["Iowa"] = new(),
+            ["USC"] = new(),
+            ["Notre Dame"] = new(),
+            ["Alabama"] = new(),
+            ["Florida"] = new()
+        };
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = fbsTeams };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var schedule = new List<ScheduleGame>
+        {
+            new() { Week = 6, SeasonType = "regular", HomeTeam = "Nebraska", AwayTeam = "Iowa" },
+            new() { Week = 6, SeasonType = "regular", HomeTeam = "USC", AwayTeam = "Notre Dame" },
+            new() { Week = 5, SeasonType = "regular", HomeTeam = "Alabama", AwayTeam = "Florida" },
+            new() { Week = 7, SeasonType = "regular", HomeTeam = "Alabama", AwayTeam = "Florida" }
+        };
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(schedule);
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(new List<GamePrediction>());
+
+        await _adminModule.CalculatePredictionsAsync(2024, 5);
+
+        _mockPredictionCalculatorModule.Verify(x =>
+            x.GeneratePredictionsAsync(seasonData, ratings,
+                It.Is<IEnumerable<ScheduleGame>>(g =>
+                    g.Count() == 2),
+                It.IsAny<IEnumerable<BettingLine>>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task CalculatePredictionsAsync_PersistFailure_SetsIsPersistedFalse()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(new List<ScheduleGame>());
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(new List<GamePrediction>());
+        _mockPredictionsModule.Setup(x => x.SaveAsync(It.IsAny<PredictionsResult>()))
+            .ThrowsAsync(new InvalidOperationException("DB error"));
+
+        var result = await _adminModule.CalculatePredictionsAsync(2024, 5);
+
+        Assert.False(result.IsPersisted);
+    }
+
+    [Fact]
+    public async Task CalculatePredictionsAsync_PostseasonWeek_IncludesAllPostseasonGames()
+    {
+        var fbsTeams = new Dictionary<string, TeamInfo>
+        {
+            ["Texas"] = new(),
+            ["Oklahoma"] = new(),
+            ["Ohio State"] = new(),
+            ["Michigan"] = new()
+        };
+        var seasonData = new SeasonData { Season = 2024, Week = 15, Teams = fbsTeams };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var schedule = new List<ScheduleGame>
+        {
+            new() { Week = 14, SeasonType = "regular", HomeTeam = "Texas", AwayTeam = "Oklahoma" },
+            new() { Week = 1, SeasonType = "postseason", HomeTeam = "Ohio State", AwayTeam = "Michigan" },
+            new() { Week = 1, SeasonType = "postseason", HomeTeam = "Texas", AwayTeam = "Oklahoma" }
+        };
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 15)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(schedule);
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(new List<GamePrediction>());
+
+        await _adminModule.CalculatePredictionsAsync(2024, 15);
+
+        _mockPredictionCalculatorModule.Verify(x =>
+            x.GeneratePredictionsAsync(seasonData, ratings,
+                It.Is<IEnumerable<ScheduleGame>>(g =>
+                    g.Count() == 2 && g.All(game => game.SeasonType == "postseason")),
+                It.IsAny<IEnumerable<BettingLine>>()),
+            Times.Once);
+        _mockDataService.Verify(x => x.GetBettingLinesAsync(2024, 1), Times.Once);
+    }
+
+    [Fact]
+    public async Task CalculatePredictionsAsync_RegularSeason_FetchesBettingLinesForNextWeek()
+    {
+        var fbsTeams = new Dictionary<string, TeamInfo>
+        {
+            ["Nebraska"] = new(),
+            ["Iowa"] = new()
+        };
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = fbsTeams };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var schedule = new List<ScheduleGame>
+        {
+            new() { Week = 6, SeasonType = "regular", HomeTeam = "Nebraska", AwayTeam = "Iowa" }
+        };
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(schedule);
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(new List<GamePrediction>());
+
+        await _adminModule.CalculatePredictionsAsync(2024, 5);
+
+        _mockDataService.Verify(x => x.GetBettingLinesAsync(2024, 6), Times.Once);
+    }
+
+    [Fact]
+    public async Task CalculatePredictionsAsync_UsesSelectedWeekForSeasonData()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 8, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 8)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(new List<ScheduleGame>());
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(new List<GamePrediction>());
+
+        await _adminModule.CalculatePredictionsAsync(2024, 8);
+
+        _mockDataService.Verify(x => x.GetSeasonDataAsync(2024, 8), Times.Once);
     }
 
     [Fact]
@@ -58,7 +548,7 @@ public class AdminModuleTests
         Assert.NotNull(result);
         Assert.Equal(2024, result.Rankings.Season);
         Assert.Equal(5, result.Rankings.Week);
-        Assert.True(result.Persisted);
+        Assert.True(result.IsPersisted);
         _mockRankingsModule.Verify(x => x.SaveSnapshotAsync(rankings), Times.Once);
     }
 
@@ -83,15 +573,79 @@ public class AdminModuleTests
 
         await _adminModule.CalculateRankingsAsync(2024, 5);
 
-        _mockCache.Verify(x => x.RemoveAsync("teams_2024"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("games_2024_regular"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("games_2024_postseason"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("advancedGameStats_2024_regular"), Times.Once);
         _mockCache.Verify(x => x.RemoveAsync("advancedGameStats_2024_postseason"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("advancedGameStats_2024_regular"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("bettingLines_2024_1"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("bettingLines_2024_6"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("games_2024_postseason"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("games_2024_regular"), Times.Once);
         _mockCache.Verify(x => x.RemoveAsync("seasonStats_2024"), Times.Once);
         _mockCache.Verify(x => x.RemoveAsync("seasonStats_2024_week_5"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("teams_2024"), Times.Once);
 
         Assert.True(callOrder.IndexOf("get_season_data") > callOrder.IndexOf("cache_remove:teams_2024"));
+    }
+
+    [Fact]
+    public async Task CalculateRankingsAsync_ClearsFullScheduleCache()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankings);
+
+        await _adminModule.CalculateRankingsAsync(2024, 5);
+
+        _mockCache.Verify(x => x.RemoveAsync("fullSchedule_2024"), Times.Once);
+    }
+
+    [Fact]
+    public async Task CalculateRankingsAsync_GenerateRankingsAsyncThrows_PropagatesException()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockRankingsModule
+            .Setup(x => x.GenerateRankingsAsync(seasonData, ratings))
+            .ThrowsAsync(new InvalidOperationException("Rankings generation failed"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _adminModule.CalculateRankingsAsync(2024, 5));
+    }
+
+    [Fact]
+    public async Task CalculateRankingsAsync_GetSeasonDataAsyncThrows_PropagatesException()
+    {
+        _mockDataService
+            .Setup(x => x.GetSeasonDataAsync(2024, 5))
+            .ThrowsAsync(new InvalidOperationException("API unavailable"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _adminModule.CalculateRankingsAsync(2024, 5));
+    }
+
+    [Fact]
+    public async Task CalculateRankingsAsync_PersistFailure_DoesNotInvalidatePollLeadersCache()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankings);
+        _mockRankingsModule.Setup(x => x.SaveSnapshotAsync(It.IsAny<RankingsResult>()))
+            .ThrowsAsync(new InvalidOperationException("DB error"));
+
+        await _adminModule.CalculateRankingsAsync(2024, 5);
+
+        _mockPollLeadersModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
+        _mockSeasonTrendsModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
     }
 
     [Fact]
@@ -109,81 +663,7 @@ public class AdminModuleTests
 
         var result = await _adminModule.CalculateRankingsAsync(2024, 5);
 
-        Assert.False(result.Persisted);
-    }
-
-    [Fact]
-    public async Task PublishSnapshotAsync_DelegatesToRankingsModule()
-    {
-        _mockRankingsModule.Setup(x => x.PublishSnapshotAsync(2024, 5)).ReturnsAsync(true);
-
-        var result = await _adminModule.PublishSnapshotAsync(2024, 5);
-
-        Assert.True(result);
-        _mockRankingsModule.Verify(x => x.PublishSnapshotAsync(2024, 5), Times.Once);
-    }
-
-    [Fact]
-    public async Task DeleteSnapshotAsync_DelegatesToRankingsModule()
-    {
-        _mockRankingsModule.Setup(x => x.DeleteSnapshotAsync(2024, 5)).ReturnsAsync(true);
-
-        var result = await _adminModule.DeleteSnapshotAsync(2024, 5);
-
-        Assert.True(result);
-        _mockRankingsModule.Verify(x => x.DeleteSnapshotAsync(2024, 5), Times.Once);
-    }
-
-    [Fact]
-    public async Task GetSnapshotsAsync_DelegatesToRankingsModule()
-    {
-        var weeks = new List<SnapshotSummary>
-        {
-            new SnapshotSummary { Season = 2024, Week = 1, Published = true }
-        };
-
-        _mockRankingsModule.Setup(x => x.GetSnapshotsAsync()).ReturnsAsync(weeks);
-
-        var result = await _adminModule.GetSnapshotsAsync();
-
-        Assert.Single(result);
-        _mockRankingsModule.Verify(x => x.GetSnapshotsAsync(), Times.Once);
-    }
-
-    [Fact]
-    public async Task ExportRankingsAsync_SnapshotExists_ReturnsBytes()
-    {
-        var snapshot = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
-        var expectedBytes = new byte[] { 1, 2, 3 };
-
-        _mockRankingsModule.Setup(x => x.GetSnapshotAsync(2024, 5)).ReturnsAsync(snapshot);
-        _mockExcelExportModule.Setup(x => x.GenerateRankingsWorkbook(snapshot)).Returns(expectedBytes);
-
-        var result = await _adminModule.ExportRankingsAsync(2024, 5);
-
-        Assert.Equal(expectedBytes, result);
-    }
-
-    [Fact]
-    public async Task ExportRankingsAsync_NoSnapshot_ReturnsNull()
-    {
-        _mockRankingsModule.Setup(x => x.GetSnapshotAsync(2024, 5)).ReturnsAsync((RankingsResult?)null);
-
-        var result = await _adminModule.ExportRankingsAsync(2024, 5);
-
-        Assert.Null(result);
-        _mockExcelExportModule.Verify(x => x.GenerateRankingsWorkbook(It.IsAny<RankingsResult>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task CalculateRankingsAsync_GetSeasonDataAsyncThrows_PropagatesException()
-    {
-        _mockDataService
-            .Setup(x => x.GetSeasonDataAsync(2024, 5))
-            .ThrowsAsync(new InvalidOperationException("API unavailable"));
-
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _adminModule.CalculateRankingsAsync(2024, 5));
+        Assert.False(result.IsPersisted);
     }
 
     [Fact]
@@ -195,22 +675,6 @@ public class AdminModuleTests
         _mockRatingModule
             .Setup(x => x.RateTeamsAsync(seasonData))
             .ThrowsAsync(new InvalidOperationException("Rating calculation failed"));
-
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _adminModule.CalculateRankingsAsync(2024, 5));
-    }
-
-    [Fact]
-    public async Task CalculateRankingsAsync_GenerateRankingsAsyncThrows_PropagatesException()
-    {
-        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
-        var ratings = new Dictionary<string, RatingDetails>();
-
-        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
-        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
-        _mockRankingsModule
-            .Setup(x => x.GenerateRankingsAsync(seasonData, ratings))
-            .ThrowsAsync(new InvalidOperationException("Rankings generation failed"));
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => _adminModule.CalculateRankingsAsync(2024, 5));
@@ -249,22 +713,67 @@ public class AdminModuleTests
     }
 
     [Fact]
-    public async Task CalculateRankingsAsync_PersistFailure_DoesNotInvalidatePollLeadersCache()
+    public async Task DeletePredictionsAsync_DelegatesToPredictionsModule()
     {
-        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
-        var ratings = new Dictionary<string, RatingDetails>();
-        var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+        _mockPredictionsModule.Setup(x => x.DeleteAsync(2024, 5)).ReturnsAsync(true);
 
-        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
-        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
-        _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankings);
-        _mockRankingsModule.Setup(x => x.SaveSnapshotAsync(It.IsAny<RankingsResult>()))
-            .ThrowsAsync(new InvalidOperationException("DB error"));
+        var result = await _adminModule.DeletePredictionsAsync(2024, 5);
 
-        await _adminModule.CalculateRankingsAsync(2024, 5);
+        Assert.True(result);
+        _mockPredictionsModule.Verify(x => x.DeleteAsync(2024, 5), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeletePredictionsAsync_Failure_DoesNotInvalidateTrackRecordCache()
+    {
+        _mockPredictionsModule.Setup(x => x.DeleteAsync(2024, 5)).ReturnsAsync(false);
+
+        await _adminModule.DeletePredictionsAsync(2024, 5);
+
+        _mockTrackRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeletePredictionsAsync_Success_InvalidatesTrackRecordCache()
+    {
+        _mockPredictionsModule.Setup(x => x.DeleteAsync(2024, 5)).ReturnsAsync(true);
+
+        await _adminModule.DeletePredictionsAsync(2024, 5);
+
+        _mockTrackRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteSnapshotAsync_DelegatesToRankingsModule()
+    {
+        _mockRankingsModule.Setup(x => x.DeleteSnapshotAsync(2024, 5)).ReturnsAsync(true);
+
+        var result = await _adminModule.DeleteSnapshotAsync(2024, 5);
+
+        Assert.True(result);
+        _mockRankingsModule.Verify(x => x.DeleteSnapshotAsync(2024, 5), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteSnapshotAsync_Failure_DoesNotInvalidatePollLeadersCache()
+    {
+        _mockRankingsModule.Setup(x => x.DeleteSnapshotAsync(2024, 5)).ReturnsAsync(false);
+
+        await _adminModule.DeleteSnapshotAsync(2024, 5);
 
         _mockPollLeadersModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
         _mockSeasonTrendsModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteSnapshotAsync_RankingsModuleThrows_PropagatesException()
+    {
+        _mockRankingsModule
+            .Setup(x => x.DeleteSnapshotAsync(2024, 5))
+            .ThrowsAsync(new InvalidOperationException("Delete failed"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _adminModule.DeleteSnapshotAsync(2024, 5));
     }
 
     [Fact]
@@ -288,36 +797,226 @@ public class AdminModuleTests
     }
 
     [Fact]
-    public async Task DeleteSnapshotAsync_Failure_DoesNotInvalidatePollLeadersCache()
+    public async Task ExportRankingsAsync_NoSnapshot_ReturnsNull()
     {
-        _mockRankingsModule.Setup(x => x.DeleteSnapshotAsync(2024, 5)).ReturnsAsync(false);
+        _mockRankingsModule.Setup(x => x.GetSnapshotAsync(2024, 5)).ReturnsAsync((RankingsResult?)null);
 
-        await _adminModule.DeleteSnapshotAsync(2024, 5);
+        var result = await _adminModule.ExportRankingsAsync(2024, 5);
 
-        _mockPollLeadersModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
-        _mockSeasonTrendsModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
+        Assert.Null(result);
+        _mockExcelExportModule.Verify(x => x.GenerateRankingsWorkbook(It.IsAny<RankingsResult>()), Times.Never);
     }
 
     [Fact]
-    public async Task PublishSnapshotAsync_Success_InvalidatesPollLeadersCache()
+    public async Task ExportRankingsAsync_SnapshotExists_CallsGetSnapshotThenGenerateWorkbook()
     {
-        _mockRankingsModule.Setup(x => x.PublishSnapshotAsync(2024, 5)).ReturnsAsync(true);
+        var snapshot = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+        var expectedBytes = new byte[] { 1, 2, 3 };
+        var callOrder = new List<string>();
 
-        await _adminModule.PublishSnapshotAsync(2024, 5);
+        _mockRankingsModule.Setup(x => x.GetSnapshotAsync(2024, 5))
+            .Callback(() => callOrder.Add("get_snapshot"))
+            .ReturnsAsync(snapshot);
+        _mockExcelExportModule.Setup(x => x.GenerateRankingsWorkbook(snapshot))
+            .Callback(() => callOrder.Add("generate_workbook"))
+            .Returns(expectedBytes);
 
-        _mockPollLeadersModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
+        await _adminModule.ExportRankingsAsync(2024, 5);
+
+        Assert.Equal(2, callOrder.Count);
+        Assert.True(callOrder.IndexOf("get_snapshot") < callOrder.IndexOf("generate_workbook"));
     }
 
     [Fact]
-    public async Task PublishSnapshotAsync_Success_InvalidatesSeasonTrendsCache()
+    public async Task ExportRankingsAsync_SnapshotExists_ReturnsBytes()
+    {
+        var snapshot = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+        var expectedBytes = new byte[] { 1, 2, 3 };
+
+        _mockRankingsModule.Setup(x => x.GetSnapshotAsync(2024, 5)).ReturnsAsync(snapshot);
+        _mockExcelExportModule.Setup(x => x.GenerateRankingsWorkbook(snapshot)).Returns(expectedBytes);
+
+        var result = await _adminModule.ExportRankingsAsync(2024, 5);
+
+        Assert.Equal(expectedBytes, result);
+    }
+
+    [Fact]
+    public async Task GetPredictionsAsync_CallsBothPredictionsModuleMethods()
+    {
+        _mockPredictionsModule.Setup(x => x.GetAsync(2024, 5))
+            .ReturnsAsync(new PredictionsResult { Season = 2024, Week = 5 });
+        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync())
+            .ReturnsAsync(new List<PredictionsSummary>());
+
+        await _adminModule.GetPredictionsAsync(2024, 5);
+
+        _mockPredictionsModule.Verify(x => x.GetAsync(2024, 5), Times.Once);
+        _mockPredictionsModule.Verify(x => x.GetAllSummariesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetPredictionsAsync_DefaultsFlags_WhenNoMatchingSummaryFound()
+    {
+        _mockPredictionsModule.Setup(x => x.GetAsync(2024, 5))
+            .ReturnsAsync(new PredictionsResult { Season = 2024, Week = 5 });
+        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync())
+            .ReturnsAsync(new List<PredictionsSummary>
+            {
+                new() { Season = 2024, Week = 1, IsGraded = true, IsPublished = true, ResultsPublished = true }
+            });
+
+        var result = await _adminModule.GetPredictionsAsync(2024, 5);
+
+        Assert.NotNull(result);
+        Assert.False(result.IsGraded);
+        Assert.False(result.IsPublished);
+        Assert.False(result.ResultsPublished);
+    }
+
+    [Fact]
+    public async Task GetPredictionsAsync_ReturnsComposedResult_WhenMatchingSummaryExists()
+    {
+        var predictions = new PredictionsResult { Season = 2024, Week = 5 };
+        _mockPredictionsModule.Setup(x => x.GetAsync(2024, 5)).ReturnsAsync(predictions);
+        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync())
+            .ReturnsAsync(new List<PredictionsSummary>
+            {
+                new() { Season = 2024, Week = 5, IsGraded = true, IsPublished = true, ResultsPublished = false }
+            });
+
+        var result = await _adminModule.GetPredictionsAsync(2024, 5);
+
+        Assert.NotNull(result);
+        Assert.Same(predictions, result.Predictions);
+        Assert.True(result.IsGraded);
+        Assert.True(result.IsPublished);
+        Assert.False(result.ResultsPublished);
+    }
+
+    [Fact]
+    public async Task GetPredictionsAsync_ReturnsNull_WhenNoPredictionsExist()
+    {
+        _mockPredictionsModule.Setup(x => x.GetAsync(2024, 5)).ReturnsAsync((PredictionsResult?)null);
+        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync())
+            .ReturnsAsync(new List<PredictionsSummary>());
+
+        var result = await _adminModule.GetPredictionsAsync(2024, 5);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GetPredictionsSummariesAsync_DelegatesToPredictionsModule()
+    {
+        var summaries = new List<PredictionsSummary>
+        {
+            new() { Season = 2024, Week = 1, IsPublished = true, GameCount = 10 }
+        };
+        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync()).ReturnsAsync(summaries);
+
+        var result = await _adminModule.GetPredictionsSummariesAsync();
+
+        Assert.Single(result);
+        _mockPredictionsModule.Verify(x => x.GetAllSummariesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetSnapshotsAsync_DelegatesToRankingsModule()
+    {
+        var weeks = new List<SnapshotSummary>
+        {
+            new SnapshotSummary { Season = 2024, Week = 1, IsPublished = true }
+        };
+
+        _mockRankingsModule.Setup(x => x.GetSnapshotsAsync()).ReturnsAsync(weeks);
+
+        var result = await _adminModule.GetSnapshotsAsync();
+
+        Assert.Single(result);
+        _mockRankingsModule.Verify(x => x.GetSnapshotsAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task GradePredictionsAsync_DelegatesToGradingModule()
+    {
+        var gradeResult = new GradePredictionsResult
+        {
+            IsPersisted = true,
+            Predictions = new PredictionsResult { Season = 2024, Week = 5 },
+            UnmatchedGameCount = 0
+        };
+        _mockPredictionGradingModule.Setup(x => x.GradeAsync(2024, 5)).ReturnsAsync(gradeResult);
+
+        var result = await _adminModule.GradePredictionsAsync(2024, 5);
+
+        Assert.NotNull(result);
+        Assert.True(result.IsPersisted);
+        _mockPredictionGradingModule.Verify(x => x.GradeAsync(2024, 5), Times.Once);
+    }
+
+    [Fact]
+    public async Task GradePredictionsAsync_NoStoredPredictions_ReturnsNull()
+    {
+        _mockPredictionGradingModule.Setup(x => x.GradeAsync(2024, 5)).ReturnsAsync((GradePredictionsResult?)null);
+
+        var result = await _adminModule.GradePredictionsAsync(2024, 5);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task PublishGradedResultsAsync_DelegatesToPredictionsModule()
+    {
+        _mockPredictionsModule.Setup(x => x.PublishGradedResultsAsync(2024, 5)).ReturnsAsync(true);
+
+        var result = await _adminModule.PublishGradedResultsAsync(2024, 5);
+
+        Assert.True(result);
+        _mockPredictionsModule.Verify(x => x.PublishGradedResultsAsync(2024, 5), Times.Once);
+    }
+
+    [Fact]
+    public async Task PublishGradedResultsAsync_Failure_DoesNotInvalidateTrackRecordCache()
+    {
+        _mockPredictionsModule.Setup(x => x.PublishGradedResultsAsync(2024, 5)).ReturnsAsync(false);
+
+        await _adminModule.PublishGradedResultsAsync(2024, 5);
+
+        _mockTrackRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task PublishGradedResultsAsync_Success_InvalidatesTrackRecordCache()
+    {
+        _mockPredictionsModule.Setup(x => x.PublishGradedResultsAsync(2024, 5)).ReturnsAsync(true);
+
+        await _adminModule.PublishGradedResultsAsync(2024, 5);
+
+        _mockTrackRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task PublishPredictionsAsync_DelegatesToPredictionsModule()
+    {
+        _mockPredictionsModule.Setup(x => x.PublishAsync(2024, 5)).ReturnsAsync(true);
+
+        var result = await _adminModule.PublishPredictionsAsync(2024, 5);
+
+        Assert.True(result);
+        _mockPredictionsModule.Verify(x => x.PublishAsync(2024, 5), Times.Once);
+    }
+
+    [Fact]
+    public async Task PublishSnapshotAsync_DelegatesToRankingsModule()
     {
         _mockRankingsModule.Setup(x => x.PublishSnapshotAsync(2024, 5)).ReturnsAsync(true);
 
-        await _adminModule.PublishSnapshotAsync(2024, 5);
+        var result = await _adminModule.PublishSnapshotAsync(2024, 5);
 
-        _mockSeasonTrendsModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
+        Assert.True(result);
+        _mockRankingsModule.Verify(x => x.PublishSnapshotAsync(2024, 5), Times.Once);
     }
-
     [Fact]
     public async Task PublishSnapshotAsync_Failure_DoesNotInvalidatePollLeadersCache()
     {
@@ -341,33 +1040,63 @@ public class AdminModuleTests
     }
 
     [Fact]
-    public async Task DeleteSnapshotAsync_RankingsModuleThrows_PropagatesException()
+    public async Task PublishSnapshotAsync_Success_InvalidatesPollLeadersCache()
     {
-        _mockRankingsModule
-            .Setup(x => x.DeleteSnapshotAsync(2024, 5))
-            .ThrowsAsync(new InvalidOperationException("Delete failed"));
+        _mockRankingsModule.Setup(x => x.PublishSnapshotAsync(2024, 5)).ReturnsAsync(true);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _adminModule.DeleteSnapshotAsync(2024, 5));
+        await _adminModule.PublishSnapshotAsync(2024, 5);
+
+        _mockPollLeadersModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
     }
 
     [Fact]
-    public async Task ExportRankingsAsync_SnapshotExists_CallsGetSnapshotThenGenerateWorkbook()
+    public async Task PublishSnapshotAsync_Success_InvalidatesSeasonTrendsCache()
     {
-        var snapshot = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
-        var expectedBytes = new byte[] { 1, 2, 3 };
-        var callOrder = new List<string>();
+        _mockRankingsModule.Setup(x => x.PublishSnapshotAsync(2024, 5)).ReturnsAsync(true);
 
-        _mockRankingsModule.Setup(x => x.GetSnapshotAsync(2024, 5))
-            .Callback(() => callOrder.Add("get_snapshot"))
-            .ReturnsAsync(snapshot);
-        _mockExcelExportModule.Setup(x => x.GenerateRankingsWorkbook(snapshot))
-            .Callback(() => callOrder.Add("generate_workbook"))
-            .Returns(expectedBytes);
+        await _adminModule.PublishSnapshotAsync(2024, 5);
 
-        await _adminModule.ExportRankingsAsync(2024, 5);
+        _mockSeasonTrendsModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
+    }
+    [Fact]
+    public async Task RefreshSeasonCacheAsync_NoKeysCached_ReturnsZero()
+    {
+        _mockCache.Setup(x => x.RemoveAsync(It.IsAny<string>())).ReturnsAsync(false);
 
-        Assert.Equal(2, callOrder.Count);
-        Assert.True(callOrder.IndexOf("get_snapshot") < callOrder.IndexOf("generate_workbook"));
+        var result = await _adminModule.RefreshSeasonCacheAsync(2024, 5);
+
+        Assert.Equal(0, result);
+    }
+
+    [Fact]
+    public async Task RefreshSeasonCacheAsync_RemovesAllSeasonScopedKeys()
+    {
+        _mockCache.Setup(x => x.RemoveAsync(It.IsAny<string>())).ReturnsAsync(true);
+
+        await _adminModule.RefreshSeasonCacheAsync(2024, 5);
+
+        _mockCache.Verify(x => x.RemoveAsync("teams_2024"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("fullSchedule_2024"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("games_2024_regular"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("games_2024_postseason"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("advancedGameStats_2024_regular"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("advancedGameStats_2024_postseason"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("seasonStats_2024"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("seasonStats_2024_week_5"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("bettingLines_2024_6"), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync("bettingLines_2024_1"), Times.Once);
+    }
+
+    [Fact]
+    public async Task RefreshSeasonCacheAsync_ReturnsCountOfKeysActuallyRemoved()
+    {
+        _mockCache.Setup(x => x.RemoveAsync("teams_2024")).ReturnsAsync(true);
+        _mockCache.Setup(x => x.RemoveAsync("fullSchedule_2024")).ReturnsAsync(true);
+        _mockCache.Setup(x => x.RemoveAsync(It.Is<string>(k => k != "teams_2024" && k != "fullSchedule_2024")))
+            .ReturnsAsync(false);
+
+        var result = await _adminModule.RefreshSeasonCacheAsync(2024, 5);
+
+        Assert.Equal(2, result);
     }
 }

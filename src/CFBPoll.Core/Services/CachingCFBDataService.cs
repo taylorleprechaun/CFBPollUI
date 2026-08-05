@@ -30,16 +30,24 @@ public class CachingCFBDataService : ICFBDataService
     {
         var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
         return await GetOrCacheListAsync(
-            $"advancedGameStats_{season}_{seasonType}",
+            CacheKeys.AdvancedGameStats(season, seasonType),
             () => _innerService.GetAdvancedGameStatsAsync(season, seasonType),
             expiresAt).ConfigureAwait(false);
     }
 
+    public async Task<IEnumerable<BettingLine>> GetBettingLinesAsync(int season, int week)
+    {
+        var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
+        return await GetOrCacheListAsync(
+            CacheKeys.BettingLines(season, week),
+            () => _innerService.GetBettingLinesAsync(season, week),
+            expiresAt).ConfigureAwait(false);
+    }
     public async Task<IEnumerable<CalendarWeek>> GetCalendarAsync(int year)
     {
         var expiresAt = CalculateExpiration(year, _options.CalendarExpirationHours);
         return await GetOrCacheListAsync(
-            $"calendar_{year}",
+            CacheKeys.Calendar(year),
             () => _innerService.GetCalendarAsync(year),
             expiresAt).ConfigureAwait(false);
     }
@@ -48,7 +56,7 @@ public class CachingCFBDataService : ICFBDataService
     {
         var expiresAt = DateTime.UtcNow.AddHours(_options.ConferenceExpirationHours);
         return await GetOrCacheListAsync(
-            "conferences",
+            CacheKeys.CONFERENCES,
             () => _innerService.GetConferencesAsync(),
             expiresAt).ConfigureAwait(false);
     }
@@ -57,7 +65,7 @@ public class CachingCFBDataService : ICFBDataService
     {
         var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
         return await GetOrCacheListAsync(
-            $"teams_{season}",
+            CacheKeys.Teams(season),
             () => _innerService.GetFBSTeamsAsync(season),
             expiresAt).ConfigureAwait(false);
     }
@@ -66,7 +74,7 @@ public class CachingCFBDataService : ICFBDataService
     {
         var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
         return await GetOrCacheListAsync(
-            $"fullSchedule_{season}",
+            CacheKeys.FullSchedule(season),
             () => _innerService.GetFullSeasonScheduleAsync(season),
             expiresAt).ConfigureAwait(false);
     }
@@ -75,14 +83,14 @@ public class CachingCFBDataService : ICFBDataService
     {
         var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
         return await GetOrCacheListAsync(
-            $"games_{season}_{seasonType}",
+            CacheKeys.Games(season, seasonType),
             () => _innerService.GetGamesAsync(season, seasonType),
             expiresAt).ConfigureAwait(false);
     }
 
     public async Task<int> GetMaxSeasonYearAsync()
     {
-        const string cacheKey = "maxSeasonYear";
+        const string cacheKey = CacheKeys.MAX_SEASON_YEAR;
 
         var cached = await _cache.GetAsync<MaxSeasonYearWrapper>(cacheKey).ConfigureAwait(false);
         if (cached is not null)
@@ -138,9 +146,7 @@ public class CachingCFBDataService : ICFBDataService
 
     public async Task<IDictionary<string, IEnumerable<TeamStat>>> GetSeasonTeamStatsAsync(int season, int? endWeek)
     {
-        var cacheKey = endWeek.HasValue
-            ? $"seasonStats_{season}_week_{endWeek.Value}"
-            : $"seasonStats_{season}";
+        var cacheKey = CacheKeys.SeasonStats(season, endWeek);
 
         var cached = await _cache.GetAsync<Dictionary<string, List<TeamStat>>>(cacheKey).ConfigureAwait(false);
         if (cached is not null)
@@ -166,9 +172,7 @@ public class CachingCFBDataService : ICFBDataService
 
     private DateTime CalculateExpiration(int year, int expirationHours)
     {
-        var currentYear = DateTime.UtcNow.Year;
-
-        if (year < currentYear)
+        if (!SeasonLiveEvaluator.IsSeasonLive(year, DateTime.UtcNow, _options))
         {
             return DateTime.MaxValue;
         }

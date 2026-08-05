@@ -19,6 +19,7 @@ export const SeasonsResponseSchema = z.object({
 // Week schemas
 export const WeekSchema = z.object({
   label: z.string(),
+  predictionsPublished: z.boolean(),
   rankingsPublished: z.boolean(),
   weekNumber: z.number(),
 });
@@ -129,7 +130,42 @@ export const AllTimeResponseSchema = z.object({
 export const PageVisibilitySchema = z.object({
   allTimeEnabled: z.boolean(),
   pollLeadersEnabled: z.boolean(),
+  predictionsPageEnabled: z.boolean(),
   seasonTrendsEnabled: z.boolean(),
+});
+
+// Prediction schemas (public)
+export const GameGradeSchema = z.enum(['Correct', 'Incorrect', 'Push', 'Ungraded', 'NotApplicable']);
+
+export const GamePredictionPublicSchema = z.object({
+  actualAwayScore: z.number().nullable(),
+  actualHomeScore: z.number().nullable(),
+  actualOverUnderResult: z.string().nullable(),
+  actualSpreadCoveringTeam: z.string().nullable(),
+  actualWinner: z.string().nullable(),
+  awayLogoURL: z.string(),
+  awayTeam: z.string(),
+  awayTeamScore: z.number(),
+  bettingOverUnder: z.number().nullable(),
+  bettingSpread: z.number().nullable(),
+  homeLogoURL: z.string(),
+  homeTeam: z.string(),
+  homeTeamScore: z.number(),
+  myOverUnderPick: z.string(),
+  mySpreadPick: z.string(),
+  neutralSite: z.boolean(),
+  overUnderGrade: GameGradeSchema,
+  predictedMargin: z.number(),
+  predictedWinner: z.string(),
+  spreadGrade: GameGradeSchema,
+  winnerGrade: GameGradeSchema,
+});
+
+export const PredictionsPublicResponseSchema = z.object({
+  predictions: z.array(GamePredictionPublicSchema),
+  resultsPublished: z.boolean(),
+  season: z.number(),
+  week: z.number(),
 });
 
 // Poll leaders schemas
@@ -176,14 +212,39 @@ export const SeasonTrendsResponseSchema = z.object({
   weeks: z.array(SeasonTrendWeekSchema),
 });
 
+// Track record schemas
+export const TrackRecordTotalsSchema = z.object({
+  correct: z.number(),
+  incorrect: z.number(),
+  push: z.number(),
+});
+
+export const TrackRecordWeekSchema = z.object({
+  overUnder: TrackRecordTotalsSchema,
+  season: z.number(),
+  spread: TrackRecordTotalsSchema,
+  week: z.number(),
+  winner: TrackRecordTotalsSchema,
+});
+
+export const TrackRecordResponseSchema = z.object({
+  overallOverUnder: TrackRecordTotalsSchema,
+  overallSpread: TrackRecordTotalsSchema,
+  overallWinner: TrackRecordTotalsSchema,
+  weeks: z.array(TrackRecordWeekSchema),
+});
+
 // Type exports inferred from schemas
 export type AllTimeEntry = z.infer<typeof AllTimeEntrySchema>;
 export type AllTimeResponse = z.infer<typeof AllTimeResponseSchema>;
 export type Conference = z.infer<typeof ConferenceSchema>;
 export type ConferencesResponse = z.infer<typeof ConferencesResponseSchema>;
+export type GameGrade = z.infer<typeof GameGradeSchema>;
+export type GamePredictionPublic = z.infer<typeof GamePredictionPublicSchema>;
 export type PageVisibility = z.infer<typeof PageVisibilitySchema>;
 export type PollLeaderEntry = z.infer<typeof PollLeaderEntrySchema>;
 export type PollLeadersResponse = z.infer<typeof PollLeadersResponseSchema>;
+export type PredictionsPublicResponse = z.infer<typeof PredictionsPublicResponseSchema>;
 export type RankedTeam = z.infer<typeof RankedTeamSchema>;
 export type RankingsResponse = z.infer<typeof RankingsResponseSchema>;
 export type TeamRecord = z.infer<typeof RecordSchema>;
@@ -195,5 +256,8 @@ export type SeasonTrendsResponse = z.infer<typeof SeasonTrendsResponseSchema>;
 export type SeasonsResponse = z.infer<typeof SeasonsResponseSchema>;
 export type TeamDetailResponse = z.infer<typeof TeamDetailResponseSchema>;
 export type TeamDetails = z.infer<typeof TeamDetailsSchema>;
+export type TrackRecordResponse = z.infer<typeof TrackRecordResponseSchema>;
+export type TrackRecordTotals = z.infer<typeof TrackRecordTotalsSchema>;
+export type TrackRecordWeek = z.infer<typeof TrackRecordWeekSchema>;
 export type Week = z.infer<typeof WeekSchema>;
 export type WeeksResponse = z.infer<typeof WeeksResponseSchema>;

@@ -102,7 +102,7 @@ public class AllTimeModule : IAllTimeModule
         var snapshots = await _rankingsModule.GetSnapshotsAsync().ConfigureAwait(false);
 
         var publishedSeasons = snapshots
-            .Where(pw => pw.Published)
+            .Where(pw => pw.IsPublished)
             .Select(pw => pw.Season)
             .Distinct()
             .OrderBy(s => s)

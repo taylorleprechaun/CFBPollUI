@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useInView } from '../../hooks/use-in-view';
 
-var mockObserve = vi.fn();
-var mockDisconnect = vi.fn();
-var mockCallback: IntersectionObserverCallback;
+const mockObserve = vi.fn();
+const mockDisconnect = vi.fn();
+let mockCallback: IntersectionObserverCallback;
 
 class MockIntersectionObserver {
   constructor(callback: IntersectionObserverCallback) {
@@ -33,14 +33,14 @@ function triggerIntersection(isIntersecting: boolean) {
 
 describe('useInView', () => {
   it('starts with inView false', () => {
-    var { result } = renderHook(() => useInView());
+    const { result } = renderHook(() => useInView());
 
     expect(result.current.inView).toBe(false);
   });
 
   it('becomes true on intersection', () => {
-    var { result } = renderHook(() => useInView());
-    var element = document.createElement('div');
+    const { result } = renderHook(() => useInView());
+    const element = document.createElement('div');
 
     act(() => {
       result.current.ref(element);
@@ -51,8 +51,8 @@ describe('useInView', () => {
   });
 
   it('disconnects after first trigger when triggerOnce is true', () => {
-    var { result } = renderHook(() => useInView({ triggerOnce: true }));
-    var element = document.createElement('div');
+    const { result } = renderHook(() => useInView({ triggerOnce: true }));
+    const element = document.createElement('div');
 
     act(() => {
       result.current.ref(element);
@@ -63,8 +63,8 @@ describe('useInView', () => {
   });
 
   it('does not disconnect after trigger when triggerOnce is false', () => {
-    var { result } = renderHook(() => useInView({ triggerOnce: false }));
-    var element = document.createElement('div');
+    const { result } = renderHook(() => useInView({ triggerOnce: false }));
+    const element = document.createElement('div');
 
     act(() => {
       result.current.ref(element);
@@ -75,8 +75,8 @@ describe('useInView', () => {
   });
 
   it('resets inView to false when element leaves viewport with triggerOnce false', () => {
-    var { result } = renderHook(() => useInView({ triggerOnce: false }));
-    var element = document.createElement('div');
+    const { result } = renderHook(() => useInView({ triggerOnce: false }));
+    const element = document.createElement('div');
 
     act(() => {
       result.current.ref(element);
@@ -91,8 +91,8 @@ describe('useInView', () => {
   });
 
   it('cleans up observer on unmount', () => {
-    var { result, unmount } = renderHook(() => useInView());
-    var element = document.createElement('div');
+    const { result, unmount } = renderHook(() => useInView());
+    const element = document.createElement('div');
 
     act(() => {
       result.current.ref(element);
@@ -104,9 +104,9 @@ describe('useInView', () => {
   });
 
   it('cleans up previous observer when ref is called with a new element', () => {
-    var { result } = renderHook(() => useInView());
-    var element1 = document.createElement('div');
-    var element2 = document.createElement('div');
+    const { result } = renderHook(() => useInView());
+    const element1 = document.createElement('div');
+    const element2 = document.createElement('div');
 
     act(() => {
       result.current.ref(element1);
@@ -123,7 +123,7 @@ describe('useInView', () => {
   });
 
   it('does not create observer when ref is called with null', () => {
-    var { result } = renderHook(() => useInView());
+    const { result } = renderHook(() => useInView());
 
     act(() => {
       result.current.ref(null);

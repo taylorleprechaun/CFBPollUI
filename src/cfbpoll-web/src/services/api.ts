@@ -7,19 +7,23 @@ import {
   ConferencesResponseSchema,
   PageVisibilitySchema,
   PollLeadersResponseSchema,
+  PredictionsPublicResponseSchema,
   RankingsResponseSchema,
   SeasonTrendsResponseSchema,
   SeasonsResponseSchema,
   TeamDetailResponseSchema,
+  TrackRecordResponseSchema,
   WeeksResponseSchema,
   type AllTimeResponse,
   type ConferencesResponse,
   type PageVisibility,
   type PollLeadersResponse,
+  type PredictionsPublicResponse,
   type RankingsResponse,
   type SeasonTrendsResponse,
   type SeasonsResponse,
   type TeamDetailResponse,
+  type TrackRecordResponse,
   type WeeksResponse,
 } from '../schemas';
 
@@ -39,6 +43,14 @@ export async function fetchRankings(
 ): Promise<RankingsResponse> {
   const response = await safeFetch(`${API_BASE_URL}/api/v1/seasons/${season}/weeks/${week}/rankings`);
   return parseResponse(response, RankingsResponseSchema);
+}
+
+export async function fetchPredictions(
+  season: number,
+  week: number
+): Promise<PredictionsPublicResponse> {
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/seasons/${season}/weeks/${week}/predictions`);
+  return parseResponse(response, PredictionsPublicResponseSchema);
 }
 
 export async function fetchConferences(): Promise<ConferencesResponse> {
@@ -83,4 +95,9 @@ export async function fetchPollLeaders(
   const url = `${API_BASE_URL}/api/v1/poll-leaders${query ? `?${query}` : ''}`;
   const response = await safeFetch(url);
   return parseResponse(response, PollLeadersResponseSchema);
+}
+
+export async function fetchTrackRecord(): Promise<TrackRecordResponse> {
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/track-record`);
+  return parseResponse(response, TrackRecordResponseSchema);
 }

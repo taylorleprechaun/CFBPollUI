@@ -12,7 +12,7 @@ public static class SnapshotMapper
         return new SnapshotDTO
         {
             CreatedAt = summary.CreatedAt,
-            IsPublished = summary.Published,
+            IsPublished = summary.IsPublished,
             Season = summary.Season,
             Week = summary.Week
         };

@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import {
-  AllTimeTable,
   allTimeRankColumn,
   teamNameColumn,
   seasonColumn,
@@ -10,7 +9,8 @@ import {
   rankColumn,
   ratingColumn,
   weightedSOSColumn,
-} from '../../../components/all-time/all-time-table';
+} from '../../../components/all-time/all-time-columns';
+import { AllTimeTable } from '../../../components/all-time/all-time-table';
 import type { AllTimeEntry } from '../../../types';
 
 const defaultColumns = [
@@ -111,13 +111,13 @@ describe('AllTimeTable', () => {
     const floridaLink = screen.getByRole('link', { name: 'Florida' });
     expect(floridaLink).toHaveAttribute(
       'href',
-      '/team-details?team=Florida&season=2023&week=5'
+      '/team-details?team=Florida&season=2023'
     );
 
     const alabamaLink = screen.getByRole('link', { name: 'Alabama' });
     expect(alabamaLink).toHaveAttribute(
       'href',
-      '/team-details?team=Alabama&season=2022&week=5'
+      '/team-details?team=Alabama&season=2022'
     );
   });
 
@@ -154,7 +154,7 @@ describe('AllTimeTable', () => {
     const link = screen.getByRole('link', { name: 'Iowa' });
     expect(link).toHaveAttribute(
       'href',
-      `/team-details?team=${encodeURIComponent('Iowa')}&season=2023&week=5`
+      `/team-details?team=${encodeURIComponent('Iowa')}&season=2023`
     );
   });
 

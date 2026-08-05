@@ -48,14 +48,18 @@ try
     builder.Services.AddRankingsModule();
     builder.Services.AddSingleton<ISeasonModule, SeasonModule>();
     builder.Services.AddSingleton<IConferenceModule, ConferenceModule>();
+    builder.Services.AddSingleton<IPredictionCalculatorModule, PredictionCalculatorModule>();
+    builder.Services.AddSingleton<IPredictionsModule, PredictionsModule>();
     builder.Services.AddSingleton<IAdminModule, AdminModule>();
     builder.Services.AddSingleton<IAllTimeModule, AllTimeModule>();
     builder.Services.AddSingleton<IAuthModule, AuthModule>();
     builder.Services.AddSingleton<IExcelExportModule, ExcelExportModule>();
     builder.Services.AddSingleton<IPageVisibilityModule, PageVisibilityModule>();
     builder.Services.AddSingleton<IPollLeadersModule, PollLeadersModule>();
+    builder.Services.AddSingleton<IPredictionGradingModule, PredictionGradingModule>();
     builder.Services.AddSingleton<ISeasonTrendsModule, SeasonTrendsModule>();
     builder.Services.AddSingleton<ITeamsModule, TeamsModule>();
+    builder.Services.AddSingleton<ITrackRecordModule, TrackRecordModule>();
     builder.Services.AddJwtAuthentication(builder.Configuration);
 
     builder.Services.AddRateLimiter(options =>

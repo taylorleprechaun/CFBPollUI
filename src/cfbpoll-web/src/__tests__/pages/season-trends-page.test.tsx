@@ -7,7 +7,7 @@ import { rechartsMock } from '../mocks/recharts';
 
 vi.mock('recharts', () => rechartsMock);
 
-vi.mock('../../contexts/theme-context', () => ({
+vi.mock('../../hooks/use-theme', () => ({
   useTheme: () => ({ resolvedTheme: 'light' }),
 }));
 
@@ -23,7 +23,7 @@ vi.mock('../../hooks/use-document-title', () => ({
 
 const mockSetSelectedSeason = vi.fn();
 
-vi.mock('../../contexts/season-context', () => ({
+vi.mock('../../hooks/use-season', () => ({
   useSeason: () => ({
     seasons: [2024, 2023],
     seasonsLoading: false,

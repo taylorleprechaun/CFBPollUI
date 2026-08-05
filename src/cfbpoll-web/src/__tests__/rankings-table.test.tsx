@@ -73,7 +73,6 @@ function renderTable(props: {
   isLoading?: boolean;
   selectedConference?: string | null;
   selectedSeason?: number | null;
-  selectedWeek?: number | null;
 } = {}) {
   return render(
     <MemoryRouter>
@@ -82,7 +81,6 @@ function renderTable(props: {
         isLoading={props.isLoading ?? false}
         selectedConference={props.selectedConference ?? null}
         selectedSeason={'selectedSeason' in props ? props.selectedSeason ?? null : 2024}
-        selectedWeek={'selectedWeek' in props ? props.selectedWeek ?? null : 12}
       />
     </MemoryRouter>
   );
@@ -221,11 +219,11 @@ describe('RankingsTable', () => {
 
       const uscLink = screen.getByText('USC').closest('a');
       expect(uscLink).toBeInTheDocument();
-      expect(uscLink).toHaveAttribute('href', '/team-details?team=USC&season=2024&week=12');
+      expect(uscLink).toHaveAttribute('href', '/team-details?team=USC&season=2024');
     });
 
-    it('renders link without season/week when not provided', () => {
-      renderTable({ selectedSeason: null, selectedWeek: null });
+    it('renders link without season when not provided', () => {
+      renderTable({ selectedSeason: null });
 
       const uscLink = screen.getByText('USC').closest('a');
       expect(uscLink).toBeInTheDocument();

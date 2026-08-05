@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { PreviewSection } from '../../../components/admin';
 
 const defaultResult = {
-  persisted: true,
+  isPersisted: true,
   rankings: {
     season: 2024,
     week: 5,
@@ -58,12 +58,12 @@ describe('PreviewSection', () => {
 
     fireEvent.click(screen.getByText('Publish'));
 
-    expect(onPublish).toHaveBeenCalledWith(2024, 5, 'preview');
+    expect(onPublish).toHaveBeenCalledWith(2024, 5);
   });
 
   it('shows not-persisted warning when persisted is false', () => {
     renderPreview({
-      calculatedResult: { ...defaultResult, persisted: false },
+      calculatedResult: { ...defaultResult, isPersisted: false },
     });
 
     expect(screen.getByText(/Rankings were not persisted/)).toBeInTheDocument();
@@ -90,6 +90,20 @@ describe('PreviewSection', () => {
     expect(chevron().classList.toString()).not.toContain('-rotate-90');
   });
 
+  it('toggles aria-expanded on the header button and points aria-controls at the content region', () => {
+    renderPreview();
+
+    const headerButton = screen.getByText(/Preview: 2024 Week 6/).closest('button')!;
+    expect(headerButton).toHaveAttribute('aria-expanded', 'true');
+
+    const contentId = headerButton.getAttribute('aria-controls');
+    expect(contentId).toBeTruthy();
+    expect(document.getElementById(contentId!)).not.toBeNull();
+
+    fireEvent.click(headerButton);
+    expect(headerButton).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('disables buttons when isActionPending is true', () => {
     renderPreview({ isActionPending: true });
 
@@ -106,6 +120,18 @@ describe('PreviewSection', () => {
     });
 
     expect(screen.getByLabelText('Success')).toBeInTheDocument();
+  });
+
+  it('shows the success message text alongside the checkmark when provided', () => {
+    renderPreview({
+      actionFeedback: {
+        key: 'preview-publish-2024-5',
+        type: 'success',
+        message: 'Published successfully',
+      },
+    });
+
+    expect(screen.getByText('Published successfully')).toBeInTheDocument();
   });
 
   it('shows error message for matching feedback', () => {

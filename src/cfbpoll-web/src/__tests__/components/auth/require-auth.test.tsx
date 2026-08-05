@@ -5,7 +5,7 @@ import { RequireAuth } from '../../../components/auth';
 
 let mockIsAuthenticated = false;
 
-vi.mock('../../../contexts/auth-context', () => ({
+vi.mock('../../../hooks/use-auth', () => ({
   useAuth: () => ({
     isAuthenticated: mockIsAuthenticated,
     login: vi.fn(),

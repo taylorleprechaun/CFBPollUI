@@ -8,23 +8,6 @@ namespace CFBPoll.API.Tests.Mappers;
 public class PageVisibilityMapperTests
 {
     [Fact]
-    public void ToDTO_MapsAllProperties()
-    {
-        var model = new PageVisibility
-        {
-            AllTimeEnabled = true,
-            PollLeadersEnabled = false,
-            SeasonTrendsEnabled = true
-        };
-
-        var result = PageVisibilityMapper.ToDTO(model);
-
-        Assert.True(result.AllTimeEnabled);
-        Assert.False(result.PollLeadersEnabled);
-        Assert.True(result.SeasonTrendsEnabled);
-    }
-
-    [Fact]
     public void ToDTO_AllDisabled_MapsCorrectly()
     {
         var model = new PageVisibility
@@ -59,26 +42,57 @@ public class PageVisibilityMapperTests
     }
 
     [Fact]
+    public void ToDTO_MapsAllProperties()
+    {
+        var model = new PageVisibility
+        {
+            AllTimeEnabled = true,
+            PollLeadersEnabled = false,
+            SeasonTrendsEnabled = true
+        };
+
+        var result = PageVisibilityMapper.ToDTO(model);
+
+        Assert.True(result.AllTimeEnabled);
+        Assert.False(result.PollLeadersEnabled);
+        Assert.True(result.SeasonTrendsEnabled);
+    }
+
+    [Fact]
+    public void ToDTO_MapsPredictionsPageEnabled()
+    {
+        var model = new PageVisibility
+        {
+            PredictionsPageEnabled = true
+        };
+
+        var result = PageVisibilityMapper.ToDTO(model);
+
+        Assert.True(result.PredictionsPageEnabled);
+    }
+
+    [Fact]
     public void ToDTO_NullInput_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(() => PageVisibilityMapper.ToDTO(null!));
     }
 
     [Fact]
-    public void ToModel_MapsAllProperties()
+    public void ToDTO_ThenToModel_RoundTrips()
     {
-        var dto = new PageVisibilityDTO
+        var original = new PageVisibility
         {
-            AllTimeEnabled = false,
-            PollLeadersEnabled = true,
-            SeasonTrendsEnabled = false
+            AllTimeEnabled = true,
+            PollLeadersEnabled = false,
+            SeasonTrendsEnabled = true
         };
 
-        var result = PageVisibilityMapper.ToModel(dto);
+        var dto = PageVisibilityMapper.ToDTO(original);
+        var roundTripped = PageVisibilityMapper.ToModel(dto);
 
-        Assert.False(result.AllTimeEnabled);
-        Assert.True(result.PollLeadersEnabled);
-        Assert.False(result.SeasonTrendsEnabled);
+        Assert.Equal(original.AllTimeEnabled, roundTripped.AllTimeEnabled);
+        Assert.Equal(original.PollLeadersEnabled, roundTripped.PollLeadersEnabled);
+        Assert.Equal(original.SeasonTrendsEnabled, roundTripped.SeasonTrendsEnabled);
     }
 
     [Fact]
@@ -116,27 +130,39 @@ public class PageVisibilityMapperTests
     }
 
     [Fact]
-    public void ToModel_NullInput_ThrowsArgumentNullException()
+    public void ToModel_MapsAllProperties()
     {
-        Assert.Throws<ArgumentNullException>(() => PageVisibilityMapper.ToModel(null!));
+        var dto = new PageVisibilityDTO
+        {
+            AllTimeEnabled = false,
+            PollLeadersEnabled = true,
+            SeasonTrendsEnabled = false
+        };
+
+        var result = PageVisibilityMapper.ToModel(dto);
+
+        Assert.False(result.AllTimeEnabled);
+        Assert.True(result.PollLeadersEnabled);
+        Assert.False(result.SeasonTrendsEnabled);
     }
 
     [Fact]
-    public void ToDTO_ThenToModel_RoundTrips()
+    public void ToModel_MapsPredictionsPageEnabled()
     {
-        var original = new PageVisibility
+        var dto = new PageVisibilityDTO
         {
-            AllTimeEnabled = true,
-            PollLeadersEnabled = false,
-            SeasonTrendsEnabled = true
+            PredictionsPageEnabled = true
         };
 
-        var dto = PageVisibilityMapper.ToDTO(original);
-        var roundTripped = PageVisibilityMapper.ToModel(dto);
+        var result = PageVisibilityMapper.ToModel(dto);
 
-        Assert.Equal(original.AllTimeEnabled, roundTripped.AllTimeEnabled);
-        Assert.Equal(original.PollLeadersEnabled, roundTripped.PollLeadersEnabled);
-        Assert.Equal(original.SeasonTrendsEnabled, roundTripped.SeasonTrendsEnabled);
+        Assert.True(result.PredictionsPageEnabled);
+    }
+
+    [Fact]
+    public void ToModel_NullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => PageVisibilityMapper.ToModel(null!));
     }
 
     [Fact]

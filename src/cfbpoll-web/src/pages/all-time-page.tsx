@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import {
-  AllTimeTable,
   allTimeRankColumn,
   teamNameColumn,
   seasonColumn,
@@ -8,7 +7,8 @@ import {
   rankColumn,
   ratingColumn,
   weightedSOSColumn,
-} from '../components/all-time/all-time-table';
+} from '../components/all-time/all-time-columns';
+import { AllTimeTable } from '../components/all-time/all-time-table';
 import { ErrorAlert } from '../components/error';
 import { CollapsibleSection } from '../components/ui/collapsible-section';
 import { useAllTime } from '../hooks/use-all-time';
@@ -65,3 +65,5 @@ export function AllTimePage() {
     </div>
   );
 }
+
+export default AllTimePage;

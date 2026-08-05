@@ -29,6 +29,12 @@ describe('PersistedSnapshotsSection', () => {
     expect(screen.getByText('No persisted snapshots found.')).toBeInTheDocument();
   });
 
+  it('shows a loading skeleton instead of the empty state while isLoading is true', () => {
+    render(<PersistedSnapshotsSection {...defaultProps} isLoading={true} />);
+
+    expect(screen.queryByText('No persisted snapshots found.')).not.toBeInTheDocument();
+  });
+
   it('groups snapshots by season', () => {
     render(
       <PersistedSnapshotsSection
@@ -105,7 +111,7 @@ describe('PersistedSnapshotsSection', () => {
 
     fireEvent.click(screen.getByText('Publish'));
 
-    expect(onPublish).toHaveBeenCalledWith(2024, 1, 'snapshot');
+    expect(onPublish).toHaveBeenCalledWith(2024, 1);
   });
 
   it('calls onDelete when Delete button is clicked', () => {
@@ -260,5 +266,18 @@ describe('PersistedSnapshotsSection', () => {
     expect(seasonButton).toHaveAttribute('aria-expanded', 'false');
     const controlsId = seasonButton.getAttribute('aria-controls')!;
     expect(document.getElementById(controlsId)).toBeInTheDocument();
+  });
+
+  it('does not show a View button since onView is not passed', () => {
+    render(
+      <PersistedSnapshotsSection
+        {...defaultProps}
+        snapshots={[
+          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+        ]}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'View' })).not.toBeInTheDocument();
   });
 });

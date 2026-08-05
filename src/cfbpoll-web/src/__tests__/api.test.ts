@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchSeasons, fetchWeeks, fetchRankings, fetchConferences, fetchTeamDetail, fetchPageVisibility, fetchPollLeaders } from '../services/api';
+import { fetchSeasons, fetchWeeks, fetchRankings, fetchPredictions, fetchConferences, fetchTeamDetail, fetchPageVisibility, fetchPollLeaders, fetchTrackRecord } from '../services/api';
 
 describe('API service', () => {
   beforeEach(() => {
@@ -27,7 +27,7 @@ describe('API service', () => {
       json: () =>
         Promise.resolve({
           season: 2024,
-          weeks: [{ weekNumber: 1, label: 'Week 1', rankingsPublished: false }],
+          weeks: [{ weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: false }],
         }),
     });
     vi.stubGlobal('fetch', mockFetch);
@@ -56,6 +56,27 @@ describe('API service', () => {
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/v1/seasons/2024/weeks/12/rankings'),
+      undefined
+    );
+  });
+
+  it('constructs correct URL for fetchPredictions', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          resultsPublished: false,
+          season: 2024,
+          week: 12,
+          predictions: [],
+        }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    await fetchPredictions(2024, 12);
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/v1/seasons/2024/weeks/12/predictions'),
       undefined
     );
   });
@@ -132,7 +153,7 @@ describe('API service', () => {
     it('calls correct URL and validates response', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ allTimeEnabled: true, pollLeadersEnabled: false, seasonTrendsEnabled: true }),
+        json: () => Promise.resolve({ allTimeEnabled: true, pollLeadersEnabled: false, predictionsPageEnabled: true, seasonTrendsEnabled: true }),
       });
       vi.stubGlobal('fetch', mockFetch);
 
@@ -251,6 +272,40 @@ describe('API service', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await expect(fetchPollLeaders()).rejects.toThrow('Internal error');
+    });
+  });
+
+  describe('fetchTrackRecord', () => {
+    it('constructs correct URL', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            overallOverUnder: { correct: 0, incorrect: 0, push: 0 },
+            overallSpread: { correct: 0, incorrect: 0, push: 0 },
+            overallWinner: { correct: 0, incorrect: 0, push: 0 },
+            weeks: [],
+          }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await fetchTrackRecord();
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/track-record'),
+        undefined
+      );
+    });
+
+    it('throws on failed fetch', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ message: 'Internal error' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(fetchTrackRecord()).rejects.toThrow('Internal error');
     });
   });
 });

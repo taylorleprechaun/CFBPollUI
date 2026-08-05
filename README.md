@@ -32,9 +32,10 @@ Last Updated 3/9/2026
 - **Historical Data**: Access rankings from 2002 to present
 - **Mobile-Responsive UI**: Collapsible hamburger menu navigation on small screens with viewport-aware chart tooltips
 - **Interactive UI**: Sortable rankings table with team logos and colors
-- **Admin Dashboard**: JWT-authenticated admin panel to calculate, preview, and publish rankings with a two-step draft/publish workflow
+- **Game Predictions**: Generate game predictions with spread and over/under picks using team ratings and betting line data
+- **Admin Dashboard**: JWT-authenticated admin panel to calculate, preview, and publish rankings and predictions with a two-step draft/publish workflow
 - **Excel Export**: Download rankings as Excel spreadsheets with rating breakdowns
-- **SQLite Persistence**: Rankings snapshots stored in SQLite for fast retrieval without redundant API calls
+- **SQLite Persistence**: Rankings and predictions snapshots stored in SQLite for fast retrieval without redundant API calls
 - **REST API**: Full API with Swagger documentation
 - **Caching**: SQLite + GZip persistent cache with per-component storage to reduce external API calls
 
@@ -85,6 +86,8 @@ AdminController                    AdminModule
                                      -> IExcelExportModule
                                      -> IPersistentCache
                                      -> IPollLeadersModule
+                                     -> IPredictionCalculatorModule
+                                     -> IPredictionsModule
                                      -> IRankingsModule
                                      -> IRatingModule
                                      -> ISeasonTrendsModule
@@ -124,13 +127,17 @@ SeasonsController
   -> IRankingsModule
   -> ISeasonModule
 
+                                   PredictionsModule
+                                     -> IPredictionsData              PredictionsData
+                                                                       -> SQLite
+
 TeamsController                    TeamsModule
   -> ITeamsModule                    -> ICFBDataService
                                      -> IRankingsModule
                                      -> IRatingModule
 ```
 
-Only `RankingsModule` has a direct dependency on `IRankingsData`, only `CacheModule` has a direct dependency on `ICacheData`, and only `PageVisibilityModule` has a direct dependency on `IPageVisibilityData`. Controllers never reference data-layer interfaces.
+Only `RankingsModule` has a direct dependency on `IRankingsData`, only `PredictionsModule` has a direct dependency on `IPredictionsData`, only `CacheModule` has a direct dependency on `ICacheData`, and only `PageVisibilityModule` has a direct dependency on `IPageVisibilityData`. Controllers never reference data-layer interfaces.
 
 ## Prerequisites
 
@@ -179,9 +186,9 @@ cd src/cfbpoll-web
 npm install
 ```
 
-### 4. Implement Rating Module
+### 4. Implement Proprietary Modules
 
-The rating module (`src/CFBPoll.Core/Modules/RatingModule.cs`) is not included in the repository. You'll need to create your own implementation of `IRatingModule`:
+The rating module (`src/CFBPoll.Core/Modules/RatingModule.cs`) and prediction calculator module (`src/CFBPoll.Core/Modules/PredictionCalculatorModule.cs`) are not included in the repository. You'll need to create your own implementations:
 
 ```csharp
 using CFBPoll.Core.Interfaces;
@@ -194,6 +201,18 @@ public class RatingModule : IRatingModule
     public IDictionary<string, RatingDetails> RateTeams(SeasonData seasonData)
     {
         // Your rating algorithm here
+    }
+}
+
+public class PredictionCalculatorModule : IPredictionCalculatorModule
+{
+    public Task<IEnumerable<GamePrediction>> GeneratePredictionsAsync(
+        SeasonData seasonData,
+        IDictionary<string, RatingDetails> ratings,
+        IEnumerable<ScheduleGame> games,
+        IEnumerable<BettingLine> bettingLines)
+    {
+        // Your prediction algorithm here
     }
 }
 ```
@@ -249,41 +268,46 @@ The frontend runs at `http://localhost:5173`.
 | `DELETE /api/v1/admin/seasons/{season}/weeks/{week}/snapshot` | Delete a snapshot |
 | `GET /api/v1/admin/snapshots` | List all persisted snapshots |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/snapshot/export` | Download rankings as Excel |
+| `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Retrieve persisted predictions for a season/week without recalculating |
+| `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Calculate predictions for a season/week and save as draft |
+| `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Update a prediction (currently supports publishing) |
+| `DELETE /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Delete a prediction |
+| `GET /api/v1/admin/predictions` | List all persisted prediction summaries |
 | `PUT /api/v1/page-visibility` | Update page visibility settings |
 
 ## Testing
 
-The project includes 1,280 unit and integration tests across backend and frontend.
+The project includes 1,992 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (646 tests)
+# Backend tests (871 tests)
 dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (634 tests)
+# Frontend tests (1,121 tests)
 cd src/cfbpoll-web
 npm test
 ```
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-646-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-634-blue)
-![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-871-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1121-blue)
+![Core Coverage](https://img.shields.io/badge/Core_Coverage-98%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
-![Web Coverage](https://img.shields.io/badge/Web_Coverage-98%25-brightgreen)
+![Web Coverage](https://img.shields.io/badge/Web_Coverage-99%25-brightgreen)
 
 | Project | Line Coverage | Branch Coverage |
 |---------|---------------|-----------------|
-| CFBPoll.Core | 99% | 92% |
-| CFBPoll.API | 100% | 96% |
-| cfbpoll-web | 98% | 91% |
+| CFBPoll.Core | 98% | 94% |
+| CFBPoll.API | 100% | 97% |
+| cfbpoll-web | 99% | 95% |
 
 **Excluded from coverage:**
-- `RatingModule` - Proprietary rating algorithm, not included in the repository. Tests are maintained locally.
+- `RatingModule` and `PredictionCalculatorModule` - Proprietary algorithms, not included in the repository. Tests are maintained locally.
 - `CFBDataService` - Makes HTTP calls to the external College Football Data API. Better suited for integration tests.
 - `Program.cs` - ASP.NET Core startup configuration code.

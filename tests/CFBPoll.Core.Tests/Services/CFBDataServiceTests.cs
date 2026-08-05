@@ -14,7 +14,7 @@ public class CFBDataServiceTests
     [Fact]
     public void Constructor_WithValidApiKey_CreatesInstance()
     {
-        var service = new CFBDataService(_httpClient, "test-api-key", 2002, _logger);
+        var service = new CFBDataService(_httpClient, "test-api-key", 2002, "Bovada", _logger);
 
         Assert.NotNull(service);
     }
@@ -22,7 +22,7 @@ public class CFBDataServiceTests
     [Fact]
     public void Constructor_WithMinimumYear_CreatesInstance()
     {
-        var service = new CFBDataService(_httpClient, "test-api-key", 2010, _logger);
+        var service = new CFBDataService(_httpClient, "test-api-key", 2010, "Bovada", _logger);
 
         Assert.NotNull(service);
     }
@@ -30,7 +30,7 @@ public class CFBDataServiceTests
     [Fact]
     public void Constructor_WithNullLogger_ThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>(() => new CFBDataService(_httpClient, "test-api-key", 2002, null!));
+        Assert.Throws<ArgumentNullException>(() => new CFBDataService(_httpClient, "test-api-key", 2002, "Bovada", null!));
     }
 }
 

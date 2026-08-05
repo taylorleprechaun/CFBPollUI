@@ -12,7 +12,7 @@ afterEach(() => {
 
 describe('useCountUp', () => {
   it('returns 0 when enabled is false', () => {
-    var { result } = renderHook(() =>
+    const { result } = renderHook(() =>
       useCountUp({ end: 100, enabled: false }),
     );
 
@@ -22,7 +22,7 @@ describe('useCountUp', () => {
   it('returns end value immediately when prefers-reduced-motion is set', () => {
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: true }));
 
-    var { result } = renderHook(() =>
+    const { result } = renderHook(() =>
       useCountUp({ end: 42, enabled: true }),
     );
 
@@ -30,14 +30,14 @@ describe('useCountUp', () => {
   });
 
   it('reaches end value after animation completes', () => {
-    var rafCallbacks: FrameRequestCallback[] = [];
+    const rafCallbacks: FrameRequestCallback[] = [];
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
       rafCallbacks.push(cb);
       return rafCallbacks.length;
     });
     vi.stubGlobal('cancelAnimationFrame', vi.fn());
 
-    var { result } = renderHook(() =>
+    const { result } = renderHook(() =>
       useCountUp({ end: 100, duration: 1000, enabled: true }),
     );
 
@@ -55,11 +55,11 @@ describe('useCountUp', () => {
   });
 
   it('cancels animation frame on cleanup', () => {
-    var mockCancel = vi.fn();
+    const mockCancel = vi.fn();
     vi.stubGlobal('requestAnimationFrame', vi.fn().mockReturnValue(42));
     vi.stubGlobal('cancelAnimationFrame', mockCancel);
 
-    var { unmount } = renderHook(() =>
+    const { unmount } = renderHook(() =>
       useCountUp({ end: 100, enabled: true }),
     );
 
@@ -72,7 +72,7 @@ describe('useCountUp', () => {
     vi.stubGlobal('requestAnimationFrame', vi.fn().mockReturnValue(1));
     vi.stubGlobal('cancelAnimationFrame', vi.fn());
 
-    var { result, rerender } = renderHook(
+    const { result, rerender } = renderHook(
       ({ enabled }) => useCountUp({ end: 100, enabled }),
       { initialProps: { enabled: true } },
     );

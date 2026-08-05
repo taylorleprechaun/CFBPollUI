@@ -1,11 +1,11 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../../contexts/auth-context';
+import { useAuth } from '../../hooks/use-auth';
 
 export function RequireGuest() {
   const { isAuthenticated } = useAuth();
 
   if (isAuthenticated) {
-    return <Navigate to="/admin" replace />;
+    return <Navigate to="/admin/snapshots" replace />;
   }
 
   return <Outlet />;

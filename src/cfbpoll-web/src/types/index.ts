@@ -20,3 +20,10 @@ export type {
   Week,
   WeeksResponse,
 } from '../schemas';
+
+export type {
+  CalculatePredictionsResponse,
+  GamePrediction,
+  PredictionsResponse,
+  PredictionsSummary,
+} from '../schemas/admin';

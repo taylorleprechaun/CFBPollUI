@@ -1,4 +1,4 @@
-import { useTheme } from '../../contexts/theme-context';
+import { useTheme } from '../../hooks/use-theme';
 import { MoonIcon, SunIcon } from './icons';
 
 export function ThemeToggle() {

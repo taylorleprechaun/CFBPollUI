@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { useTheme } from '../contexts/theme-context';
+import { useTheme } from './use-theme';
 
 interface ChartColors {
   axis: string;

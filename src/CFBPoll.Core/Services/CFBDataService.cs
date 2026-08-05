@@ -15,15 +15,41 @@ public class CFBDataService : ICFBDataService
     private readonly ApiClient _client;
     private readonly ILogger<CFBDataService> _logger;
     private readonly int _minimumYear;
+    private readonly string _preferredBettingProvider;
     private readonly StringComparison _scoic = StringComparison.OrdinalIgnoreCase;
 
-    public CFBDataService(HttpClient httpClient, string apiKey, int minimumYear, ILogger<CFBDataService> logger)
+    public CFBDataService(HttpClient httpClient, string apiKey, int minimumYear, string preferredBettingProvider, ILogger<CFBDataService> logger)
     {
         _minimumYear = minimumYear;
+        _preferredBettingProvider = preferredBettingProvider;
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         var authProvider = new BaseBearerTokenAuthenticationProvider(new StaticAccessTokenProvider(apiKey));
         var requestAdapter = new HttpClientRequestAdapter(authProvider, httpClient: httpClient);
         _client = new ApiClient(requestAdapter);
+    }
+
+    public async Task<IEnumerable<BettingLine>> GetBettingLinesAsync(int season, int week)
+    {
+        try
+        {
+            var response = await _client.Lines.GetAsync(config =>
+            {
+                config.QueryParameters.Year = season;
+                config.QueryParameters.Week = week;
+            });
+
+            if (response is null)
+                return [];
+
+            return response
+                .Where(g => !string.IsNullOrEmpty(g.HomeTeam) && !string.IsNullOrEmpty(g.AwayTeam))
+                .Select(MapBettingLine);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to fetch betting lines for season {Season}, week {Week}", season, week);
+            return [];
+        }
     }
 
     public async Task<IEnumerable<AdvancedGameStats>> GetAdvancedGameStatsAsync(int season, string seasonType)
@@ -511,6 +537,23 @@ public class CFBDataService : ICFBDataService
             StandardDownsSuccessRate = standardDownsSuccessRate,
             StuffRate = stuffRate,
             SuccessRate = successRate
+        };
+    }
+
+    private BettingLine MapBettingLine(ApiModels.BettingGame g)
+    {
+        var preferredLine = g.Lines?.FirstOrDefault(l =>
+            string.Equals(l.Provider, _preferredBettingProvider, _scoic));
+
+        return new BettingLine
+        {
+            AwayTeam = g.AwayTeam!,
+            GameID = g.Id,
+            HomeTeam = g.HomeTeam!,
+            OverUnderOpen = preferredLine?.OverUnderOpen
+                ?? g.Lines?.FirstOrDefault(l => l.OverUnderOpen.HasValue)?.OverUnderOpen,
+            SpreadOpen = preferredLine?.SpreadOpen
+                ?? g.Lines?.FirstOrDefault(l => l.SpreadOpen.HasValue)?.SpreadOpen
         };
     }
 

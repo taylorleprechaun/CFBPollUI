@@ -9,11 +9,21 @@ import {
 } from '../schemas';
 
 import {
+  AdminPredictionsResponseSchema,
+  CalculatePredictionsResponseSchema,
   CalculateResponseSchema,
+  GradePredictionsResponseSchema,
   LoginResponseSchema,
+  PredictionsSummariesResponseSchema,
+  RefreshCacheResponseSchema,
   SnapshotsResponseSchema,
+  type AdminPredictionsResponse,
+  type CalculatePredictionsResponse,
   type CalculateResponse,
+  type GradePredictionsResponse,
   type LoginResponse,
+  type PredictionsSummary,
+  type RefreshCacheResponse,
   type Snapshot,
 } from '../schemas/admin';
 
@@ -99,6 +109,105 @@ export async function downloadExport(
 
   const blob = await response.blob();
   triggerBlobDownload(blob, `Rankings_${season}_Week${week}.xlsx`);
+}
+
+export async function calculatePredictions(
+  token: string,
+  season: number,
+  week: number
+): Promise<CalculatePredictionsResponse> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction`,
+    withAuth(token, { method: 'POST' })
+  );
+  return parseResponse(response, CalculatePredictionsResponseSchema);
+}
+
+export async function fetchPrediction(
+  token: string,
+  season: number,
+  week: number
+): Promise<AdminPredictionsResponse> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction`,
+    withAuth(token)
+  );
+  return parseResponse(response, AdminPredictionsResponseSchema);
+}
+
+export async function deletePredictions(
+  token: string,
+  season: number,
+  week: number
+): Promise<void> {
+  await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction`,
+    withAuth(token, { method: 'DELETE' })
+  );
+}
+
+export async function fetchPredictionsSummaries(
+  token: string
+): Promise<PredictionsSummary[]> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/predictions`,
+    withAuth(token)
+  );
+  return parseResponse(response, PredictionsSummariesResponseSchema);
+}
+
+export async function publishPredictions(
+  token: string,
+  season: number,
+  week: number
+): Promise<void> {
+  await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction`,
+    withAuth(token, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isPublished: true }),
+    })
+  );
+}
+
+export async function gradePredictions(
+  token: string,
+  season: number,
+  week: number
+): Promise<GradePredictionsResponse> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction/grade`,
+    withAuth(token, { method: 'POST' })
+  );
+  return parseResponse(response, GradePredictionsResponseSchema);
+}
+
+export async function publishGradedResults(
+  token: string,
+  season: number,
+  week: number
+): Promise<void> {
+  await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction/results`,
+    withAuth(token, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isPublished: true }),
+    })
+  );
+}
+
+export async function refreshCache(
+  token: string,
+  season: number,
+  week: number
+): Promise<RefreshCacheResponse> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/cache`,
+    withAuth(token, { method: 'POST' })
+  );
+  return parseResponse(response, RefreshCacheResponseSchema);
 }
 
 export async function updatePageVisibility(

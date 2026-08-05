@@ -1,5 +1,14 @@
-import { useContext } from 'react';
-import { PageVisibilityContext, type PageVisibilityContextValue } from '../contexts/page-visibility-context';
+import { createContext, useContext } from 'react';
+
+export interface PageVisibilityContextValue {
+  allTimeEnabled: boolean;
+  isLoading: boolean;
+  pollLeadersEnabled: boolean;
+  predictionsPageEnabled: boolean;
+  seasonTrendsEnabled: boolean;
+}
+
+export const PageVisibilityContext = createContext<PageVisibilityContextValue | null>(null);
 
 export function usePageVisibility(): PageVisibilityContextValue {
   const context = useContext(PageVisibilityContext);

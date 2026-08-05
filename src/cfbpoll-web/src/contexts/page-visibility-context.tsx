@@ -1,17 +1,9 @@
-import { createContext, useMemo, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import { fetchPageVisibility } from '../services/api';
 import { STALE_TIME_PAGE_VISIBILITY } from '../lib/query-config';
-
-export interface PageVisibilityContextValue {
-  allTimeEnabled: boolean;
-  isLoading: boolean;
-  pollLeadersEnabled: boolean;
-  seasonTrendsEnabled: boolean;
-}
-
-export const PageVisibilityContext = createContext<PageVisibilityContextValue | null>(null);
+import { PageVisibilityContext, type PageVisibilityContextValue } from '../hooks/use-page-visibility';
 
 export function PageVisibilityProvider({ children }: { children: ReactNode }) {
   const { data, isLoading } = useQuery({
@@ -24,6 +16,7 @@ export function PageVisibilityProvider({ children }: { children: ReactNode }) {
     allTimeEnabled: data?.allTimeEnabled ?? true,
     isLoading,
     pollLeadersEnabled: data?.pollLeadersEnabled ?? true,
+    predictionsPageEnabled: data?.predictionsPageEnabled ?? true,
     seasonTrendsEnabled: data?.seasonTrendsEnabled ?? true,
   }), [data, isLoading]);
 

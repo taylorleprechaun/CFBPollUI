@@ -106,3 +106,5 @@ export function PollLeadersPage() {
     </div>
   );
 }
+
+export default PollLeadersPage;

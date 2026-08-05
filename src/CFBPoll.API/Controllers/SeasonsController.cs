@@ -14,17 +14,20 @@ public class SeasonsController : ControllerBase
     private readonly ICFBDataService _dataService;
     private readonly ILogger<SeasonsController> _logger;
     private readonly HistoricalDataOptions _options;
+    private readonly IPredictionsModule _predictionsModule;
     private readonly IRankingsModule _rankingsModule;
     private readonly ISeasonModule _seasonModule;
 
     public SeasonsController(
         ICFBDataService dataService,
+        IPredictionsModule predictionsModule,
         IRankingsModule rankingsModule,
         ISeasonModule seasonModule,
         IOptions<HistoricalDataOptions> options,
         ILogger<SeasonsController> logger)
     {
         _dataService = dataService ?? throw new ArgumentNullException(nameof(dataService));
+        _predictionsModule = predictionsModule ?? throw new ArgumentNullException(nameof(predictionsModule));
         _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
         _seasonModule = seasonModule ?? throw new ArgumentNullException(nameof(seasonModule));
         _options = (options ?? throw new ArgumentNullException(nameof(options))).Value;
@@ -58,11 +61,13 @@ public class SeasonsController : ControllerBase
 
         var calendarTask = _dataService.GetCalendarAsync(season);
         var publishedWeekNumbersTask = _rankingsModule.GetPublishedWeekNumbersAsync(season);
+        var publishedPredictionWeekNumbersTask = _predictionsModule.GetPublishedWeekNumbersAsync(season);
 
-        await Task.WhenAll(calendarTask, publishedWeekNumbersTask);
+        await Task.WhenAll(calendarTask, publishedWeekNumbersTask, publishedPredictionWeekNumbersTask);
 
         var calendar = await calendarTask;
         var publishedWeekNumbers = await publishedWeekNumbersTask;
+        var publishedPredictionWeekNumbers = await publishedPredictionWeekNumbersTask;
 
         var calendarList = calendar.ToList();
 
@@ -71,7 +76,8 @@ public class SeasonsController : ControllerBase
 
         var weeks = _seasonModule.GetWeekLabels(calendarList);
         IReadOnlySet<int> publishedSet = publishedWeekNumbers.ToHashSet();
+        IReadOnlySet<int> publishedPredictionSet = publishedPredictionWeekNumbers.ToHashSet();
 
-        return Ok(WeekMapper.ToResponseDTO(season, weeks, publishedSet));
+        return Ok(WeekMapper.ToResponseDTO(season, weeks, publishedSet, publishedPredictionSet));
     }
 }

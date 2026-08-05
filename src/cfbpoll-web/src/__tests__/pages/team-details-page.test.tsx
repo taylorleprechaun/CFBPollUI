@@ -7,7 +7,7 @@ import { TeamDetailsPage } from '../../pages/team-details-page';
 const mockSetSelectedSeason = vi.fn();
 let mockSelectedSeason: number | null = 2024;
 
-vi.mock('../../contexts/season-context', () => ({
+vi.mock('../../hooks/use-season', () => ({
   useSeason: () => ({
     seasons: [2024, 2023, 2022],
     seasonsLoading: false,

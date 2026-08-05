@@ -8,6 +8,14 @@ namespace CFBPoll.Core.Interfaces;
 public interface ICFBDataService
 {
     /// <summary>
+    /// Retrieves betting lines for a given season and week.
+    /// </summary>
+    /// <param name="season">The season year.</param>
+    /// <param name="week">The week number.</param>
+    /// <returns>Collection of betting lines with opening spreads and over/unders.</returns>
+    Task<IEnumerable<BettingLine>> GetBettingLinesAsync(int season, int week);
+
+    /// <summary>
     /// Retrieves season data including all FBS teams and games up to the specified week.
     /// </summary>
     /// <param name="season">The season year to retrieve data for.</param>
