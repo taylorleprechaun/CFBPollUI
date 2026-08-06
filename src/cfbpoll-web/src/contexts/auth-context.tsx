@@ -6,21 +6,6 @@ import { loginUser } from '../services/admin-api';
 const TOKEN_KEY = 'cfbpoll_token';
 const EXPIRY_KEY = 'cfbpoll_token_expiry';
 
-function getStoredToken(): { expiryMs: number; token: string; } | null {
-  const stored = localStorage.getItem(TOKEN_KEY);
-  const expiry = localStorage.getItem(EXPIRY_KEY);
-  if (!stored || !expiry) return null;
-
-  const expiryMs = Number(expiry);
-  if (Date.now() >= expiryMs) {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(EXPIRY_KEY);
-    return null;
-  }
-
-  return { token: stored, expiryMs };
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => {
     const stored = getStoredToken();
@@ -77,4 +62,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
+}
+
+function getStoredToken(): { expiryMs: number; token: string; } | null {
+  const stored = localStorage.getItem(TOKEN_KEY);
+  const expiry = localStorage.getItem(EXPIRY_KEY);
+  if (!stored || !expiry) return null;
+
+  const expiryMs = Number(expiry);
+  if (Date.now() >= expiryMs) {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(EXPIRY_KEY);
+    return null;
+  }
+
+  return { token: stored, expiryMs };
 }

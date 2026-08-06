@@ -5,19 +5,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { useAdminPageState } from '../../hooks/use-admin-page-state';
 
-function fakeMutation<TData, TVariables>(overrides: Partial<UseMutationResult<TData, Error, TVariables>> = {}) {
-  return {
-    isPending: false,
-    mutateAsync: vi.fn(),
-    ...overrides,
-  } as unknown as UseMutationResult<TData, Error, TVariables>;
-}
-
-interface CalcResult {
-  season: number;
-  week: number;
-}
-
 function baseOptions() {
   return {
     calculateMutation: fakeMutation<CalcResult, { season: number; week: number }>(),
@@ -32,6 +19,19 @@ function baseOptions() {
     selectedSeason: 2024,
     selectedWeek: 5,
   };
+}
+
+interface CalcResult {
+  season: number;
+  week: number;
+}
+
+function fakeMutation<TData, TVariables>(overrides: Partial<UseMutationResult<TData, Error, TVariables>> = {}) {
+  return {
+    isPending: false,
+    mutateAsync: vi.fn(),
+    ...overrides,
+  } as unknown as UseMutationResult<TData, Error, TVariables>;
 }
 
 describe('useAdminPageState - refresh cache', () => {

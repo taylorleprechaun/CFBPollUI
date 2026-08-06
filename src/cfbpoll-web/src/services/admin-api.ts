@@ -25,26 +25,16 @@ import {
   SnapshotsResponseSchema,
 } from '../schemas/admin';
 
-function withAuth(token: string, options: RequestInit = {}): RequestInit {
-  return {
-    ...options,
-    headers: {
-      ...options.headers,
-      Authorization: `Bearer ${token}`,
-    },
-  };
-}
-
-export async function loginUser(
-  username: string,
-  password: string
-): Promise<LoginResponse> {
-  const response = await safeFetch(`${API_BASE_URL}/api/v1/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
-  });
-  return parseResponse(response, LoginResponseSchema);
+export async function calculatePredictions(
+  token: string,
+  season: number,
+  week: number
+): Promise<CalculatePredictionsResponse> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction`,
+    withAuth(token, { method: 'POST' })
+  );
+  return parseResponse(response, CalculatePredictionsResponseSchema);
 }
 
 export async function calculateRankings(
@@ -59,18 +49,14 @@ export async function calculateRankings(
   return parseResponse(response, CalculateResponseSchema);
 }
 
-export async function publishSnapshot(
+export async function deletePredictions(
   token: string,
   season: number,
   week: number
 ): Promise<void> {
   await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/snapshot`,
-    withAuth(token, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isPublished: true }),
-    })
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction`,
+    withAuth(token, { method: 'DELETE' })
   );
 }
 
@@ -83,16 +69,6 @@ export async function deleteSnapshot(
     `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/snapshot`,
     withAuth(token, { method: 'DELETE' })
   );
-}
-
-export async function fetchSnapshots(
-  token: string
-): Promise<Snapshot[]> {
-  const response = await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/snapshots`,
-    withAuth(token)
-  );
-  return parseResponse(response, SnapshotsResponseSchema);
 }
 
 export async function downloadExport(
@@ -109,18 +85,6 @@ export async function downloadExport(
   triggerBlobDownload(blob, `Rankings_${season}_Week${week}.xlsx`);
 }
 
-export async function calculatePredictions(
-  token: string,
-  season: number,
-  week: number
-): Promise<CalculatePredictionsResponse> {
-  const response = await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction`,
-    withAuth(token, { method: 'POST' })
-  );
-  return parseResponse(response, CalculatePredictionsResponseSchema);
-}
-
 export async function fetchPrediction(
   token: string,
   season: number,
@@ -133,17 +97,6 @@ export async function fetchPrediction(
   return parseResponse(response, AdminPredictionsResponseSchema);
 }
 
-export async function deletePredictions(
-  token: string,
-  season: number,
-  week: number
-): Promise<void> {
-  await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction`,
-    withAuth(token, { method: 'DELETE' })
-  );
-}
-
 export async function fetchPredictionsSummaries(
   token: string
 ): Promise<PredictionsSummary[]> {
@@ -152,6 +105,55 @@ export async function fetchPredictionsSummaries(
     withAuth(token)
   );
   return parseResponse(response, PredictionsSummariesResponseSchema);
+}
+
+export async function fetchSnapshots(
+  token: string
+): Promise<Snapshot[]> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/snapshots`,
+    withAuth(token)
+  );
+  return parseResponse(response, SnapshotsResponseSchema);
+}
+
+export async function gradePredictions(
+  token: string,
+  season: number,
+  week: number
+): Promise<GradePredictionsResponse> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction/grade`,
+    withAuth(token, { method: 'POST' })
+  );
+  return parseResponse(response, GradePredictionsResponseSchema);
+}
+
+export async function loginUser(
+  username: string,
+  password: string
+): Promise<LoginResponse> {
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+  return parseResponse(response, LoginResponseSchema);
+}
+
+export async function publishGradedResults(
+  token: string,
+  season: number,
+  week: number
+): Promise<void> {
+  await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction/results`,
+    withAuth(token, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isPublished: true }),
+    })
+  );
 }
 
 export async function publishPredictions(
@@ -169,25 +171,13 @@ export async function publishPredictions(
   );
 }
 
-export async function gradePredictions(
-  token: string,
-  season: number,
-  week: number
-): Promise<GradePredictionsResponse> {
-  const response = await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction/grade`,
-    withAuth(token, { method: 'POST' })
-  );
-  return parseResponse(response, GradePredictionsResponseSchema);
-}
-
-export async function publishGradedResults(
+export async function publishSnapshot(
   token: string,
   season: number,
   week: number
 ): Promise<void> {
   await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction/results`,
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/snapshot`,
     withAuth(token, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -221,4 +211,14 @@ export async function updatePageVisibility(
     })
   );
   return parseResponse(response, PageVisibilitySchema);
+}
+
+function withAuth(token: string, options: RequestInit = {}): RequestInit {
+  return {
+    ...options,
+    headers: {
+      ...options.headers,
+      Authorization: `Bearer ${token}`,
+    },
+  };
 }

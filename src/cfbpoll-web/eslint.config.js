@@ -31,6 +31,10 @@ export default defineConfig([
       'perfectionist/sort-interfaces': ['error', { type: 'natural', order: 'asc' }],
       'perfectionist/sort-object-types': ['error', { type: 'natural', order: 'asc' }],
       'perfectionist/sort-classes': ['error', { type: 'natural', order: 'asc' }],
+      'perfectionist/sort-modules': [
+        'error',
+        { type: 'natural', order: 'asc', groups: ['export-function', 'function', 'export-class', 'class'] },
+      ],
     },
   },
 ])

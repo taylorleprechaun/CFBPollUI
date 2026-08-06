@@ -10,6 +10,22 @@ interface Props {
   fallback?: ReactNode;
 }
 
+export function ErrorBoundary({ children, fallback }: Props) {
+  if (fallback) {
+    return (
+      <ReactErrorBoundary fallbackRender={() => <>{fallback}</>} onError={handleError}>
+        {children}
+      </ReactErrorBoundary>
+    );
+  }
+
+  return (
+    <ReactErrorBoundary FallbackComponent={DefaultFallback} onError={handleError}>
+      {children}
+    </ReactErrorBoundary>
+  );
+}
+
 function DefaultFallback({ error, resetErrorBoundary }: FallbackProps) {
   const message = toErrorMessage(error, 'An unexpected error occurred');
 
@@ -38,20 +54,4 @@ function DefaultFallback({ error, resetErrorBoundary }: FallbackProps) {
 
 function handleError(error: unknown, info: { componentStack?: string | null }) {
   console.error('ErrorBoundary caught an error:', error, info);
-}
-
-export function ErrorBoundary({ children, fallback }: Props) {
-  if (fallback) {
-    return (
-      <ReactErrorBoundary fallbackRender={() => <>{fallback}</>} onError={handleError}>
-        {children}
-      </ReactErrorBoundary>
-    );
-  }
-
-  return (
-    <ReactErrorBoundary FallbackComponent={DefaultFallback} onError={handleError}>
-      {children}
-    </ReactErrorBoundary>
-  );
 }

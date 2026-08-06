@@ -32,10 +32,6 @@ interface NavGroup {
   label: string;
 }
 
-function isGroupActive(pathname: string, items: NavItem[]): boolean {
-  return items.some((item) => isActiveLink(pathname, item.to));
-}
-
 export function Layout() {
   const { isAuthenticated } = useAuth();
   const { allTimeEnabled, pollLeadersEnabled, predictionsPageEnabled, seasonTrendsEnabled } = usePageVisibility();
@@ -257,4 +253,8 @@ export function Layout() {
       </footer>
     </div>
   );
+}
+
+function isGroupActive(pathname: string, items: NavItem[]): boolean {
+  return items.some((item) => isActiveLink(pathname, item.to));
 }

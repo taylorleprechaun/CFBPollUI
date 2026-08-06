@@ -12,20 +12,6 @@ vi.mock('../../hooks/use-seasons', () => ({
 
 import { useSeasons } from '../../hooks/use-seasons';
 
-function TestConsumer() {
-  const { seasons, seasonsLoading, seasonsError, selectedSeason, setSelectedSeason } = useSeason();
-
-  return (
-    <div>
-      <span data-testid="seasons">{JSON.stringify(seasons)}</span>
-      <span data-testid="loading">{seasonsLoading ? 'loading' : 'ready'}</span>
-      <span data-testid="error">{seasonsError?.message ?? 'no-error'}</span>
-      <span data-testid="selected">{selectedSeason ?? 'none'}</span>
-      <button onClick={() => setSelectedSeason(2023)}>Set 2023</button>
-    </div>
-  );
-}
-
 function renderWithProvider() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -39,6 +25,20 @@ function renderWithProvider() {
         </SeasonProvider>
       </MemoryRouter>
     </QueryClientProvider>
+  );
+}
+
+function TestConsumer() {
+  const { seasons, seasonsLoading, seasonsError, selectedSeason, setSelectedSeason } = useSeason();
+
+  return (
+    <div>
+      <span data-testid="seasons">{JSON.stringify(seasons)}</span>
+      <span data-testid="loading">{seasonsLoading ? 'loading' : 'ready'}</span>
+      <span data-testid="error">{seasonsError?.message ?? 'no-error'}</span>
+      <span data-testid="selected">{selectedSeason ?? 'none'}</span>
+      <button onClick={() => setSelectedSeason(2023)}>Set 2023</button>
+    </div>
   );
 }
 

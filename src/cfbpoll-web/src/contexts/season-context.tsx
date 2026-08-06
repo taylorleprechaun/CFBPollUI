@@ -5,17 +5,6 @@ import { useSeasons } from '../hooks/use-seasons';
 
 const STORAGE_KEY = 'cfbpoll_selected_season';
 
-function readStoredSeason(): number | null {
-  try {
-    const stored = sessionStorage.getItem(STORAGE_KEY);
-    if (!stored) return null;
-    const parsed = Number(stored);
-    return Number.isNaN(parsed) ? null : parsed;
-  } catch {
-    return null;
-  }
-}
-
 export function SeasonProvider({ children }: { children: ReactNode }) {
   const {
     data: seasonsData,
@@ -49,4 +38,15 @@ export function SeasonProvider({ children }: { children: ReactNode }) {
       {children}
     </SeasonContext.Provider>
   );
+}
+
+function readStoredSeason(): number | null {
+  try {
+    const stored = sessionStorage.getItem(STORAGE_KEY);
+    if (!stored) return null;
+    const parsed = Number(stored);
+    return Number.isNaN(parsed) ? null : parsed;
+  } catch {
+    return null;
+  }
 }

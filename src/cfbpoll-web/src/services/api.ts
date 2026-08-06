@@ -26,35 +26,9 @@ import {
   WeeksResponseSchema,
 } from '../schemas';
 
-export async function fetchSeasons(): Promise<SeasonsResponse> {
-  const response = await safeFetch(`${API_BASE_URL}/api/v1/seasons`);
-  return parseResponse(response, SeasonsResponseSchema);
-}
-
-export async function fetchWeeks(season: number): Promise<WeeksResponse> {
-  const response = await safeFetch(`${API_BASE_URL}/api/v1/seasons/${season}/weeks`);
-  return parseResponse(response, WeeksResponseSchema);
-}
-
-export async function fetchPredictionSeasons(): Promise<SeasonsResponse> {
-  const response = await safeFetch(`${API_BASE_URL}/api/v1/predictions/seasons`);
-  return parseResponse(response, SeasonsResponseSchema);
-}
-
-export async function fetchRankings(
-  season: number,
-  week: number
-): Promise<RankingsResponse> {
-  const response = await safeFetch(`${API_BASE_URL}/api/v1/seasons/${season}/weeks/${week}/rankings`);
-  return parseResponse(response, RankingsResponseSchema);
-}
-
-export async function fetchPredictions(
-  season: number,
-  week: number
-): Promise<PredictionsPublicResponse> {
-  const response = await safeFetch(`${API_BASE_URL}/api/v1/seasons/${season}/weeks/${week}/predictions`);
-  return parseResponse(response, PredictionsPublicResponseSchema);
+export async function fetchAllTimeRankings(): Promise<AllTimeResponse> {
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/all-time`);
+  return parseResponse(response, AllTimeResponseSchema);
 }
 
 export async function fetchConferences(): Promise<ConferencesResponse> {
@@ -62,30 +36,9 @@ export async function fetchConferences(): Promise<ConferencesResponse> {
   return parseResponse(response, ConferencesResponseSchema);
 }
 
-export async function fetchAllTimeRankings(): Promise<AllTimeResponse> {
-  const response = await safeFetch(`${API_BASE_URL}/api/v1/all-time`);
-  return parseResponse(response, AllTimeResponseSchema);
-}
-
-export async function fetchTeamDetail(
-  season: number,
-  week: number,
-  teamName: string
-): Promise<TeamDetailResponse> {
-  const response = await safeFetch(
-    `${API_BASE_URL}/api/v1/teams/${encodeURIComponent(teamName)}?season=${season}&week=${week}`
-  );
-  return parseResponse(response, TeamDetailResponseSchema);
-}
-
 export async function fetchPageVisibility(): Promise<PageVisibility> {
   const response = await safeFetch(`${API_BASE_URL}/api/v1/page-visibility`);
   return parseResponse(response, PageVisibilitySchema);
-}
-
-export async function fetchSeasonTrends(season: number): Promise<SeasonTrendsResponse> {
-  const response = await safeFetch(`${API_BASE_URL}/api/v1/seasons/${season}/trends`);
-  return parseResponse(response, SeasonTrendsResponseSchema);
 }
 
 export async function fetchPollLeaders(
@@ -101,7 +54,54 @@ export async function fetchPollLeaders(
   return parseResponse(response, PollLeadersResponseSchema);
 }
 
+export async function fetchPredictions(
+  season: number,
+  week: number
+): Promise<PredictionsPublicResponse> {
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/seasons/${season}/weeks/${week}/predictions`);
+  return parseResponse(response, PredictionsPublicResponseSchema);
+}
+
+export async function fetchPredictionSeasons(): Promise<SeasonsResponse> {
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/predictions/seasons`);
+  return parseResponse(response, SeasonsResponseSchema);
+}
+
+export async function fetchRankings(
+  season: number,
+  week: number
+): Promise<RankingsResponse> {
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/seasons/${season}/weeks/${week}/rankings`);
+  return parseResponse(response, RankingsResponseSchema);
+}
+
+export async function fetchSeasons(): Promise<SeasonsResponse> {
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/seasons`);
+  return parseResponse(response, SeasonsResponseSchema);
+}
+
+export async function fetchSeasonTrends(season: number): Promise<SeasonTrendsResponse> {
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/seasons/${season}/trends`);
+  return parseResponse(response, SeasonTrendsResponseSchema);
+}
+
+export async function fetchTeamDetail(
+  season: number,
+  week: number,
+  teamName: string
+): Promise<TeamDetailResponse> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/teams/${encodeURIComponent(teamName)}?season=${season}&week=${week}`
+  );
+  return parseResponse(response, TeamDetailResponseSchema);
+}
+
 export async function fetchTrackRecord(): Promise<TrackRecordResponse> {
   const response = await safeFetch(`${API_BASE_URL}/api/v1/track-record`);
   return parseResponse(response, TrackRecordResponseSchema);
+}
+
+export async function fetchWeeks(season: number): Promise<WeeksResponse> {
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/seasons/${season}/weeks`);
+  return parseResponse(response, WeeksResponseSchema);
 }

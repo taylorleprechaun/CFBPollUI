@@ -12,10 +12,6 @@ interface RecordRowProps {
   schedule: ScheduleGame[];
 }
 
-function hasResult(g: ScheduleGame): boolean {
-  return g.isWin != null;
-}
-
 export function RecordRow({
   containerRef,
   filter,
@@ -88,4 +84,8 @@ export function RecordRow({
       )}
     </div>
   );
+}
+
+function hasResult(g: ScheduleGame): boolean {
+  return g.isWin != null;
 }

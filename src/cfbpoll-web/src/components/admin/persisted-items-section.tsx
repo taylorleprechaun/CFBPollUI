@@ -39,15 +39,6 @@ interface PersistedItemsSectionProps<T extends { createdAt: string; isPublished:
   title: string;
 }
 
-function defaultStatusCell<T extends { isPublished: boolean }>(item: T) {
-  return (
-    <StatusBadge
-      className={badgeColorClasses(item.isPublished ? 'green' : 'yellow')}
-      label={item.isPublished ? 'Published' : 'Draft'}
-    />
-  );
-}
-
 export function PersistedItemsSection<T extends { createdAt: string; isPublished: boolean; season: number; week: number }>({
   actionFeedback,
   activeItem = null,
@@ -203,5 +194,14 @@ export function PersistedItemsSection<T extends { createdAt: string; isPublished
         </div>
       )}
     </div>
+  );
+}
+
+function defaultStatusCell<T extends { isPublished: boolean }>(item: T) {
+  return (
+    <StatusBadge
+      className={badgeColorClasses(item.isPublished ? 'green' : 'yellow')}
+      label={item.isPublished ? 'Published' : 'Draft'}
+    />
   );
 }

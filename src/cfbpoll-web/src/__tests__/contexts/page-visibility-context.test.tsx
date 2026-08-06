@@ -14,19 +14,6 @@ import { PageVisibilityProvider } from '../../contexts/page-visibility-context';
 import { usePageVisibility } from '../../hooks/use-page-visibility';
 import { fetchPageVisibility } from '../../services/api';
 
-function TestConsumer() {
-  const { allTimeEnabled, pollLeadersEnabled, predictionsPageEnabled, seasonTrendsEnabled, isLoading } = usePageVisibility();
-  return (
-    <div>
-      <span data-testid="all-time">{String(allTimeEnabled)}</span>
-      <span data-testid="poll-leaders">{String(pollLeadersEnabled)}</span>
-      <span data-testid="predictions-page">{String(predictionsPageEnabled)}</span>
-      <span data-testid="season-trends">{String(seasonTrendsEnabled)}</span>
-      <span data-testid="loading">{String(isLoading)}</span>
-    </div>
-  );
-}
-
 function renderWithProviders() {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -42,6 +29,19 @@ function renderWithProviders() {
         <TestConsumer />
       </PageVisibilityProvider>
     </QueryClientProvider>
+  );
+}
+
+function TestConsumer() {
+  const { allTimeEnabled, pollLeadersEnabled, predictionsPageEnabled, seasonTrendsEnabled, isLoading } = usePageVisibility();
+  return (
+    <div>
+      <span data-testid="all-time">{String(allTimeEnabled)}</span>
+      <span data-testid="poll-leaders">{String(pollLeadersEnabled)}</span>
+      <span data-testid="predictions-page">{String(predictionsPageEnabled)}</span>
+      <span data-testid="season-trends">{String(seasonTrendsEnabled)}</span>
+      <span data-testid="loading">{String(isLoading)}</span>
+    </div>
   );
 }
 

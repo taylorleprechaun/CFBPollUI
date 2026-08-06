@@ -16,29 +16,6 @@ interface ToggleSwitchProps {
   onChange: (checked: boolean) => void;
 }
 
-function ToggleSwitch({ checked, disabled, label, onChange }: ToggleSwitchProps) {
-  const id = useId();
-
-  return (
-    <div className="flex items-center justify-between">
-      <label htmlFor={id} className="text-sm font-medium text-text-secondary">
-        {label}
-      </label>
-      <button
-        id={id}
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        disabled={disabled}
-        className={`relative inline-flex h-6 w-11 rounded-full transition-colors duration-200 disabled:opacity-50 ${checked ? 'bg-accent' : 'bg-border-strong'}`}
-      >
-        <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${checked ? 'translate-x-5' : 'translate-x-0.5'} mt-0.5`} />
-      </button>
-    </div>
-  );
-}
-
 export function SettingsPage() {
   useDocumentTitle('Taylor Steinberg - Settings');
 
@@ -124,6 +101,29 @@ export function SettingsPage() {
           <p className="mt-3 text-sm text-red-600">Failed to update page visibility</p>
         )}
       </div>
+    </div>
+  );
+}
+
+function ToggleSwitch({ checked, disabled, label, onChange }: ToggleSwitchProps) {
+  const id = useId();
+
+  return (
+    <div className="flex items-center justify-between">
+      <label htmlFor={id} className="text-sm font-medium text-text-secondary">
+        {label}
+      </label>
+      <button
+        id={id}
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        disabled={disabled}
+        className={`relative inline-flex h-6 w-11 rounded-full transition-colors duration-200 disabled:opacity-50 ${checked ? 'bg-accent' : 'bg-border-strong'}`}
+      >
+        <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${checked ? 'translate-x-5' : 'translate-x-0.5'} mt-0.5`} />
+      </button>
     </div>
   );
 }

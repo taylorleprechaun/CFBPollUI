@@ -18,18 +18,6 @@ const SnapshotsPage = lazy(() => import('./pages/snapshots-page'));
 const TeamDetailsPage = lazy(() => import('./pages/team-details-page'));
 const TrackRecordPage = lazy(() => import('./pages/track-record-page'));
 
-function PageLoader() {
-  return (
-    <div className="flex items-center justify-center min-h-64">
-      <div className="text-text-muted">Loading...</div>
-    </div>
-  );
-}
-
-function LazyPage({ children }: { children: ReactNode }) {
-  return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
-}
-
 function App() {
   const { allTimeEnabled, pollLeadersEnabled, predictionsPageEnabled, seasonTrendsEnabled } = usePageVisibility();
 
@@ -89,6 +77,18 @@ function App() {
         </Route>
       </Route>
     </Routes>
+  );
+}
+
+function LazyPage({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<PageLoader />}>{children}</Suspense>;
+}
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-64">
+      <div className="text-text-muted">Loading...</div>
+    </div>
   );
 }
 

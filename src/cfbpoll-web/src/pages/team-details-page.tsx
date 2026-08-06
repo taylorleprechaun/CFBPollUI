@@ -27,58 +27,6 @@ const filterVsRank26To50 = (g: ScheduleGame) => g.opponentRank != null && g.oppo
 const filterVsRank51To100 = (g: ScheduleGame) => g.opponentRank != null && g.opponentRank >= 51 && g.opponentRank <= 100 && g.isWin != null;
 const filterVsRank101Plus = (g: ScheduleGame) => (g.opponentRank == null || g.opponentRank >= 101) && g.isWin != null;
 
-function TeamDetailSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="shadow-md rounded-xl p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center space-x-4">
-            <Skeleton className="w-16 h-16 rounded-lg" />
-            <div className="space-y-2">
-              <Skeleton className="h-7 w-48" />
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-5 w-20" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-            {Array.from({ length: 4 }, (_, i) => (
-              <div key={i} className="space-y-1">
-                <Skeleton className="h-3 w-16" />
-                <Skeleton className="h-6 w-12" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className="bg-surface shadow-md rounded-xl overflow-hidden">
-        <Skeleton className="h-12 w-full rounded-none" />
-        <div className="divide-y divide-border">
-          {Array.from({ length: 6 }, (_, i) => (
-            <div key={i} className="flex gap-4 px-4 py-3">
-              <Skeleton className="h-4 w-10" />
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-4 w-16" />
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {Array.from({ length: 2 }, (_, i) => (
-          <div key={i} className="bg-surface border border-border rounded-xl overflow-hidden">
-            <Skeleton className="h-12 w-full rounded-none" />
-            <div className="space-y-2 p-4">
-              {Array.from({ length: 3 }, (_, j) => (
-                <Skeleton key={j} className="h-5 w-full" />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function TeamDetailsPage() {
   useDocumentTitle('Taylor Steinberg - Team Details');
 
@@ -365,6 +313,58 @@ export function TeamDetailsPage() {
       {!selectedTeam && !teamDetailLoading && (
         <EmptyState message="Select a season and team to view details." />
       )}
+    </div>
+  );
+}
+
+function TeamDetailSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="shadow-md rounded-xl p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center space-x-4">
+            <Skeleton className="w-16 h-16 rounded-lg" />
+            <div className="space-y-2">
+              <Skeleton className="h-7 w-48" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-5 w-20" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+            {Array.from({ length: 4 }, (_, i) => (
+              <div key={i} className="space-y-1">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-6 w-12" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="bg-surface shadow-md rounded-xl overflow-hidden">
+        <Skeleton className="h-12 w-full rounded-none" />
+        <div className="divide-y divide-border">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="flex gap-4 px-4 py-3">
+              <Skeleton className="h-4 w-10" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {Array.from({ length: 2 }, (_, i) => (
+          <div key={i} className="bg-surface border border-border rounded-xl overflow-hidden">
+            <Skeleton className="h-12 w-full rounded-none" />
+            <div className="space-y-2 p-4">
+              {Array.from({ length: 3 }, (_, j) => (
+                <Skeleton key={j} className="h-5 w-full" />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

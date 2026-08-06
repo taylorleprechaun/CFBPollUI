@@ -21,20 +21,6 @@ interface FactRowProps {
   value: ReactNode;
 }
 
-function FactRow({ label, secondary, value }: FactRowProps) {
-  return (
-    <div className="px-4 py-2">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-xs font-medium text-text-muted uppercase tracking-wider">{label}</span>
-        <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1 text-sm text-text-secondary text-right">
-          {value}
-          {secondary}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function PredictionCard({ prediction: p, rankByTeam, season = null, showGrades = false }: PredictionCardProps) {
   return (
     <div className="bg-surface border border-border rounded-xl divide-y divide-border">
@@ -71,6 +57,20 @@ export function PredictionCard({ prediction: p, rankByTeam, season = null, showG
           )
         }
       />
+    </div>
+  );
+}
+
+function FactRow({ label, secondary, value }: FactRowProps) {
+  return (
+    <div className="px-4 py-2">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-xs font-medium text-text-muted uppercase tracking-wider">{label}</span>
+        <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1 text-sm text-text-secondary text-right">
+          {value}
+          {secondary}
+        </div>
+      </div>
     </div>
   );
 }

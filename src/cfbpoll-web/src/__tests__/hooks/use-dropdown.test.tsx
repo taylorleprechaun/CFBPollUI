@@ -5,6 +5,15 @@ import { describe, expect, it } from 'vitest';
 
 import { useDropdown } from '../../hooks/use-dropdown';
 
+function renderDropdown() {
+  return render(
+    <MemoryRouter>
+      <span>Outside</span>
+      <TestDropdown />
+    </MemoryRouter>
+  );
+}
+
 function TestDropdown() {
   const { containerRef, isOpen, toggle } = useDropdown();
 
@@ -15,15 +24,6 @@ function TestDropdown() {
       </button>
       {isOpen && <div>Dropdown Content</div>}
     </div>
-  );
-}
-
-function renderDropdown() {
-  return render(
-    <MemoryRouter>
-      <span>Outside</span>
-      <TestDropdown />
-    </MemoryRouter>
   );
 }
 

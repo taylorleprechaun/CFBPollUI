@@ -31,10 +31,10 @@ export function derivePredictionStage({ isGraded, isPublished, resultsPublished 
   return 'draft';
 }
 
-export function predictionStageLabel(stage: PredictionStage): string {
-  return STAGE_LABELS[stage];
-}
-
 export function predictionStageClasses(stage: PredictionStage): string {
   return badgeColorClasses(STAGE_COLORS[stage]);
+}
+
+export function predictionStageLabel(stage: PredictionStage): string {
+  return STAGE_LABELS[stage];
 }

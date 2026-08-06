@@ -7,20 +7,20 @@ import type { GradePredictionsResponse } from '../../schemas/admin';
 
 import { usePredictionsGradingState } from '../../hooks/use-predictions-grading-state';
 
-function fakeMutation<TData, TVariables>(overrides: Partial<UseMutationResult<TData, Error, TVariables>> = {}) {
-  return {
-    isPending: false,
-    mutateAsync: vi.fn(),
-    ...overrides,
-  } as unknown as UseMutationResult<TData, Error, TVariables>;
-}
-
 function baseOptions() {
   return {
     gradeMutation: fakeMutation<GradePredictionsResponse, { season: number; week: number }>(),
     onGradeSuccess: vi.fn(),
     publishResultsMutation: fakeMutation<void, { season: number; week: number }>(),
   };
+}
+
+function fakeMutation<TData, TVariables>(overrides: Partial<UseMutationResult<TData, Error, TVariables>> = {}) {
+  return {
+    isPending: false,
+    mutateAsync: vi.fn(),
+    ...overrides,
+  } as unknown as UseMutationResult<TData, Error, TVariables>;
 }
 
 const gradeResult: GradePredictionsResponse = {

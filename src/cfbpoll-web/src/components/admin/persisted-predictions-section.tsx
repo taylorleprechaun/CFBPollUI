@@ -27,17 +27,6 @@ const EXTRA_COLUMN_HEADERS = (
   <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">Games</th>
 );
 
-function renderExtraCells(item: PredictionsSummary) {
-  return (
-    <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary">{item.gameCount}</td>
-  );
-}
-
-function renderStatusCell(item: PredictionsSummary) {
-  const stage = derivePredictionStage(item);
-  return <StatusBadge className={predictionStageClasses(stage)} label={predictionStageLabel(stage)} />;
-}
-
 export function PersistedPredictionsSection({
   actionFeedback,
   activeItem = null,
@@ -79,4 +68,15 @@ export function PersistedPredictionsSection({
       title="Persisted Predictions"
     />
   );
+}
+
+function renderExtraCells(item: PredictionsSummary) {
+  return (
+    <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary">{item.gameCount}</td>
+  );
+}
+
+function renderStatusCell(item: PredictionsSummary) {
+  const stage = derivePredictionStage(item);
+  return <StatusBadge className={predictionStageClasses(stage)} label={predictionStageLabel(stage)} />;
 }

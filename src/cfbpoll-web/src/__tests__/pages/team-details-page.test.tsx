@@ -168,6 +168,14 @@ const mockTeamDetail = {
   weightedSOS: 0.582,
 };
 
+function renderPage(initialRoute = '/team-details') {
+  return render(
+    <MemoryRouter initialEntries={[initialRoute]}>
+      <TeamDetailsPage />
+    </MemoryRouter>
+  );
+}
+
 function setupMocks(overrides: {
   rankingsData?: typeof mockRankingsData | undefined;
   rankingsLoading?: boolean;
@@ -196,14 +204,6 @@ function setupMocks(overrides: {
     error: overrides.teamDetailError ?? null,
     refetch,
   } as unknown as ReturnType<typeof useTeamDetail>);
-}
-
-function renderPage(initialRoute = '/team-details') {
-  return render(
-    <MemoryRouter initialEntries={[initialRoute]}>
-      <TeamDetailsPage />
-    </MemoryRouter>
-  );
 }
 
 describe('TeamDetailsPage', () => {

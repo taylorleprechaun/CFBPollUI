@@ -5,24 +5,6 @@ import { type ResolvedTheme, type Theme, ThemeContext, type ThemeContextValue } 
 const STORAGE_KEY = 'cfbpoll_theme';
 const MEDIA_QUERY = '(prefers-color-scheme: dark)';
 
-function getSystemPreference(): ResolvedTheme {
-  return window.matchMedia(MEDIA_QUERY).matches ? 'dark' : 'light';
-}
-
-function getStoredTheme(): Theme {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
-  return 'system';
-}
-
-function applyThemeClass(resolved: ResolvedTheme) {
-  if (resolved === 'dark') {
-    document.documentElement.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-  }
-}
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(getStoredTheme);
   const [systemPreference, setSystemPreference] = useState<ResolvedTheme>(getSystemPreference);
@@ -56,4 +38,22 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       {children}
     </ThemeContext.Provider>
   );
+}
+
+function applyThemeClass(resolved: ResolvedTheme) {
+  if (resolved === 'dark') {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+}
+
+function getStoredTheme(): Theme {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
+  return 'system';
+}
+
+function getSystemPreference(): ResolvedTheme {
+  return window.matchMedia(MEDIA_QUERY).matches ? 'dark' : 'light';
 }
