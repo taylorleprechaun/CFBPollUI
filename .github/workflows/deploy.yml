@@ -17,12 +17,13 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v6
-        with:
-          submodules: true
-          # actions/checkout otherwise rewrites all git@github.com: SSH URLs to HTTPS so it can
-          # inject its own GITHUB_TOKEN, which silently bypasses the ssh-agent key above and
-          # breaks the submodule fetch (GITHUB_TOKEN has no access to CFBPoll-Proprietary).
-          persist-credentials: false
+
+      # actions/checkout's own submodules: true handling wraps the submodule fetch in a URL
+      # rewrite (git@github.com: -> https://github.com/ via GITHUB_TOKEN), which silently
+      # bypasses the ssh-agent key above and fails since GITHUB_TOKEN has no access to
+      # CFBPoll-Proprietary. Running it ourselves uses the ssh-agent directly instead.
+      - name: Fetch private submodule
+        run: git submodule update --init --recursive
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -59,12 +60,13 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v6
-        with:
-          submodules: true
-          # actions/checkout otherwise rewrites all git@github.com: SSH URLs to HTTPS so it can
-          # inject its own GITHUB_TOKEN, which silently bypasses the ssh-agent key above and
-          # breaks the submodule fetch (GITHUB_TOKEN has no access to CFBPoll-Proprietary).
-          persist-credentials: false
+
+      # actions/checkout's own submodules: true handling wraps the submodule fetch in a URL
+      # rewrite (git@github.com: -> https://github.com/ via GITHUB_TOKEN), which silently
+      # bypasses the ssh-agent key above and fails since GITHUB_TOKEN has no access to
+      # CFBPoll-Proprietary. Running it ourselves uses the ssh-agent directly instead.
+      - name: Fetch private submodule
+        run: git submodule update --init --recursive
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
