@@ -3,6 +3,21 @@ import { describe, expect, it, vi } from 'vitest';
 import { runMutationWithFeedback } from '../../lib/feedback-utils';
 
 describe('runMutationWithFeedback', () => {
+  it('calls onSuccess with the mutation result', async () => {
+    const onSuccess = vi.fn();
+    const result = { season: 2024, week: 5 };
+
+    await runMutationWithFeedback({
+      errorFallback: 'Failed',
+      key: 'action-2024-5',
+      mutate: async () => result,
+      onSuccess,
+      setFeedback: vi.fn(),
+    });
+
+    expect(onSuccess).toHaveBeenCalledWith(result);
+  });
+
   it('clears feedback before calling mutate', async () => {
     const setFeedback = vi.fn();
     const mutate = vi.fn().mockImplementation(async () => {
@@ -20,50 +35,20 @@ describe('runMutationWithFeedback', () => {
     expect(mutate).toHaveBeenCalled();
   });
 
-  it('sets success feedback with no message when successMessage is not provided', async () => {
-    const setFeedback = vi.fn();
-
-    await runMutationWithFeedback({
-      errorFallback: 'Failed',
-      key: 'action-2024-5',
-      mutate: async () => undefined,
-      setFeedback,
-    });
-
-    expect(setFeedback).toHaveBeenLastCalledWith({ key: 'action-2024-5', type: 'success', message: undefined });
-  });
-
-  it('sets success feedback with a derived message when successMessage is provided', async () => {
-    const setFeedback = vi.fn();
-
-    await runMutationWithFeedback({
-      errorFallback: 'Failed',
-      key: 'action-2024-5',
-      mutate: async () => ({ removedCount: 4 }),
-      setFeedback,
-      successMessage: (result) => `Removed ${result.removedCount} cached entries`,
-    });
-
-    expect(setFeedback).toHaveBeenLastCalledWith({
-      key: 'action-2024-5',
-      type: 'success',
-      message: 'Removed 4 cached entries',
-    });
-  });
-
-  it('calls onSuccess with the mutation result', async () => {
+  it('does not call onSuccess when the mutation fails', async () => {
     const onSuccess = vi.fn();
-    const result = { season: 2024, week: 5 };
 
     await runMutationWithFeedback({
       errorFallback: 'Failed',
       key: 'action-2024-5',
-      mutate: async () => result,
+      mutate: async () => {
+        throw new Error('boom');
+      },
       onSuccess,
       setFeedback: vi.fn(),
     });
 
-    expect(onSuccess).toHaveBeenCalledWith(result);
+    expect(onSuccess).not.toHaveBeenCalled();
   });
 
   it('sets error feedback with the error message on failure', async () => {
@@ -104,19 +89,34 @@ describe('runMutationWithFeedback', () => {
     });
   });
 
-  it('does not call onSuccess when the mutation fails', async () => {
-    const onSuccess = vi.fn();
+  it('sets success feedback with a derived message when successMessage is provided', async () => {
+    const setFeedback = vi.fn();
 
     await runMutationWithFeedback({
       errorFallback: 'Failed',
       key: 'action-2024-5',
-      mutate: async () => {
-        throw new Error('boom');
-      },
-      onSuccess,
-      setFeedback: vi.fn(),
+      mutate: async () => ({ removedCount: 4 }),
+      setFeedback,
+      successMessage: (result) => `Removed ${result.removedCount} cached entries`,
     });
 
-    expect(onSuccess).not.toHaveBeenCalled();
+    expect(setFeedback).toHaveBeenLastCalledWith({
+      key: 'action-2024-5',
+      type: 'success',
+      message: 'Removed 4 cached entries',
+    });
+  });
+
+  it('sets success feedback with no message when successMessage is not provided', async () => {
+    const setFeedback = vi.fn();
+
+    await runMutationWithFeedback({
+      errorFallback: 'Failed',
+      key: 'action-2024-5',
+      mutate: async () => undefined,
+      setFeedback,
+    });
+
+    expect(setFeedback).toHaveBeenLastCalledWith({ key: 'action-2024-5', type: 'success', message: undefined });
   });
 });
