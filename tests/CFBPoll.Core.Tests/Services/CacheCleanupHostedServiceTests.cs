@@ -47,7 +47,7 @@ public class CacheCleanupHostedServiceTests
         var service = new CacheCleanupHostedService(_mockCache.Object, MSOptions.Create(options), _mockLogger.Object);
 
         await service.StartAsync(CancellationToken.None);
-        await Task.Delay(100);
+        await WaitUntilAsync(() => _mockCache.Invocations.Count >= 1, TimeSpan.FromSeconds(5));
         await service.StopAsync(CancellationToken.None);
 
         _mockCache.Verify(x => x.CleanupExpiredAsync(), Times.AtLeastOnce);
