@@ -1,5 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+
 import { PersistedSnapshotsSection } from '../../../components/admin';
 
 const defaultProps = {
@@ -13,7 +14,7 @@ const defaultProps = {
   onExport: vi.fn(),
   onPublish: vi.fn(),
   onToggleSeason: vi.fn(),
-  snapshots: [] as { season: number; week: number; isPublished: boolean; createdAt: string }[],
+  snapshots: [] as { createdAt: string; isPublished: boolean; season: number; week: number; }[],
 };
 
 describe('PersistedSnapshotsSection', () => {

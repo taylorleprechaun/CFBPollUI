@@ -1,17 +1,17 @@
 import { useMemo, useState } from 'react';
 
-import { useSeason } from '../hooks/use-season';
-import { useWeeks } from '../hooks/use-weeks';
-import { useConferences } from '../hooks/use-conferences';
-import { useDocumentTitle } from '../hooks/use-document-title';
-import { usePreloadImages } from '../hooks/use-preload-images';
-import { useRankings } from '../hooks/use-rankings';
-import { useWeekSelection } from '../hooks/use-week-selection';
 import { ErrorAlert } from '../components/error';
 import { ConferenceFilter } from '../components/rankings/conference-filter';
 import { RankingsTable } from '../components/rankings/rankings-table';
 import { SeasonSelector } from '../components/rankings/season-selector';
 import { WeekSelector } from '../components/rankings/week-selector';
+import { useConferences } from '../hooks/use-conferences';
+import { useDocumentTitle } from '../hooks/use-document-title';
+import { usePreloadImages } from '../hooks/use-preload-images';
+import { useRankings } from '../hooks/use-rankings';
+import { useSeason } from '../hooks/use-season';
+import { useWeekSelection } from '../hooks/use-week-selection';
+import { useWeeks } from '../hooks/use-weeks';
 import { collectLogoUrls } from '../lib/logo-utils';
 import { getWeekLabel } from '../lib/week-utils';
 

@@ -1,8 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { createRef } from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { RecordRow } from '../../../components/team-details/record-row';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import type { ScheduleGame, TeamRecord } from '../../../types';
+
+import { RecordRow } from '../../../components/team-details/record-row';
 
 function createGame(overrides: Partial<ScheduleGame> = {}): ScheduleGame {
   return {

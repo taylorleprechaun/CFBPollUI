@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+
 import { BUTTON_DANGER, BUTTON_SECONDARY } from './button-styles';
 
 interface ConfirmModalProps {

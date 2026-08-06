@@ -1,14 +1,15 @@
-import { describe, it, expect, vi } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 
 import { mockUsePlotArea, mockUseXAxisDomain, mockUseYAxisDomain, rechartsMock } from '../../mocks/recharts';
 
 vi.mock('recharts', () => rechartsMock);
 
-import { ThemeProvider } from '../../../contexts/theme-context';
-import { HitTarget, PollLeadersChart } from '../../../components/poll-leaders/poll-leaders-chart';
 import type { PollLeaderEntry } from '../../../schemas';
+
+import { HitTarget, PollLeadersChart } from '../../../components/poll-leaders/poll-leaders-chart';
+import { ThemeProvider } from '../../../contexts/theme-context';
 
 const mockData: PollLeaderEntry[] = [
   { logoURL: 'https://example.com/ohio-state.png', teamName: 'Ohio State', top5Count: 5, top10Count: 8, top25Count: 15 },

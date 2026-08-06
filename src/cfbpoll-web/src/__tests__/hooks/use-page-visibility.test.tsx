@@ -1,6 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { PageVisibilityContext, usePageVisibility, type PageVisibilityContextValue } from '../../hooks/use-page-visibility';
+import { describe, expect, it, vi } from 'vitest';
+
+import { PageVisibilityContext, type PageVisibilityContextValue, usePageVisibility } from '../../hooks/use-page-visibility';
 
 describe('usePageVisibility', () => {
   it('throws when used outside PageVisibilityProvider', () => {

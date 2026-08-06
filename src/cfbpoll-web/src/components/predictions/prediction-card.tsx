@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react';
 
+import type { GamePredictionPublic } from '../../schemas';
+
 import { formatOverUnder, formatPick, formatSpread } from '../../lib/prediction-format-utils';
 import { GradedPick } from './graded-pick';
 import { PredictionScoreBlock } from './prediction-score-block';
 import { WinnerActualCaption } from './winner-actual-caption';
 import { WinnerPill } from './winner-pill';
-import type { GamePredictionPublic } from '../../schemas';
 
 interface PredictionCardProps {
   prediction: GamePredictionPublic;

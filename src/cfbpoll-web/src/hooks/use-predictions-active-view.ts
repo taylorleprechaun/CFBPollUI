@@ -1,15 +1,15 @@
-import { useCallback, useMemo, useState } from 'react';
-
 import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { usePrediction } from './use-prediction';
 import type {
   AdminPredictionsResponse,
   CalculatePredictionsResponse,
   GradePredictionsResponse,
   PredictionsResponse,
 } from '../schemas/admin';
+
+import { usePrediction } from './use-prediction';
 
 export type PredictionViewSource = 'calculated' | 'graded' | 'viewed';
 

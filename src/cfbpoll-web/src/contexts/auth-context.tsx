@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { loginUser } from '../services/admin-api';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
 import { AuthContext, type AuthContextValue } from '../hooks/use-auth';
+import { loginUser } from '../services/admin-api';
 
 const TOKEN_KEY = 'cfbpoll_token';
 const EXPIRY_KEY = 'cfbpoll_token_expiry';
 
-function getStoredToken(): { token: string; expiryMs: number } | null {
+function getStoredToken(): { expiryMs: number; token: string; } | null {
   const stored = localStorage.getItem(TOKEN_KEY);
   const expiry = localStorage.getItem(EXPIRY_KEY);
   if (!stored || !expiry) return null;

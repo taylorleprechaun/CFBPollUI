@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { GamePredictionPublicSchema, RankingsResponseSchema } from './index';
 
 export const LoginResponseSchema = z.object({

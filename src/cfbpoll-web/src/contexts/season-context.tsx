@@ -1,6 +1,7 @@
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
-import { useSeasons } from '../hooks/use-seasons';
+import { type ReactNode, useCallback, useMemo, useState } from 'react';
+
 import { SeasonContext, type SeasonContextValue } from '../hooks/use-season';
+import { useSeasons } from '../hooks/use-seasons';
 
 const STORAGE_KEY = 'cfbpoll_selected_season';
 

@@ -1,21 +1,22 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
+import type { ScheduleGame } from '../types';
+
 import { ErrorAlert } from '../components/error';
 import { SeasonSelector } from '../components/rankings/season-selector';
 import { RecordRow, ScheduleRow } from '../components/team-details';
 import { SELECT_BASE } from '../components/ui/button-styles';
 import { EmptyState } from '../components/ui/empty-state';
 import { Skeleton } from '../components/ui/skeleton';
-import { useSeason } from '../hooks/use-season';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { usePreloadImages } from '../hooks/use-preload-images';
 import { useRankings } from '../hooks/use-rankings';
+import { useSeason } from '../hooks/use-season';
 import { useTeamDetail } from '../hooks/use-team-detail';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
 import { getContrastTextColor } from '../lib/color-utils';
-import type { ScheduleGame } from '../types';
 
 const filterHome = (g: ScheduleGame) => g.isHome && !g.neutralSite && g.isWin != null;
 const filterAway = (g: ScheduleGame) => !g.isHome && !g.neutralSite && g.isWin != null;

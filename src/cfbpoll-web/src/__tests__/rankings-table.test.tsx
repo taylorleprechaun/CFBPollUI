@@ -1,9 +1,11 @@
-import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { RankingsTable } from '../components/rankings/rankings-table';
+import { describe, expect, it } from 'vitest';
+
 import type { RankedTeam } from '../types';
+
+import { RankingsTable } from '../components/rankings/rankings-table';
 
 const createMockTeam = (overrides: Partial<RankedTeam> = {}): RankedTeam => ({
   rank: 1,
@@ -69,8 +71,8 @@ const mockRankings: RankedTeam[] = [
 ];
 
 function renderTable(props: {
-  rankings?: RankedTeam[];
   isLoading?: boolean;
+  rankings?: RankedTeam[];
   selectedConference?: string | null;
   selectedSeason?: number | null;
 } = {}) {

@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
-import { SunIcon, MoonIcon } from '../../../../components/ui/icons/theme-icon';
+import { describe, expect, it } from 'vitest';
+
+import { MoonIcon, SunIcon } from '../../../../components/ui/icons/theme-icon';
 
 describe('SunIcon', () => {
   it('renders an svg element', () => {

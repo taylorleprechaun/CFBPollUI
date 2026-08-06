@@ -1,13 +1,15 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+
 import type { RankedTeam } from '../../types';
+
 import { SortableTable } from '../ui/sortable-table';
 import { TeamLogo } from './team-logo';
 
 interface RankingsTableProps {
-  rankings: RankedTeam[];
   isLoading: boolean;
+  rankings: RankedTeam[];
   selectedConference: string | null;
   selectedSeason: number | null;
 }

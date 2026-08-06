@@ -1,4 +1,8 @@
-import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { type QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
+
+import type { AdminPredictionsResponse } from '../schemas/admin';
+import type { SeasonWeekParams } from './types';
+
 import {
   calculatePredictions,
   calculateRankings,
@@ -11,8 +15,6 @@ import {
   publishSnapshot,
   refreshCache,
 } from '../services/admin-api';
-import type { AdminPredictionsResponse } from '../schemas/admin';
-import type { SeasonWeekParams } from './types';
 
 function useAdminMutation<TResult>(
   token: string | null,

@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+
+import type { SeasonTrendTeam, SeasonTrendWeek } from '../../../schemas';
 
 import { SeasonTrendsTooltip } from '../../../components/season-trends/season-trends-tooltip';
-import type { SeasonTrendTeam, SeasonTrendWeek } from '../../../schemas';
 
 const weeks: SeasonTrendWeek[] = [
   { label: 'Week 2', weekNumber: 1 },

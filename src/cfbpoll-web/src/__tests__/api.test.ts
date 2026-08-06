@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchSeasons, fetchWeeks, fetchPredictionSeasons, fetchRankings, fetchPredictions, fetchConferences, fetchTeamDetail, fetchPageVisibility, fetchPollLeaders, fetchTrackRecord } from '../services/api';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { fetchConferences, fetchPageVisibility, fetchPollLeaders, fetchPredictions, fetchPredictionSeasons, fetchRankings, fetchSeasons, fetchTeamDetail, fetchTrackRecord, fetchWeeks } from '../services/api';
 
 describe('API service', () => {
   beforeEach(() => {

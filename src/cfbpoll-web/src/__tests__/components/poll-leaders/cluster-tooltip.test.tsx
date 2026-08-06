@@ -1,9 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { createRef } from 'react';
+import { describe, expect, it, vi } from 'vitest';
+
+import type { ChartDataPoint } from '../../../components/poll-leaders/types';
 
 import { ClusterTooltip } from '../../../components/poll-leaders/cluster-tooltip';
-import type { ChartDataPoint } from '../../../components/poll-leaders/types';
 
 const mockPoints: ChartDataPoint[] = [
   { logoURL: 'https://example.com/alabama.png', teamName: 'Alabama', top5Count: 7, top10Count: 10, top25Count: 18, x: 18, y: 10 },

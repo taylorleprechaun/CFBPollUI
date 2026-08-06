@@ -1,5 +1,8 @@
 import { useState } from 'react';
 
+import type { ActivePredictionView } from '../../hooks/use-predictions-active-view';
+import type { ActionFeedback } from './types';
+
 import { derivePredictionStage, predictionStageClasses, predictionStageLabel } from '../../lib/prediction-stage';
 import { getWeekLabel } from '../../lib/week-utils';
 import { PredictionsTable } from '../predictions/predictions-table';
@@ -8,8 +11,6 @@ import { CollapsibleContent } from '../ui/collapsible-content';
 import { CollapsibleTrigger } from '../ui/collapsible-trigger';
 import { StatusBadge } from '../ui/status-badge';
 import { FeedbackIndicator } from './feedback-indicator';
-import type { ActivePredictionView } from '../../hooks/use-predictions-active-view';
-import type { ActionFeedback } from './types';
 
 const SOURCE_LABELS: Record<ActivePredictionView['source'], string | null> = {
   calculated: 'Just Generated',

@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
+
 import {
   allTimeRankColumn,
-  teamNameColumn,
-  seasonColumn,
-  recordColumn,
   rankColumn,
   ratingColumn,
+  recordColumn,
+  seasonColumn,
+  teamNameColumn,
   weightedSOSColumn,
 } from '../components/all-time/all-time-columns';
 import { AllTimeTable } from '../components/all-time/all-time-table';

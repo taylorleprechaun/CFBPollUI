@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { GC_TIME_DEFAULT, getStaleTime, STALE_TIME_RANKINGS } from '../../lib/query-config';
 
 describe('query-config', () => {

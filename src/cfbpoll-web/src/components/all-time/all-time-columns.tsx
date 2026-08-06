@@ -1,6 +1,8 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Link } from 'react-router-dom';
+
 import type { AllTimeEntry } from '../../types';
+
 import { TeamLogo } from '../rankings/team-logo';
 
 const columnHelper = createColumnHelper<AllTimeEntry>();

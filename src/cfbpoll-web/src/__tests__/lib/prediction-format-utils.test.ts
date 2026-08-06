@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { formatOverUnder, formatPick, formatSpread } from '../../lib/prediction-format-utils';
 
 describe('formatSpread', () => {

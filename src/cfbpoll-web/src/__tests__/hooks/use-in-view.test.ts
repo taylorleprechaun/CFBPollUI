@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { useInView } from '../../hooks/use-in-view';
 
 const mockObserve = vi.fn();
@@ -7,12 +8,12 @@ const mockDisconnect = vi.fn();
 let mockCallback: IntersectionObserverCallback;
 
 class MockIntersectionObserver {
+  disconnect = mockDisconnect;
+  observe = mockObserve;
+  unobserve = vi.fn();
   constructor(callback: IntersectionObserverCallback) {
     mockCallback = callback;
   }
-  observe = mockObserve;
-  disconnect = mockDisconnect;
-  unobserve = vi.fn();
 }
 
 beforeEach(() => {

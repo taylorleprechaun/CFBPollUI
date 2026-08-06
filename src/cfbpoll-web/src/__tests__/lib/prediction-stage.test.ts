@@ -1,6 +1,8 @@
-import { describe, it, expect } from 'vitest';
-import { derivePredictionStage, predictionStageClasses, predictionStageLabel } from '../../lib/prediction-stage';
+import { describe, expect, it } from 'vitest';
+
 import type { PredictionStage } from '../../lib/prediction-stage';
+
+import { derivePredictionStage, predictionStageClasses, predictionStageLabel } from '../../lib/prediction-stage';
 
 describe('derivePredictionStage', () => {
   it('returns draft when nothing is published or graded', () => {

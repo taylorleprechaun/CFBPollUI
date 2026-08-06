@@ -1,30 +1,29 @@
 import { API_BASE_URL } from '../lib/config';
 import { parseResponse } from '../lib/parse-response';
 import { safeFetch } from '../lib/safe-fetch';
-
 import {
-  AllTimeResponseSchema,
-  ConferencesResponseSchema,
-  PageVisibilitySchema,
-  PollLeadersResponseSchema,
-  PredictionsPublicResponseSchema,
-  RankingsResponseSchema,
-  SeasonTrendsResponseSchema,
-  SeasonsResponseSchema,
-  TeamDetailResponseSchema,
-  TrackRecordResponseSchema,
-  WeeksResponseSchema,
   type AllTimeResponse,
+  AllTimeResponseSchema,
   type ConferencesResponse,
+  ConferencesResponseSchema,
   type PageVisibility,
+  PageVisibilitySchema,
   type PollLeadersResponse,
+  PollLeadersResponseSchema,
   type PredictionsPublicResponse,
+  PredictionsPublicResponseSchema,
   type RankingsResponse,
-  type SeasonTrendsResponse,
+  RankingsResponseSchema,
   type SeasonsResponse,
+  SeasonsResponseSchema,
+  type SeasonTrendsResponse,
+  SeasonTrendsResponseSchema,
   type TeamDetailResponse,
+  TeamDetailResponseSchema,
   type TrackRecordResponse,
+  TrackRecordResponseSchema,
   type WeeksResponse,
+  WeeksResponseSchema,
 } from '../schemas';
 
 export async function fetchSeasons(): Promise<SeasonsResponse> {

@@ -1,17 +1,19 @@
-import { describe, it, expect } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { describe, expect, it } from 'vitest';
+
+import type { AllTimeEntry } from '../../../types';
+
 import {
   allTimeRankColumn,
-  teamNameColumn,
-  seasonColumn,
-  recordColumn,
   rankColumn,
   ratingColumn,
+  recordColumn,
+  seasonColumn,
+  teamNameColumn,
   weightedSOSColumn,
 } from '../../../components/all-time/all-time-columns';
 import { AllTimeTable } from '../../../components/all-time/all-time-table';
-import type { AllTimeEntry } from '../../../types';
 
 const defaultColumns = [
   allTimeRankColumn,

@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
+
+import type { TrackRecordWeek } from '../../schemas';
+
 import { formatTotals } from '../../lib/track-record-utils';
 import { getWeekLabel } from '../../lib/week-utils';
 import { TableSkeleton } from '../ui/table-skeleton';
-import type { TrackRecordWeek } from '../../schemas';
 
 const COLUMN_COUNT = 4;
 

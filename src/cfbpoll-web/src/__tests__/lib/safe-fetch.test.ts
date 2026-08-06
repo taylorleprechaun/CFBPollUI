@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { safeFetch } from '../../lib/safe-fetch';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { ApiError } from '../../lib/api-error';
+import { safeFetch } from '../../lib/safe-fetch';
 
 describe('safeFetch', () => {
   beforeEach(() => {

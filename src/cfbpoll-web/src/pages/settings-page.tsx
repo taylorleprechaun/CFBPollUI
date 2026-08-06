@@ -1,12 +1,13 @@
-import { useId } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useId } from 'react';
 
-import { useAuth } from '../hooks/use-auth';
-import { usePageVisibility } from '../hooks/use-page-visibility';
-import { BUTTON_GHOST } from '../components/ui/button-styles';
-import { useDocumentTitle } from '../hooks/use-document-title';
-import { updatePageVisibility } from '../services/admin-api';
 import type { PageVisibility } from '../schemas';
+
+import { BUTTON_GHOST } from '../components/ui/button-styles';
+import { useAuth } from '../hooks/use-auth';
+import { useDocumentTitle } from '../hooks/use-document-title';
+import { usePageVisibility } from '../hooks/use-page-visibility';
+import { updatePageVisibility } from '../services/admin-api';
 
 interface ToggleSwitchProps {
   checked: boolean;

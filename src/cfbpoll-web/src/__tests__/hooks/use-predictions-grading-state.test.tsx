@@ -1,8 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
 import type { UseMutationResult } from '@tanstack/react-query';
-import { usePredictionsGradingState } from '../../hooks/use-predictions-grading-state';
+
+import { act, renderHook } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+
 import type { GradePredictionsResponse } from '../../schemas/admin';
+
+import { usePredictionsGradingState } from '../../hooks/use-predictions-grading-state';
 
 function fakeMutation<TData, TVariables>(overrides: Partial<UseMutationResult<TData, Error, TVariables>> = {}) {
   return {

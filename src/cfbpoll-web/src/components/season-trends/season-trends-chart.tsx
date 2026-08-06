@@ -10,6 +10,7 @@ import {
 } from 'recharts';
 
 import type { SeasonTrendsResponse } from '../../schemas';
+
 import { useChartColors } from '../../hooks/use-chart-colors';
 import { SeasonTrendsTooltip } from './season-trends-tooltip';
 
@@ -168,7 +169,7 @@ export function SeasonTrendsChart({ data }: SeasonTrendsChartProps) {
     [data.teams, hoveredTeam, showTooltip]
   );
 
-  const [lastTooltip, setLastTooltip] = useState<{ team: typeof tooltipTeamData; week: number | null; pos: { x: number; y: number } }>({
+  const [lastTooltip, setLastTooltip] = useState<{ pos: { x: number; y: number }; team: typeof tooltipTeamData; week: number | null; }>({
     team: null, week: null, pos: { x: 0, y: 0 },
   });
 

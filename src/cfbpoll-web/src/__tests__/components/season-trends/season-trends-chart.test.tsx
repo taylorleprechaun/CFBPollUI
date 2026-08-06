@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 
 import { rechartsMock } from '../../mocks/recharts';
 
@@ -9,8 +9,9 @@ vi.mock('../../../hooks/use-theme', () => ({
   useTheme: () => ({ resolvedTheme: 'light' }),
 }));
 
-import { SeasonTrendsChart } from '../../../components/season-trends/season-trends-chart';
 import type { SeasonTrendsResponse } from '../../../schemas';
+
+import { SeasonTrendsChart } from '../../../components/season-trends/season-trends-chart';
 
 const mockData: SeasonTrendsResponse = {
   season: 2024,

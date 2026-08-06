@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { useSeason } from '../hooks/use-season';
+import type { CalculatePredictionsResponse } from '../schemas/admin';
+
 import {
   ActivePredictionViewSection,
   CalculateSection,
   PersistedPredictionsSection,
 } from '../components/admin';
 import { ErrorAlert, ErrorBoundary } from '../components/error';
-import { ConfirmModal } from '../components/ui/confirm-modal';
 import { BUTTON_GHOST } from '../components/ui/button-styles';
+import { ConfirmModal } from '../components/ui/confirm-modal';
 import {
   useCalculatePredictions,
   useDeletePredictions,
@@ -23,11 +24,11 @@ import { useDocumentTitle } from '../hooks/use-document-title';
 import { usePredictionsActiveView } from '../hooks/use-predictions-active-view';
 import { usePredictionsGradingState } from '../hooks/use-predictions-grading-state';
 import { usePredictionsSummaries } from '../hooks/use-predictions-summaries';
+import { useSeason } from '../hooks/use-season';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
 import { derivePredictionStage, predictionStageLabel } from '../lib/prediction-stage';
 import { getWeekLabel } from '../lib/week-utils';
-import type { CalculatePredictionsResponse } from '../schemas/admin';
 
 export function PredictionsPage() {
   useDocumentTitle('Taylor Steinberg - Manage Predictions');

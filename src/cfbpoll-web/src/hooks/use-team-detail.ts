@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+
 import { GC_TIME_DEFAULT, getStaleTime, STALE_TIME_RANKINGS } from '../lib/query-config';
 import { fetchTeamDetail } from '../services/api';
 

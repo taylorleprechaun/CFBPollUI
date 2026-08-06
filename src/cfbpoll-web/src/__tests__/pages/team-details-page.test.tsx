@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { TeamDetailsPage } from '../../pages/team-details-page';
 
 const mockSetSelectedSeason = vi.fn();
@@ -30,9 +31,9 @@ vi.mock('../../hooks/use-team-detail', () => ({
   useTeamDetail: vi.fn(),
 }));
 
-import { useWeeks } from '../../hooks/use-weeks';
 import { useRankings } from '../../hooks/use-rankings';
 import { useTeamDetail } from '../../hooks/use-team-detail';
+import { useWeeks } from '../../hooks/use-weeks';
 
 const mockWeeksData = {
   season: 2024,
@@ -168,13 +169,13 @@ const mockTeamDetail = {
 };
 
 function setupMocks(overrides: {
-  weeksData?: typeof mockWeeksData | undefined;
   rankingsData?: typeof mockRankingsData | undefined;
-  teamDetailData?: typeof mockTeamDetail | undefined;
-  weeksLoading?: boolean;
   rankingsLoading?: boolean;
-  teamDetailLoading?: boolean;
+  teamDetailData?: typeof mockTeamDetail | undefined;
   teamDetailError?: Error | null;
+  teamDetailLoading?: boolean;
+  weeksData?: typeof mockWeeksData | undefined;
+  weeksLoading?: boolean;
 } = {}) {
   const refetch = vi.fn();
   vi.mocked(useWeeks).mockReturnValue({

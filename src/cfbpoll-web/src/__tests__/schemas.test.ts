@@ -1,17 +1,18 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import {
-  SeasonsResponseSchema,
-  WeeksResponseSchema,
-  RankingsResponseSchema,
-  WeekSchema,
-  RankedTeamSchema,
-  ScheduleGameSchema,
-  TeamDetailResponseSchema,
   GamePredictionPublicSchema,
   PredictionsPublicResponseSchema,
+  RankedTeamSchema,
+  RankingsResponseSchema,
+  ScheduleGameSchema,
+  SeasonsResponseSchema,
+  TeamDetailResponseSchema,
+  TrackRecordResponseSchema,
   TrackRecordTotalsSchema,
   TrackRecordWeekSchema,
-  TrackRecordResponseSchema,
+  WeekSchema,
+  WeeksResponseSchema,
 } from '../schemas';
 
 describe('Zod Schemas', () => {

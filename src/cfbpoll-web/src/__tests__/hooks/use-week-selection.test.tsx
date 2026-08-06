@@ -1,7 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import { useWeekSelection } from '../../hooks/use-week-selection';
+import { act, renderHook } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+
 import type { Week } from '../../types';
+
+import { useWeekSelection } from '../../hooks/use-week-selection';
 
 describe('useWeekSelection', () => {
   it('returns null when no weeks provided', () => {

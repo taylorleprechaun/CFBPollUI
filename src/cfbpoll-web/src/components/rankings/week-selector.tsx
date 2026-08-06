@@ -1,12 +1,14 @@
 import { useId } from 'react';
+
 import type { Week } from '../../types';
+
 import { SELECT_BASE } from '../ui/button-styles';
 
 interface WeekSelectorProps {
-  weeks: Week[];
-  selectedWeek: number | null;
-  onWeekChange: (week: number) => void;
   isLoading: boolean;
+  onWeekChange: (week: number) => void;
+  selectedWeek: number | null;
+  weeks: Week[];
 }
 
 export function WeekSelector({

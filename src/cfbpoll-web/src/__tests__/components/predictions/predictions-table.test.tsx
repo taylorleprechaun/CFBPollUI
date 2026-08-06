@@ -1,8 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { PredictionsTable } from '../../../components/predictions/predictions-table';
+import { describe, expect, it, vi } from 'vitest';
+
 import type { GamePredictionPublic } from '../../../schemas';
+
+import { PredictionsTable } from '../../../components/predictions/predictions-table';
 
 vi.mock('../../../components/predictions/prediction-card', () => ({
   PredictionCard: ({

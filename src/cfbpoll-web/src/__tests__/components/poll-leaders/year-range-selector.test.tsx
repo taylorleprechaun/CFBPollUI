@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 
 import { YearRangeSelector } from '../../../components/poll-leaders/year-range-selector';
 

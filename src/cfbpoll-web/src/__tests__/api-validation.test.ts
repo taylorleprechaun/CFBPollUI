@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ZodError } from 'zod';
+
 import { ApiError, ValidationError } from '../lib/api-error';
-import { fetchSeasons, fetchWeeks, fetchRankings } from '../services/api';
+import { fetchRankings, fetchSeasons, fetchWeeks } from '../services/api';
 
 describe('API Error Classes', () => {
   describe('ApiError', () => {

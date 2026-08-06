@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { ThemeContext, type Theme, type ResolvedTheme, type ThemeContextValue } from '../hooks/use-theme';
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+
+import { type ResolvedTheme, type Theme, ThemeContext, type ThemeContextValue } from '../hooks/use-theme';
 
 const STORAGE_KEY = 'cfbpoll_theme';
 const MEDIA_QUERY = '(prefers-color-scheme: dark)';

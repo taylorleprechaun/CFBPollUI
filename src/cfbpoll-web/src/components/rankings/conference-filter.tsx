@@ -2,9 +2,9 @@ import type { Conference } from '../../types';
 
 interface ConferenceFilterProps {
   conferences: Conference[];
-  selectedConference: string | null;
-  onConferenceChange: (conference: string | null) => void;
   isLoading: boolean;
+  onConferenceChange: (conference: string | null) => void;
+  selectedConference: string | null;
 }
 
 export function ConferenceFilter({

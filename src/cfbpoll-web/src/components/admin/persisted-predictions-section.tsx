@@ -1,8 +1,9 @@
+import type { PredictionsSummary } from '../../schemas/admin';
+import type { ActionFeedback } from './types';
+
+import { derivePredictionStage, predictionStageClasses, predictionStageLabel } from '../../lib/prediction-stage';
 import { StatusBadge } from '../ui/status-badge';
 import { PersistedItemsSection } from './persisted-items-section';
-import type { ActionFeedback } from './types';
-import { derivePredictionStage, predictionStageClasses, predictionStageLabel } from '../../lib/prediction-stage';
-import type { PredictionsSummary } from '../../schemas/admin';
 
 interface PersistedPredictionsSectionProps {
   actionFeedback: ActionFeedback | null;

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+
 import { STALE_TIME_SEASONS } from '../lib/query-config';
 import { fetchPredictionSeasons } from '../services/api';
 

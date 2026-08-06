@@ -1,5 +1,6 @@
-import { lazy, Suspense, type ReactNode } from 'react';
-import { Navigate, Routes, Route } from 'react-router-dom';
+import { lazy, type ReactNode, Suspense } from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
+
 import { RequireAuth, RequireGuest, RequirePageEnabled } from './components/auth';
 import { Layout } from './components/layout/layout';
 import { usePageVisibility } from './hooks/use-page-visibility';

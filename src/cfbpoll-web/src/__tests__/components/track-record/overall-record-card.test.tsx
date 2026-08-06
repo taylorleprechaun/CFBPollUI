@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+
 import { OverallRecordCard } from '../../../components/track-record/overall-record-card';
 
 describe('OverallRecordCard', () => {

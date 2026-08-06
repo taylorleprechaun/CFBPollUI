@@ -1,5 +1,6 @@
-import { formatTotals, winPercentage } from '../../lib/track-record-utils';
 import type { TrackRecordTotals } from '../../schemas';
+
+import { formatTotals, winPercentage } from '../../lib/track-record-utils';
 
 interface OverallRecordCardProps {
   label: string;

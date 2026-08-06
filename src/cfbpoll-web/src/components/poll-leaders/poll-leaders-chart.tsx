@@ -12,11 +12,12 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { PollLeaderEntry } from '../../schemas';
-import { useChartColors } from '../../hooks/use-chart-colors';
 
-import { ClusterTooltip } from './cluster-tooltip';
+import type { PollLeaderEntry } from '../../schemas';
 import type { ChartDataPoint } from './types';
+
+import { useChartColors } from '../../hooks/use-chart-colors';
+import { ClusterTooltip } from './cluster-tooltip';
 
 interface PollLeadersChartProps {
   children?: React.ReactNode;

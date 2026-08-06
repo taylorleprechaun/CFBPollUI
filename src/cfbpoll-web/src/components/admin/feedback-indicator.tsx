@@ -1,5 +1,6 @@
-import { SuccessCheckmark } from './success-checkmark';
 import type { ActionFeedback } from './types';
+
+import { SuccessCheckmark } from './success-checkmark';
 
 interface FeedbackIndicatorProps {
   feedback: ActionFeedback | null;

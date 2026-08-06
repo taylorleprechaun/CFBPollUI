@@ -1,10 +1,12 @@
-import { useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { PredictionsPage } from '../../pages/predictions-page';
 
 let mockToken: string | null = 'test-token';
@@ -103,7 +105,7 @@ vi.mock('../../hooks/use-admin-mutations', () => ({
 }));
 
 let mockSummariesData:
-  | { season: number; week: number; isPublished: boolean; createdAt: string; gameCount: number; gradedAt: string | null; isGraded: boolean; resultsPublished: boolean }[]
+  | { createdAt: string; gameCount: number; gradedAt: string | null; isGraded: boolean; isPublished: boolean; resultsPublished: boolean; season: number; week: number; }[]
   | undefined = [];
 let mockSummariesError: Error | null = null;
 let mockSummariesLoading = false;

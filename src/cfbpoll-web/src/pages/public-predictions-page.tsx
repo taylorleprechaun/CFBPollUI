@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { useRankings } from '../hooks/use-rankings';
-import { usePredictionSeasons } from '../hooks/use-prediction-seasons';
-import { useSeason } from '../hooks/use-season';
-import { useWeeks } from '../hooks/use-weeks';
-import { useDocumentTitle } from '../hooks/use-document-title';
-import { usePublicPredictions } from '../hooks/use-public-predictions';
-import { useWeekSelection } from '../hooks/use-week-selection';
 import { ErrorAlert } from '../components/error';
 import { PredictionsTable } from '../components/predictions/predictions-table';
 import { SeasonSelector } from '../components/rankings/season-selector';
 import { WeekSelector } from '../components/rankings/week-selector';
+import { useDocumentTitle } from '../hooks/use-document-title';
+import { usePredictionSeasons } from '../hooks/use-prediction-seasons';
+import { usePublicPredictions } from '../hooks/use-public-predictions';
+import { useRankings } from '../hooks/use-rankings';
+import { useSeason } from '../hooks/use-season';
+import { useWeekSelection } from '../hooks/use-week-selection';
+import { useWeeks } from '../hooks/use-weeks';
 import { ApiError } from '../lib/api-error';
 import { getWeekLabel } from '../lib/week-utils';
 

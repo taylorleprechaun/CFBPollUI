@@ -1,6 +1,7 @@
-import { badgeColorClasses } from './badge-colors';
-import type { BadgeColor } from './badge-colors';
 import type { GameGrade } from '../schemas';
+import type { BadgeColor } from './badge-colors';
+
+import { badgeColorClasses } from './badge-colors';
 
 const GRADE_COLORS: Partial<Record<GameGrade, BadgeColor>> = {
   Correct: 'green',

@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor, waitForElementToBeRemoved, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { SnapshotsPage } from '../../pages/snapshots-page';
 
 let mockToken: string | null = 'test-token';
@@ -76,7 +77,7 @@ vi.mock('../../hooks/use-admin-mutations', () => ({
   }),
 }));
 
-let mockSnapshotsData: { season: number; week: number; isPublished: boolean; createdAt: string }[] | undefined = [];
+let mockSnapshotsData: { createdAt: string; isPublished: boolean; season: number; week: number; }[] | undefined = [];
 let mockSnapshotsError: Error | null = null;
 let mockSnapshotsLoading = false;
 

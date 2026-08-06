@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
+
+import type { ScheduleGame, TeamRecord } from '../../types';
+
 import { ChevronIcon } from '../ui/chevron-icon';
-import type { TeamRecord, ScheduleGame } from '../../types';
 
 interface RecordRowProps {
   containerRef: React.RefObject<HTMLDivElement | null>;

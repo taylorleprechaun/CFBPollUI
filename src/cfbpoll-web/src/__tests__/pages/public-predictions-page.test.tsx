@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { PublicPredictionsPage } from '../../pages/public-predictions-page';
 import { ApiError } from '../../lib/api-error';
+import { PublicPredictionsPage } from '../../pages/public-predictions-page';
 
 const mockSetSelectedSeason = vi.fn();
 
@@ -33,7 +33,7 @@ vi.mock('../../hooks/use-prediction-seasons', () => ({
   }),
 }));
 
-let mockWeeksData: { season: number; weeks: { weekNumber: number; label: string; predictionsPublished: boolean; rankingsPublished: boolean }[] } | undefined;
+let mockWeeksData: { season: number; weeks: { label: string; predictionsPublished: boolean; rankingsPublished: boolean; weekNumber: number; }[] } | undefined;
 let mockWeeksLoading = false;
 let mockWeeksError: Error | null = null;
 const mockRefetchWeeks = vi.fn();
@@ -47,7 +47,7 @@ vi.mock('../../hooks/use-weeks', () => ({
   }),
 }));
 
-let mockPredictionsData: { season: number; week: number; predictions: unknown[]; resultsPublished?: boolean } | undefined;
+let mockPredictionsData: { predictions: unknown[]; resultsPublished?: boolean; season: number; week: number; } | undefined;
 let mockPredictionsLoading = false;
 let mockPredictionsError: Error | null = null;
 const mockRefetchPredictions = vi.fn();
@@ -61,7 +61,7 @@ vi.mock('../../hooks/use-public-predictions', () => ({
   }),
 }));
 
-let mockRankingsData: { season: number; week: number; rankings: { teamName: string; rank: number }[] } | undefined;
+let mockRankingsData: { rankings: { rank: number; teamName: string; }[]; season: number; week: number; } | undefined;
 
 vi.mock('../../hooks/use-rankings', () => ({
   useRankings: () => ({

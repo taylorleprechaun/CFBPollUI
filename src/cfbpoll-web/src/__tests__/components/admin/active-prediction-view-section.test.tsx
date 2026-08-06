@@ -1,8 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ActivePredictionViewSection } from '../../../components/admin/active-prediction-view-section';
+import { describe, expect, it, vi } from 'vitest';
+
 import type { ActivePredictionView } from '../../../hooks/use-predictions-active-view';
+
+import { ActivePredictionViewSection } from '../../../components/admin/active-prediction-view-section';
 
 function buildView(overrides: Partial<ActivePredictionView> = {}): ActivePredictionView {
   return {

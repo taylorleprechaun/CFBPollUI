@@ -1,8 +1,10 @@
-import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { PredictionCard } from '../../../components/predictions/prediction-card';
+import { describe, expect, it } from 'vitest';
+
 import type { GamePredictionPublic } from '../../../schemas';
+
+import { PredictionCard } from '../../../components/predictions/prediction-card';
 
 function buildPrediction(overrides: Partial<GamePredictionPublic> = {}): GamePredictionPublic {
   return {

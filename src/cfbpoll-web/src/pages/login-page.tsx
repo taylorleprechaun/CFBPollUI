@@ -1,7 +1,8 @@
-import { useId, useState, type FormEvent } from 'react';
+import { type FormEvent, useId, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/use-auth';
+
 import { BUTTON_PRIMARY } from '../components/ui/button-styles';
+import { useAuth } from '../hooks/use-auth';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { toErrorMessage } from '../lib/error-utils';
 

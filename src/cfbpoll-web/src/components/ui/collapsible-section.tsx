@@ -1,4 +1,5 @@
-import { useId, useState, type ReactNode } from 'react';
+import { type ReactNode, useId, useState } from 'react';
+
 import { ChevronIcon } from './chevron-icon';
 
 interface CollapsibleSectionProps {

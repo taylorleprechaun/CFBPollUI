@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
-import { ErrorBoundary as ReactErrorBoundary, type FallbackProps } from 'react-error-boundary';
+import { type FallbackProps, ErrorBoundary as ReactErrorBoundary } from 'react-error-boundary';
+
 import { toErrorMessage } from '../../lib/error-utils';
 import { BUTTON_PRIMARY } from '../ui/button-styles';
 import { WarningTriangleIcon } from '../ui/icons';

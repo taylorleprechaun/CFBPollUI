@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+
 import { vi } from 'vitest';
 
 export const mockUsePlotArea = vi.fn(
@@ -24,7 +25,7 @@ export const rechartsMock = {
     for (let i = min; i <= max + step; i += step) ticks.push(i);
     return ticks;
   },
-  Line: ({ dot, dataKey }: { dot?: ((props: Record<string, unknown>) => ReactNode) | boolean; dataKey?: string }) => {
+  Line: ({ dot, dataKey }: { dataKey?: string; dot?: ((props: Record<string, unknown>) => ReactNode) | boolean; }) => {
     if (typeof dot === 'function') {
       return (
         <g data-testid={`line-${dataKey}`}>

@@ -1,8 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { ZodError } from 'zod';
+
 import { ErrorAlert } from '../../components/error/error-alert';
 import { ApiError, ValidationError } from '../../lib/api-error';
-import { ZodError } from 'zod';
 
 describe('ErrorAlert', () => {
   describe('with generic Error', () => {

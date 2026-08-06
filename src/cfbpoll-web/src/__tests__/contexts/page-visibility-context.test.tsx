@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../services/api', () => ({
   fetchPageVisibility: vi.fn(),
@@ -10,9 +10,9 @@ vi.mock('../../lib/query-config', () => ({
   STALE_TIME_PAGE_VISIBILITY: 0,
 }));
 
-import { fetchPageVisibility } from '../../services/api';
 import { PageVisibilityProvider } from '../../contexts/page-visibility-context';
 import { usePageVisibility } from '../../hooks/use-page-visibility';
+import { fetchPageVisibility } from '../../services/api';
 
 function TestConsumer() {
   const { allTimeEnabled, pollLeadersEnabled, predictionsPageEnabled, seasonTrendsEnabled, isLoading } = usePageVisibility();

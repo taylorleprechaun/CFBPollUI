@@ -1,8 +1,10 @@
-import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { TrackRecordTable } from '../../../components/track-record/track-record-table';
+import { describe, expect, it } from 'vitest';
+
 import type { TrackRecordWeek } from '../../../schemas';
+
+import { TrackRecordTable } from '../../../components/track-record/track-record-table';
 
 function buildWeek(overrides: Partial<TrackRecordWeek> = {}): TrackRecordWeek {
   return {

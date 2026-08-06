@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import {
   AdminPredictionsResponseSchema,
   CalculatePredictionsResponseSchema,
@@ -7,8 +8,8 @@ import {
   GradePredictionsResponseSchema,
   LoginResponseSchema,
   PredictionsResponseSchema,
-  PredictionsSummarySchema,
   PredictionsSummariesResponseSchema,
+  PredictionsSummarySchema,
   RefreshCacheResponseSchema,
   SnapshotSchema,
   SnapshotsResponseSchema,

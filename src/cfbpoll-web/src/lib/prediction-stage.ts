@@ -1,5 +1,6 @@
-import { badgeColorClasses } from './badge-colors';
 import type { BadgeColor } from './badge-colors';
+
+import { badgeColorClasses } from './badge-colors';
 
 export type PredictionStage = 'draft' | 'picks-published' | 'graded' | 'results-published';
 

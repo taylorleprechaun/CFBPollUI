@@ -1,11 +1,12 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import App from '../App';
 import { AuthProvider } from '../contexts/auth-context';
 import { SeasonProvider } from '../contexts/season-context';
 import { ThemeProvider } from '../contexts/theme-context';
-import App from '../App';
 
 const MockHomePage = () => <div>Home Page Content</div>;
 vi.mock('../pages/home-page', () => ({
