@@ -1,0 +1,10 @@
+echo "Running TypeScript type check..."
+cd src/cfbpoll-web && npx tsc -b
+TSC_EXIT=$?
+
+if [ $TSC_EXIT -ne 0 ]; then
+  echo "TypeScript type check failed. Push aborted."
+  exit 1
+fi
+
+echo "TypeScript type check passed."
