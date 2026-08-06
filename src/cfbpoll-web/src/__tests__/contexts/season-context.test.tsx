@@ -62,20 +62,6 @@ describe('SeasonContext', () => {
     expect(screen.getByTestId('seasons').textContent).toBe('[2024,2023,2022]');
   });
 
-  it('shows loading state while seasons are loading', () => {
-    vi.mocked(useSeasons).mockReturnValue({
-      data: undefined,
-      isLoading: true,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useSeasons>);
-
-    renderWithProvider();
-
-    expect(screen.getByTestId('loading').textContent).toBe('loading');
-    expect(screen.getByTestId('selected').textContent).toBe('none');
-  });
-
   it('exposes seasons error', () => {
     vi.mocked(useSeasons).mockReturnValue({
       data: undefined,
@@ -87,54 +73,6 @@ describe('SeasonContext', () => {
     renderWithProvider();
 
     expect(screen.getByTestId('error').textContent).toBe('Fetch failed');
-  });
-
-  it('reads selected season from sessionStorage', () => {
-    sessionStorage.setItem('cfbpoll_selected_season', '2022');
-
-    vi.mocked(useSeasons).mockReturnValue({
-      data: { seasons: [2024, 2023, 2022] },
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useSeasons>);
-
-    renderWithProvider();
-
-    expect(screen.getByTestId('selected').textContent).toBe('2022');
-  });
-
-  it('setSelectedSeason updates state and sessionStorage', () => {
-    vi.mocked(useSeasons).mockReturnValue({
-      data: { seasons: [2024, 2023, 2022] },
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useSeasons>);
-
-    renderWithProvider();
-
-    act(() => {
-      fireEvent.click(screen.getByText('Set 2023'));
-    });
-
-    expect(screen.getByTestId('selected').textContent).toBe('2023');
-    expect(sessionStorage.getItem('cfbpoll_selected_season')).toBe('2023');
-  });
-
-  it('ignores invalid sessionStorage values', () => {
-    sessionStorage.setItem('cfbpoll_selected_season', 'not-a-number');
-
-    vi.mocked(useSeasons).mockReturnValue({
-      data: { seasons: [2024, 2023] },
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useSeasons>);
-
-    renderWithProvider();
-
-    expect(screen.getByTestId('selected').textContent).toBe('2024');
   });
 
   it('falls back to null when reading sessionStorage throws', () => {
@@ -156,14 +94,34 @@ describe('SeasonContext', () => {
     getItemSpy.mockRestore();
   });
 
-  it('throws error when useSeason is used outside SeasonProvider', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+  it('ignores invalid sessionStorage values', () => {
+    sessionStorage.setItem('cfbpoll_selected_season', 'not-a-number');
 
-    expect(() => render(<TestConsumer />)).toThrow(
-      'useSeason must be used within a SeasonProvider'
-    );
+    vi.mocked(useSeasons).mockReturnValue({
+      data: { seasons: [2024, 2023] },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useSeasons>);
 
-    consoleError.mockRestore();
+    renderWithProvider();
+
+    expect(screen.getByTestId('selected').textContent).toBe('2024');
+  });
+
+  it('reads selected season from sessionStorage', () => {
+    sessionStorage.setItem('cfbpoll_selected_season', '2022');
+
+    vi.mocked(useSeasons).mockReturnValue({
+      data: { seasons: [2024, 2023, 2022] },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useSeasons>);
+
+    renderWithProvider();
+
+    expect(screen.getByTestId('selected').textContent).toBe('2022');
   });
 
   it('returns empty seasons array when data is not loaded', () => {
@@ -177,6 +135,48 @@ describe('SeasonContext', () => {
     renderWithProvider();
 
     expect(screen.getByTestId('seasons').textContent).toBe('[]');
+  });
+
+  it('setSelectedSeason updates state and sessionStorage', () => {
+    vi.mocked(useSeasons).mockReturnValue({
+      data: { seasons: [2024, 2023, 2022] },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useSeasons>);
+
+    renderWithProvider();
+
+    act(() => {
+      fireEvent.click(screen.getByText('Set 2023'));
+    });
+
+    expect(screen.getByTestId('selected').textContent).toBe('2023');
+    expect(sessionStorage.getItem('cfbpoll_selected_season')).toBe('2023');
+  });
+
+  it('shows loading state while seasons are loading', () => {
+    vi.mocked(useSeasons).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useSeasons>);
+
+    renderWithProvider();
+
+    expect(screen.getByTestId('loading').textContent).toBe('loading');
+    expect(screen.getByTestId('selected').textContent).toBe('none');
+  });
+
+  it('throws error when useSeason is used outside SeasonProvider', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(() => render(<TestConsumer />)).toThrow(
+      'useSeason must be used within a SeasonProvider'
+    );
+
+    consoleError.mockRestore();
   });
 
   it('writes default season to sessionStorage on first load', () => {

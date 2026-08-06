@@ -109,73 +109,13 @@ function renderApp(initialRoute = '/') {
 }
 
 describe('App', () => {
-  it('renders home page at root route', async () => {
+  it('includes Layout component with navigation', async () => {
     renderApp('/');
     await waitFor(() => {
-      expect(screen.getByText('Home Page Content')).toBeInTheDocument();
-    });
-  });
-
-  it('renders rankings page at /rankings route', async () => {
-    renderApp('/rankings');
-    await waitFor(() => {
-      expect(screen.getByText('Rankings Page Content')).toBeInTheDocument();
-    });
-  });
-
-  it('renders team details page at /team-details route', async () => {
-    renderApp('/team-details');
-    await waitFor(() => {
-      expect(screen.getByText('Team Details Page Content')).toBeInTheDocument();
-    });
-  });
-
-  it('renders public predictions page at /predictions route when enabled', async () => {
-    renderApp('/predictions');
-    await waitFor(() => {
-      expect(screen.getByText('Public Predictions Page Content')).toBeInTheDocument();
-    });
-  });
-
-  it('redirects /predictions to home when predictions page is disabled', async () => {
-    mockPredictionsPageEnabled = false;
-
-    renderApp('/predictions');
-    await waitFor(() => {
-      expect(screen.getByText('Home Page Content')).toBeInTheDocument();
-    });
-  });
-
-  it('renders track record page at /track-record route when enabled', async () => {
-    renderApp('/track-record');
-    await waitFor(() => {
-      expect(screen.getByText('Track Record Page Content')).toBeInTheDocument();
-    });
-  });
-
-  it('redirects /track-record to home when predictions page is disabled', async () => {
-    mockPredictionsPageEnabled = false;
-
-    renderApp('/track-record');
-    await waitFor(() => {
-      expect(screen.getByText('Home Page Content')).toBeInTheDocument();
-    });
-  });
-
-  it('renders login page at /login route when not authenticated', async () => {
-    renderApp('/login');
-    await waitFor(() => {
-      expect(screen.getByText('Login Page Content')).toBeInTheDocument();
-    });
-  });
-
-  it('redirects /login to home when authenticated', async () => {
-    localStorage.setItem('cfbpoll_token', 'test-token');
-    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
-
-    renderApp('/login');
-    await waitFor(() => {
-      expect(screen.getByText('Home Page Content')).toBeInTheDocument();
+      expect(screen.getByText('CFB Poll')).toBeInTheDocument();
+      expect(screen.getByText('Home')).toBeInTheDocument();
+      const rankingsButtons = screen.getAllByRole('button', { name: /Rankings/i });
+      expect(rankingsButtons.length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -186,36 +126,6 @@ describe('App', () => {
     renderApp('/admin');
     await waitFor(() => {
       expect(screen.getByText('Snapshots Page Content')).toBeInTheDocument();
-    });
-  });
-
-  it('renders snapshots page at /admin/snapshots when authenticated', async () => {
-    localStorage.setItem('cfbpoll_token', 'test-token');
-    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
-
-    renderApp('/admin/snapshots');
-    await waitFor(() => {
-      expect(screen.getByText('Snapshots Page Content')).toBeInTheDocument();
-    });
-  });
-
-  it('renders predictions page at /admin/predictions when authenticated', async () => {
-    localStorage.setItem('cfbpoll_token', 'test-token');
-    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
-
-    renderApp('/admin/predictions');
-    await waitFor(() => {
-      expect(screen.getByText('Predictions Page Content')).toBeInTheDocument();
-    });
-  });
-
-  it('renders settings page at /admin/settings when authenticated', async () => {
-    localStorage.setItem('cfbpoll_token', 'test-token');
-    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
-
-    renderApp('/admin/settings');
-    await waitFor(() => {
-      expect(screen.getByText('Settings Page Content')).toBeInTheDocument();
     });
   });
 
@@ -233,13 +143,103 @@ describe('App', () => {
     });
   });
 
-  it('includes Layout component with navigation', async () => {
+  it('redirects /login to home when authenticated', async () => {
+    localStorage.setItem('cfbpoll_token', 'test-token');
+    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
+
+    renderApp('/login');
+    await waitFor(() => {
+      expect(screen.getByText('Home Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('redirects /predictions to home when predictions page is disabled', async () => {
+    mockPredictionsPageEnabled = false;
+
+    renderApp('/predictions');
+    await waitFor(() => {
+      expect(screen.getByText('Home Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('redirects /track-record to home when predictions page is disabled', async () => {
+    mockPredictionsPageEnabled = false;
+
+    renderApp('/track-record');
+    await waitFor(() => {
+      expect(screen.getByText('Home Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('renders home page at root route', async () => {
     renderApp('/');
     await waitFor(() => {
-      expect(screen.getByText('CFB Poll')).toBeInTheDocument();
-      expect(screen.getByText('Home')).toBeInTheDocument();
-      const rankingsButtons = screen.getAllByRole('button', { name: /Rankings/i });
-      expect(rankingsButtons.length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText('Home Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('renders login page at /login route when not authenticated', async () => {
+    renderApp('/login');
+    await waitFor(() => {
+      expect(screen.getByText('Login Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('renders predictions page at /admin/predictions when authenticated', async () => {
+    localStorage.setItem('cfbpoll_token', 'test-token');
+    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
+
+    renderApp('/admin/predictions');
+    await waitFor(() => {
+      expect(screen.getByText('Predictions Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('renders public predictions page at /predictions route when enabled', async () => {
+    renderApp('/predictions');
+    await waitFor(() => {
+      expect(screen.getByText('Public Predictions Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('renders rankings page at /rankings route', async () => {
+    renderApp('/rankings');
+    await waitFor(() => {
+      expect(screen.getByText('Rankings Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('renders settings page at /admin/settings when authenticated', async () => {
+    localStorage.setItem('cfbpoll_token', 'test-token');
+    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
+
+    renderApp('/admin/settings');
+    await waitFor(() => {
+      expect(screen.getByText('Settings Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('renders snapshots page at /admin/snapshots when authenticated', async () => {
+    localStorage.setItem('cfbpoll_token', 'test-token');
+    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
+
+    renderApp('/admin/snapshots');
+    await waitFor(() => {
+      expect(screen.getByText('Snapshots Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('renders team details page at /team-details route', async () => {
+    renderApp('/team-details');
+    await waitFor(() => {
+      expect(screen.getByText('Team Details Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('renders track record page at /track-record route when enabled', async () => {
+    renderApp('/track-record');
+    await waitFor(() => {
+      expect(screen.getByText('Track Record Page Content')).toBeInTheDocument();
     });
   });
 

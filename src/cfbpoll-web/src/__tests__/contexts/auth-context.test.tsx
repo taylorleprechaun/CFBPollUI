@@ -29,31 +29,6 @@ describe('AuthContext', () => {
     localStorage.clear();
   });
 
-  it('starts unauthenticated when no token in storage', () => {
-    render(
-      <AuthProvider>
-        <TestConsumer />
-      </AuthProvider>
-    );
-
-    expect(screen.getByTestId('auth-status').textContent).toBe('not-authenticated');
-    expect(screen.getByTestId('token').textContent).toBe('no-token');
-  });
-
-  it('restores token from localStorage if not expired', () => {
-    localStorage.setItem('cfbpoll_token', 'stored-token');
-    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 60000));
-
-    render(
-      <AuthProvider>
-        <TestConsumer />
-      </AuthProvider>
-    );
-
-    expect(screen.getByTestId('auth-status').textContent).toBe('authenticated');
-    expect(screen.getByTestId('token').textContent).toBe('stored-token');
-  });
-
   it('clears expired token from localStorage on mount', () => {
     localStorage.setItem('cfbpoll_token', 'expired-token');
     localStorage.setItem('cfbpoll_token_expiry', String(Date.now() - 1000));
@@ -117,6 +92,31 @@ describe('AuthContext', () => {
 
     expect(screen.getByTestId('auth-status').textContent).toBe('not-authenticated');
     expect(localStorage.getItem('cfbpoll_token')).toBeNull();
+  });
+
+  it('restores token from localStorage if not expired', () => {
+    localStorage.setItem('cfbpoll_token', 'stored-token');
+    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 60000));
+
+    render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>
+    );
+
+    expect(screen.getByTestId('auth-status').textContent).toBe('authenticated');
+    expect(screen.getByTestId('token').textContent).toBe('stored-token');
+  });
+
+  it('starts unauthenticated when no token in storage', () => {
+    render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>
+    );
+
+    expect(screen.getByTestId('auth-status').textContent).toBe('not-authenticated');
+    expect(screen.getByTestId('token').textContent).toBe('no-token');
   });
 
   it('throws error when useAuth is used outside AuthProvider', () => {

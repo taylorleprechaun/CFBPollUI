@@ -50,6 +50,21 @@ describe('PageVisibilityContext', () => {
     vi.clearAllMocks();
   });
 
+  it('handles fetch error gracefully with defaults of true', async () => {
+    vi.mocked(fetchPageVisibility).mockRejectedValue(new Error('Network error'));
+
+    renderWithProviders();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('loading').textContent).toBe('false');
+    });
+
+    expect(screen.getByTestId('all-time').textContent).toBe('true');
+    expect(screen.getByTestId('poll-leaders').textContent).toBe('true');
+    expect(screen.getByTestId('predictions-page').textContent).toBe('true');
+    expect(screen.getByTestId('season-trends').textContent).toBe('true');
+  });
+
   it('provides default values while loading', () => {
     vi.mocked(fetchPageVisibility).mockReturnValue(new Promise(() => {}));
 
@@ -80,20 +95,5 @@ describe('PageVisibilityContext', () => {
     expect(screen.getByTestId('poll-leaders').textContent).toBe('true');
     expect(screen.getByTestId('predictions-page').textContent).toBe('true');
     expect(screen.getByTestId('season-trends').textContent).toBe('false');
-  });
-
-  it('handles fetch error gracefully with defaults of true', async () => {
-    vi.mocked(fetchPageVisibility).mockRejectedValue(new Error('Network error'));
-
-    renderWithProviders();
-
-    await waitFor(() => {
-      expect(screen.getByTestId('loading').textContent).toBe('false');
-    });
-
-    expect(screen.getByTestId('all-time').textContent).toBe('true');
-    expect(screen.getByTestId('poll-leaders').textContent).toBe('true');
-    expect(screen.getByTestId('predictions-page').textContent).toBe('true');
-    expect(screen.getByTestId('season-trends').textContent).toBe('true');
   });
 });
