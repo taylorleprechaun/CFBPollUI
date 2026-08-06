@@ -18,6 +18,7 @@ public class AdminModule : IAdminModule
     private readonly IRankingsModule _rankingsModule;
     private readonly IRatingModule _ratingModule;
     private readonly ISeasonTrendsModule _seasonTrendsModule;
+    private readonly ITeamPredictionRecordModule _teamPredictionRecordModule;
     private readonly ITrackRecordModule _trackRecordModule;
 
     public AdminModule(
@@ -31,6 +32,7 @@ public class AdminModule : IAdminModule
         IRankingsModule rankingsModule,
         IRatingModule ratingModule,
         ISeasonTrendsModule seasonTrendsModule,
+        ITeamPredictionRecordModule teamPredictionRecordModule,
         ITrackRecordModule trackRecordModule,
         ILogger<AdminModule> logger)
     {
@@ -45,6 +47,7 @@ public class AdminModule : IAdminModule
         _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
         _ratingModule = ratingModule ?? throw new ArgumentNullException(nameof(ratingModule));
         _seasonTrendsModule = seasonTrendsModule ?? throw new ArgumentNullException(nameof(seasonTrendsModule));
+        _teamPredictionRecordModule = teamPredictionRecordModule ?? throw new ArgumentNullException(nameof(teamPredictionRecordModule));
         _trackRecordModule = trackRecordModule ?? throw new ArgumentNullException(nameof(trackRecordModule));
     }
 
@@ -155,6 +158,7 @@ public class AdminModule : IAdminModule
 
         if (result)
         {
+            await _teamPredictionRecordModule.InvalidateCacheAsync().ConfigureAwait(false);
             await _trackRecordModule.InvalidateCacheAsync().ConfigureAwait(false);
         }
 
@@ -232,6 +236,7 @@ public class AdminModule : IAdminModule
 
         if (result)
         {
+            await _teamPredictionRecordModule.InvalidateCacheAsync().ConfigureAwait(false);
             await _trackRecordModule.InvalidateCacheAsync().ConfigureAwait(false);
         }
 

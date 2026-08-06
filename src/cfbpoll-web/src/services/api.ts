@@ -20,6 +20,8 @@ import {
   SeasonTrendsResponseSchema,
   type TeamDetailResponse,
   TeamDetailResponseSchema,
+  type TeamPredictionRecordsResponse,
+  TeamPredictionRecordsResponseSchema,
   type TrackRecordResponse,
   TrackRecordResponseSchema,
   type WeeksResponse,
@@ -94,6 +96,11 @@ export async function fetchTeamDetail(
     `${API_BASE_URL}/api/v1/teams/${encodeURIComponent(teamName)}?season=${season}&week=${week}`
   );
   return parseResponse(response, TeamDetailResponseSchema);
+}
+
+export async function fetchTeamPredictionRecords(season: number): Promise<TeamPredictionRecordsResponse> {
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/seasons/${season}/predictions/team-records`);
+  return parseResponse(response, TeamPredictionRecordsResponseSchema);
 }
 
 export async function fetchTrackRecord(): Promise<TrackRecordResponse> {

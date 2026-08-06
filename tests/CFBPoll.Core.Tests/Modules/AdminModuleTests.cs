@@ -22,6 +22,7 @@ public class AdminModuleTests
     private readonly Mock<IRankingsModule> _mockRankingsModule;
     private readonly Mock<IRatingModule> _mockRatingModule;
     private readonly Mock<ISeasonTrendsModule> _mockSeasonTrendsModule;
+    private readonly Mock<ITeamPredictionRecordModule> _mockTeamPredictionRecordModule;
     private readonly Mock<ITrackRecordModule> _mockTrackRecordModule;
 
     public AdminModuleTests()
@@ -37,6 +38,7 @@ public class AdminModuleTests
         _mockRankingsModule = new Mock<IRankingsModule>();
         _mockRatingModule = new Mock<IRatingModule>();
         _mockSeasonTrendsModule = new Mock<ISeasonTrendsModule>();
+        _mockTeamPredictionRecordModule = new Mock<ITeamPredictionRecordModule>();
         _mockTrackRecordModule = new Mock<ITrackRecordModule>();
 
         _mockDataService.Setup(x => x.GetBettingLinesAsync(It.IsAny<int>(), It.IsAny<int>()))
@@ -53,6 +55,7 @@ public class AdminModuleTests
             _mockRankingsModule.Object,
             _mockRatingModule.Object,
             _mockSeasonTrendsModule.Object,
+            _mockTeamPredictionRecordModule.Object,
             _mockTrackRecordModule.Object,
             _mockLogger.Object);
     }
@@ -500,6 +503,7 @@ public class AdminModuleTests
                 _mockRankingsModule.Object,
                 _mockRatingModule.Object,
                 _mockSeasonTrendsModule.Object,
+                _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -519,6 +523,7 @@ public class AdminModuleTests
                 _mockRankingsModule.Object,
                 _mockRatingModule.Object,
                 _mockSeasonTrendsModule.Object,
+                _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -538,6 +543,7 @@ public class AdminModuleTests
                 _mockRankingsModule.Object,
                 _mockRatingModule.Object,
                 _mockSeasonTrendsModule.Object,
+                _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -557,6 +563,7 @@ public class AdminModuleTests
                 _mockRankingsModule.Object,
                 _mockRatingModule.Object,
                 _mockSeasonTrendsModule.Object,
+                _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
                 null!));
     }
@@ -576,6 +583,7 @@ public class AdminModuleTests
                 _mockRankingsModule.Object,
                 _mockRatingModule.Object,
                 _mockSeasonTrendsModule.Object,
+                _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -595,6 +603,7 @@ public class AdminModuleTests
                 _mockRankingsModule.Object,
                 _mockRatingModule.Object,
                 _mockSeasonTrendsModule.Object,
+                _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -614,6 +623,7 @@ public class AdminModuleTests
                 _mockRankingsModule.Object,
                 _mockRatingModule.Object,
                 _mockSeasonTrendsModule.Object,
+                _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -633,6 +643,7 @@ public class AdminModuleTests
                 _mockRankingsModule.Object,
                 _mockRatingModule.Object,
                 _mockSeasonTrendsModule.Object,
+                _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -652,6 +663,7 @@ public class AdminModuleTests
                 null!,
                 _mockRatingModule.Object,
                 _mockSeasonTrendsModule.Object,
+                _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -671,6 +683,7 @@ public class AdminModuleTests
                 _mockRankingsModule.Object,
                 null!,
                 _mockSeasonTrendsModule.Object,
+                _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -689,6 +702,27 @@ public class AdminModuleTests
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
                 _mockRatingModule.Object,
+                null!,
+                _mockTeamPredictionRecordModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullTeamPredictionRecordModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingModule.Object,
+                _mockSeasonTrendsModule.Object,
                 null!,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
@@ -709,6 +743,7 @@ public class AdminModuleTests
                 _mockRankingsModule.Object,
                 _mockRatingModule.Object,
                 _mockSeasonTrendsModule.Object,
+                _mockTeamPredictionRecordModule.Object,
                 null!,
                 _mockLogger.Object));
     }
@@ -732,6 +767,7 @@ public class AdminModuleTests
         await _adminModule.DeletePredictionsAsync(2024, 5);
 
         _mockTrackRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
+        _mockTeamPredictionRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
     }
 
     [Fact]
@@ -742,6 +778,7 @@ public class AdminModuleTests
         await _adminModule.DeletePredictionsAsync(2024, 5);
 
         _mockTrackRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
+        _mockTeamPredictionRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
     }
 
     [Fact]
@@ -985,6 +1022,7 @@ public class AdminModuleTests
         await _adminModule.PublishGradedResultsAsync(2024, 5);
 
         _mockTrackRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
+        _mockTeamPredictionRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
     }
 
     [Fact]
@@ -995,6 +1033,7 @@ public class AdminModuleTests
         await _adminModule.PublishGradedResultsAsync(2024, 5);
 
         _mockTrackRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
+        _mockTeamPredictionRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
     }
 
     [Fact]

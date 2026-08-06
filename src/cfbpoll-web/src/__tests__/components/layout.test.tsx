@@ -157,6 +157,9 @@ describe('Layout', () => {
 
     const trackRecordLink = screen.queryAllByRole('link').find((l) => l.getAttribute('href') === '/track-record');
     expect(trackRecordLink).toBeUndefined();
+
+    const teamRecordsLink = screen.queryAllByRole('link').find((l) => l.getAttribute('href') === '/team-prediction-records');
+    expect(teamRecordsLink).toBeUndefined();
   });
 
   it('opens mobile menu with grouped sections', async () => {
@@ -321,6 +324,17 @@ describe('Layout', () => {
 
     const trackRecordLink = screen.getAllByRole('link').find((l) => l.getAttribute('href') === '/track-record');
     expect(trackRecordLink).toBeDefined();
+  });
+
+  it('shows Team Records link in Predictions dropdown when enabled', async () => {
+    mockPredictionsPageEnabled = true;
+    renderLayout();
+
+    const predictionsButton = screen.getByRole('button', { name: /^Predictions$/i });
+    await userEvent.click(predictionsButton);
+
+    const teamRecordsLink = screen.getAllByRole('link').find((l) => l.getAttribute('href') === '/team-prediction-records');
+    expect(teamRecordsLink).toBeDefined();
   });
 
   it('shows Track Record link in Predictions dropdown when enabled', async () => {

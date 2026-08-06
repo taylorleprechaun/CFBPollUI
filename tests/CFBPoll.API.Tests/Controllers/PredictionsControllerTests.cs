@@ -14,27 +14,36 @@ public class PredictionsControllerTests
     private readonly PredictionsController _controller;
     private readonly Mock<ILogger<PredictionsController>> _mockLogger;
     private readonly Mock<IPredictionsModule> _mockPredictionsModule;
+    private readonly Mock<ITeamPredictionRecordModule> _mockTeamPredictionRecordModule;
 
     public PredictionsControllerTests()
     {
         _mockLogger = new Mock<ILogger<PredictionsController>>();
         _mockPredictionsModule = new Mock<IPredictionsModule>();
+        _mockTeamPredictionRecordModule = new Mock<ITeamPredictionRecordModule>();
 
-        _controller = new PredictionsController(_mockPredictionsModule.Object, _mockLogger.Object);
+        _controller = new PredictionsController(_mockPredictionsModule.Object, _mockTeamPredictionRecordModule.Object, _mockLogger.Object);
     }
 
     [Fact]
     public void Constructor_NullLogger_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
-            () => new PredictionsController(new Mock<IPredictionsModule>().Object, null!));
+            () => new PredictionsController(new Mock<IPredictionsModule>().Object, new Mock<ITeamPredictionRecordModule>().Object, null!));
     }
 
     [Fact]
     public void Constructor_NullPredictionsModule_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
-            () => new PredictionsController(null!, new Mock<ILogger<PredictionsController>>().Object));
+            () => new PredictionsController(null!, new Mock<ITeamPredictionRecordModule>().Object, new Mock<ILogger<PredictionsController>>().Object));
+    }
+
+    [Fact]
+    public void Constructor_NullTeamPredictionRecordModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new PredictionsController(new Mock<IPredictionsModule>().Object, null!, new Mock<ILogger<PredictionsController>>().Object));
     }
 
     [Fact]
@@ -168,5 +177,42 @@ public class PredictionsControllerTests
         var prediction = Assert.Single(response.Predictions);
         Assert.Equal("Alabama", prediction.ActualWinner);
         Assert.Equal("Correct", prediction.WinnerGrade);
+    }
+
+    [Fact]
+    public async Task GetTeamPredictionRecords_NoGradedPredictions_ReturnsEmpty()
+    {
+        _mockTeamPredictionRecordModule
+            .Setup(x => x.GetTeamRecordsAsync(2024))
+            .ReturnsAsync(new List<TeamPredictionRecord>());
+
+        var result = await _controller.GetTeamPredictionRecords(2024);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<TeamPredictionRecordsResponseDTO>(okResult.Value);
+        Assert.Empty(response.Records);
+    }
+
+    [Fact]
+    public async Task GetTeamPredictionRecords_ReturnsRecordsFromModule()
+    {
+        var records = new List<TeamPredictionRecord>
+        {
+            new() { TeamName = "Michigan", PredictedWins = 8, PredictedLosses = 2, ActualWins = 7, ActualLosses = 3, GradedGameCount = 10 }
+        };
+
+        _mockTeamPredictionRecordModule
+            .Setup(x => x.GetTeamRecordsAsync(2024))
+            .ReturnsAsync(records);
+
+        var result = await _controller.GetTeamPredictionRecords(2024);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<TeamPredictionRecordsResponseDTO>(okResult.Value);
+        Assert.Equal(2024, response.Season);
+        var record = Assert.Single(response.Records);
+        Assert.Equal("Michigan", record.TeamName);
+        Assert.Equal(8, record.PredictedWins);
+        Assert.Equal(7, record.ActualWins);
     }
 }

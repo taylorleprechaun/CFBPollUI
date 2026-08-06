@@ -13,10 +13,15 @@ public class PredictionsController : ControllerBase
 
     private readonly ILogger<PredictionsController> _logger;
     private readonly IPredictionsModule _predictionsModule;
+    private readonly ITeamPredictionRecordModule _teamPredictionRecordModule;
 
-    public PredictionsController(IPredictionsModule predictionsModule, ILogger<PredictionsController> logger)
+    public PredictionsController(
+        IPredictionsModule predictionsModule,
+        ITeamPredictionRecordModule teamPredictionRecordModule,
+        ILogger<PredictionsController> logger)
     {
         _predictionsModule = predictionsModule ?? throw new ArgumentNullException(nameof(predictionsModule));
+        _teamPredictionRecordModule = teamPredictionRecordModule ?? throw new ArgumentNullException(nameof(teamPredictionRecordModule));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -54,5 +59,22 @@ public class PredictionsController : ControllerBase
             published.Value.Predictions,
             resultsPublished: published.Value.ResultsPublished,
             isGraded: published.Value.ResultsPublished));
+    }
+
+    /// <summary>
+    /// Retrieves the predicted-vs-actual win/loss record for every team with at least one graded,
+    /// published prediction in the given season.
+    /// </summary>
+    /// <param name="season">The season year.</param>
+    /// <returns>Team prediction records for the specified season.</returns>
+    [HttpGet("api/v1/seasons/{season}/predictions/team-records")]
+    [ValidateSeasonWeek]
+    public async Task<ActionResult<TeamPredictionRecordsResponseDTO>> GetTeamPredictionRecords([FromRoute] int season)
+    {
+        _logger.LogInformation("Fetching team prediction records for season {Season}", season);
+
+        var records = await _teamPredictionRecordModule.GetTeamRecordsAsync(season);
+
+        return Ok(TeamPredictionRecordMapper.ToResponseDTO(season, records));
     }
 }

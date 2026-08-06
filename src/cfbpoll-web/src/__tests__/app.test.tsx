@@ -56,6 +56,12 @@ vi.mock('../pages/track-record-page', () => ({
   default: MockTrackRecordPage,
 }));
 
+const MockTeamPredictionRecordsPage = () => <div>Team Prediction Records Page Content</div>;
+vi.mock('../pages/team-prediction-records-page', () => ({
+  TeamPredictionRecordsPage: MockTeamPredictionRecordsPage,
+  default: MockTeamPredictionRecordsPage,
+}));
+
 const MockSettingsPage = () => <div>Settings Page Content</div>;
 vi.mock('../pages/settings-page', () => ({
   SettingsPage: MockSettingsPage,
@@ -162,6 +168,15 @@ describe('App', () => {
     });
   });
 
+  it('redirects /team-prediction-records to home when predictions page is disabled', async () => {
+    mockPredictionsPageEnabled = false;
+
+    renderApp('/team-prediction-records');
+    await waitFor(() => {
+      expect(screen.getByText('Home Page Content')).toBeInTheDocument();
+    });
+  });
+
   it('redirects /track-record to home when predictions page is disabled', async () => {
     mockPredictionsPageEnabled = false;
 
@@ -233,6 +248,13 @@ describe('App', () => {
     renderApp('/team-details');
     await waitFor(() => {
       expect(screen.getByText('Team Details Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('renders team prediction records page at /team-prediction-records route when enabled', async () => {
+    renderApp('/team-prediction-records');
+    await waitFor(() => {
+      expect(screen.getByText('Team Prediction Records Page Content')).toBeInTheDocument();
     });
   });
 
