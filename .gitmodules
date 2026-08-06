@@ -1,0 +1,3 @@
+[submodule "src/CFBPoll.Core/Modules/Proprietary"]
+	path = src/CFBPoll.Core/Modules/Proprietary
+	url = git@github.com:taylorleprechaun/CFBPoll-Proprietary.git

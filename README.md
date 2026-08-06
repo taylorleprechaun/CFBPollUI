@@ -152,7 +152,10 @@ Only `RankingsModule` has a direct dependency on `IRankingsData`, only `Predicti
 ```bash
 git clone https://github.com/taylorleprechaun/CFBPollUI.git
 cd CFBPollUI
+git submodule update --init --recursive
 ```
+
+> The submodule step pulls `RatingModule.cs` and `PredictionCalculatorModule.cs` from a private repo. Most external contributors won't have access to it, so this will just leave `src/CFBPoll.Core/Modules/Proprietary/` empty — see [Implement Proprietary Modules](#4-implement-proprietary-modules) below for how to supply your own implementations instead.
 
 ### 2. Configure API Key
 
@@ -188,7 +191,9 @@ npm install
 
 ### 4. Implement Proprietary Modules
 
-The rating module (`src/CFBPoll.Core/Modules/RatingModule.cs`) and prediction calculator module (`src/CFBPoll.Core/Modules/PredictionCalculatorModule.cs`) are not included in the repository. You'll need to create your own implementations:
+The rating module (`RatingModule.cs`) and prediction calculator module (`PredictionCalculatorModule.cs`) live in a private repo, mounted into this one as a git submodule at `src/CFBPoll.Core/Modules/Proprietary/`. If you have access to that private repo, `git submodule update --init --recursive` (see [Clone the repository](#1-clone-the-repository)) already populated this folder and you can skip the rest of this section.
+
+If you don't have access, the folder will be empty after cloning. Add your own files there instead — the project builds any `.cs` files it finds in that folder automatically, no `.csproj` changes needed:
 
 ```csharp
 using CFBPoll.Core.Interfaces;
@@ -308,6 +313,6 @@ npm test
 | cfbpoll-web | 99% | 95% |
 
 **Excluded from coverage:**
-- `RatingModule` and `PredictionCalculatorModule` - Proprietary algorithms, not included in the repository. Tests are maintained locally.
+- `RatingModule` and `PredictionCalculatorModule` - Proprietary algorithms, kept in a private submodule rather than this repository. Tests are maintained privately alongside them.
 - `CFBDataService` - Makes HTTP calls to the external College Football Data API. Better suited for integration tests.
 - `Program.cs` - ASP.NET Core startup configuration code.

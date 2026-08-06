@@ -64,7 +64,7 @@ public class CacheCleanupHostedServiceTests
         var service = new CacheCleanupHostedService(_mockCache.Object, MSOptions.Create(options), _mockLogger.Object);
 
         await service.StartAsync(CancellationToken.None);
-        await Task.Delay(150);
+        await WaitUntilAsync(() => callCount >= 2, TimeSpan.FromSeconds(5));
         await service.StopAsync(CancellationToken.None);
 
         Assert.True(callCount >= 2, $"Expected at least 2 cleanup calls, got {callCount}");
@@ -93,7 +93,7 @@ public class CacheCleanupHostedServiceTests
         var service = new CacheCleanupHostedService(_mockCache.Object, MSOptions.Create(options), _mockLogger.Object);
 
         await service.StartAsync(CancellationToken.None);
-        await Task.Delay(150);
+        await WaitUntilAsync(() => callCount >= 2, TimeSpan.FromSeconds(5));
         await service.StopAsync(CancellationToken.None);
 
         Assert.True(callCount >= 2, $"Expected the loop to continue after a failure, got {callCount} calls");
@@ -105,5 +105,14 @@ public class CacheCleanupHostedServiceTests
                 It.IsAny<InvalidOperationException>(),
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.AtLeastOnce);
+    }
+
+    private static async Task WaitUntilAsync(Func<bool> condition, TimeSpan timeout)
+    {
+        var deadline = DateTime.UtcNow + timeout;
+        while (!condition() && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(10);
+        }
     }
 }
