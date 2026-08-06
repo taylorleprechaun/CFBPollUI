@@ -6,43 +6,6 @@ namespace CFBPoll.Core.Tests.Models;
 public class AdvancedGameStatsTests
 {
     [Fact]
-    public void AdvancedGameStats_PropertiesCanBeSetAndRetrieved()
-    {
-        var offense = new AdvancedGameStatsUnit { Plays = 70, PPA = 0.25 };
-        var defense = new AdvancedGameStatsUnit { Plays = 65, PPA = -0.15 };
-
-        var stats = new AdvancedGameStats
-        {
-            GameID = 12345,
-            Team = "Alabama",
-            Opponent = "Florida",
-            Week = 5,
-            Offense = offense,
-            Defense = defense
-        };
-
-        Assert.Equal(12345, stats.GameID);
-        Assert.Equal("Alabama", stats.Team);
-        Assert.Equal("Florida", stats.Opponent);
-        Assert.Equal(5, stats.Week);
-        Assert.Same(offense, stats.Offense);
-        Assert.Same(defense, stats.Defense);
-    }
-
-    [Fact]
-    public void AdvancedGameStats_PropertiesDefaultToNull()
-    {
-        var stats = new AdvancedGameStats();
-
-        Assert.Null(stats.GameID);
-        Assert.Null(stats.Team);
-        Assert.Null(stats.Opponent);
-        Assert.Null(stats.Week);
-        Assert.Null(stats.Offense);
-        Assert.Null(stats.Defense);
-    }
-
-    [Fact]
     public void AdvancedGameStatsUnit_AllPropertiesCanBeSetAndRetrieved()
     {
         var unit = new AdvancedGameStatsUnit
@@ -128,5 +91,42 @@ public class AdvancedGameStatsTests
         Assert.Null(unit.StuffRate);
         Assert.Null(unit.SuccessRate);
         Assert.Null(unit.TotalPPA);
+    }
+
+    [Fact]
+    public void AdvancedGameStats_PropertiesCanBeSetAndRetrieved()
+    {
+        var offense = new AdvancedGameStatsUnit { Plays = 70, PPA = 0.25 };
+        var defense = new AdvancedGameStatsUnit { Plays = 65, PPA = -0.15 };
+
+        var stats = new AdvancedGameStats
+        {
+            GameID = 12345,
+            Team = "Alabama",
+            Opponent = "Florida",
+            Week = 5,
+            Offense = offense,
+            Defense = defense
+        };
+
+        Assert.Equal(12345, stats.GameID);
+        Assert.Equal("Alabama", stats.Team);
+        Assert.Equal("Florida", stats.Opponent);
+        Assert.Equal(5, stats.Week);
+        Assert.Same(offense, stats.Offense);
+        Assert.Same(defense, stats.Defense);
+    }
+
+    [Fact]
+    public void AdvancedGameStats_PropertiesDefaultToNull()
+    {
+        var stats = new AdvancedGameStats();
+
+        Assert.Null(stats.GameID);
+        Assert.Null(stats.Team);
+        Assert.Null(stats.Opponent);
+        Assert.Null(stats.Week);
+        Assert.Null(stats.Offense);
+        Assert.Null(stats.Defense);
     }
 }

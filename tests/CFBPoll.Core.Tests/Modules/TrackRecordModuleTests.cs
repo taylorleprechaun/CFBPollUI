@@ -34,23 +34,23 @@ public class TrackRecordModuleTests
     }
 
     [Fact]
-    public void Constructor_NullCache_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(
-            () => new TrackRecordModule(
-                null!,
-                _mockCacheOptions.Object,
-                _mockLogger.Object,
-                _mockPredictionsModule.Object));
-    }
-
-    [Fact]
     public void Constructor_NullCacheOptions_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
             () => new TrackRecordModule(
                 _mockCache.Object,
                 null!,
+                _mockLogger.Object,
+                _mockPredictionsModule.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullCache_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new TrackRecordModule(
+                null!,
+                _mockCacheOptions.Object,
                 _mockLogger.Object,
                 _mockPredictionsModule.Object));
     }
@@ -96,6 +96,69 @@ public class TrackRecordModuleTests
     }
 
     [Fact]
+    public async Task GetTrackRecordAsync_CacheMiss_StoresResult()
+    {
+        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync()).ReturnsAsync(new List<PredictionsSummary>());
+        _mockCache
+            .Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<TrackRecordResult>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(true);
+
+        await _module.GetTrackRecordAsync();
+
+        _mockCache.Verify(
+            x => x.SetAsync("track-record_all", It.IsAny<TrackRecordResult>(), It.IsAny<DateTime>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task GetTrackRecordAsync_ExcludesUngradedAndNotApplicableFromTallies()
+    {
+        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync()).ReturnsAsync(new List<PredictionsSummary>
+        {
+            new() { Season = 2024, Week = 1, IsPublished = true, IsGraded = true, ResultsPublished = true }
+        });
+
+        _mockPredictionsModule.Setup(x => x.GetAsync(2024, 1)).ReturnsAsync(new PredictionsResult
+        {
+            Season = 2024,
+            Week = 1,
+            Predictions = new List<GamePrediction>
+            {
+                new()
+                {
+                    HomeTeam = "Iowa",
+                    AwayTeam = "Nebraska",
+                    WinnerGrade = PredictionGradeStatus.Ungraded,
+                    SpreadGrade = PredictionGradeStatus.NotApplicable,
+                    OverUnderGrade = PredictionGradeStatus.NotApplicable
+                }
+            }
+        });
+
+        var result = await _module.GetTrackRecordAsync();
+
+        var week = Assert.Single(result.Weeks);
+        Assert.Equal(0, week.Winner.Correct + week.Winner.Incorrect + week.Winner.Push);
+        Assert.Equal(0, week.Spread.Correct + week.Spread.Incorrect + week.Spread.Push);
+        Assert.Equal(0, week.OverUnder.Correct + week.OverUnder.Incorrect + week.OverUnder.Push);
+    }
+
+    [Fact]
+    public async Task GetTrackRecordAsync_MissingPredictionsForGradedSummary_SkipsWeek()
+    {
+        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync()).ReturnsAsync(new List<PredictionsSummary>
+        {
+            new() { Season = 2024, Week = 1, IsPublished = true, IsGraded = true, ResultsPublished = true }
+        });
+
+        _mockPredictionsModule.Setup(x => x.GetAsync(2024, 1)).ReturnsAsync((PredictionsResult?)null);
+
+        var result = await _module.GetTrackRecordAsync();
+
+        Assert.Empty(result.Weeks);
+    }
+
+    [Fact]
     public async Task GetTrackRecordAsync_NoSummaries_ReturnsEmptyResult()
     {
         _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync()).ReturnsAsync(new List<PredictionsSummary>());
@@ -106,6 +169,33 @@ public class TrackRecordModuleTests
         Assert.Equal(0, result.OverallWinner.Correct);
         Assert.Equal(0, result.OverallSpread.Correct);
         Assert.Equal(0, result.OverallOverUnder.Correct);
+    }
+
+    [Fact]
+    public async Task GetTrackRecordAsync_OrdersWeeksBySeasonThenWeek()
+    {
+        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync()).ReturnsAsync(new List<PredictionsSummary>
+        {
+            new() { Season = 2024, Week = 3, IsPublished = true, IsGraded = true, ResultsPublished = true },
+            new() { Season = 2023, Week = 5, IsPublished = true, IsGraded = true, ResultsPublished = true },
+            new() { Season = 2024, Week = 1, IsPublished = true, IsGraded = true, ResultsPublished = true }
+        });
+
+        _mockPredictionsModule.Setup(x => x.GetAsync(It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync((int season, int week) => new PredictionsResult
+            {
+                Season = season,
+                Week = week,
+                Predictions = []
+            });
+
+        var result = await _module.GetTrackRecordAsync();
+
+        var weeks = result.Weeks.ToList();
+        Assert.Equal(3, weeks.Count);
+        Assert.Equal((2023, 5), (weeks[0].Season, weeks[0].Week));
+        Assert.Equal((2024, 1), (weeks[1].Season, weeks[1].Week));
+        Assert.Equal((2024, 3), (weeks[2].Season, weeks[2].Week));
     }
 
     [Fact]
@@ -175,96 +265,6 @@ public class TrackRecordModuleTests
         Assert.Equal(1, result.OverallSpread.Incorrect);
         Assert.Equal(1, result.OverallOverUnder.Correct);
         Assert.Equal(1, result.OverallOverUnder.Push);
-    }
-
-    [Fact]
-    public async Task GetTrackRecordAsync_ExcludesUngradedAndNotApplicableFromTallies()
-    {
-        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync()).ReturnsAsync(new List<PredictionsSummary>
-        {
-            new() { Season = 2024, Week = 1, IsPublished = true, IsGraded = true, ResultsPublished = true }
-        });
-
-        _mockPredictionsModule.Setup(x => x.GetAsync(2024, 1)).ReturnsAsync(new PredictionsResult
-        {
-            Season = 2024,
-            Week = 1,
-            Predictions = new List<GamePrediction>
-            {
-                new()
-                {
-                    HomeTeam = "Iowa",
-                    AwayTeam = "Nebraska",
-                    WinnerGrade = PredictionGradeStatus.Ungraded,
-                    SpreadGrade = PredictionGradeStatus.NotApplicable,
-                    OverUnderGrade = PredictionGradeStatus.NotApplicable
-                }
-            }
-        });
-
-        var result = await _module.GetTrackRecordAsync();
-
-        var week = Assert.Single(result.Weeks);
-        Assert.Equal(0, week.Winner.Correct + week.Winner.Incorrect + week.Winner.Push);
-        Assert.Equal(0, week.Spread.Correct + week.Spread.Incorrect + week.Spread.Push);
-        Assert.Equal(0, week.OverUnder.Correct + week.OverUnder.Incorrect + week.OverUnder.Push);
-    }
-
-    [Fact]
-    public async Task GetTrackRecordAsync_MissingPredictionsForGradedSummary_SkipsWeek()
-    {
-        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync()).ReturnsAsync(new List<PredictionsSummary>
-        {
-            new() { Season = 2024, Week = 1, IsPublished = true, IsGraded = true, ResultsPublished = true }
-        });
-
-        _mockPredictionsModule.Setup(x => x.GetAsync(2024, 1)).ReturnsAsync((PredictionsResult?)null);
-
-        var result = await _module.GetTrackRecordAsync();
-
-        Assert.Empty(result.Weeks);
-    }
-
-    [Fact]
-    public async Task GetTrackRecordAsync_OrdersWeeksBySeasonThenWeek()
-    {
-        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync()).ReturnsAsync(new List<PredictionsSummary>
-        {
-            new() { Season = 2024, Week = 3, IsPublished = true, IsGraded = true, ResultsPublished = true },
-            new() { Season = 2023, Week = 5, IsPublished = true, IsGraded = true, ResultsPublished = true },
-            new() { Season = 2024, Week = 1, IsPublished = true, IsGraded = true, ResultsPublished = true }
-        });
-
-        _mockPredictionsModule.Setup(x => x.GetAsync(It.IsAny<int>(), It.IsAny<int>()))
-            .ReturnsAsync((int season, int week) => new PredictionsResult
-            {
-                Season = season,
-                Week = week,
-                Predictions = []
-            });
-
-        var result = await _module.GetTrackRecordAsync();
-
-        var weeks = result.Weeks.ToList();
-        Assert.Equal(3, weeks.Count);
-        Assert.Equal((2023, 5), (weeks[0].Season, weeks[0].Week));
-        Assert.Equal((2024, 1), (weeks[1].Season, weeks[1].Week));
-        Assert.Equal((2024, 3), (weeks[2].Season, weeks[2].Week));
-    }
-
-    [Fact]
-    public async Task GetTrackRecordAsync_CacheMiss_StoresResult()
-    {
-        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync()).ReturnsAsync(new List<PredictionsSummary>());
-        _mockCache
-            .Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<TrackRecordResult>(), It.IsAny<DateTime>()))
-            .ReturnsAsync(true);
-
-        await _module.GetTrackRecordAsync();
-
-        _mockCache.Verify(
-            x => x.SetAsync("track-record_all", It.IsAny<TrackRecordResult>(), It.IsAny<DateTime>()),
-            Times.Once);
     }
 
     [Fact]

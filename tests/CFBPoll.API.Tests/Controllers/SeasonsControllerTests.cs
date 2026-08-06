@@ -20,6 +20,7 @@ public class SeasonsControllerTests
     private readonly Mock<IPredictionsModule> _mockPredictionsModule;
     private readonly Mock<IRankingsModule> _mockRankingsModule;
     private readonly Mock<ISeasonModule> _mockSeasonModule;
+
     public SeasonsControllerTests()
     {
         _mockDataService = new Mock<ICFBDataService>();

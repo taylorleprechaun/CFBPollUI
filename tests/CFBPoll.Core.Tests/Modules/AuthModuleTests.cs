@@ -28,22 +28,24 @@ public class AuthModuleTests
     }
 
     [Fact]
-    public void Login_ValidCredentials_ReturnsSuccessWithToken()
+    public void Login_CaseInsensitiveUsername_ReturnsSuccess()
     {
-        var result = _authModule.Login("admin", "testpassword");
+        var result = _authModule.Login("ADMIN", "testpassword");
 
         Assert.True(result.Success);
         Assert.False(string.IsNullOrEmpty(result.Token));
-        Assert.Equal(480 * 60, result.ExpiresIn);
     }
 
     [Fact]
-    public void Login_InvalidUsername_ReturnsFailure()
+    public void Login_EmptyPassword_ThrowsArgumentException()
     {
-        var result = _authModule.Login("wronguser", "testpassword");
+        Assert.Throws<ArgumentException>(() => _authModule.Login("admin", ""));
+    }
 
-        Assert.False(result.Success);
-        Assert.Empty(result.Token);
+    [Fact]
+    public void Login_EmptyUsername_ThrowsArgumentException()
+    {
+        Assert.Throws<ArgumentException>(() => _authModule.Login("", "testpassword"));
     }
 
     [Fact]
@@ -56,24 +58,12 @@ public class AuthModuleTests
     }
 
     [Fact]
-    public void Login_CaseInsensitiveUsername_ReturnsSuccess()
+    public void Login_InvalidUsername_ReturnsFailure()
     {
-        var result = _authModule.Login("ADMIN", "testpassword");
+        var result = _authModule.Login("wronguser", "testpassword");
 
-        Assert.True(result.Success);
-        Assert.False(string.IsNullOrEmpty(result.Token));
-    }
-
-    [Fact]
-    public void Login_NullUsername_ThrowsArgumentException()
-    {
-        Assert.Throws<ArgumentNullException>(() => _authModule.Login(null!, "testpassword"));
-    }
-
-    [Fact]
-    public void Login_EmptyUsername_ThrowsArgumentException()
-    {
-        Assert.Throws<ArgumentException>(() => _authModule.Login("", "testpassword"));
+        Assert.False(result.Success);
+        Assert.Empty(result.Token);
     }
 
     [Fact]
@@ -83,8 +73,18 @@ public class AuthModuleTests
     }
 
     [Fact]
-    public void Login_EmptyPassword_ThrowsArgumentException()
+    public void Login_NullUsername_ThrowsArgumentException()
     {
-        Assert.Throws<ArgumentException>(() => _authModule.Login("admin", ""));
+        Assert.Throws<ArgumentNullException>(() => _authModule.Login(null!, "testpassword"));
+    }
+
+    [Fact]
+    public void Login_ValidCredentials_ReturnsSuccessWithToken()
+    {
+        var result = _authModule.Login("admin", "testpassword");
+
+        Assert.True(result.Success);
+        Assert.False(string.IsNullOrEmpty(result.Token));
+        Assert.Equal(480 * 60, result.ExpiresIn);
     }
 }

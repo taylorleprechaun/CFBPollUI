@@ -52,15 +52,6 @@ public class CacheKeysTests
     }
 
     [Fact]
-    public void GetSeasonScopedKeys_RegularSeason_IncludesBettingLinesWeek1AndGameWeek()
-    {
-        var keys = CacheKeys.GetSeasonScopedKeys(2024, 5).ToList();
-
-        Assert.Contains("bettingLines_2024_1", keys);
-        Assert.Contains("bettingLines_2024_6", keys);
-    }
-
-    [Fact]
     public void GetSeasonScopedKeys_RegularSeasonWeek_ReturnsExpectedKeys()
     {
         var keys = CacheKeys.GetSeasonScopedKeys(2024, 5).ToList();
@@ -77,6 +68,15 @@ public class CacheKeysTests
     }
 
     [Fact]
+    public void GetSeasonScopedKeys_RegularSeason_IncludesBettingLinesWeek1AndGameWeek()
+    {
+        var keys = CacheKeys.GetSeasonScopedKeys(2024, 5).ToList();
+
+        Assert.Contains("bettingLines_2024_1", keys);
+        Assert.Contains("bettingLines_2024_6", keys);
+    }
+
+    [Fact]
     public void SeasonStats_EndWeekNull_ReturnsSeasonScopedFormat()
     {
         Assert.Equal("seasonStats_2024", CacheKeys.SeasonStats(2024, null));
@@ -87,6 +87,7 @@ public class CacheKeysTests
     {
         Assert.Equal("seasonStats_2024_week_5", CacheKeys.SeasonStats(2024, 5));
     }
+
     [Fact]
     public void Teams_ReturnsExpectedFormat()
     {

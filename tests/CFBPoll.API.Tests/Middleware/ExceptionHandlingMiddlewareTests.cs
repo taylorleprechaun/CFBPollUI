@@ -18,24 +18,6 @@ public class ExceptionHandlingMiddlewareTests
     }
 
     [Fact]
-    public async Task InvokeAsync_NoException_CallsNext()
-    {
-        var context = new DefaultHttpContext();
-        var nextCalled = false;
-        RequestDelegate next = _ =>
-        {
-            nextCalled = true;
-            return Task.CompletedTask;
-        };
-
-        var middleware = new ExceptionHandlingMiddleware(next, _mockLogger.Object);
-
-        await middleware.InvokeAsync(context);
-
-        Assert.True(nextCalled);
-    }
-
-    [Fact]
     public async Task InvokeAsync_ArgumentException_Returns400()
     {
         var context = new DefaultHttpContext();
@@ -47,48 +29,6 @@ public class ExceptionHandlingMiddlewareTests
         await middleware.InvokeAsync(context);
 
         Assert.Equal((int)HttpStatusCode.BadRequest, context.Response.StatusCode);
-    }
-
-    [Fact]
-    public async Task InvokeAsync_KeyNotFoundException_Returns404()
-    {
-        var context = new DefaultHttpContext();
-        context.Response.Body = new MemoryStream();
-
-        RequestDelegate next = _ => throw new KeyNotFoundException("Not found");
-        var middleware = new ExceptionHandlingMiddleware(next, _mockLogger.Object);
-
-        await middleware.InvokeAsync(context);
-
-        Assert.Equal((int)HttpStatusCode.NotFound, context.Response.StatusCode);
-    }
-
-    [Fact]
-    public async Task InvokeAsync_UnauthorizedAccessException_Returns401()
-    {
-        var context = new DefaultHttpContext();
-        context.Response.Body = new MemoryStream();
-
-        RequestDelegate next = _ => throw new UnauthorizedAccessException("Unauthorized");
-        var middleware = new ExceptionHandlingMiddleware(next, _mockLogger.Object);
-
-        await middleware.InvokeAsync(context);
-
-        Assert.Equal((int)HttpStatusCode.Unauthorized, context.Response.StatusCode);
-    }
-
-    [Fact]
-    public async Task InvokeAsync_GenericException_Returns500()
-    {
-        var context = new DefaultHttpContext();
-        context.Response.Body = new MemoryStream();
-
-        RequestDelegate next = _ => throw new Exception("Something went wrong");
-        var middleware = new ExceptionHandlingMiddleware(next, _mockLogger.Object);
-
-        await middleware.InvokeAsync(context);
-
-        Assert.Equal((int)HttpStatusCode.InternalServerError, context.Response.StatusCode);
     }
 
     [Fact]
@@ -111,6 +51,20 @@ public class ExceptionHandlingMiddlewareTests
         Assert.Equal("test-trace-id", response.GetProperty("traceID").GetString());
         Assert.Equal("The request was invalid", response.GetProperty("message").GetString());
         Assert.Equal(400, response.GetProperty("statusCode").GetInt32());
+    }
+
+    [Fact]
+    public async Task InvokeAsync_GenericException_Returns500()
+    {
+        var context = new DefaultHttpContext();
+        context.Response.Body = new MemoryStream();
+
+        RequestDelegate next = _ => throw new Exception("Something went wrong");
+        var middleware = new ExceptionHandlingMiddleware(next, _mockLogger.Object);
+
+        await middleware.InvokeAsync(context);
+
+        Assert.Equal((int)HttpStatusCode.InternalServerError, context.Response.StatusCode);
     }
 
     [Fact]
@@ -151,5 +105,51 @@ public class ExceptionHandlingMiddlewareTests
 
         var response = JsonSerializer.Deserialize<JsonElement>(responseBody);
         Assert.Equal("The request was invalid", response.GetProperty("message").GetString());
+    }
+
+    [Fact]
+    public async Task InvokeAsync_KeyNotFoundException_Returns404()
+    {
+        var context = new DefaultHttpContext();
+        context.Response.Body = new MemoryStream();
+
+        RequestDelegate next = _ => throw new KeyNotFoundException("Not found");
+        var middleware = new ExceptionHandlingMiddleware(next, _mockLogger.Object);
+
+        await middleware.InvokeAsync(context);
+
+        Assert.Equal((int)HttpStatusCode.NotFound, context.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_NoException_CallsNext()
+    {
+        var context = new DefaultHttpContext();
+        var nextCalled = false;
+        RequestDelegate next = _ =>
+        {
+            nextCalled = true;
+            return Task.CompletedTask;
+        };
+
+        var middleware = new ExceptionHandlingMiddleware(next, _mockLogger.Object);
+
+        await middleware.InvokeAsync(context);
+
+        Assert.True(nextCalled);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_UnauthorizedAccessException_Returns401()
+    {
+        var context = new DefaultHttpContext();
+        context.Response.Body = new MemoryStream();
+
+        RequestDelegate next = _ => throw new UnauthorizedAccessException("Unauthorized");
+        var middleware = new ExceptionHandlingMiddleware(next, _mockLogger.Object);
+
+        await middleware.InvokeAsync(context);
+
+        Assert.Equal((int)HttpStatusCode.Unauthorized, context.Response.StatusCode);
     }
 }

@@ -8,171 +8,6 @@ namespace CFBPoll.API.Tests.Mappers;
 
 public class TeamDetailMapperTests
 {
-    private static RankedTeam CreateDefaultRankedTeam()
-    {
-        return new RankedTeam
-        {
-            Conference = "SEC",
-            Details = new TeamDetails
-            {
-                Away = new Record { Wins = 3, Losses = 1 },
-                Home = new Record { Wins = 5, Losses = 0 },
-                Neutral = new Record { Wins = 1, Losses = 0 },
-                VsRank1To10 = new Record { Wins = 1, Losses = 1 },
-                VsRank11To25 = new Record { Wins = 2, Losses = 0 },
-                VsRank26To50 = new Record { Wins = 2, Losses = 0 },
-                VsRank51To100 = new Record { Wins = 3, Losses = 0 },
-                VsRank101Plus = new Record { Wins = 1, Losses = 0 }
-            },
-            Division = "East",
-            LogoURL = "https://example.com/florida.png",
-            Losses = 1,
-            Rank = 1,
-            Rating = 95.5,
-            SOSRanking = 3,
-            TeamName = "Florida",
-            WeightedSOS = 0.75,
-            Wins = 9
-        };
-    }
-
-    private static TeamInfo CreateDefaultTeamInfo()
-    {
-        return new TeamInfo
-        {
-            AltColor = "#000000",
-            Color = "#BA0C2F",
-            Conference = "SEC",
-            Division = "East",
-            Games = [],
-            LogoURL = "https://example.com/florida.png",
-            Losses = 1,
-            Name = "Florida",
-            Wins = 9
-        };
-    }
-
-    private static List<RankedTeam> CreateDefaultRankings()
-    {
-        return
-        [
-            new RankedTeam { Rank = 1, TeamName = "Florida" },
-            new RankedTeam { Rank = 5, TeamName = "USC" }
-        ];
-    }
-
-    private static List<ScheduleGame> CreateDefaultScheduleGames()
-    {
-        return new List<ScheduleGame>
-        {
-            new ScheduleGame
-            {
-                AwayPoints = 21,
-                AwayTeam = "USC",
-                Completed = true,
-                GameID = 1,
-                HomePoints = 35,
-                HomeTeam = "Florida",
-                NeutralSite = false,
-                SeasonType = "regular",
-                StartDate = new DateTime(2023, 9, 2),
-                StartTimeTbd = false,
-                Venue = "Sanford Stadium",
-                Week = 1
-            }
-        };
-    }
-
-    private static Dictionary<string, TeamInfo> CreateDefaultAllTeams()
-    {
-        return new Dictionary<string, TeamInfo>
-        {
-            ["Florida"] = CreateDefaultTeamInfo(),
-            ["USC"] = new TeamInfo
-            {
-                AltColor = "#FFFFFF",
-                Color = "#154733",
-                Conference = "Big Ten",
-                Division = "",
-                Games = [],
-                LogoURL = "https://example.com/usc.png",
-                Losses = 2,
-                Name = "USC",
-                Wins = 8
-            }
-        };
-    }
-
-    [Fact]
-    public void ToResponseDTO_MapsTeamProperties()
-    {
-        var rankedTeam = CreateDefaultRankedTeam();
-        var teamInfo = CreateDefaultTeamInfo();
-        var schedule = CreateDefaultScheduleGames();
-        var allTeams = CreateDefaultAllTeams();
-        var rankings = CreateDefaultRankings();
-
-        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
-
-        Assert.Equal("Florida", result.TeamName);
-        Assert.Equal(1, result.Rank);
-        Assert.Equal(95.5, result.Rating);
-        Assert.Equal("SEC", result.Conference);
-        Assert.Equal("East", result.Division);
-        Assert.Equal("https://example.com/florida.png", result.LogoURL);
-        Assert.Equal(3, result.SOSRanking);
-        Assert.Equal(0.75, result.WeightedSOS);
-    }
-
-    [Fact]
-    public void ToResponseDTO_MapsColorFields()
-    {
-        var rankedTeam = CreateDefaultRankedTeam();
-        var teamInfo = CreateDefaultTeamInfo();
-        var schedule = CreateDefaultScheduleGames();
-        var allTeams = CreateDefaultAllTeams();
-        var rankings = CreateDefaultRankings();
-
-        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
-
-        Assert.Equal("#BA0C2F", result.Color);
-        Assert.Equal("#000000", result.AltColor);
-    }
-
-    [Fact]
-    public void ToResponseDTO_MapsRecord()
-    {
-        var rankedTeam = CreateDefaultRankedTeam();
-        var teamInfo = CreateDefaultTeamInfo();
-        var schedule = CreateDefaultScheduleGames();
-        var allTeams = CreateDefaultAllTeams();
-        var rankings = CreateDefaultRankings();
-
-        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
-
-        Assert.Equal("9-1", result.Record);
-    }
-
-    [Fact]
-    public void ToResponseDTO_MapsScheduleGames()
-    {
-        var rankedTeam = CreateDefaultRankedTeam();
-        var teamInfo = CreateDefaultTeamInfo();
-        var schedule = CreateDefaultScheduleGames();
-        var allTeams = CreateDefaultAllTeams();
-        var rankings = CreateDefaultRankings();
-
-        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
-
-        var games = result.Schedule.ToList();
-        Assert.Single(games);
-        Assert.Equal("USC", games[0].OpponentName);
-        Assert.Equal(1, games[0].Week);
-        Assert.Equal("regular", games[0].SeasonType);
-        Assert.Equal("Sanford Stadium", games[0].Venue);
-        Assert.Equal(new DateTime(2023, 9, 2), games[0].GameDate);
-    }
-
     [Fact]
     public void ToResponseDTO_DeterminesHomeAwayCorrectly()
     {
@@ -253,32 +88,18 @@ public class TeamDetailMapperTests
     }
 
     [Fact]
-    public void ToResponseDTO_SetsNullIsWinForIncompleteGame()
+    public void ToResponseDTO_MapsColorFields()
     {
         var rankedTeam = CreateDefaultRankedTeam();
         var teamInfo = CreateDefaultTeamInfo();
+        var schedule = CreateDefaultScheduleGames();
         var allTeams = CreateDefaultAllTeams();
         var rankings = CreateDefaultRankings();
 
-        var schedule = new List<ScheduleGame>
-        {
-            new ScheduleGame
-            {
-                HomeTeam = "Florida",
-                AwayTeam = "USC",
-                Completed = false,
-                HomePoints = null,
-                AwayPoints = null,
-                SeasonType = "regular",
-                Week = 1
-            }
-        };
-
         var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
 
-        var games = result.Schedule.ToList();
-        Assert.Single(games);
-        Assert.Null(games[0].IsWin);
+        Assert.Equal("#BA0C2F", result.Color);
+        Assert.Equal("#000000", result.AltColor);
     }
 
     [Fact]
@@ -315,104 +136,58 @@ public class TeamDetailMapperTests
     }
 
     [Fact]
-    public void ToResponseDTO_SetsNullOpponentRankWhenNotInRankings()
+    public void ToResponseDTO_MapsRecord()
     {
         var rankedTeam = CreateDefaultRankedTeam();
         var teamInfo = CreateDefaultTeamInfo();
+        var schedule = CreateDefaultScheduleGames();
         var allTeams = CreateDefaultAllTeams();
-        allTeams["FCS Team"] = new TeamInfo
-        {
-            AltColor = "#FFFFFF",
-            Color = "#000000",
-            Conference = "FCS",
-            Division = "",
-            Games = [],
-            LogoURL = "https://example.com/fcs.png",
-            Losses = 5,
-            Name = "FCS Team",
-            Wins = 3
-        };
+        var rankings = CreateDefaultRankings();
 
-        var schedule = new List<ScheduleGame>
-        {
-            new ScheduleGame
-            {
-                AwayPoints = 7,
-                AwayTeam = "FCS Team",
-                Completed = true,
-                HomePoints = 52,
-                HomeTeam = "Florida",
-                SeasonType = "regular",
-                Week = 2
-            }
-        };
+        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
+
+        Assert.Equal("9-1", result.Record);
+    }
+
+    [Fact]
+    public void ToResponseDTO_MapsScheduleGames()
+    {
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var schedule = CreateDefaultScheduleGames();
+        var allTeams = CreateDefaultAllTeams();
         var rankings = CreateDefaultRankings();
 
         var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
 
         var games = result.Schedule.ToList();
         Assert.Single(games);
-        Assert.Null(games[0].OpponentRank);
+        Assert.Equal("USC", games[0].OpponentName);
+        Assert.Equal(1, games[0].Week);
+        Assert.Equal("regular", games[0].SeasonType);
+        Assert.Equal("Sanford Stadium", games[0].Venue);
+        Assert.Equal(new DateTime(2023, 9, 2), games[0].GameDate);
     }
 
     [Fact]
-    public void ToResponseDTO_WithNullRankedTeam_ThrowsArgumentNullException()
-    {
-        var teamInfo = CreateDefaultTeamInfo();
-        var schedule = CreateDefaultScheduleGames();
-        var allTeams = CreateDefaultAllTeams();
-        var rankings = CreateDefaultRankings();
-
-        Assert.Throws<ArgumentNullException>(() =>
-            TeamDetailMapper.ToResponseDTO(null!, teamInfo, schedule, allTeams, rankings));
-    }
-
-    [Fact]
-    public void ToResponseDTO_WithNullTeamInfo_ThrowsArgumentNullException()
-    {
-        var rankedTeam = CreateDefaultRankedTeam();
-        var schedule = CreateDefaultScheduleGames();
-        var allTeams = CreateDefaultAllTeams();
-        var rankings = CreateDefaultRankings();
-
-        Assert.Throws<ArgumentNullException>(() =>
-            TeamDetailMapper.ToResponseDTO(rankedTeam, null!, schedule, allTeams, rankings));
-    }
-
-    [Fact]
-    public void ToResponseDTO_WithNullScheduleGames_ThrowsArgumentNullException()
-    {
-        var rankedTeam = CreateDefaultRankedTeam();
-        var teamInfo = CreateDefaultTeamInfo();
-        var allTeams = CreateDefaultAllTeams();
-        var rankings = CreateDefaultRankings();
-
-        Assert.Throws<ArgumentNullException>(() =>
-            TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, null!, allTeams, rankings));
-    }
-
-    [Fact]
-    public void ToResponseDTO_WithNullAllTeams_ThrowsArgumentNullException()
-    {
-        var rankedTeam = CreateDefaultRankedTeam();
-        var teamInfo = CreateDefaultTeamInfo();
-        var schedule = CreateDefaultScheduleGames();
-        var rankings = CreateDefaultRankings();
-
-        Assert.Throws<ArgumentNullException>(() =>
-            TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, null!, rankings));
-    }
-
-    [Fact]
-    public void ToResponseDTO_WithNullRankings_ThrowsArgumentNullException()
+    public void ToResponseDTO_MapsTeamProperties()
     {
         var rankedTeam = CreateDefaultRankedTeam();
         var teamInfo = CreateDefaultTeamInfo();
         var schedule = CreateDefaultScheduleGames();
         var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
 
-        Assert.Throws<ArgumentNullException>(() =>
-            TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, null!));
+        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
+
+        Assert.Equal("Florida", result.TeamName);
+        Assert.Equal(1, result.Rank);
+        Assert.Equal(95.5, result.Rating);
+        Assert.Equal("SEC", result.Conference);
+        Assert.Equal("East", result.Division);
+        Assert.Equal("https://example.com/florida.png", result.LogoURL);
+        Assert.Equal(3, result.SOSRanking);
+        Assert.Equal(0.75, result.WeightedSOS);
     }
 
     [Fact]
@@ -469,5 +244,230 @@ public class TeamDetailMapperTests
         Assert.Equal("regular", games[1].SeasonType);
         Assert.Equal(12, games[1].Week);
         Assert.Equal("postseason", games[2].SeasonType);
+    }
+
+    [Fact]
+    public void ToResponseDTO_SetsNullIsWinForIncompleteGame()
+    {
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
+
+        var schedule = new List<ScheduleGame>
+        {
+            new ScheduleGame
+            {
+                HomeTeam = "Florida",
+                AwayTeam = "USC",
+                Completed = false,
+                HomePoints = null,
+                AwayPoints = null,
+                SeasonType = "regular",
+                Week = 1
+            }
+        };
+
+        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
+
+        var games = result.Schedule.ToList();
+        Assert.Single(games);
+        Assert.Null(games[0].IsWin);
+    }
+
+    [Fact]
+    public void ToResponseDTO_SetsNullOpponentRankWhenNotInRankings()
+    {
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var allTeams = CreateDefaultAllTeams();
+        allTeams["FCS Team"] = new TeamInfo
+        {
+            AltColor = "#FFFFFF",
+            Color = "#000000",
+            Conference = "FCS",
+            Division = "",
+            Games = [],
+            LogoURL = "https://example.com/fcs.png",
+            Losses = 5,
+            Name = "FCS Team",
+            Wins = 3
+        };
+
+        var schedule = new List<ScheduleGame>
+        {
+            new ScheduleGame
+            {
+                AwayPoints = 7,
+                AwayTeam = "FCS Team",
+                Completed = true,
+                HomePoints = 52,
+                HomeTeam = "Florida",
+                SeasonType = "regular",
+                Week = 2
+            }
+        };
+        var rankings = CreateDefaultRankings();
+
+        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
+
+        var games = result.Schedule.ToList();
+        Assert.Single(games);
+        Assert.Null(games[0].OpponentRank);
+    }
+
+    [Fact]
+    public void ToResponseDTO_WithNullAllTeams_ThrowsArgumentNullException()
+    {
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var schedule = CreateDefaultScheduleGames();
+        var rankings = CreateDefaultRankings();
+
+        Assert.Throws<ArgumentNullException>(() =>
+            TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, null!, rankings));
+    }
+
+    [Fact]
+    public void ToResponseDTO_WithNullRankedTeam_ThrowsArgumentNullException()
+    {
+        var teamInfo = CreateDefaultTeamInfo();
+        var schedule = CreateDefaultScheduleGames();
+        var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
+
+        Assert.Throws<ArgumentNullException>(() =>
+            TeamDetailMapper.ToResponseDTO(null!, teamInfo, schedule, allTeams, rankings));
+    }
+
+    [Fact]
+    public void ToResponseDTO_WithNullRankings_ThrowsArgumentNullException()
+    {
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var schedule = CreateDefaultScheduleGames();
+        var allTeams = CreateDefaultAllTeams();
+
+        Assert.Throws<ArgumentNullException>(() =>
+            TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, null!));
+    }
+
+    [Fact]
+    public void ToResponseDTO_WithNullScheduleGames_ThrowsArgumentNullException()
+    {
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
+
+        Assert.Throws<ArgumentNullException>(() =>
+            TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, null!, allTeams, rankings));
+    }
+
+    [Fact]
+    public void ToResponseDTO_WithNullTeamInfo_ThrowsArgumentNullException()
+    {
+        var rankedTeam = CreateDefaultRankedTeam();
+        var schedule = CreateDefaultScheduleGames();
+        var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
+
+        Assert.Throws<ArgumentNullException>(() =>
+            TeamDetailMapper.ToResponseDTO(rankedTeam, null!, schedule, allTeams, rankings));
+    }
+
+    private static Dictionary<string, TeamInfo> CreateDefaultAllTeams()
+    {
+        return new Dictionary<string, TeamInfo>
+        {
+            ["Florida"] = CreateDefaultTeamInfo(),
+            ["USC"] = new TeamInfo
+            {
+                AltColor = "#FFFFFF",
+                Color = "#154733",
+                Conference = "Big Ten",
+                Division = "",
+                Games = [],
+                LogoURL = "https://example.com/usc.png",
+                Losses = 2,
+                Name = "USC",
+                Wins = 8
+            }
+        };
+    }
+
+    private static RankedTeam CreateDefaultRankedTeam()
+    {
+        return new RankedTeam
+        {
+            Conference = "SEC",
+            Details = new TeamDetails
+            {
+                Away = new Record { Wins = 3, Losses = 1 },
+                Home = new Record { Wins = 5, Losses = 0 },
+                Neutral = new Record { Wins = 1, Losses = 0 },
+                VsRank1To10 = new Record { Wins = 1, Losses = 1 },
+                VsRank11To25 = new Record { Wins = 2, Losses = 0 },
+                VsRank26To50 = new Record { Wins = 2, Losses = 0 },
+                VsRank51To100 = new Record { Wins = 3, Losses = 0 },
+                VsRank101Plus = new Record { Wins = 1, Losses = 0 }
+            },
+            Division = "East",
+            LogoURL = "https://example.com/florida.png",
+            Losses = 1,
+            Rank = 1,
+            Rating = 95.5,
+            SOSRanking = 3,
+            TeamName = "Florida",
+            WeightedSOS = 0.75,
+            Wins = 9
+        };
+    }
+
+    private static List<RankedTeam> CreateDefaultRankings()
+    {
+        return
+        [
+            new RankedTeam { Rank = 1, TeamName = "Florida" },
+            new RankedTeam { Rank = 5, TeamName = "USC" }
+        ];
+    }
+
+    private static List<ScheduleGame> CreateDefaultScheduleGames()
+    {
+        return new List<ScheduleGame>
+        {
+            new ScheduleGame
+            {
+                AwayPoints = 21,
+                AwayTeam = "USC",
+                Completed = true,
+                GameID = 1,
+                HomePoints = 35,
+                HomeTeam = "Florida",
+                NeutralSite = false,
+                SeasonType = "regular",
+                StartDate = new DateTime(2023, 9, 2),
+                StartTimeTbd = false,
+                Venue = "Sanford Stadium",
+                Week = 1
+            }
+        };
+    }
+
+    private static TeamInfo CreateDefaultTeamInfo()
+    {
+        return new TeamInfo
+        {
+            AltColor = "#000000",
+            Color = "#BA0C2F",
+            Conference = "SEC",
+            Division = "East",
+            Games = [],
+            LogoURL = "https://example.com/florida.png",
+            Losses = 1,
+            Name = "Florida",
+            Wins = 9
+        };
     }
 }

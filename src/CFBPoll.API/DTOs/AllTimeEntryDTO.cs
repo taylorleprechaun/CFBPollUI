@@ -10,7 +10,7 @@ public class AllTimeEntryDTO
     public string Record { get; set; } = string.Empty;
     public int Season { get; set; }
     public string TeamName { get; set; } = string.Empty;
-    public double WeightedSOS { get; set; }
     public int Week { get; set; }
+    public double WeightedSOS { get; set; }
     public int Wins { get; set; }
 }

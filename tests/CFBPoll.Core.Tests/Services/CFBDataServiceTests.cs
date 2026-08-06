@@ -12,14 +12,6 @@ public class CFBDataServiceTests
     private readonly ILogger<CFBDataService> _logger = NullLogger<CFBDataService>.Instance;
 
     [Fact]
-    public void Constructor_WithValidApiKey_CreatesInstance()
-    {
-        var service = new CFBDataService(_httpClient, "test-api-key", 2002, "Bovada", _logger);
-
-        Assert.NotNull(service);
-    }
-
-    [Fact]
     public void Constructor_WithMinimumYear_CreatesInstance()
     {
         var service = new CFBDataService(_httpClient, "test-api-key", 2010, "Bovada", _logger);
@@ -32,22 +24,46 @@ public class CFBDataServiceTests
     {
         Assert.Throws<ArgumentNullException>(() => new CFBDataService(_httpClient, "test-api-key", 2002, "Bovada", null!));
     }
+
+    [Fact]
+    public void Constructor_WithValidApiKey_CreatesInstance()
+    {
+        var service = new CFBDataService(_httpClient, "test-api-key", 2002, "Bovada", _logger);
+
+        Assert.NotNull(service);
+    }
 }
 
 public class StaticAccessTokenProviderTests
 {
     [Fact]
-    public void Constructor_WithValidToken_CreatesInstance()
+    public void AllowedHostsValidator_IsNotNull()
     {
         var provider = new StaticAccessTokenProvider("test-token");
 
-        Assert.NotNull(provider);
+        Assert.NotNull(provider.AllowedHostsValidator);
+    }
+
+    [Fact]
+    public void AllowedHostsValidator_IsOfCorrectType()
+    {
+        var provider = new StaticAccessTokenProvider("test-token");
+
+        Assert.IsType<AllowedHostsValidator>(provider.AllowedHostsValidator);
     }
 
     [Fact]
     public void Constructor_WithNullToken_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(() => new StaticAccessTokenProvider(null!));
+    }
+
+    [Fact]
+    public void Constructor_WithValidToken_CreatesInstance()
+    {
+        var provider = new StaticAccessTokenProvider("test-token");
+
+        Assert.NotNull(provider);
     }
 
     [Fact]
@@ -100,21 +116,5 @@ public class StaticAccessTokenProviderTests
             cancellationToken: cts.Token);
 
         Assert.Equal(expectedToken, result);
-    }
-
-    [Fact]
-    public void AllowedHostsValidator_IsNotNull()
-    {
-        var provider = new StaticAccessTokenProvider("test-token");
-
-        Assert.NotNull(provider.AllowedHostsValidator);
-    }
-
-    [Fact]
-    public void AllowedHostsValidator_IsOfCorrectType()
-    {
-        var provider = new StaticAccessTokenProvider("test-token");
-
-        Assert.IsType<AllowedHostsValidator>(provider.AllowedHostsValidator);
     }
 }

@@ -11,10 +11,10 @@ namespace CFBPoll.API.Tests.Controllers;
 
 public class ConferencesControllerTests
 {
+    private readonly ConferencesController _controller;
     private readonly Mock<IConferenceModule> _mockConferenceModule;
     private readonly Mock<ICFBDataService> _mockDataService;
     private readonly Mock<ILogger<ConferencesController>> _mockLogger;
-    private readonly ConferencesController _controller;
 
     public ConferencesControllerTests()
     {
@@ -26,6 +26,47 @@ public class ConferencesControllerTests
             _mockConferenceModule.Object,
             _mockDataService.Object,
             _mockLogger.Object);
+    }
+
+    [Fact]
+    public async Task GetConferences_CallsDataServiceAndModule()
+    {
+        var conferences = new List<Conference>();
+        var conferenceInfos = new List<ConferenceInfo>();
+
+        _mockDataService
+            .Setup(x => x.GetConferencesAsync())
+            .ReturnsAsync(conferences);
+
+        _mockConferenceModule
+            .Setup(x => x.GetConferenceInfos(It.IsAny<IEnumerable<Conference>>()))
+            .Returns(conferenceInfos);
+
+        await _controller.GetConferences();
+
+        _mockDataService.Verify(x => x.GetConferencesAsync(), Times.Once);
+        _mockConferenceModule.Verify(x => x.GetConferenceInfos(conferences), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetConferences_EmptyList_ReturnsEmptyConferences()
+    {
+        var conferences = new List<Conference>();
+        var conferenceInfos = new List<ConferenceInfo>();
+
+        _mockDataService
+            .Setup(x => x.GetConferencesAsync())
+            .ReturnsAsync(conferences);
+
+        _mockConferenceModule
+            .Setup(x => x.GetConferenceInfos(conferences))
+            .Returns(conferenceInfos);
+
+        var result = await _controller.GetConferences();
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<ConferencesResponseDTO>(okResult.Value);
+        Assert.Empty(response.Conferences);
     }
 
     [Fact]
@@ -62,27 +103,6 @@ public class ConferencesControllerTests
     }
 
     [Fact]
-    public async Task GetConferences_EmptyList_ReturnsEmptyConferences()
-    {
-        var conferences = new List<Conference>();
-        var conferenceInfos = new List<ConferenceInfo>();
-
-        _mockDataService
-            .Setup(x => x.GetConferencesAsync())
-            .ReturnsAsync(conferences);
-
-        _mockConferenceModule
-            .Setup(x => x.GetConferenceInfos(conferences))
-            .Returns(conferenceInfos);
-
-        var result = await _controller.GetConferences();
-
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var response = Assert.IsType<ConferencesResponseDTO>(okResult.Value);
-        Assert.Empty(response.Conferences);
-    }
-
-    [Fact]
     public async Task GetConferences_SingleConference_ReturnsSingleConference()
     {
         var conferences = new List<Conference>
@@ -111,25 +131,5 @@ public class ConferencesControllerTests
         Assert.Equal(1, response.Conferences.First().ID);
         Assert.Equal("ACC", response.Conferences.First().Label);
         Assert.Equal("Atlantic Coast Conference", response.Conferences.First().Name);
-    }
-
-    [Fact]
-    public async Task GetConferences_CallsDataServiceAndModule()
-    {
-        var conferences = new List<Conference>();
-        var conferenceInfos = new List<ConferenceInfo>();
-
-        _mockDataService
-            .Setup(x => x.GetConferencesAsync())
-            .ReturnsAsync(conferences);
-
-        _mockConferenceModule
-            .Setup(x => x.GetConferenceInfos(It.IsAny<IEnumerable<Conference>>()))
-            .Returns(conferenceInfos);
-
-        await _controller.GetConferences();
-
-        _mockDataService.Verify(x => x.GetConferencesAsync(), Times.Once);
-        _mockConferenceModule.Verify(x => x.GetConferenceInfos(conferences), Times.Once);
     }
 }

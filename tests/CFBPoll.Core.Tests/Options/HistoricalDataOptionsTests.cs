@@ -6,9 +6,14 @@ namespace CFBPoll.Core.Tests.Options;
 public class HistoricalDataOptionsTests
 {
     [Fact]
-    public void SectionName_ReturnsHistoricalData()
+    public void MinimumYear_CanBeSet()
     {
-        Assert.Equal("HistoricalData", HistoricalDataOptions.SectionName);
+        var options = new HistoricalDataOptions
+        {
+            MinimumYear = 2010
+        };
+
+        Assert.Equal(2010, options.MinimumYear);
     }
 
     [Fact]
@@ -20,13 +25,8 @@ public class HistoricalDataOptionsTests
     }
 
     [Fact]
-    public void MinimumYear_CanBeSet()
+    public void SectionName_ReturnsHistoricalData()
     {
-        var options = new HistoricalDataOptions
-        {
-            MinimumYear = 2010
-        };
-
-        Assert.Equal(2010, options.MinimumYear);
+        Assert.Equal("HistoricalData", HistoricalDataOptions.SECTION_NAME);
     }
 }

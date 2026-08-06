@@ -23,6 +23,7 @@ public class AdminModuleTests
     private readonly Mock<IRatingModule> _mockRatingModule;
     private readonly Mock<ISeasonTrendsModule> _mockSeasonTrendsModule;
     private readonly Mock<ITrackRecordModule> _mockTrackRecordModule;
+
     public AdminModuleTests()
     {
         _mockCache = new Mock<IPersistentCache>();
@@ -54,234 +55,6 @@ public class AdminModuleTests
             _mockSeasonTrendsModule.Object,
             _mockTrackRecordModule.Object,
             _mockLogger.Object);
-    }
-
-    [Fact]
-    public void Constructor_NullDataService_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(
-            () => new AdminModule(
-                null!,
-                _mockExcelExportModule.Object,
-                _mockCache.Object,
-                _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
-                _mockPredictionGradingModule.Object,
-                _mockPredictionsModule.Object,
-                _mockRankingsModule.Object,
-                _mockRatingModule.Object,
-                _mockSeasonTrendsModule.Object,
-                _mockTrackRecordModule.Object,
-                _mockLogger.Object));
-    }
-
-    [Fact]
-    public void Constructor_NullExcelExportModule_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(
-            () => new AdminModule(
-                _mockDataService.Object,
-                null!,
-                _mockCache.Object,
-                _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
-                _mockPredictionGradingModule.Object,
-                _mockPredictionsModule.Object,
-                _mockRankingsModule.Object,
-                _mockRatingModule.Object,
-                _mockSeasonTrendsModule.Object,
-                _mockTrackRecordModule.Object,
-                _mockLogger.Object));
-    }
-
-    [Fact]
-    public void Constructor_NullCache_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(
-            () => new AdminModule(
-                _mockDataService.Object,
-                _mockExcelExportModule.Object,
-                null!,
-                _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
-                _mockPredictionGradingModule.Object,
-                _mockPredictionsModule.Object,
-                _mockRankingsModule.Object,
-                _mockRatingModule.Object,
-                _mockSeasonTrendsModule.Object,
-                _mockTrackRecordModule.Object,
-                _mockLogger.Object));
-    }
-
-    [Fact]
-    public void Constructor_NullPollLeadersModule_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(
-            () => new AdminModule(
-                _mockDataService.Object,
-                _mockExcelExportModule.Object,
-                _mockCache.Object,
-                null!,
-                _mockPredictionCalculatorModule.Object,
-                _mockPredictionGradingModule.Object,
-                _mockPredictionsModule.Object,
-                _mockRankingsModule.Object,
-                _mockRatingModule.Object,
-                _mockSeasonTrendsModule.Object,
-                _mockTrackRecordModule.Object,
-                _mockLogger.Object));
-    }
-
-    [Fact]
-    public void Constructor_NullPredictionCalculatorModule_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(
-            () => new AdminModule(
-                _mockDataService.Object,
-                _mockExcelExportModule.Object,
-                _mockCache.Object,
-                _mockPollLeadersModule.Object,
-                null!,
-                _mockPredictionGradingModule.Object,
-                _mockPredictionsModule.Object,
-                _mockRankingsModule.Object,
-                _mockRatingModule.Object,
-                _mockSeasonTrendsModule.Object,
-                _mockTrackRecordModule.Object,
-                _mockLogger.Object));
-    }
-
-    [Fact]
-    public void Constructor_NullPredictionGradingModule_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(
-            () => new AdminModule(
-                _mockDataService.Object,
-                _mockExcelExportModule.Object,
-                _mockCache.Object,
-                _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
-                null!,
-                _mockPredictionsModule.Object,
-                _mockRankingsModule.Object,
-                _mockRatingModule.Object,
-                _mockSeasonTrendsModule.Object,
-                _mockTrackRecordModule.Object,
-                _mockLogger.Object));
-    }
-
-    [Fact]
-    public void Constructor_NullPredictionsModule_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(
-            () => new AdminModule(
-                _mockDataService.Object,
-                _mockExcelExportModule.Object,
-                _mockCache.Object,
-                _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
-                _mockPredictionGradingModule.Object,
-                null!,
-                _mockRankingsModule.Object,
-                _mockRatingModule.Object,
-                _mockSeasonTrendsModule.Object,
-                _mockTrackRecordModule.Object,
-                _mockLogger.Object));
-    }
-
-    [Fact]
-    public void Constructor_NullRankingsModule_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(
-            () => new AdminModule(
-                _mockDataService.Object,
-                _mockExcelExportModule.Object,
-                _mockCache.Object,
-                _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
-                _mockPredictionGradingModule.Object,
-                _mockPredictionsModule.Object,
-                null!,
-                _mockRatingModule.Object,
-                _mockSeasonTrendsModule.Object,
-                _mockTrackRecordModule.Object,
-                _mockLogger.Object));
-    }
-
-    [Fact]
-    public void Constructor_NullRatingModule_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(
-            () => new AdminModule(
-                _mockDataService.Object,
-                _mockExcelExportModule.Object,
-                _mockCache.Object,
-                _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
-                _mockPredictionGradingModule.Object,
-                _mockPredictionsModule.Object,
-                _mockRankingsModule.Object,
-                null!,
-                _mockSeasonTrendsModule.Object,
-                _mockTrackRecordModule.Object,
-                _mockLogger.Object));
-    }
-
-    [Fact]
-    public void Constructor_NullSeasonTrendsModule_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(
-            () => new AdminModule(
-                _mockDataService.Object,
-                _mockExcelExportModule.Object,
-                _mockCache.Object,
-                _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
-                _mockPredictionGradingModule.Object,
-                _mockPredictionsModule.Object,
-                _mockRankingsModule.Object,
-                _mockRatingModule.Object,
-                null!,
-                _mockTrackRecordModule.Object,
-                _mockLogger.Object));
-    }
-
-    [Fact]
-    public void Constructor_NullTrackRecordModule_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(
-            () => new AdminModule(
-                _mockDataService.Object,
-                _mockExcelExportModule.Object,
-                _mockCache.Object,
-                _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
-                _mockPredictionGradingModule.Object,
-                _mockPredictionsModule.Object,
-                _mockRankingsModule.Object,
-                _mockRatingModule.Object,
-                _mockSeasonTrendsModule.Object,
-                null!,
-                _mockLogger.Object));
-    }
-
-    [Fact]
-    public void Constructor_NullLogger_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(
-            () => new AdminModule(
-                _mockDataService.Object,
-                _mockExcelExportModule.Object,
-                _mockCache.Object,
-                _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
-                _mockPredictionGradingModule.Object,
-                _mockPredictionsModule.Object,
-                _mockRankingsModule.Object,
-                _mockRatingModule.Object,
-                _mockSeasonTrendsModule.Object,
-                _mockTrackRecordModule.Object,
-                null!));
     }
 
     [Fact]
@@ -713,6 +486,234 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public void Constructor_NullCache_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                null!,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullDataService_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                null!,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullExcelExportModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                null!,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullLogger_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTrackRecordModule.Object,
+                null!));
+    }
+
+    [Fact]
+    public void Constructor_NullPollLeadersModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                null!,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullPredictionCalculatorModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                null!,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullPredictionGradingModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                null!,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullPredictionsModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                null!,
+                _mockRankingsModule.Object,
+                _mockRatingModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullRankingsModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                null!,
+                _mockRatingModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullRatingModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                null!,
+                _mockSeasonTrendsModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullSeasonTrendsModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingModule.Object,
+                null!,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullTrackRecordModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingModule.Object,
+                _mockSeasonTrendsModule.Object,
+                null!,
+                _mockLogger.Object));
+    }
+
+    [Fact]
     public async Task DeletePredictionsAsync_DelegatesToPredictionsModule()
     {
         _mockPredictionsModule.Setup(x => x.DeleteAsync(2024, 5)).ReturnsAsync(true);
@@ -1017,6 +1018,7 @@ public class AdminModuleTests
         Assert.True(result);
         _mockRankingsModule.Verify(x => x.PublishSnapshotAsync(2024, 5), Times.Once);
     }
+
     [Fact]
     public async Task PublishSnapshotAsync_Failure_DoesNotInvalidatePollLeadersCache()
     {
@@ -1058,6 +1060,7 @@ public class AdminModuleTests
 
         _mockSeasonTrendsModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
     }
+
     [Fact]
     public async Task RefreshSeasonCacheAsync_NoKeysCached_ReturnsZero()
     {

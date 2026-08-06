@@ -9,7 +9,7 @@ public class AllTimeEntry
     public double Rating { get; set; }
     public int Season { get; set; }
     public string TeamName { get; set; } = string.Empty;
-    public double WeightedSOS { get; set; }
     public int Week { get; set; }
+    public double WeightedSOS { get; set; }
     public int Wins { get; set; }
 }

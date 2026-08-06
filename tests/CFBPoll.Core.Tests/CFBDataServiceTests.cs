@@ -8,6 +8,28 @@ namespace CFBPoll.Core.Tests;
 public class CFBDataServiceTests
 {
     [Fact]
+    public async Task GetCalendarAsync_TreatsPostseasonAsMaxWeekPlusOne()
+    {
+        var mockService = new Mock<ICFBDataService>();
+
+        mockService.Setup(s => s.GetCalendarAsync(2024))
+            .ReturnsAsync(new List<CalendarWeek>
+            {
+                new CalendarWeek { Week = 1, SeasonType = "regular", StartDate = new DateTime(2024, 8, 24), EndDate = new DateTime(2024, 8, 31) },
+                new CalendarWeek { Week = 15, SeasonType = "regular", StartDate = new DateTime(2024, 11, 30), EndDate = new DateTime(2024, 12, 7) },
+                new CalendarWeek { Week = 16, SeasonType = "postseason", StartDate = new DateTime(2024, 12, 14), EndDate = new DateTime(2025, 1, 20) }
+            });
+
+        var calendar = await mockService.Object.GetCalendarAsync(2024);
+
+        var postseasonWeek = calendar.FirstOrDefault(w => w.SeasonType.Equals("postseason", StringComparison.OrdinalIgnoreCase));
+        var maxRegularWeek = calendar.Where(w => w.SeasonType.Equals("regular", StringComparison.OrdinalIgnoreCase)).Max(w => w.Week);
+
+        Assert.NotNull(postseasonWeek);
+        Assert.Equal(maxRegularWeek + 1, postseasonWeek.Week);
+    }
+
+    [Fact]
     public async Task GetMaxSeasonYearAsync_ReturnsCurrentYear_WhenCalendarHasPastData()
     {
         var mockService = new Mock<ICFBDataService>();
@@ -45,28 +67,6 @@ public class CFBDataServiceTests
         var result = await mockService.Object.GetMaxSeasonYearAsync();
 
         Assert.Equal(currentYear - 1, result);
-    }
-
-    [Fact]
-    public async Task GetCalendarAsync_TreatsPostseasonAsMaxWeekPlusOne()
-    {
-        var mockService = new Mock<ICFBDataService>();
-
-        mockService.Setup(s => s.GetCalendarAsync(2024))
-            .ReturnsAsync(new List<CalendarWeek>
-            {
-                new CalendarWeek { Week = 1, SeasonType = "regular", StartDate = new DateTime(2024, 8, 24), EndDate = new DateTime(2024, 8, 31) },
-                new CalendarWeek { Week = 15, SeasonType = "regular", StartDate = new DateTime(2024, 11, 30), EndDate = new DateTime(2024, 12, 7) },
-                new CalendarWeek { Week = 16, SeasonType = "postseason", StartDate = new DateTime(2024, 12, 14), EndDate = new DateTime(2025, 1, 20) }
-            });
-
-        var calendar = await mockService.Object.GetCalendarAsync(2024);
-
-        var postseasonWeek = calendar.FirstOrDefault(w => w.SeasonType.Equals("postseason", StringComparison.OrdinalIgnoreCase));
-        var maxRegularWeek = calendar.Where(w => w.SeasonType.Equals("regular", StringComparison.OrdinalIgnoreCase)).Max(w => w.Week);
-
-        Assert.NotNull(postseasonWeek);
-        Assert.Equal(maxRegularWeek + 1, postseasonWeek.Week);
     }
 
     [Fact]

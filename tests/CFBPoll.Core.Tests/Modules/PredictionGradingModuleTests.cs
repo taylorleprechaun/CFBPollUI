@@ -196,6 +196,7 @@ public class PredictionGradingModuleTests
         Assert.Equal(PredictionGradeStatus.Incorrect, graded.WinnerGrade);
         Assert.Equal("Ohio State", graded.ActualWinner);
     }
+
     [Fact]
     public async Task GradeAsync_SaveFails_SetsIsPersistedFalse()
     {
@@ -248,6 +249,7 @@ public class PredictionGradingModuleTests
         Assert.Equal(PredictionGradeStatus.Incorrect, graded.SpreadGrade);
         Assert.Equal("Michigan", graded.ActualSpreadCoveringTeam);
     }
+
     [Fact]
     public async Task GradeAsync_TeamNameCasingDiffers_StillMatches()
     {
@@ -282,6 +284,7 @@ public class PredictionGradingModuleTests
         Assert.Equal(PredictionGradeStatus.Ungraded, graded.WinnerGrade);
         Assert.Null(graded.ActualWinner);
     }
+
     private static Game BuildGame(
         string homeTeam, string awayTeam, int homePoints, int awayPoints, int week = 6, string seasonType = "regular") =>
         new()

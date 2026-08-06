@@ -6,22 +6,18 @@ namespace CFBPoll.Core.Caching;
 public interface IPersistentCache
 {
     /// <summary>
+    /// Removes all expired cache entries from storage.
+    /// </summary>
+    /// <returns>The number of expired entries that were removed.</returns>
+    Task<int> CleanupExpiredAsync();
+
+    /// <summary>
     /// Retrieves a cached item by key.
     /// </summary>
     /// <typeparam name="T">The type of cached data.</typeparam>
     /// <param name="key">The cache key.</param>
     /// <returns>The cached data if found and not expired; otherwise null.</returns>
     Task<T?> GetAsync<T>(string key) where T : class;
-
-    /// <summary>
-    /// Stores an item in the cache with the specified expiration.
-    /// </summary>
-    /// <typeparam name="T">The type of data to cache.</typeparam>
-    /// <param name="key">The cache key.</param>
-    /// <param name="data">The data to cache.</param>
-    /// <param name="expiresAt">When the cache entry should expire.</param>
-    /// <returns>True if the item was cached successfully; otherwise false.</returns>
-    Task<bool> SetAsync<T>(string key, T data, DateTime expiresAt) where T : class;
 
     /// <summary>
     /// Removes a cached item by key.
@@ -38,8 +34,12 @@ public interface IPersistentCache
     Task<int> RemoveByPrefixAsync(string prefix);
 
     /// <summary>
-    /// Removes all expired cache entries from storage.
+    /// Stores an item in the cache with the specified expiration.
     /// </summary>
-    /// <returns>The number of expired entries that were removed.</returns>
-    Task<int> CleanupExpiredAsync();
+    /// <typeparam name="T">The type of data to cache.</typeparam>
+    /// <param name="key">The cache key.</param>
+    /// <param name="data">The data to cache.</param>
+    /// <param name="expiresAt">When the cache entry should expire.</param>
+    /// <returns>True if the item was cached successfully; otherwise false.</returns>
+    Task<bool> SetAsync<T>(string key, T data, DateTime expiresAt) where T : class;
 }

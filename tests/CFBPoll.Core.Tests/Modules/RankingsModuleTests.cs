@@ -20,45 +20,14 @@ public class RankingsModuleTests
     }
 
     [Fact]
-    public async Task GenerateRankingsAsync_WithEmptyRatings_ReturnsEmptyRankings()
+    public async Task DeleteSnapshotAsync_DelegatesToRankingsData()
     {
-        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
-        var ratings = new Dictionary<string, RatingDetails>();
+        _mockRankingsData.Setup(x => x.DeleteSnapshotAsync(2024, 5)).ReturnsAsync(true);
 
-        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+        var result = await _rankingsModule.DeleteSnapshotAsync(2024, 5);
 
-        Assert.Empty(result.Rankings);
-    }
-
-    [Fact]
-    public async Task GenerateRankingsAsync_SetsSeasonAndWeekFromSeasonData()
-    {
-        var seasonData = new SeasonData { Season = 2024, Week = 12, Teams = new Dictionary<string, TeamInfo>() };
-        var ratings = new Dictionary<string, RatingDetails>();
-
-        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
-
-        Assert.Equal(2024, result.Season);
-        Assert.Equal(12, result.Week);
-    }
-
-    [Fact]
-    public async Task GenerateRankingsAsync_SortsTeamsByRatingDescending()
-    {
-        var seasonData = CreateSeasonDataWithTeams("Team A", "Team B", "Team C");
-        var ratings = new Dictionary<string, RatingDetails>
-        {
-            ["Team A"] = CreateRatingDetails(rating: 75.5),
-            ["Team B"] = CreateRatingDetails(rating: 90.2),
-            ["Team C"] = CreateRatingDetails(rating: 60.0)
-        };
-
-        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
-
-        var rankedTeams = result.Rankings.ToList();
-        Assert.Equal("Team B", rankedTeams[0].TeamName);
-        Assert.Equal("Team A", rankedTeams[1].TeamName);
-        Assert.Equal("Team C", rankedTeams[2].TeamName);
+        Assert.True(result);
+        _mockRankingsData.Verify(x => x.DeleteSnapshotAsync(2024, 5), Times.Once);
     }
 
     [Fact]
@@ -78,6 +47,50 @@ public class RankingsModuleTests
         Assert.Equal(1, rankedTeams[0].Rank);
         Assert.Equal(2, rankedTeams[1].Rank);
         Assert.Equal(3, rankedTeams[2].Rank);
+    }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_CalculatesSOSRankingByWeightedSOS()
+    {
+        var seasonData = CreateSeasonDataWithTeams("Team A", "Team B", "Team C");
+        var ratings = new Dictionary<string, RatingDetails>
+        {
+            ["Team A"] = CreateRatingDetails(rating: 90.0, weightedSOS: 0.5),
+            ["Team B"] = CreateRatingDetails(rating: 80.0, weightedSOS: 0.8),
+            ["Team C"] = CreateRatingDetails(rating: 70.0, weightedSOS: 0.3)
+        };
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
+        var teamB = result.Rankings.First(t => t.TeamName.Equals("Team B", _scoic));
+        var teamC = result.Rankings.First(t => t.TeamName.Equals("Team C", _scoic));
+
+        Assert.Equal(1, teamB.SOSRanking);
+        Assert.Equal(2, teamA.SOSRanking);
+        Assert.Equal(3, teamC.SOSRanking);
+    }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_HandlesCaseInsensitiveTeamNameMatching()
+    {
+        var game = new Game { HomeTeam = "TEAM A", AwayTeam = "team b", HomePoints = 28, AwayPoints = 14, NeutralSite = false };
+        var seasonData = new SeasonData
+        {
+            Season = 2024,
+            Week = 5,
+            Teams = new Dictionary<string, TeamInfo>
+            {
+                ["Team A"] = new TeamInfo { Name = "Team A", Games = [game] },
+                ["Team B"] = new TeamInfo { Name = "Team B", Games = [] }
+            }
+        };
+        var ratings = CreateRatingsForTeams(("Team A", 90.0), ("Team B", 80.0));
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
+        Assert.Equal(1, teamA.Details.Home.Wins);
     }
 
     [Fact]
@@ -115,283 +128,49 @@ public class RankingsModuleTests
     }
 
     [Fact]
-    public async Task GenerateRankingsAsync_WhenTeamNotInSeasonData_UsesEmptyDefaults()
+    public async Task GenerateRankingsAsync_NullRatings_ThrowsArgumentNullException()
     {
         var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
-        var ratings = new Dictionary<string, RatingDetails>
-        {
-            ["Unknown Team"] = CreateRatingDetails(rating: 50.0)
-        };
 
-        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
-
-        var team = result.Rankings.First();
-        Assert.Equal("Unknown Team", team.TeamName);
-        Assert.Equal(string.Empty, team.Conference);
-        Assert.Equal(string.Empty, team.Division);
-        Assert.Equal(string.Empty, team.LogoURL);
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => _rankingsModule.GenerateRankingsAsync(seasonData, null!));
     }
 
     [Fact]
-    public async Task GenerateRankingsAsync_RoundsRatingToFourDecimals()
+    public async Task GenerateRankingsAsync_NullSeasonData_ThrowsArgumentNullException()
     {
-        var seasonData = CreateSeasonDataWithTeams("Team A");
-        var ratings = new Dictionary<string, RatingDetails>
-        {
-            ["Team A"] = CreateRatingDetails(rating: 85.123456789)
-        };
+        var ratings = new Dictionary<string, RatingDetails>();
 
-        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
-
-        Assert.Equal(85.1235, result.Rankings.First().Rating);
-    }
-
-    [Fact]
-    public async Task GenerateRankingsAsync_RoundsWeightedSOSToFourDecimals()
-    {
-        var seasonData = CreateSeasonDataWithTeams("Team A");
-        var ratings = new Dictionary<string, RatingDetails>
-        {
-            ["Team A"] = CreateRatingDetails(rating: 80.0, weightedSOS: 0.567891234)
-        };
-
-        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
-
-        Assert.Equal(0.5679, result.Rankings.First().WeightedSOS);
-    }
-
-    [Fact]
-    public async Task GenerateRankingsAsync_CalculatesSOSRankingByWeightedSOS()
-    {
-        var seasonData = CreateSeasonDataWithTeams("Team A", "Team B", "Team C");
-        var ratings = new Dictionary<string, RatingDetails>
-        {
-            ["Team A"] = CreateRatingDetails(rating: 90.0, weightedSOS: 0.5),
-            ["Team B"] = CreateRatingDetails(rating: 80.0, weightedSOS: 0.8),
-            ["Team C"] = CreateRatingDetails(rating: 70.0, weightedSOS: 0.3)
-        };
-
-        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
-
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
-        var teamB = result.Rankings.First(t => t.TeamName.Equals("Team B", _scoic));
-        var teamC = result.Rankings.First(t => t.TeamName.Equals("Team C", _scoic));
-
-        Assert.Equal(1, teamB.SOSRanking);
-        Assert.Equal(2, teamA.SOSRanking);
-        Assert.Equal(3, teamC.SOSRanking);
-    }
-
-    [Fact]
-    public async Task GenerateRankingsAsync_TracksHomeWins()
-    {
-        var game = new Game { HomeTeam = "Team A", AwayTeam = "Team B", HomePoints = 28, AwayPoints = 14, NeutralSite = false };
-        var seasonData = CreateSeasonDataWithGames("Team A", [game]);
-        var ratings = CreateRatingsForTeams(("Team A", 90.0), ("Team B", 80.0));
-
-        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
-
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
-        Assert.Equal(1, teamA.Details.Home.Wins);
-        Assert.Equal(0, teamA.Details.Home.Losses);
-    }
-
-    [Fact]
-    public async Task GenerateRankingsAsync_TracksHomeLosses()
-    {
-        var game = new Game { HomeTeam = "Team A", AwayTeam = "Team B", HomePoints = 14, AwayPoints = 28, NeutralSite = false };
-        var seasonData = CreateSeasonDataWithGames("Team A", [game]);
-        var ratings = CreateRatingsForTeams(("Team A", 90.0), ("Team B", 80.0));
-
-        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
-
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
-        Assert.Equal(0, teamA.Details.Home.Wins);
-        Assert.Equal(1, teamA.Details.Home.Losses);
-    }
-
-    [Fact]
-    public async Task GenerateRankingsAsync_TracksAwayWins()
-    {
-        var game = new Game { HomeTeam = "Team B", AwayTeam = "Team A", HomePoints = 14, AwayPoints = 28, NeutralSite = false };
-        var seasonData = CreateSeasonDataWithGames("Team A", [game]);
-        var ratings = CreateRatingsForTeams(("Team A", 90.0), ("Team B", 80.0));
-
-        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
-
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
-        Assert.Equal(1, teamA.Details.Away.Wins);
-        Assert.Equal(0, teamA.Details.Away.Losses);
-    }
-
-    [Fact]
-    public async Task GenerateRankingsAsync_TracksAwayLosses()
-    {
-        var game = new Game { HomeTeam = "Team B", AwayTeam = "Team A", HomePoints = 28, AwayPoints = 14, NeutralSite = false };
-        var seasonData = CreateSeasonDataWithGames("Team A", [game]);
-        var ratings = CreateRatingsForTeams(("Team A", 90.0), ("Team B", 80.0));
-
-        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
-
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
-        Assert.Equal(0, teamA.Details.Away.Wins);
-        Assert.Equal(1, teamA.Details.Away.Losses);
-    }
-
-    [Fact]
-    public async Task GenerateRankingsAsync_TracksNeutralSiteWins()
-    {
-        var game = new Game { HomeTeam = "Team A", AwayTeam = "Team B", HomePoints = 28, AwayPoints = 14, NeutralSite = true };
-        var seasonData = CreateSeasonDataWithGames("Team A", [game]);
-        var ratings = CreateRatingsForTeams(("Team A", 90.0), ("Team B", 80.0));
-
-        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
-
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
-        Assert.Equal(1, teamA.Details.Neutral.Wins);
-        Assert.Equal(0, teamA.Details.Neutral.Losses);
-        Assert.Equal(0, teamA.Details.Home.Wins);
-    }
-
-    [Fact]
-    public async Task GenerateRankingsAsync_TracksNeutralSiteLosses()
-    {
-        var game = new Game { HomeTeam = "Team A", AwayTeam = "Team B", HomePoints = 14, AwayPoints = 28, NeutralSite = true };
-        var seasonData = CreateSeasonDataWithGames("Team A", [game]);
-        var ratings = CreateRatingsForTeams(("Team A", 90.0), ("Team B", 80.0));
-
-        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
-
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
-        Assert.Equal(0, teamA.Details.Neutral.Wins);
-        Assert.Equal(1, teamA.Details.Neutral.Losses);
-    }
-
-    [Fact]
-    public async Task GenerateRankingsAsync_SkipsGamesWithNullHomePoints()
-    {
-        var game = new Game { HomeTeam = "Team A", AwayTeam = "Team B", HomePoints = null, AwayPoints = 14, NeutralSite = false };
-        var seasonData = CreateSeasonDataWithGames("Team A", [game]);
-        var ratings = CreateRatingsForTeams(("Team A", 90.0), ("Team B", 80.0));
-
-        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
-
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
-        Assert.Equal(0, teamA.Details.Home.Wins);
-        Assert.Equal(0, teamA.Details.Home.Losses);
-    }
-
-    [Fact]
-    public async Task GenerateRankingsAsync_SkipsGamesWithNullAwayPoints()
-    {
-        var game = new Game { HomeTeam = "Team A", AwayTeam = "Team B", HomePoints = 28, AwayPoints = null, NeutralSite = false };
-        var seasonData = CreateSeasonDataWithGames("Team A", [game]);
-        var ratings = CreateRatingsForTeams(("Team A", 90.0), ("Team B", 80.0));
-
-        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
-
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
-        Assert.Equal(0, teamA.Details.Home.Wins);
-        Assert.Equal(0, teamA.Details.Home.Losses);
-    }
-
-    [Fact]
-    public async Task GenerateRankingsAsync_HandlesCaseInsensitiveTeamNameMatching()
-    {
-        var game = new Game { HomeTeam = "TEAM A", AwayTeam = "team b", HomePoints = 28, AwayPoints = 14, NeutralSite = false };
-        var seasonData = new SeasonData
-        {
-            Season = 2024,
-            Week = 5,
-            Teams = new Dictionary<string, TeamInfo>
-            {
-                ["Team A"] = new TeamInfo { Name = "Team A", Games = [game] },
-                ["Team B"] = new TeamInfo { Name = "Team B", Games = [] }
-            }
-        };
-        var ratings = CreateRatingsForTeams(("Team A", 90.0), ("Team B", 80.0));
-
-        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
-
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
-        Assert.Equal(1, teamA.Details.Home.Wins);
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => _rankingsModule.GenerateRankingsAsync(null!, ratings));
     }
 
     [Theory]
-    [InlineData(1)]
-    [InlineData(5)]
     [InlineData(10)]
-    public async Task GenerateRankingsAsync_TracksWinsVsRank1To10(int opponentRank)
-    {
-        var result = await GenerateRankingsWithOpponentAtRankAsync(opponentRank, isWin: true);
-
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
-        Assert.Equal(1, teamA.Details.VsRank1To10.Wins);
-        Assert.Equal(0, teamA.Details.VsRank1To10.Losses);
-    }
-
-    [Theory]
-    [InlineData(1)]
-    [InlineData(10)]
-    public async Task GenerateRankingsAsync_TracksLossesVsRank1To10(int opponentRank)
-    {
-        var result = await GenerateRankingsWithOpponentAtRankAsync(opponentRank, isWin: false);
-
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
-        Assert.Equal(0, teamA.Details.VsRank1To10.Wins);
-        Assert.Equal(1, teamA.Details.VsRank1To10.Losses);
-    }
-
-    [Theory]
     [InlineData(11)]
-    [InlineData(20)]
     [InlineData(25)]
-    public async Task GenerateRankingsAsync_TracksWinsVsRank11To25(int opponentRank)
-    {
-        var result = await GenerateRankingsWithOpponentAtRankAsync(opponentRank, isWin: true);
-
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
-        Assert.Equal(1, teamA.Details.VsRank11To25.Wins);
-        Assert.Equal(0, teamA.Details.VsRank11To25.Losses);
-    }
-
-    [Theory]
     [InlineData(26)]
-    [InlineData(40)]
     [InlineData(50)]
-    public async Task GenerateRankingsAsync_TracksWinsVsRank26To50(int opponentRank)
-    {
-        var result = await GenerateRankingsWithOpponentAtRankAsync(opponentRank, isWin: true);
-
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
-        Assert.Equal(1, teamA.Details.VsRank26To50.Wins);
-        Assert.Equal(0, teamA.Details.VsRank26To50.Losses);
-    }
-
-    [Theory]
     [InlineData(51)]
-    [InlineData(75)]
     [InlineData(100)]
-    public async Task GenerateRankingsAsync_TracksWinsVsRank51To100(int opponentRank)
-    {
-        var result = await GenerateRankingsWithOpponentAtRankAsync(opponentRank, isWin: true);
-
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
-        Assert.Equal(1, teamA.Details.VsRank51To100.Wins);
-        Assert.Equal(0, teamA.Details.VsRank51To100.Losses);
-    }
-
-    [Theory]
     [InlineData(101)]
-    [InlineData(125)]
-    [InlineData(150)]
-    public async Task GenerateRankingsAsync_TracksWinsVsRank101Plus(int opponentRank)
+    public async Task GenerateRankingsAsync_OpponentAtTierBoundary_OnlyIncrementsBoundaryTier(int opponentRank)
     {
         var result = await GenerateRankingsWithOpponentAtRankAsync(opponentRank, isWin: true);
 
         var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
-        Assert.Equal(1, teamA.Details.VsRank101Plus.Wins);
-        Assert.Equal(0, teamA.Details.VsRank101Plus.Losses);
+
+        var expectedTier1 = opponentRank <= 10 ? 1 : 0;
+        var expectedTier2 = opponentRank > 10 && opponentRank <= 25 ? 1 : 0;
+        var expectedTier3 = opponentRank > 25 && opponentRank <= 50 ? 1 : 0;
+        var expectedTier4 = opponentRank > 50 && opponentRank <= 100 ? 1 : 0;
+        var expectedTier5 = opponentRank > 100 ? 1 : 0;
+
+        Assert.Equal(expectedTier1, teamA.Details.VsRank1To10.Wins);
+        Assert.Equal(expectedTier2, teamA.Details.VsRank11To25.Wins);
+        Assert.Equal(expectedTier3, teamA.Details.VsRank26To50.Wins);
+        Assert.Equal(expectedTier4, teamA.Details.VsRank51To100.Wins);
+        Assert.Equal(expectedTier5, teamA.Details.VsRank101Plus.Wins);
     }
 
     [Fact]
@@ -423,22 +202,6 @@ public class RankingsModuleTests
     }
 
     [Fact]
-    public async Task GenerateRankingsAsync_RatingComponentsDefaultsToEmptyDictionary()
-    {
-        var seasonData = CreateSeasonDataWithTeams("Team A");
-        var ratings = new Dictionary<string, RatingDetails>
-        {
-            ["Team A"] = CreateRatingDetails(rating: 80.0)
-        };
-
-        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
-
-        var team = result.Rankings.First();
-        Assert.NotNull(team.RatingComponents);
-        Assert.Empty(team.RatingComponents);
-    }
-
-    [Fact]
     public async Task GenerateRankingsAsync_PopulatesStrengthOfSchedule()
     {
         var seasonData = CreateSeasonDataWithTeams("Team A");
@@ -455,6 +218,56 @@ public class RankingsModuleTests
 
         var team = result.Rankings.First();
         Assert.Equal(0.6543, team.StrengthOfSchedule);
+    }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_RatingComponentsDefaultsToEmptyDictionary()
+    {
+        var seasonData = CreateSeasonDataWithTeams("Team A");
+        var ratings = new Dictionary<string, RatingDetails>
+        {
+            ["Team A"] = CreateRatingDetails(rating: 80.0)
+        };
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        var team = result.Rankings.First();
+        Assert.NotNull(team.RatingComponents);
+        Assert.Empty(team.RatingComponents);
+    }
+
+    [Theory]
+    [InlineData(85.12344, 85.1234)]
+    [InlineData(85.12345, 85.1234)]
+    [InlineData(85.12346, 85.1235)]
+    [InlineData(0.0, 0.0)]
+    [InlineData(99.99999, 100.0)]
+    public async Task GenerateRankingsAsync_RatingRoundingBoundary_RoundsCorrectly(
+        double inputRating, double expectedRating)
+    {
+        var seasonData = CreateSeasonDataWithTeams("Team A");
+        var ratings = new Dictionary<string, RatingDetails>
+        {
+            ["Team A"] = CreateRatingDetails(rating: inputRating)
+        };
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        Assert.Equal(expectedRating, result.Rankings.First().Rating);
+    }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_RoundsRatingToFourDecimals()
+    {
+        var seasonData = CreateSeasonDataWithTeams("Team A");
+        var ratings = new Dictionary<string, RatingDetails>
+        {
+            ["Team A"] = CreateRatingDetails(rating: 85.123456789)
+        };
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        Assert.Equal(85.1235, result.Rankings.First().Rating);
     }
 
     [Fact]
@@ -476,19 +289,144 @@ public class RankingsModuleTests
     }
 
     [Fact]
-    public async Task GenerateRankingsAsync_WhenOpponentNotRanked_DefaultsToTier5()
+    public async Task GenerateRankingsAsync_RoundsWeightedSOSToFourDecimals()
     {
-        var game = new Game { HomeTeam = "Team A", AwayTeam = "Unranked Opponent", HomePoints = 28, AwayPoints = 14 };
-        var seasonData = CreateSeasonDataWithGames("Team A", [game]);
+        var seasonData = CreateSeasonDataWithTeams("Team A");
         var ratings = new Dictionary<string, RatingDetails>
         {
-            ["Team A"] = CreateRatingDetails(rating: 90.0)
+            ["Team A"] = CreateRatingDetails(rating: 80.0, weightedSOS: 0.567891234)
         };
 
         var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
 
-        var teamA = result.Rankings.First();
-        Assert.Equal(1, teamA.Details.VsRank101Plus.Wins);
+        Assert.Equal(0.5679, result.Rankings.First().WeightedSOS);
+    }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_SetsSeasonAndWeekFromSeasonData()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 12, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        Assert.Equal(2024, result.Season);
+        Assert.Equal(12, result.Week);
+    }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_SkipsGamesWithNullAwayPoints()
+    {
+        var game = new Game { HomeTeam = "Team A", AwayTeam = "Team B", HomePoints = 28, AwayPoints = null, NeutralSite = false };
+        var seasonData = CreateSeasonDataWithGames("Team A", [game]);
+        var ratings = CreateRatingsForTeams(("Team A", 90.0), ("Team B", 80.0));
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
+        Assert.Equal(0, teamA.Details.Home.Wins);
+        Assert.Equal(0, teamA.Details.Home.Losses);
+    }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_SkipsGamesWithNullHomePoints()
+    {
+        var game = new Game { HomeTeam = "Team A", AwayTeam = "Team B", HomePoints = null, AwayPoints = 14, NeutralSite = false };
+        var seasonData = CreateSeasonDataWithGames("Team A", [game]);
+        var ratings = CreateRatingsForTeams(("Team A", 90.0), ("Team B", 80.0));
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
+        Assert.Equal(0, teamA.Details.Home.Wins);
+        Assert.Equal(0, teamA.Details.Home.Losses);
+    }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_SortsTeamsByRatingDescending()
+    {
+        var seasonData = CreateSeasonDataWithTeams("Team A", "Team B", "Team C");
+        var ratings = new Dictionary<string, RatingDetails>
+        {
+            ["Team A"] = CreateRatingDetails(rating: 75.5),
+            ["Team B"] = CreateRatingDetails(rating: 90.2),
+            ["Team C"] = CreateRatingDetails(rating: 60.0)
+        };
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        var rankedTeams = result.Rankings.ToList();
+        Assert.Equal("Team B", rankedTeams[0].TeamName);
+        Assert.Equal("Team A", rankedTeams[1].TeamName);
+        Assert.Equal("Team C", rankedTeams[2].TeamName);
+    }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_TracksAwayLosses()
+    {
+        var game = new Game { HomeTeam = "Team B", AwayTeam = "Team A", HomePoints = 28, AwayPoints = 14, NeutralSite = false };
+        var seasonData = CreateSeasonDataWithGames("Team A", [game]);
+        var ratings = CreateRatingsForTeams(("Team A", 90.0), ("Team B", 80.0));
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
+        Assert.Equal(0, teamA.Details.Away.Wins);
+        Assert.Equal(1, teamA.Details.Away.Losses);
+    }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_TracksAwayWins()
+    {
+        var game = new Game { HomeTeam = "Team B", AwayTeam = "Team A", HomePoints = 14, AwayPoints = 28, NeutralSite = false };
+        var seasonData = CreateSeasonDataWithGames("Team A", [game]);
+        var ratings = CreateRatingsForTeams(("Team A", 90.0), ("Team B", 80.0));
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
+        Assert.Equal(1, teamA.Details.Away.Wins);
+        Assert.Equal(0, teamA.Details.Away.Losses);
+    }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_TracksHomeLosses()
+    {
+        var game = new Game { HomeTeam = "Team A", AwayTeam = "Team B", HomePoints = 14, AwayPoints = 28, NeutralSite = false };
+        var seasonData = CreateSeasonDataWithGames("Team A", [game]);
+        var ratings = CreateRatingsForTeams(("Team A", 90.0), ("Team B", 80.0));
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
+        Assert.Equal(0, teamA.Details.Home.Wins);
+        Assert.Equal(1, teamA.Details.Home.Losses);
+    }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_TracksHomeWins()
+    {
+        var game = new Game { HomeTeam = "Team A", AwayTeam = "Team B", HomePoints = 28, AwayPoints = 14, NeutralSite = false };
+        var seasonData = CreateSeasonDataWithGames("Team A", [game]);
+        var ratings = CreateRatingsForTeams(("Team A", 90.0), ("Team B", 80.0));
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
+        Assert.Equal(1, teamA.Details.Home.Wins);
+        Assert.Equal(0, teamA.Details.Home.Losses);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(10)]
+    public async Task GenerateRankingsAsync_TracksLossesVsRank1To10(int opponentRank)
+    {
+        var result = await GenerateRankingsWithOpponentAtRankAsync(opponentRank, isWin: false);
+
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
+        Assert.Equal(0, teamA.Details.VsRank1To10.Wins);
+        Assert.Equal(1, teamA.Details.VsRank1To10.Losses);
     }
 
     [Fact]
@@ -532,6 +470,164 @@ public class RankingsModuleTests
     }
 
     [Fact]
+    public async Task GenerateRankingsAsync_TracksNeutralSiteLosses()
+    {
+        var game = new Game { HomeTeam = "Team A", AwayTeam = "Team B", HomePoints = 14, AwayPoints = 28, NeutralSite = true };
+        var seasonData = CreateSeasonDataWithGames("Team A", [game]);
+        var ratings = CreateRatingsForTeams(("Team A", 90.0), ("Team B", 80.0));
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
+        Assert.Equal(0, teamA.Details.Neutral.Wins);
+        Assert.Equal(1, teamA.Details.Neutral.Losses);
+    }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_TracksNeutralSiteWins()
+    {
+        var game = new Game { HomeTeam = "Team A", AwayTeam = "Team B", HomePoints = 28, AwayPoints = 14, NeutralSite = true };
+        var seasonData = CreateSeasonDataWithGames("Team A", [game]);
+        var ratings = CreateRatingsForTeams(("Team A", 90.0), ("Team B", 80.0));
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
+        Assert.Equal(1, teamA.Details.Neutral.Wins);
+        Assert.Equal(0, teamA.Details.Neutral.Losses);
+        Assert.Equal(0, teamA.Details.Home.Wins);
+    }
+
+    [Theory]
+    [InlineData(101)]
+    [InlineData(125)]
+    [InlineData(150)]
+    public async Task GenerateRankingsAsync_TracksWinsVsRank101Plus(int opponentRank)
+    {
+        var result = await GenerateRankingsWithOpponentAtRankAsync(opponentRank, isWin: true);
+
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
+        Assert.Equal(1, teamA.Details.VsRank101Plus.Wins);
+        Assert.Equal(0, teamA.Details.VsRank101Plus.Losses);
+    }
+
+    [Theory]
+    [InlineData(11)]
+    [InlineData(20)]
+    [InlineData(25)]
+    public async Task GenerateRankingsAsync_TracksWinsVsRank11To25(int opponentRank)
+    {
+        var result = await GenerateRankingsWithOpponentAtRankAsync(opponentRank, isWin: true);
+
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
+        Assert.Equal(1, teamA.Details.VsRank11To25.Wins);
+        Assert.Equal(0, teamA.Details.VsRank11To25.Losses);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(5)]
+    [InlineData(10)]
+    public async Task GenerateRankingsAsync_TracksWinsVsRank1To10(int opponentRank)
+    {
+        var result = await GenerateRankingsWithOpponentAtRankAsync(opponentRank, isWin: true);
+
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
+        Assert.Equal(1, teamA.Details.VsRank1To10.Wins);
+        Assert.Equal(0, teamA.Details.VsRank1To10.Losses);
+    }
+
+    [Theory]
+    [InlineData(26)]
+    [InlineData(40)]
+    [InlineData(50)]
+    public async Task GenerateRankingsAsync_TracksWinsVsRank26To50(int opponentRank)
+    {
+        var result = await GenerateRankingsWithOpponentAtRankAsync(opponentRank, isWin: true);
+
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
+        Assert.Equal(1, teamA.Details.VsRank26To50.Wins);
+        Assert.Equal(0, teamA.Details.VsRank26To50.Losses);
+    }
+
+    [Theory]
+    [InlineData(51)]
+    [InlineData(75)]
+    [InlineData(100)]
+    public async Task GenerateRankingsAsync_TracksWinsVsRank51To100(int opponentRank)
+    {
+        var result = await GenerateRankingsWithOpponentAtRankAsync(opponentRank, isWin: true);
+
+        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
+        Assert.Equal(1, teamA.Details.VsRank51To100.Wins);
+        Assert.Equal(0, teamA.Details.VsRank51To100.Losses);
+    }
+
+    [Theory]
+    [InlineData(0.56784, 0.5678)]
+    [InlineData(0.56785, 0.5678)]
+    [InlineData(0.56786, 0.5679)]
+    [InlineData(0.0, 0.0)]
+    public async Task GenerateRankingsAsync_WeightedSOSRoundingBoundary_RoundsCorrectly(
+        double inputSOS, double expectedSOS)
+    {
+        var seasonData = CreateSeasonDataWithTeams("Team A");
+        var ratings = new Dictionary<string, RatingDetails>
+        {
+            ["Team A"] = CreateRatingDetails(rating: 80.0, weightedSOS: inputSOS)
+        };
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        Assert.Equal(expectedSOS, result.Rankings.First().WeightedSOS);
+    }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_WhenOpponentNotRanked_DefaultsToTier5()
+    {
+        var game = new Game { HomeTeam = "Team A", AwayTeam = "Unranked Opponent", HomePoints = 28, AwayPoints = 14 };
+        var seasonData = CreateSeasonDataWithGames("Team A", [game]);
+        var ratings = new Dictionary<string, RatingDetails>
+        {
+            ["Team A"] = CreateRatingDetails(rating: 90.0)
+        };
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        var teamA = result.Rankings.First();
+        Assert.Equal(1, teamA.Details.VsRank101Plus.Wins);
+    }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_WhenTeamNotInSeasonData_UsesEmptyDefaults()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>
+        {
+            ["Unknown Team"] = CreateRatingDetails(rating: 50.0)
+        };
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        var team = result.Rankings.First();
+        Assert.Equal("Unknown Team", team.TeamName);
+        Assert.Equal(string.Empty, team.Conference);
+        Assert.Equal(string.Empty, team.Division);
+        Assert.Equal(string.Empty, team.LogoURL);
+    }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_WithEmptyRatings_ReturnsEmptyRankings()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        Assert.Empty(result.Rankings);
+    }
+
+    [Fact]
     public async Task GetPublishedSnapshotAsync_DelegatesToRankingsData()
     {
         var snapshot = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
@@ -541,79 +637,6 @@ public class RankingsModuleTests
 
         Assert.Equal(snapshot, result);
         _mockRankingsData.Verify(x => x.GetPublishedSnapshotAsync(2024, 5), Times.Once);
-    }
-
-    [Fact]
-    public async Task GetSnapshotAsync_DelegatesToRankingsData()
-    {
-        var snapshot = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
-        _mockRankingsData.Setup(x => x.GetSnapshotAsync(2024, 5)).ReturnsAsync(snapshot);
-
-        var result = await _rankingsModule.GetSnapshotAsync(2024, 5);
-
-        Assert.Equal(snapshot, result);
-        _mockRankingsData.Verify(x => x.GetSnapshotAsync(2024, 5), Times.Once);
-    }
-
-    [Fact]
-    public async Task SaveSnapshotAsync_DelegatesToRankingsData()
-    {
-        var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
-        _mockRankingsData.Setup(x => x.SaveSnapshotAsync(rankings)).ReturnsAsync(true);
-
-        var result = await _rankingsModule.SaveSnapshotAsync(rankings);
-
-        Assert.True(result);
-        _mockRankingsData.Verify(x => x.SaveSnapshotAsync(rankings), Times.Once);
-    }
-
-    [Fact]
-    public async Task PublishSnapshotAsync_DelegatesToRankingsData()
-    {
-        _mockRankingsData.Setup(x => x.PublishSnapshotAsync(2024, 5)).ReturnsAsync(true);
-
-        var result = await _rankingsModule.PublishSnapshotAsync(2024, 5);
-
-        Assert.True(result);
-        _mockRankingsData.Verify(x => x.PublishSnapshotAsync(2024, 5), Times.Once);
-    }
-
-    [Fact]
-    public async Task DeleteSnapshotAsync_DelegatesToRankingsData()
-    {
-        _mockRankingsData.Setup(x => x.DeleteSnapshotAsync(2024, 5)).ReturnsAsync(true);
-
-        var result = await _rankingsModule.DeleteSnapshotAsync(2024, 5);
-
-        Assert.True(result);
-        _mockRankingsData.Verify(x => x.DeleteSnapshotAsync(2024, 5), Times.Once);
-    }
-
-    [Fact]
-    public async Task GetSnapshotsAsync_DelegatesToRankingsData()
-    {
-        var weeks = new List<SnapshotSummary>
-        {
-            new SnapshotSummary { Season = 2024, Week = 1, IsPublished = true }
-        };
-        _mockRankingsData.Setup(x => x.GetSnapshotsAsync()).ReturnsAsync(weeks);
-
-        var result = await _rankingsModule.GetSnapshotsAsync();
-
-        Assert.Single(result);
-        _mockRankingsData.Verify(x => x.GetSnapshotsAsync(), Times.Once);
-    }
-
-    [Fact]
-    public async Task GetPublishedWeekNumbersAsync_DelegatesToRankingsData()
-    {
-        var weekNumbers = new List<int> { 1, 3, 5 };
-        _mockRankingsData.Setup(x => x.GetPublishedWeekNumbersAsync(2024)).ReturnsAsync(weekNumbers);
-
-        var result = await _rankingsModule.GetPublishedWeekNumbersAsync(2024);
-
-        Assert.Equal(3, result.Count());
-        _mockRankingsData.Verify(x => x.GetPublishedWeekNumbersAsync(2024), Times.Once);
     }
 
     [Fact]
@@ -633,134 +656,15 @@ public class RankingsModuleTests
     }
 
     [Fact]
-    public async Task GetRankDeltasAsync_NoPreviousSnapshot_ReturnsNullDeltas()
+    public async Task GetPublishedWeekNumbersAsync_DelegatesToRankingsData()
     {
-        _mockRankingsData
-            .Setup(x => x.GetPreviousPublishedSnapshotAsync(2024, 1))
-            .ReturnsAsync((RankingsResult?)null);
+        var weekNumbers = new List<int> { 1, 3, 5 };
+        _mockRankingsData.Setup(x => x.GetPublishedWeekNumbersAsync(2024)).ReturnsAsync(weekNumbers);
 
-        var currentRankings = new List<RankedTeam>
-        {
-            new RankedTeam { TeamName = "Nebraska", Rank = 1, Details = new TeamDetails() },
-            new RankedTeam { TeamName = "Oklahoma", Rank = 2, Details = new TeamDetails() }
-        };
+        var result = await _rankingsModule.GetPublishedWeekNumbersAsync(2024);
 
-        var result = await _rankingsModule.GetRankDeltasAsync(2024, 1, currentRankings);
-
-        Assert.Equal(2, result.Count);
-        Assert.Null(result["Nebraska"]);
-        Assert.Null(result["Oklahoma"]);
-    }
-
-    [Fact]
-    public async Task GetRankDeltasAsync_TeamMovedUp_ReturnsPositiveDelta()
-    {
-        var previousSnapshot = new RankingsResult
-        {
-            Season = 2024, Week = 4,
-            Rankings = new List<RankedTeam>
-            {
-                new RankedTeam { TeamName = "Ohio State", Rank = 5, Details = new TeamDetails() }
-            }
-        };
-
-        _mockRankingsData
-            .Setup(x => x.GetPreviousPublishedSnapshotAsync(2024, 5))
-            .ReturnsAsync(previousSnapshot);
-
-        var currentRankings = new List<RankedTeam>
-        {
-            new RankedTeam { TeamName = "Ohio State", Rank = 3, Details = new TeamDetails() }
-        };
-
-        var result = await _rankingsModule.GetRankDeltasAsync(2024, 5, currentRankings);
-
-        Assert.Equal(2, result["Ohio State"]);
-    }
-
-    [Fact]
-    public async Task GetRankDeltasAsync_TeamMovedDown_ReturnsNegativeDelta()
-    {
-        var previousSnapshot = new RankingsResult
-        {
-            Season = 2024, Week = 4,
-            Rankings = new List<RankedTeam>
-            {
-                new RankedTeam { TeamName = "Michigan", Rank = 2, Details = new TeamDetails() }
-            }
-        };
-
-        _mockRankingsData
-            .Setup(x => x.GetPreviousPublishedSnapshotAsync(2024, 5))
-            .ReturnsAsync(previousSnapshot);
-
-        var currentRankings = new List<RankedTeam>
-        {
-            new RankedTeam { TeamName = "Michigan", Rank = 5, Details = new TeamDetails() }
-        };
-
-        var result = await _rankingsModule.GetRankDeltasAsync(2024, 5, currentRankings);
-
-        Assert.Equal(-3, result["Michigan"]);
-    }
-
-    [Fact]
-    public async Task GetRankDeltasAsync_TeamUnchanged_ReturnsZero()
-    {
-        var previousSnapshot = new RankingsResult
-        {
-            Season = 2024, Week = 4,
-            Rankings = new List<RankedTeam>
-            {
-                new RankedTeam { TeamName = "Texas", Rank = 1, Details = new TeamDetails() }
-            }
-        };
-
-        _mockRankingsData
-            .Setup(x => x.GetPreviousPublishedSnapshotAsync(2024, 5))
-            .ReturnsAsync(previousSnapshot);
-
-        var currentRankings = new List<RankedTeam>
-        {
-            new RankedTeam { TeamName = "Texas", Rank = 1, Details = new TeamDetails() }
-        };
-
-        var result = await _rankingsModule.GetRankDeltasAsync(2024, 5, currentRankings);
-
-        Assert.Equal(0, result["Texas"]);
-    }
-
-    [Fact]
-    public async Task GetRankDeltasAsync_NewTeamNotInPrevious_ReturnsNullDelta()
-    {
-        var previousSnapshot = new RankingsResult
-        {
-            Season = 2024, Week = 4,
-            Rankings = new List<RankedTeam>
-            {
-                new RankedTeam { TeamName = "Iowa", Rank = 1, Details = new TeamDetails() }
-            }
-        };
-
-        _mockRankingsData
-            .Setup(x => x.GetPreviousPublishedSnapshotAsync(2024, 5))
-            .ReturnsAsync(previousSnapshot);
-
-        var currentRankings = new List<RankedTeam>
-        {
-            new RankedTeam { TeamName = "USC", Rank = 1, Details = new TeamDetails() }
-        };
-
-        var result = await _rankingsModule.GetRankDeltasAsync(2024, 5, currentRankings);
-
-        Assert.Null(result["USC"]);
-    }
-
-    [Fact]
-    public async Task GetRankDeltasAsync_NullCurrentRankings_ThrowsArgumentNullException()
-    {
-        await Assert.ThrowsAsync<ArgumentNullException>(
-            () => _rankingsModule.GetRankDeltasAsync(2024, 5, null!));
+        Assert.Equal(3, result.Count());
+        _mockRankingsData.Verify(x => x.GetPublishedWeekNumbersAsync(2024), Times.Once);
     }
 
     [Fact]
@@ -806,6 +710,207 @@ public class RankingsModuleTests
         _mockRankingsData.Verify(x => x.GetPreviousPublishedSnapshotAsync(2024, 5), Times.Once);
     }
 
+    [Fact]
+    public async Task GetRankDeltasAsync_NewTeamNotInPrevious_ReturnsNullDelta()
+    {
+        var previousSnapshot = new RankingsResult
+        {
+            Season = 2024, Week = 4,
+            Rankings = new List<RankedTeam>
+            {
+                new RankedTeam { TeamName = "Iowa", Rank = 1, Details = new TeamDetails() }
+            }
+        };
+
+        _mockRankingsData
+            .Setup(x => x.GetPreviousPublishedSnapshotAsync(2024, 5))
+            .ReturnsAsync(previousSnapshot);
+
+        var currentRankings = new List<RankedTeam>
+        {
+            new RankedTeam { TeamName = "USC", Rank = 1, Details = new TeamDetails() }
+        };
+
+        var result = await _rankingsModule.GetRankDeltasAsync(2024, 5, currentRankings);
+
+        Assert.Null(result["USC"]);
+    }
+
+    [Fact]
+    public async Task GetRankDeltasAsync_NoPreviousSnapshot_ReturnsNullDeltas()
+    {
+        _mockRankingsData
+            .Setup(x => x.GetPreviousPublishedSnapshotAsync(2024, 1))
+            .ReturnsAsync((RankingsResult?)null);
+
+        var currentRankings = new List<RankedTeam>
+        {
+            new RankedTeam { TeamName = "Nebraska", Rank = 1, Details = new TeamDetails() },
+            new RankedTeam { TeamName = "Oklahoma", Rank = 2, Details = new TeamDetails() }
+        };
+
+        var result = await _rankingsModule.GetRankDeltasAsync(2024, 1, currentRankings);
+
+        Assert.Equal(2, result.Count);
+        Assert.Null(result["Nebraska"]);
+        Assert.Null(result["Oklahoma"]);
+    }
+
+    [Fact]
+    public async Task GetRankDeltasAsync_NullCurrentRankings_ThrowsArgumentNullException()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => _rankingsModule.GetRankDeltasAsync(2024, 5, null!));
+    }
+
+    [Fact]
+    public async Task GetRankDeltasAsync_TeamMovedDown_ReturnsNegativeDelta()
+    {
+        var previousSnapshot = new RankingsResult
+        {
+            Season = 2024, Week = 4,
+            Rankings = new List<RankedTeam>
+            {
+                new RankedTeam { TeamName = "Michigan", Rank = 2, Details = new TeamDetails() }
+            }
+        };
+
+        _mockRankingsData
+            .Setup(x => x.GetPreviousPublishedSnapshotAsync(2024, 5))
+            .ReturnsAsync(previousSnapshot);
+
+        var currentRankings = new List<RankedTeam>
+        {
+            new RankedTeam { TeamName = "Michigan", Rank = 5, Details = new TeamDetails() }
+        };
+
+        var result = await _rankingsModule.GetRankDeltasAsync(2024, 5, currentRankings);
+
+        Assert.Equal(-3, result["Michigan"]);
+    }
+
+    [Fact]
+    public async Task GetRankDeltasAsync_TeamMovedUp_ReturnsPositiveDelta()
+    {
+        var previousSnapshot = new RankingsResult
+        {
+            Season = 2024, Week = 4,
+            Rankings = new List<RankedTeam>
+            {
+                new RankedTeam { TeamName = "Ohio State", Rank = 5, Details = new TeamDetails() }
+            }
+        };
+
+        _mockRankingsData
+            .Setup(x => x.GetPreviousPublishedSnapshotAsync(2024, 5))
+            .ReturnsAsync(previousSnapshot);
+
+        var currentRankings = new List<RankedTeam>
+        {
+            new RankedTeam { TeamName = "Ohio State", Rank = 3, Details = new TeamDetails() }
+        };
+
+        var result = await _rankingsModule.GetRankDeltasAsync(2024, 5, currentRankings);
+
+        Assert.Equal(2, result["Ohio State"]);
+    }
+
+    [Fact]
+    public async Task GetRankDeltasAsync_TeamUnchanged_ReturnsZero()
+    {
+        var previousSnapshot = new RankingsResult
+        {
+            Season = 2024, Week = 4,
+            Rankings = new List<RankedTeam>
+            {
+                new RankedTeam { TeamName = "Texas", Rank = 1, Details = new TeamDetails() }
+            }
+        };
+
+        _mockRankingsData
+            .Setup(x => x.GetPreviousPublishedSnapshotAsync(2024, 5))
+            .ReturnsAsync(previousSnapshot);
+
+        var currentRankings = new List<RankedTeam>
+        {
+            new RankedTeam { TeamName = "Texas", Rank = 1, Details = new TeamDetails() }
+        };
+
+        var result = await _rankingsModule.GetRankDeltasAsync(2024, 5, currentRankings);
+
+        Assert.Equal(0, result["Texas"]);
+    }
+
+    [Fact]
+    public async Task GetSnapshotAsync_DelegatesToRankingsData()
+    {
+        var snapshot = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+        _mockRankingsData.Setup(x => x.GetSnapshotAsync(2024, 5)).ReturnsAsync(snapshot);
+
+        var result = await _rankingsModule.GetSnapshotAsync(2024, 5);
+
+        Assert.Equal(snapshot, result);
+        _mockRankingsData.Verify(x => x.GetSnapshotAsync(2024, 5), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetSnapshotsAsync_DelegatesToRankingsData()
+    {
+        var weeks = new List<SnapshotSummary>
+        {
+            new SnapshotSummary { Season = 2024, Week = 1, IsPublished = true }
+        };
+        _mockRankingsData.Setup(x => x.GetSnapshotsAsync()).ReturnsAsync(weeks);
+
+        var result = await _rankingsModule.GetSnapshotsAsync();
+
+        Assert.Single(result);
+        _mockRankingsData.Verify(x => x.GetSnapshotsAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task PublishSnapshotAsync_DelegatesToRankingsData()
+    {
+        _mockRankingsData.Setup(x => x.PublishSnapshotAsync(2024, 5)).ReturnsAsync(true);
+
+        var result = await _rankingsModule.PublishSnapshotAsync(2024, 5);
+
+        Assert.True(result);
+        _mockRankingsData.Verify(x => x.PublishSnapshotAsync(2024, 5), Times.Once);
+    }
+
+    [Fact]
+    public async Task SaveSnapshotAsync_DataLayerThrows_PropagatesException()
+    {
+        var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+
+        _mockRankingsData
+            .Setup(x => x.SaveSnapshotAsync(rankings))
+            .ThrowsAsync(new InvalidOperationException("Database write failed"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _rankingsModule.SaveSnapshotAsync(rankings));
+    }
+
+    [Fact]
+    public async Task SaveSnapshotAsync_DelegatesToRankingsData()
+    {
+        var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+        _mockRankingsData.Setup(x => x.SaveSnapshotAsync(rankings)).ReturnsAsync(true);
+
+        var result = await _rankingsModule.SaveSnapshotAsync(rankings);
+
+        Assert.True(result);
+        _mockRankingsData.Verify(x => x.SaveSnapshotAsync(rankings), Times.Once);
+    }
+
+    [Fact]
+    public async Task SaveSnapshotAsync_NullRankings_ThrowsArgumentNullException()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => _rankingsModule.SaveSnapshotAsync(null!));
+    }
+
     private static RatingDetails CreateRatingDetails(
         double rating = 0.0,
         int wins = 0,
@@ -821,18 +926,11 @@ public class RankingsModuleTests
         };
     }
 
-    private static SeasonData CreateSeasonDataWithTeams(params string[] teamNames)
+    private static IDictionary<string, RatingDetails> CreateRatingsForTeams(params (string Name, double Rating)[] teams)
     {
-        var teams = teamNames.ToDictionary(
-            name => name,
-            name => new TeamInfo { Name = name, Games = [] });
-
-        return new SeasonData
-        {
-            Season = 2024,
-            Week = 5,
-            Teams = teams
-        };
+        return teams.ToDictionary(
+            t => t.Name,
+            t => CreateRatingDetails(rating: t.Rating));
     }
 
     private static SeasonData CreateSeasonDataWithGames(string teamName, IEnumerable<Game> games)
@@ -848,11 +946,18 @@ public class RankingsModuleTests
         };
     }
 
-    private static IDictionary<string, RatingDetails> CreateRatingsForTeams(params (string Name, double Rating)[] teams)
+    private static SeasonData CreateSeasonDataWithTeams(params string[] teamNames)
     {
-        return teams.ToDictionary(
-            t => t.Name,
-            t => CreateRatingDetails(rating: t.Rating));
+        var teams = teamNames.ToDictionary(
+            name => name,
+            name => new TeamInfo { Name = name, Games = [] });
+
+        return new SeasonData
+        {
+            Season = 2024,
+            Week = 5,
+            Teams = teams
+        };
     }
 
     private async Task<RankingsResult> GenerateRankingsWithOpponentAtRankAsync(int opponentRank, bool isWin)
@@ -900,110 +1005,5 @@ public class RankingsModuleTests
         }
 
         return await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
-    }
-
-    [Theory]
-    [InlineData(85.12344, 85.1234)]
-    [InlineData(85.12345, 85.1234)]
-    [InlineData(85.12346, 85.1235)]
-    [InlineData(0.0, 0.0)]
-    [InlineData(99.99999, 100.0)]
-    public async Task GenerateRankingsAsync_RatingRoundingBoundary_RoundsCorrectly(
-        double inputRating, double expectedRating)
-    {
-        var seasonData = CreateSeasonDataWithTeams("Team A");
-        var ratings = new Dictionary<string, RatingDetails>
-        {
-            ["Team A"] = CreateRatingDetails(rating: inputRating)
-        };
-
-        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
-
-        Assert.Equal(expectedRating, result.Rankings.First().Rating);
-    }
-
-    [Theory]
-    [InlineData(0.56784, 0.5678)]
-    [InlineData(0.56785, 0.5678)]
-    [InlineData(0.56786, 0.5679)]
-    [InlineData(0.0, 0.0)]
-    public async Task GenerateRankingsAsync_WeightedSOSRoundingBoundary_RoundsCorrectly(
-        double inputSOS, double expectedSOS)
-    {
-        var seasonData = CreateSeasonDataWithTeams("Team A");
-        var ratings = new Dictionary<string, RatingDetails>
-        {
-            ["Team A"] = CreateRatingDetails(rating: 80.0, weightedSOS: inputSOS)
-        };
-
-        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
-
-        Assert.Equal(expectedSOS, result.Rankings.First().WeightedSOS);
-    }
-
-    [Theory]
-    [InlineData(10)]
-    [InlineData(11)]
-    [InlineData(25)]
-    [InlineData(26)]
-    [InlineData(50)]
-    [InlineData(51)]
-    [InlineData(100)]
-    [InlineData(101)]
-    public async Task GenerateRankingsAsync_OpponentAtTierBoundary_OnlyIncrementsBoundaryTier(int opponentRank)
-    {
-        var result = await GenerateRankingsWithOpponentAtRankAsync(opponentRank, isWin: true);
-
-        var teamA = result.Rankings.First(t => t.TeamName.Equals("Team A", _scoic));
-
-        var expectedTier1 = opponentRank <= 10 ? 1 : 0;
-        var expectedTier2 = opponentRank > 10 && opponentRank <= 25 ? 1 : 0;
-        var expectedTier3 = opponentRank > 25 && opponentRank <= 50 ? 1 : 0;
-        var expectedTier4 = opponentRank > 50 && opponentRank <= 100 ? 1 : 0;
-        var expectedTier5 = opponentRank > 100 ? 1 : 0;
-
-        Assert.Equal(expectedTier1, teamA.Details.VsRank1To10.Wins);
-        Assert.Equal(expectedTier2, teamA.Details.VsRank11To25.Wins);
-        Assert.Equal(expectedTier3, teamA.Details.VsRank26To50.Wins);
-        Assert.Equal(expectedTier4, teamA.Details.VsRank51To100.Wins);
-        Assert.Equal(expectedTier5, teamA.Details.VsRank101Plus.Wins);
-    }
-
-    [Fact]
-    public async Task SaveSnapshotAsync_DataLayerThrows_PropagatesException()
-    {
-        var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
-
-        _mockRankingsData
-            .Setup(x => x.SaveSnapshotAsync(rankings))
-            .ThrowsAsync(new InvalidOperationException("Database write failed"));
-
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _rankingsModule.SaveSnapshotAsync(rankings));
-    }
-
-    [Fact]
-    public async Task GenerateRankingsAsync_NullSeasonData_ThrowsArgumentNullException()
-    {
-        var ratings = new Dictionary<string, RatingDetails>();
-
-        await Assert.ThrowsAsync<ArgumentNullException>(
-            () => _rankingsModule.GenerateRankingsAsync(null!, ratings));
-    }
-
-    [Fact]
-    public async Task GenerateRankingsAsync_NullRatings_ThrowsArgumentNullException()
-    {
-        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
-
-        await Assert.ThrowsAsync<ArgumentNullException>(
-            () => _rankingsModule.GenerateRankingsAsync(seasonData, null!));
-    }
-
-    [Fact]
-    public async Task SaveSnapshotAsync_NullRankings_ThrowsArgumentNullException()
-    {
-        await Assert.ThrowsAsync<ArgumentNullException>(
-            () => _rankingsModule.SaveSnapshotAsync(null!));
     }
 }

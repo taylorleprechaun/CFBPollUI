@@ -286,6 +286,22 @@ public class PredictionsData : IPredictionsData
         return rowsAffected > 0;
     }
 
+    private void EnsureDirectoryExists()
+    {
+        var builder = new SqliteConnectionStringBuilder(_connectionString);
+        var dataSource = builder.DataSource;
+
+        if (string.IsNullOrEmpty(dataSource) || dataSource == ":memory:")
+            return;
+
+        var directory = Path.GetDirectoryName(dataSource);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+            _logger.LogInformation("Created database directory: {Directory}", directory);
+        }
+    }
+
     /// <summary>
     /// Adds a new column to the predictions table if it does not already exist.
     /// This is the de facto migration mechanism for this table since it has no separate migrations folder.
@@ -301,22 +317,6 @@ public class PredictionsData : IPredictionsData
         catch (SqliteException)
         {
             // Column already exists — safe to ignore
-        }
-    }
-
-    private void EnsureDirectoryExists()
-    {
-        var builder = new SqliteConnectionStringBuilder(_connectionString);
-        var dataSource = builder.DataSource;
-
-        if (string.IsNullOrEmpty(dataSource) || dataSource == ":memory:")
-            return;
-
-        var directory = Path.GetDirectoryName(dataSource);
-        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-        {
-            Directory.CreateDirectory(directory);
-            _logger.LogInformation("Created database directory: {Directory}", directory);
         }
     }
 }

@@ -26,6 +26,12 @@ public class SnapshotMapperTests
     }
 
     [Fact]
+    public void ToDTO_NullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => SnapshotMapper.ToDTO(null!));
+    }
+
+    [Fact]
     public void ToDTO_UnpublishedSnapshot_MapsPublishedFalse()
     {
         var summary = new SnapshotSummary
@@ -39,11 +45,5 @@ public class SnapshotMapperTests
         var result = SnapshotMapper.ToDTO(summary);
 
         Assert.False(result.IsPublished);
-    }
-
-    [Fact]
-    public void ToDTO_NullInput_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() => SnapshotMapper.ToDTO(null!));
     }
 }

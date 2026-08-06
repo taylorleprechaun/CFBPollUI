@@ -7,9 +7,38 @@ namespace CFBPoll.API.Tests.Mappers;
 public class SeasonTrendsMapperTests
 {
     [Fact]
-    public void ToResponseDTO_NullInput_ThrowsArgumentNullException()
+    public void ToRankingDTO_NullInput_ThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>(() => SeasonTrendsMapper.ToResponseDTO(null!));
+        Assert.Throws<ArgumentNullException>(() => SeasonTrendsMapper.ToRankingDTO(null!));
+    }
+
+    [Fact]
+    public void ToRankingDTO_NullRank_PreservesNull()
+    {
+        var model = new SeasonTrendRanking
+        {
+            Rank = null,
+            Rating = 0,
+            Record = "",
+            WeekNumber = 3
+        };
+
+        var result = SeasonTrendsMapper.ToRankingDTO(model);
+
+        Assert.Null(result.Rank);
+        Assert.Equal(3, result.WeekNumber);
+    }
+
+    [Fact]
+    public void ToResponseDTO_EmptyCollections_MapsCorrectly()
+    {
+        var model = new SeasonTrendsResult { Season = 2024 };
+
+        var result = SeasonTrendsMapper.ToResponseDTO(model);
+
+        Assert.Equal(2024, result.Season);
+        Assert.Empty(result.Teams);
+        Assert.Empty(result.Weeks);
     }
 
     [Fact]
@@ -58,53 +87,6 @@ public class SeasonTrendsMapperTests
     }
 
     [Fact]
-    public void ToResponseDTO_EmptyCollections_MapsCorrectly()
-    {
-        var model = new SeasonTrendsResult { Season = 2024 };
-
-        var result = SeasonTrendsMapper.ToResponseDTO(model);
-
-        Assert.Equal(2024, result.Season);
-        Assert.Empty(result.Teams);
-        Assert.Empty(result.Weeks);
-    }
-
-    [Fact]
-    public void ToTeamDTO_NullInput_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() => SeasonTrendsMapper.ToTeamDTO(null!));
-    }
-
-    [Fact]
-    public void ToRankingDTO_NullInput_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() => SeasonTrendsMapper.ToRankingDTO(null!));
-    }
-
-    [Fact]
-    public void ToWeekDTO_NullInput_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() => SeasonTrendsMapper.ToWeekDTO(null!));
-    }
-
-    [Fact]
-    public void ToRankingDTO_NullRank_PreservesNull()
-    {
-        var model = new SeasonTrendRanking
-        {
-            Rank = null,
-            Rating = 0,
-            Record = "",
-            WeekNumber = 3
-        };
-
-        var result = SeasonTrendsMapper.ToRankingDTO(model);
-
-        Assert.Null(result.Rank);
-        Assert.Equal(3, result.WeekNumber);
-    }
-
-    [Fact]
     public void ToResponseDTO_MultipleTeamsAndWeeks_MapsAll()
     {
         var model = new SeasonTrendsResult
@@ -126,5 +108,23 @@ public class SeasonTrendsMapperTests
 
         Assert.Equal(2, result.Teams.Count());
         Assert.Equal(2, result.Weeks.Count());
+    }
+
+    [Fact]
+    public void ToResponseDTO_NullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => SeasonTrendsMapper.ToResponseDTO(null!));
+    }
+
+    [Fact]
+    public void ToTeamDTO_NullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => SeasonTrendsMapper.ToTeamDTO(null!));
+    }
+
+    [Fact]
+    public void ToWeekDTO_NullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => SeasonTrendsMapper.ToWeekDTO(null!));
     }
 }

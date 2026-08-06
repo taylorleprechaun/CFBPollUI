@@ -10,7 +10,7 @@ public static class DatabaseServiceExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.Configure<DatabaseOptions>(configuration.GetSection(DatabaseOptions.SectionName));
+        services.Configure<DatabaseOptions>(configuration.GetSection(DatabaseOptions.SECTION_NAME));
         services.AddSingleton<IPageVisibilityData, PageVisibilityData>();
         services.AddSingleton<IPredictionsData, PredictionsData>();
         services.AddSingleton<IRankingsData, RankingsData>();

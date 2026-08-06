@@ -75,22 +75,6 @@ public class TrackRecordMapperTests
     }
 
     [Fact]
-    public void ToResponseDTO_WithNullInput_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() => TrackRecordMapper.ToResponseDTO(null!));
-    }
-
-    [Fact]
-    public void ToResponseDTO_WithEmptyWeeks_ReturnsEmptyList()
-    {
-        var result = new TrackRecordResult();
-
-        var dto = TrackRecordMapper.ToResponseDTO(result);
-
-        Assert.Empty(dto.Weeks);
-    }
-
-    [Fact]
     public void ToResponseDTO_PreservesWeekOrder()
     {
         var result = new TrackRecordResult
@@ -108,5 +92,21 @@ public class TrackRecordMapperTests
         Assert.Equal((2023, 5), (dto[0].Season, dto[0].Week));
         Assert.Equal((2024, 1), (dto[1].Season, dto[1].Week));
         Assert.Equal((2024, 3), (dto[2].Season, dto[2].Week));
+    }
+
+    [Fact]
+    public void ToResponseDTO_WithEmptyWeeks_ReturnsEmptyList()
+    {
+        var result = new TrackRecordResult();
+
+        var dto = TrackRecordMapper.ToResponseDTO(result);
+
+        Assert.Empty(dto.Weeks);
+    }
+
+    [Fact]
+    public void ToResponseDTO_WithNullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => TrackRecordMapper.ToResponseDTO(null!));
     }
 }

@@ -28,21 +28,6 @@ public class ExcelExportModule : IExcelExportModule
         return package.GetAsByteArray();
     }
 
-    private IReadOnlyList<string> GetDynamicColumns(IEnumerable<RankedTeam> teams)
-    {
-        var columns = new HashSet<string>();
-
-        foreach (var team in teams)
-        {
-            foreach (var key in team.RatingComponents.Keys)
-            {
-                columns.Add(key);
-            }
-        }
-
-        return columns.OrderBy(c => c).ToList();
-    }
-
     private void FormatWorksheet(ExcelWorksheet worksheet, int dataRows, int dynamicColumnCount)
     {
         var totalColumns = 11 + dynamicColumnCount;
@@ -69,6 +54,21 @@ public class ExcelExportModule : IExcelExportModule
 
         worksheet.Cells[1, 1, 1, totalColumns].Style.Font.Bold = true;
         worksheet.Cells.AutoFitColumns();
+    }
+
+    private IReadOnlyList<string> GetDynamicColumns(IEnumerable<RankedTeam> teams)
+    {
+        var columns = new HashSet<string>();
+
+        foreach (var team in teams)
+        {
+            foreach (var key in team.RatingComponents.Keys)
+            {
+                columns.Add(key);
+            }
+        }
+
+        return columns.OrderBy(c => c).ToList();
     }
 
     private void WriteData(ExcelWorksheet worksheet, IReadOnlyList<RankedTeam> teams, IReadOnlyList<string> dynamicColumns)

@@ -13,7 +13,7 @@ public static class CachingServiceExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.Configure<CacheOptions>(configuration.GetSection(CacheOptions.SectionName));
+        services.Configure<CacheOptions>(configuration.GetSection(CacheOptions.SECTION_NAME));
 
         services.AddSingleton<ICacheData, CacheData>();
         services.AddSingleton<IPersistentCache, CacheModule>();

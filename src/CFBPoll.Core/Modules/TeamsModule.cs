@@ -38,39 +38,6 @@ public class TeamsModule : ITeamsModule
         return await BuildCalculatedTeamDetailAsync(teamName, season, week).ConfigureAwait(false);
     }
 
-    private IDictionary<string, TeamInfo> BuildTeamsFromMetadata(
-        IEnumerable<FBSTeam> fbsTeams,
-        IEnumerable<RankedTeam> rankings)
-    {
-        var rankingsLookup = rankings.ToDictionary(
-            r => r.TeamName, r => r, StringComparer.OrdinalIgnoreCase);
-
-        var teams = new Dictionary<string, TeamInfo>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var fbs in fbsTeams)
-        {
-            var teamInfo = new TeamInfo
-            {
-                AltColor = fbs.AltColor,
-                Color = fbs.Color,
-                Conference = fbs.Conference,
-                Division = fbs.Division,
-                LogoURL = fbs.LogoURL,
-                Name = fbs.Name
-            };
-
-            if (rankingsLookup.TryGetValue(fbs.Name, out var ranked))
-            {
-                teamInfo.Losses = ranked.Losses;
-                teamInfo.Wins = ranked.Wins;
-            }
-
-            teams[fbs.Name] = teamInfo;
-        }
-
-        return teams;
-    }
-
     private async Task<TeamDetailResult?> BuildCalculatedTeamDetailAsync(string teamName, int season, int week)
     {
         var seasonData = await _dataService.GetSeasonDataAsync(season, week).ConfigureAwait(false);
@@ -137,5 +104,38 @@ public class TeamsModule : ITeamsModule
             RankedTeam = rankedTeam,
             Teams = teams
         };
+    }
+
+    private IDictionary<string, TeamInfo> BuildTeamsFromMetadata(
+        IEnumerable<FBSTeam> fbsTeams,
+        IEnumerable<RankedTeam> rankings)
+    {
+        var rankingsLookup = rankings.ToDictionary(
+            r => r.TeamName, r => r, StringComparer.OrdinalIgnoreCase);
+
+        var teams = new Dictionary<string, TeamInfo>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var fbs in fbsTeams)
+        {
+            var teamInfo = new TeamInfo
+            {
+                AltColor = fbs.AltColor,
+                Color = fbs.Color,
+                Conference = fbs.Conference,
+                Division = fbs.Division,
+                LogoURL = fbs.LogoURL,
+                Name = fbs.Name
+            };
+
+            if (rankingsLookup.TryGetValue(fbs.Name, out var ranked))
+            {
+                teamInfo.Losses = ranked.Losses;
+                teamInfo.Wins = ranked.Wins;
+            }
+
+            teams[fbs.Name] = teamInfo;
+        }
+
+        return teams;
     }
 }

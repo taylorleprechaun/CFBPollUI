@@ -310,6 +310,7 @@ public class PredictionsDataTests
             CleanupFile(tempPath);
         }
     }
+
     [Fact]
     public async Task GetPublishedSeasonsAsync_NoPublishedWeeks_ReturnsEmpty()
     {

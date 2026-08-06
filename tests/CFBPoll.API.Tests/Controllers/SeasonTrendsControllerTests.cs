@@ -11,9 +11,9 @@ namespace CFBPoll.API.Tests.Controllers;
 
 public class SeasonTrendsControllerTests
 {
+    private readonly SeasonTrendsController _controller;
     private readonly Mock<ILogger<SeasonTrendsController>> _mockLogger;
     private readonly Mock<ISeasonTrendsModule> _mockSeasonTrendsModule;
-    private readonly SeasonTrendsController _controller;
 
     public SeasonTrendsControllerTests()
     {
@@ -26,6 +26,15 @@ public class SeasonTrendsControllerTests
     }
 
     [Fact]
+    public void Constructor_NullLogger_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new SeasonTrendsController(
+                new Mock<ISeasonTrendsModule>().Object,
+                null!));
+    }
+
+    [Fact]
     public void Constructor_NullSeasonTrendsModule_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
@@ -35,12 +44,20 @@ public class SeasonTrendsControllerTests
     }
 
     [Fact]
-    public void Constructor_NullLogger_ThrowsArgumentNullException()
+    public async Task GetSeasonTrends_EmptyResult_ReturnsOkWithEmptyTeams()
     {
-        Assert.Throws<ArgumentNullException>(
-            () => new SeasonTrendsController(
-                new Mock<ISeasonTrendsModule>().Object,
-                null!));
+        _mockSeasonTrendsModule
+            .Setup(x => x.GetSeasonTrendsAsync(2024))
+            .ReturnsAsync(new SeasonTrendsResult { Season = 2024 });
+
+        var result = await _controller.GetSeasonTrends(2024);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<SeasonTrendsResponseDTO>(okResult.Value);
+
+        Assert.Equal(2024, response.Season);
+        Assert.Empty(response.Teams);
+        Assert.Empty(response.Weeks);
     }
 
     [Fact]
@@ -87,22 +104,5 @@ public class SeasonTrendsControllerTests
         Assert.Equal(1, response.Teams.First().Rankings.First().Rank);
         Assert.Single(response.Weeks);
         Assert.Equal("Week 2", response.Weeks.First().Label);
-    }
-
-    [Fact]
-    public async Task GetSeasonTrends_EmptyResult_ReturnsOkWithEmptyTeams()
-    {
-        _mockSeasonTrendsModule
-            .Setup(x => x.GetSeasonTrendsAsync(2024))
-            .ReturnsAsync(new SeasonTrendsResult { Season = 2024 });
-
-        var result = await _controller.GetSeasonTrends(2024);
-
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var response = Assert.IsType<SeasonTrendsResponseDTO>(okResult.Value);
-
-        Assert.Equal(2024, response.Season);
-        Assert.Empty(response.Teams);
-        Assert.Empty(response.Weeks);
     }
 }

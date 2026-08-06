@@ -15,26 +15,42 @@ public class ExcelExportModuleTests
     }
 
     [Fact]
-    public void GenerateRankingsWorkbook_ReturnsNonEmptyBytes()
+    public void GenerateRankingsWorkbook_EmptyRankings_ProducesValidWorkbookWithHeaders()
     {
-        var rankings = CreateRankingsResult();
+        var rankings = new RankingsResult
+        {
+            Season = 2024,
+            Week = 5,
+            Rankings = []
+        };
 
-        var result = _module.GenerateRankingsWorkbook(rankings);
+        var bytes = _module.GenerateRankingsWorkbook(rankings);
 
-        Assert.NotNull(result);
-        Assert.True(result.Length > 0);
+        using var package = new ExcelPackage(new MemoryStream(bytes));
+        var worksheet = package.Workbook.Worksheets[0];
+
+        Assert.Equal("Ranking", worksheet.Cells[1, 1].Value?.ToString());
+        Assert.Equal("Team Name", worksheet.Cells[1, 2].Value?.ToString());
+        Assert.Null(worksheet.Cells[2, 1].Value);
     }
 
     [Fact]
-    public void GenerateRankingsWorkbook_HasOneSheetNamedRatingDetails()
+    public void GenerateRankingsWorkbook_HasCorrectDataValues()
     {
         var rankings = CreateRankingsResult();
 
         var bytes = _module.GenerateRankingsWorkbook(rankings);
 
         using var package = new ExcelPackage(new MemoryStream(bytes));
-        Assert.Single(package.Workbook.Worksheets);
-        Assert.Equal("Rating Details", package.Workbook.Worksheets[0].Name);
+        var worksheet = package.Workbook.Worksheets[0];
+
+        Assert.Equal(1.0, worksheet.Cells[2, 1].Value);
+        Assert.Equal("Team A", worksheet.Cells[2, 2].Value);
+        Assert.Equal(90.1234, worksheet.Cells[2, 3].Value);
+        Assert.Equal(5.0, worksheet.Cells[2, 5].Value);
+        Assert.Equal(1.0, worksheet.Cells[2, 6].Value);
+        Assert.Equal("Big Ten", worksheet.Cells[2, 10].Value);
+        Assert.Equal("East", worksheet.Cells[2, 11].Value);
     }
 
     [Fact]
@@ -61,25 +77,6 @@ public class ExcelExportModuleTests
     }
 
     [Fact]
-    public void GenerateRankingsWorkbook_HasCorrectDataValues()
-    {
-        var rankings = CreateRankingsResult();
-
-        var bytes = _module.GenerateRankingsWorkbook(rankings);
-
-        using var package = new ExcelPackage(new MemoryStream(bytes));
-        var worksheet = package.Workbook.Worksheets[0];
-
-        Assert.Equal(1.0, worksheet.Cells[2, 1].Value);
-        Assert.Equal("Team A", worksheet.Cells[2, 2].Value);
-        Assert.Equal(90.1234, worksheet.Cells[2, 3].Value);
-        Assert.Equal(5.0, worksheet.Cells[2, 5].Value);
-        Assert.Equal(1.0, worksheet.Cells[2, 6].Value);
-        Assert.Equal("Big Ten", worksheet.Cells[2, 10].Value);
-        Assert.Equal("East", worksheet.Cells[2, 11].Value);
-    }
-
-    [Fact]
     public void GenerateRankingsWorkbook_HasDynamicRatingComponentColumns()
     {
         var rankings = CreateRankingsResult();
@@ -100,23 +97,26 @@ public class ExcelExportModuleTests
     }
 
     [Fact]
-    public void GenerateRankingsWorkbook_EmptyRankings_ProducesValidWorkbookWithHeaders()
+    public void GenerateRankingsWorkbook_HasOneSheetNamedRatingDetails()
     {
-        var rankings = new RankingsResult
-        {
-            Season = 2024,
-            Week = 5,
-            Rankings = []
-        };
+        var rankings = CreateRankingsResult();
 
         var bytes = _module.GenerateRankingsWorkbook(rankings);
 
         using var package = new ExcelPackage(new MemoryStream(bytes));
-        var worksheet = package.Workbook.Worksheets[0];
+        Assert.Single(package.Workbook.Worksheets);
+        Assert.Equal("Rating Details", package.Workbook.Worksheets[0].Name);
+    }
 
-        Assert.Equal("Ranking", worksheet.Cells[1, 1].Value?.ToString());
-        Assert.Equal("Team Name", worksheet.Cells[1, 2].Value?.ToString());
-        Assert.Null(worksheet.Cells[2, 1].Value);
+    [Fact]
+    public void GenerateRankingsWorkbook_ReturnsNonEmptyBytes()
+    {
+        var rankings = CreateRankingsResult();
+
+        var result = _module.GenerateRankingsWorkbook(rankings);
+
+        Assert.NotNull(result);
+        Assert.True(result.Length > 0);
     }
 
     [Fact]

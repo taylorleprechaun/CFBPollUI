@@ -52,6 +52,7 @@ public class CachingCFBDataServiceTests
         Assert.Throws<ArgumentNullException>(() =>
             new CachingCFBDataService(null!, _mockCache.Object, _mockOptions.Object, _mockLogger.Object));
     }
+
     [Fact]
     public void Constructor_ThrowsOnNullLogger()
     {
@@ -65,6 +66,7 @@ public class CachingCFBDataServiceTests
         Assert.Throws<ArgumentNullException>(() =>
             new CachingCFBDataService(_mockInnerService.Object, _mockCache.Object, null!, _mockLogger.Object));
     }
+
     [Fact]
     public async Task GetAdvancedGameStatsAsync_FetchesFromInnerService_WhenCacheMiss()
     {
@@ -253,6 +255,7 @@ public class CachingCFBDataServiceTests
         Assert.Single(result);
         _mockInnerService.Verify(x => x.GetCalendarAsync(It.IsAny<int>()), Times.Never);
     }
+
     [Fact]
     public async Task GetCalendarAsync_UsesLongExpiration_ForPastYears()
     {
@@ -556,6 +559,7 @@ public class CachingCFBDataServiceTests
         Assert.Equal(2024, result);
         _mockInnerService.Verify(x => x.GetMaxSeasonYearAsync(), Times.Never);
     }
+
     [Fact]
     public async Task GetMaxSeasonYearAsync_ReturnsCorrectYear()
     {
@@ -566,6 +570,7 @@ public class CachingCFBDataServiceTests
 
         Assert.Equal(2025, result);
     }
+
     [Fact]
     public async Task GetSeasonDataAsync_AssemblesTeamsCorrectly()
     {
@@ -689,6 +694,7 @@ public class CachingCFBDataServiceTests
         Assert.Single(result);
         _mockInnerService.Verify(x => x.GetSeasonTeamStatsAsync(It.IsAny<int>(), It.IsAny<int?>()), Times.Never);
     }
+
     [Fact]
     public async Task GetSeasonTeamStatsAsync_UsesCorrectKey_WhenEndWeekIsNull()
     {
@@ -701,6 +707,7 @@ public class CachingCFBDataServiceTests
 
         _mockCache.Verify(x => x.GetAsync<Dictionary<string, List<TeamStat>>>("seasonStats_2024"), Times.Once);
     }
+
     private void SetupCacheMiss()
     {
         _mockCache.Setup(x => x.GetAsync<List<FBSTeam>>(It.IsAny<string>())).ReturnsAsync((List<FBSTeam>?)null);

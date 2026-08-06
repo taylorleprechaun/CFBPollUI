@@ -43,6 +43,7 @@ public class CachingCFBDataService : ICFBDataService
             () => _innerService.GetBettingLinesAsync(season, week),
             expiresAt).ConfigureAwait(false);
     }
+
     public async Task<IEnumerable<CalendarWeek>> GetCalendarAsync(int year)
     {
         var expiresAt = CalculateExpiration(year, _options.CalendarExpirationHours);

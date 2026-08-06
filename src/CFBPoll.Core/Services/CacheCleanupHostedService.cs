@@ -19,6 +19,18 @@ public class CacheCleanupHostedService : BackgroundService
         _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
     }
 
+    private static async Task DelaySafelyAsync(TimeSpan delay, CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(delay, token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected during shutdown.
+        }
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await DelaySafelyAsync(TimeSpan.FromMinutes(_options.CleanupStartupDelayMinutes), stoppingToken).ConfigureAwait(false);
@@ -36,18 +48,6 @@ public class CacheCleanupHostedService : BackgroundService
             }
 
             await DelaySafelyAsync(TimeSpan.FromMinutes(_options.CleanupIntervalMinutes), stoppingToken).ConfigureAwait(false);
-        }
-    }
-
-    private static async Task DelaySafelyAsync(TimeSpan delay, CancellationToken token)
-    {
-        try
-        {
-            await Task.Delay(delay, token).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-            // Expected during shutdown.
         }
     }
 }

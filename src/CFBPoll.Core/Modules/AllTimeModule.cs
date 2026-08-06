@@ -52,6 +52,23 @@ public class AllTimeModule : IAllTimeModule
         };
     }
 
+    private static IReadOnlyList<AllTimeEntry> AssignRanks(IEnumerable<AllTimeEntry> entries)
+    {
+        return entries.Select((e, i) => new AllTimeEntry
+        {
+            AllTimeRank = i + 1,
+            LogoURL = e.LogoURL,
+            Losses = e.Losses,
+            Rank = e.Rank,
+            Rating = e.Rating,
+            Season = e.Season,
+            TeamName = e.TeamName,
+            WeightedSOS = e.WeightedSOS,
+            Week = e.Week,
+            Wins = e.Wins
+        }).ToList();
+    }
+
     private IReadOnlyList<AllTimeEntry> BuildBestTeams(IReadOnlyList<AllTimeEntry> allEntries)
     {
         var candidates = allEntries
@@ -139,22 +156,5 @@ public class AllTimeModule : IAllTimeModule
 
         _logger.LogInformation("Loaded {Count} postseason snapshots", results.Count);
         return results;
-    }
-
-    private static IReadOnlyList<AllTimeEntry> AssignRanks(IEnumerable<AllTimeEntry> entries)
-    {
-        return entries.Select((e, i) => new AllTimeEntry
-        {
-            AllTimeRank = i + 1,
-            LogoURL = e.LogoURL,
-            Losses = e.Losses,
-            Rank = e.Rank,
-            Rating = e.Rating,
-            Season = e.Season,
-            TeamName = e.TeamName,
-            WeightedSOS = e.WeightedSOS,
-            Week = e.Week,
-            Wins = e.Wins
-        }).ToList();
     }
 }

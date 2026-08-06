@@ -14,6 +14,7 @@ public class PredictionsControllerTests
     private readonly PredictionsController _controller;
     private readonly Mock<ILogger<PredictionsController>> _mockLogger;
     private readonly Mock<IPredictionsModule> _mockPredictionsModule;
+
     public PredictionsControllerTests()
     {
         _mockLogger = new Mock<ILogger<PredictionsController>>();
@@ -34,6 +35,34 @@ public class PredictionsControllerTests
     {
         Assert.Throws<ArgumentNullException>(
             () => new PredictionsController(null!, new Mock<ILogger<PredictionsController>>().Object));
+    }
+
+    [Fact]
+    public async Task GetPredictionSeasons_NoPublishedSeasons_ReturnsEmpty()
+    {
+        _mockPredictionsModule
+            .Setup(x => x.GetPublishedSeasonsAsync())
+            .ReturnsAsync(new List<int>());
+
+        var result = await _controller.GetPredictionSeasons();
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<SeasonsResponseDTO>(okResult.Value);
+        Assert.Empty(response.Seasons);
+    }
+
+    [Fact]
+    public async Task GetPredictionSeasons_ReturnsSeasonsFromModule()
+    {
+        _mockPredictionsModule
+            .Setup(x => x.GetPublishedSeasonsAsync())
+            .ReturnsAsync(new List<int> { 2025, 2024 });
+
+        var result = await _controller.GetPredictionSeasons();
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<SeasonsResponseDTO>(okResult.Value);
+        Assert.Equal(new List<int> { 2025, 2024 }, response.Seasons);
     }
 
     [Fact]
@@ -139,33 +168,5 @@ public class PredictionsControllerTests
         var prediction = Assert.Single(response.Predictions);
         Assert.Equal("Alabama", prediction.ActualWinner);
         Assert.Equal("Correct", prediction.WinnerGrade);
-    }
-
-    [Fact]
-    public async Task GetPredictionSeasons_NoPublishedSeasons_ReturnsEmpty()
-    {
-        _mockPredictionsModule
-            .Setup(x => x.GetPublishedSeasonsAsync())
-            .ReturnsAsync(new List<int>());
-
-        var result = await _controller.GetPredictionSeasons();
-
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var response = Assert.IsType<SeasonsResponseDTO>(okResult.Value);
-        Assert.Empty(response.Seasons);
-    }
-
-    [Fact]
-    public async Task GetPredictionSeasons_ReturnsSeasonsFromModule()
-    {
-        _mockPredictionsModule
-            .Setup(x => x.GetPublishedSeasonsAsync())
-            .ReturnsAsync(new List<int> { 2025, 2024 });
-
-        var result = await _controller.GetPredictionSeasons();
-
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var response = Assert.IsType<SeasonsResponseDTO>(okResult.Value);
-        Assert.Equal(new List<int> { 2025, 2024 }, response.Seasons);
     }
 }

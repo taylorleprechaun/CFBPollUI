@@ -5,6 +5,17 @@ namespace CFBPoll.API.Mappers;
 
 public static class PredictionsMapper
 {
+    public static AdminPredictionsResponseDTO ToAdminResponseDTO(GetPredictionsResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        return new AdminPredictionsResponseDTO
+        {
+            IsPublished = result.IsPublished,
+            Predictions = ToResponseDTO(result.Predictions, resultsPublished: result.ResultsPublished, isGraded: result.IsGraded)
+        };
+    }
+
     public static GamePredictionDTO ToDTO(GamePrediction prediction, bool includeGradeDetails = true)
     {
         ArgumentNullException.ThrowIfNull(prediction);
@@ -32,17 +43,6 @@ public static class PredictionsMapper
             PredictedWinner = prediction.PredictedWinner,
             SpreadGrade = (includeGradeDetails ? prediction.SpreadGrade : PredictionGradeStatus.Ungraded).ToString(),
             WinnerGrade = (includeGradeDetails ? prediction.WinnerGrade : PredictionGradeStatus.Ungraded).ToString()
-        };
-    }
-
-    public static AdminPredictionsResponseDTO ToAdminResponseDTO(GetPredictionsResult result)
-    {
-        ArgumentNullException.ThrowIfNull(result);
-
-        return new AdminPredictionsResponseDTO
-        {
-            IsPublished = result.IsPublished,
-            Predictions = ToResponseDTO(result.Predictions, resultsPublished: result.ResultsPublished, isGraded: result.IsGraded)
         };
     }
 

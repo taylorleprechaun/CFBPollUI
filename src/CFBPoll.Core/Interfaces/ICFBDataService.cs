@@ -8,20 +8,20 @@ namespace CFBPoll.Core.Interfaces;
 public interface ICFBDataService
 {
     /// <summary>
+    /// Retrieves advanced game statistics for all teams in a given season.
+    /// </summary>
+    /// <param name="season">The season year.</param>
+    /// <param name="seasonType">Season type: "regular", "postseason", or "both".</param>
+    /// <returns>Collection of advanced game statistics.</returns>
+    Task<IEnumerable<AdvancedGameStats>> GetAdvancedGameStatsAsync(int season, string seasonType);
+
+    /// <summary>
     /// Retrieves betting lines for a given season and week.
     /// </summary>
     /// <param name="season">The season year.</param>
     /// <param name="week">The week number.</param>
     /// <returns>Collection of betting lines with opening spreads and over/unders.</returns>
     Task<IEnumerable<BettingLine>> GetBettingLinesAsync(int season, int week);
-
-    /// <summary>
-    /// Retrieves season data including all FBS teams and games up to the specified week.
-    /// </summary>
-    /// <param name="season">The season year to retrieve data for.</param>
-    /// <param name="week">The week number up to which games should be included.</param>
-    /// <returns>A SeasonData object containing teams and games information.</returns>
-    Task<SeasonData> GetSeasonDataAsync(int season, int week);
 
     /// <summary>
     /// Retrieves calendar information for the specified year.
@@ -31,25 +31,10 @@ public interface ICFBDataService
     Task<IEnumerable<CalendarWeek>> GetCalendarAsync(int year);
 
     /// <summary>
-    /// Determines the maximum available season year by checking calendar data.
-    /// Starts from current year and decrements until valid data is found or 2000 is reached.
-    /// </summary>
-    /// <returns>The maximum season year with available data.</returns>
-    Task<int> GetMaxSeasonYearAsync();
-
-    /// <summary>
     /// Retrieves all FBS conferences.
     /// </summary>
     /// <returns>Collection of FBS conferences.</returns>
     Task<IEnumerable<Conference>> GetConferencesAsync();
-
-    /// <summary>
-    /// Retrieves advanced game statistics for all teams in a given season.
-    /// </summary>
-    /// <param name="season">The season year.</param>
-    /// <param name="seasonType">Season type: "regular", "postseason", or "both".</param>
-    /// <returns>Collection of advanced game statistics.</returns>
-    Task<IEnumerable<AdvancedGameStats>> GetAdvancedGameStatsAsync(int season, string seasonType);
 
     /// <summary>
     /// Retrieves all FBS teams for a given season with metadata only (no games or stats).
@@ -73,6 +58,21 @@ public interface ICFBDataService
     /// <param name="seasonType">Season type: "regular" or "postseason".</param>
     /// <returns>Collection of completed games.</returns>
     Task<IEnumerable<Game>> GetGamesAsync(int season, string seasonType);
+
+    /// <summary>
+    /// Determines the maximum available season year by checking calendar data.
+    /// Starts from current year and decrements until valid data is found or 2000 is reached.
+    /// </summary>
+    /// <returns>The maximum season year with available data.</returns>
+    Task<int> GetMaxSeasonYearAsync();
+
+    /// <summary>
+    /// Retrieves season data including all FBS teams and games up to the specified week.
+    /// </summary>
+    /// <param name="season">The season year to retrieve data for.</param>
+    /// <param name="week">The week number up to which games should be included.</param>
+    /// <returns>A SeasonData object containing teams and games information.</returns>
+    Task<SeasonData> GetSeasonDataAsync(int season, int week);
 
     /// <summary>
     /// Retrieves aggregated team statistics for a season, optionally limited to a specific end week.

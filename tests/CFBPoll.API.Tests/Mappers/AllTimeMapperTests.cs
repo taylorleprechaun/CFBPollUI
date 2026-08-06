@@ -7,6 +7,20 @@ namespace CFBPoll.API.Tests.Mappers;
 public class AllTimeMapperTests
 {
     [Fact]
+    public void ToDTO_ComputesRecordString()
+    {
+        var entry = new AllTimeEntry
+        {
+            Wins = 11,
+            Losses = 2
+        };
+
+        var result = AllTimeMapper.ToDTO(entry);
+
+        Assert.Equal("11-2", result.Record);
+    }
+
+    [Fact]
     public void ToDTO_MapsAllProperties()
     {
         var entry = new AllTimeEntry
@@ -38,17 +52,9 @@ public class AllTimeMapperTests
     }
 
     [Fact]
-    public void ToDTO_ComputesRecordString()
+    public void ToDTO_WithNullInput_ThrowsArgumentNullException()
     {
-        var entry = new AllTimeEntry
-        {
-            Wins = 11,
-            Losses = 2
-        };
-
-        var result = AllTimeMapper.ToDTO(entry);
-
-        Assert.Equal("11-2", result.Record);
+        Assert.Throws<ArgumentNullException>(() => AllTimeMapper.ToDTO(null!));
     }
 
     [Fact]
@@ -63,12 +69,6 @@ public class AllTimeMapperTests
         var result = AllTimeMapper.ToDTO(entry);
 
         Assert.Equal("0-0", result.Record);
-    }
-
-    [Fact]
-    public void ToDTO_WithNullInput_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() => AllTimeMapper.ToDTO(null!));
     }
 
     [Fact]
@@ -106,24 +106,6 @@ public class AllTimeMapperTests
     }
 
     [Fact]
-    public void ToResponseDTO_WithEmptyLists_ReturnsEmptyLists()
-    {
-        var result = new AllTimeResult();
-
-        var dto = AllTimeMapper.ToResponseDTO(result);
-
-        Assert.Empty(dto.BestTeams);
-        Assert.Empty(dto.HardestSchedules);
-        Assert.Empty(dto.WorstTeams);
-    }
-
-    [Fact]
-    public void ToResponseDTO_WithNullInput_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() => AllTimeMapper.ToResponseDTO(null!));
-    }
-
-    [Fact]
     public void ToResponseDTO_PreservesOrder()
     {
         var result = new AllTimeResult
@@ -144,5 +126,23 @@ public class AllTimeMapperTests
         Assert.Equal("First", bestTeams[0].TeamName);
         Assert.Equal("Second", bestTeams[1].TeamName);
         Assert.Equal("Third", bestTeams[2].TeamName);
+    }
+
+    [Fact]
+    public void ToResponseDTO_WithEmptyLists_ReturnsEmptyLists()
+    {
+        var result = new AllTimeResult();
+
+        var dto = AllTimeMapper.ToResponseDTO(result);
+
+        Assert.Empty(dto.BestTeams);
+        Assert.Empty(dto.HardestSchedules);
+        Assert.Empty(dto.WorstTeams);
+    }
+
+    [Fact]
+    public void ToResponseDTO_WithNullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => AllTimeMapper.ToResponseDTO(null!));
     }
 }

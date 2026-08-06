@@ -11,9 +11,9 @@ namespace CFBPoll.API.Tests.Controllers;
 
 public class TeamsControllerTests
 {
+    private readonly TeamsController _controller;
     private readonly Mock<ILogger<TeamsController>> _mockLogger;
     private readonly Mock<ITeamsModule> _mockTeamsModule;
-    private readonly TeamsController _controller;
 
     public TeamsControllerTests()
     {
@@ -21,6 +21,20 @@ public class TeamsControllerTests
         _mockTeamsModule = new Mock<ITeamsModule>();
 
         _controller = new TeamsController(_mockTeamsModule.Object, _mockLogger.Object);
+    }
+
+    [Fact]
+    public void Constructor_NullLogger_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new TeamsController(new Mock<ITeamsModule>().Object, null!));
+    }
+
+    [Fact]
+    public void Constructor_NullTeamsModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new TeamsController(null!, new Mock<ILogger<TeamsController>>().Object));
     }
 
     [Fact]
@@ -122,19 +136,5 @@ public class TeamsControllerTests
         Assert.Equal(1, response.Rank);
         Assert.Equal(70.0, response.Rating);
         Assert.Equal("SEC", response.Conference);
-    }
-
-    [Fact]
-    public void Constructor_NullTeamsModule_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(
-            () => new TeamsController(null!, new Mock<ILogger<TeamsController>>().Object));
-    }
-
-    [Fact]
-    public void Constructor_NullLogger_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(
-            () => new TeamsController(new Mock<ITeamsModule>().Object, null!));
     }
 }
