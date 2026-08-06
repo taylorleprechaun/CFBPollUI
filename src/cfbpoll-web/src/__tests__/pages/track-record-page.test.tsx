@@ -58,9 +58,9 @@ const mockData = {
 };
 
 describe('TrackRecordPage', () => {
-  it('renders the heading', () => {
+  it('defaults the season dropdown to the most recent season present in the data', () => {
     vi.mocked(useTrackRecord).mockReturnValue({
-      data: undefined,
+      data: mockData,
       isLoading: false,
       error: null,
       refetch: vi.fn(),
@@ -68,36 +68,22 @@ describe('TrackRecordPage', () => {
 
     renderPage();
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Track Record' })).toBeInTheDocument();
+    const seasonSelect = screen.getByLabelText('Season:') as HTMLSelectElement;
+    expect(seasonSelect.value).toBe('2024');
   });
 
-  it('renders loading state', () => {
+  it('ignores a ?season= URL param for a season with no data', () => {
     vi.mocked(useTrackRecord).mockReturnValue({
-      data: undefined,
-      isLoading: true,
+      data: mockData,
+      isLoading: false,
       error: null,
       refetch: vi.fn(),
     } as unknown as ReturnType<typeof useTrackRecord>);
 
-    renderPage();
+    renderPage('/track-record?season=2019');
 
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
-  });
-
-  it('renders error state with retry button', async () => {
-    const mockRefetch = vi.fn();
-    vi.mocked(useTrackRecord).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      error: new Error('Something went wrong'),
-      refetch: mockRefetch,
-    } as unknown as ReturnType<typeof useTrackRecord>);
-
-    renderPage();
-
-    expect(screen.getByRole('alert')).toBeInTheDocument();
-    await userEvent.click(screen.getByText('Retry'));
-    expect(mockRefetch).toHaveBeenCalled();
+    const seasonSelect = screen.getByLabelText('Season:') as HTMLSelectElement;
+    expect(seasonSelect.value).toBe('2024');
   });
 
   it('renders an empty state when there are no graded weeks', () => {
@@ -116,6 +102,35 @@ describe('TrackRecordPage', () => {
     renderPage();
 
     expect(screen.getByText('No graded predictions have been published yet.')).toBeInTheDocument();
+  });
+
+  it('renders error state with retry button', async () => {
+    const mockRefetch = vi.fn();
+    vi.mocked(useTrackRecord).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error('Something went wrong'),
+      refetch: mockRefetch,
+    } as unknown as ReturnType<typeof useTrackRecord>);
+
+    renderPage();
+
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    await userEvent.click(screen.getByText('Retry'));
+    expect(mockRefetch).toHaveBeenCalled();
+  });
+
+  it('renders loading state', () => {
+    vi.mocked(useTrackRecord).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useTrackRecord>);
+
+    renderPage();
+
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
   it('renders overall record cards for each category', () => {
@@ -152,9 +167,9 @@ describe('TrackRecordPage', () => {
     expect(rows[2]).toHaveTextContent('2024 Week 2');
   });
 
-  it('defaults the season dropdown to the most recent season present in the data', () => {
+  it('renders the heading', () => {
     vi.mocked(useTrackRecord).mockReturnValue({
-      data: mockData,
+      data: undefined,
       isLoading: false,
       error: null,
       refetch: vi.fn(),
@@ -162,8 +177,7 @@ describe('TrackRecordPage', () => {
 
     renderPage();
 
-    const seasonSelect = screen.getByLabelText('Season:') as HTMLSelectElement;
-    expect(seasonSelect.value).toBe('2024');
+    expect(screen.getByRole('heading', { level: 1, name: 'Track Record' })).toBeInTheDocument();
   });
 
   it('selects the season from a ?season= URL param on load', () => {
@@ -178,35 +192,6 @@ describe('TrackRecordPage', () => {
 
     const seasonSelect = screen.getByLabelText('Season:') as HTMLSelectElement;
     expect(seasonSelect.value).toBe('2023');
-  });
-
-  it('ignores a ?season= URL param for a season with no data', () => {
-    vi.mocked(useTrackRecord).mockReturnValue({
-      data: mockData,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useTrackRecord>);
-
-    renderPage('/track-record?season=2019');
-
-    const seasonSelect = screen.getByLabelText('Season:') as HTMLSelectElement;
-    expect(seasonSelect.value).toBe('2024');
-  });
-
-  it('updates the URL when the season selector changes, so the current view can be shared', async () => {
-    vi.mocked(useTrackRecord).mockReturnValue({
-      data: mockData,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useTrackRecord>);
-
-    renderPage();
-
-    await userEvent.selectOptions(screen.getByLabelText('Season:'), '2023');
-
-    expect(screen.getByTestId('location-search')).toHaveTextContent('?season=2023');
   });
 
   it('shows the season-overall summary for the currently selected season, summed from its weeks', () => {
@@ -272,5 +257,20 @@ describe('TrackRecordPage', () => {
     expect(screen.getByText('15-3')).toBeInTheDocument();
     expect(screen.getByText('12-6')).toBeInTheDocument();
     expect(screen.getByText('10-8-1')).toBeInTheDocument();
+  });
+
+  it('updates the URL when the season selector changes, so the current view can be shared', async () => {
+    vi.mocked(useTrackRecord).mockReturnValue({
+      data: mockData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useTrackRecord>);
+
+    renderPage();
+
+    await userEvent.selectOptions(screen.getByLabelText('Season:'), '2023');
+
+    expect(screen.getByTestId('location-search')).toHaveTextContent('?season=2023');
   });
 });

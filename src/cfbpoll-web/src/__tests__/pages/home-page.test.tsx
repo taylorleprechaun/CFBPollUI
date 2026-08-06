@@ -25,24 +25,12 @@ function renderHomePage() {
 }
 
 describe('HomePage', () => {
-  it('sets the document title', () => {
+  it('has How It Works heading with id for scroll target', () => {
     renderHomePage();
 
-    expect(document.title).toBe('Taylor Steinberg - Home');
-  });
+    const heading = screen.getByRole('heading', { name: 'How It Works' });
 
-  it('renders the name intro line', () => {
-    renderHomePage();
-
-    expect(screen.getByText('Taylor Steinberg\u2019s')).toBeInTheDocument();
-  });
-
-  it('renders the heading', () => {
-    renderHomePage();
-
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'College Football Rankings'
-    );
+    expect(heading).toHaveAttribute('id', 'how-it-works');
   });
 
   it('renders algorithm factors', () => {
@@ -54,20 +42,20 @@ describe('HomePage', () => {
     expect(screen.getByText('Success Rate')).toBeInTheDocument();
   });
 
-  it('renders the View Rankings link pointing to /rankings', () => {
-    renderHomePage();
-
-    const link = screen.getByRole('link', { name: 'View Rankings' });
-
-    expect(link).toHaveAttribute('href', '/rankings');
-  });
-
   it('renders stat labels', () => {
     renderHomePage();
 
     expect(screen.getByText('Seasons')).toBeInTheDocument();
     expect(screen.getByText('FBS Teams')).toBeInTheDocument();
     expect(screen.getByText('Data Since')).toBeInTheDocument();
+  });
+
+  it('renders the heading', () => {
+    renderHomePage();
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'College Football Rankings'
+    );
   });
 
   it('renders the Learn More link', () => {
@@ -78,12 +66,18 @@ describe('HomePage', () => {
     expect(link).toHaveAttribute('href', '#how-it-works');
   });
 
-  it('has How It Works heading with id for scroll target', () => {
+  it('renders the name intro line', () => {
     renderHomePage();
 
-    const heading = screen.getByRole('heading', { name: 'How It Works' });
+    expect(screen.getByText('Taylor Steinberg\u2019s')).toBeInTheDocument();
+  });
 
-    expect(heading).toHaveAttribute('id', 'how-it-works');
+  it('renders the View Rankings link pointing to /rankings', () => {
+    renderHomePage();
+
+    const link = screen.getByRole('link', { name: 'View Rankings' });
+
+    expect(link).toHaveAttribute('href', '/rankings');
   });
 
   it('scrolls to how-it-works section when Learn More is clicked', async () => {
@@ -97,5 +91,11 @@ describe('HomePage', () => {
     await user.click(link);
 
     expect(target.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' });
+  });
+
+  it('sets the document title', () => {
+    renderHomePage();
+
+    expect(document.title).toBe('Taylor Steinberg - Home');
   });
 });

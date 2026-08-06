@@ -63,16 +63,82 @@ describe('SettingsPage', () => {
     mockSeasonTrendsEnabled = true;
   });
 
-  it('renders settings page heading and logout button', () => {
-    renderSettingsPage();
-    expect(screen.getByText('Settings')).toBeInTheDocument();
-    expect(screen.getByText('Log Out')).toBeInTheDocument();
-  });
-
   it('calls logout when Log Out is clicked', async () => {
     renderSettingsPage();
     await userEvent.click(screen.getByText('Log Out'));
     expect(mockLogout).toHaveBeenCalled();
+  });
+
+  it('calls updatePageVisibility when predictions toggle is changed', async () => {
+    mockAllTimeEnabled = true;
+    mockPollLeadersEnabled = true;
+    mockPredictionsPageEnabled = true;
+    mockSeasonTrendsEnabled = true;
+    mockUpdatePageVisibility.mockResolvedValue({
+      allTimeEnabled: true,
+      pollLeadersEnabled: true,
+      predictionsPageEnabled: false,
+      seasonTrendsEnabled: true,
+    });
+
+    renderSettingsPage();
+
+    const predictionsCheckbox = screen.getByLabelText('Predictions & Track Record');
+    await userEvent.click(predictionsCheckbox);
+
+    await waitFor(() => {
+      expect(mockUpdatePageVisibility).toHaveBeenCalledWith(
+        'test-token',
+        { allTimeEnabled: true, pollLeadersEnabled: true, predictionsPageEnabled: false, seasonTrendsEnabled: true }
+      );
+    });
+  });
+
+  it('calls updatePageVisibility when season trends toggle is changed', async () => {
+    mockSeasonTrendsEnabled = true;
+    mockUpdatePageVisibility.mockResolvedValue({
+      allTimeEnabled: true,
+      pollLeadersEnabled: true,
+      predictionsPageEnabled: true,
+      seasonTrendsEnabled: false,
+    });
+
+    renderSettingsPage();
+
+    const seasonTrendsToggle = screen.getByLabelText('Season Trends');
+    await userEvent.click(seasonTrendsToggle);
+
+    await waitFor(() => {
+      expect(mockUpdatePageVisibility).toHaveBeenCalledWith(
+        'test-token',
+        { allTimeEnabled: true, pollLeadersEnabled: true, predictionsPageEnabled: true, seasonTrendsEnabled: false }
+      );
+    });
+  });
+
+  it('calls updatePageVisibility when toggle is changed', async () => {
+    mockAllTimeEnabled = true;
+    mockPollLeadersEnabled = true;
+    mockPredictionsPageEnabled = true;
+    mockSeasonTrendsEnabled = true;
+    mockUpdatePageVisibility.mockResolvedValue({
+      allTimeEnabled: false,
+      pollLeadersEnabled: true,
+      predictionsPageEnabled: true,
+      seasonTrendsEnabled: true,
+    });
+
+    renderSettingsPage();
+
+    const allTimeCheckbox = screen.getByLabelText('All-Time Rankings');
+    await userEvent.click(allTimeCheckbox);
+
+    await waitFor(() => {
+      expect(mockUpdatePageVisibility).toHaveBeenCalledWith(
+        'test-token',
+        { allTimeEnabled: false, pollLeadersEnabled: true, predictionsPageEnabled: true, seasonTrendsEnabled: true }
+      );
+    });
   });
 
   it('renders page visibility toggles grouped by nav section', () => {
@@ -101,53 +167,30 @@ describe('SettingsPage', () => {
     expect(pollLeadersToggle).toHaveAttribute('aria-checked', 'false');
   });
 
-  it('calls updatePageVisibility when toggle is changed', async () => {
-    mockAllTimeEnabled = true;
-    mockPollLeadersEnabled = true;
-    mockPredictionsPageEnabled = true;
-    mockSeasonTrendsEnabled = true;
-    mockUpdatePageVisibility.mockResolvedValue({
-      allTimeEnabled: false,
-      pollLeadersEnabled: true,
-      predictionsPageEnabled: true,
-      seasonTrendsEnabled: true,
-    });
+  it('renders season trends toggle with correct checked state', () => {
+    mockSeasonTrendsEnabled = false;
 
     renderSettingsPage();
 
-    const allTimeCheckbox = screen.getByLabelText('All-Time Rankings');
-    await userEvent.click(allTimeCheckbox);
-
-    await waitFor(() => {
-      expect(mockUpdatePageVisibility).toHaveBeenCalledWith(
-        'test-token',
-        { allTimeEnabled: false, pollLeadersEnabled: true, predictionsPageEnabled: true, seasonTrendsEnabled: true }
-      );
-    });
+    const seasonTrendsToggle = screen.getByLabelText('Season Trends');
+    expect(seasonTrendsToggle).toHaveAttribute('aria-checked', 'false');
   });
 
-  it('calls updatePageVisibility when predictions toggle is changed', async () => {
-    mockAllTimeEnabled = true;
-    mockPollLeadersEnabled = true;
-    mockPredictionsPageEnabled = true;
-    mockSeasonTrendsEnabled = true;
-    mockUpdatePageVisibility.mockResolvedValue({
-      allTimeEnabled: true,
-      pollLeadersEnabled: true,
-      predictionsPageEnabled: false,
-      seasonTrendsEnabled: true,
-    });
+  it('renders settings page heading and logout button', () => {
+    renderSettingsPage();
+    expect(screen.getByText('Settings')).toBeInTheDocument();
+    expect(screen.getByText('Log Out')).toBeInTheDocument();
+  });
+
+  it('shows error feedback when visibility update fails', async () => {
+    mockUpdatePageVisibility.mockRejectedValue(new Error('Update failed'));
 
     renderSettingsPage();
 
-    const predictionsCheckbox = screen.getByLabelText('Predictions & Track Record');
-    await userEvent.click(predictionsCheckbox);
+    await userEvent.click(screen.getByLabelText('Poll Leaders'));
 
     await waitFor(() => {
-      expect(mockUpdatePageVisibility).toHaveBeenCalledWith(
-        'test-token',
-        { allTimeEnabled: true, pollLeadersEnabled: true, predictionsPageEnabled: false, seasonTrendsEnabled: true }
-      );
+      expect(screen.getByText('Failed to update page visibility')).toBeInTheDocument();
     });
   });
 
@@ -163,49 +206,6 @@ describe('SettingsPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Page visibility updated')).toBeInTheDocument();
-    });
-  });
-
-  it('renders season trends toggle with correct checked state', () => {
-    mockSeasonTrendsEnabled = false;
-
-    renderSettingsPage();
-
-    const seasonTrendsToggle = screen.getByLabelText('Season Trends');
-    expect(seasonTrendsToggle).toHaveAttribute('aria-checked', 'false');
-  });
-
-  it('calls updatePageVisibility when season trends toggle is changed', async () => {
-    mockSeasonTrendsEnabled = true;
-    mockUpdatePageVisibility.mockResolvedValue({
-      allTimeEnabled: true,
-      pollLeadersEnabled: true,
-      predictionsPageEnabled: true,
-      seasonTrendsEnabled: false,
-    });
-
-    renderSettingsPage();
-
-    const seasonTrendsToggle = screen.getByLabelText('Season Trends');
-    await userEvent.click(seasonTrendsToggle);
-
-    await waitFor(() => {
-      expect(mockUpdatePageVisibility).toHaveBeenCalledWith(
-        'test-token',
-        { allTimeEnabled: true, pollLeadersEnabled: true, predictionsPageEnabled: true, seasonTrendsEnabled: false }
-      );
-    });
-  });
-
-  it('shows error feedback when visibility update fails', async () => {
-    mockUpdatePageVisibility.mockRejectedValue(new Error('Update failed'));
-
-    renderSettingsPage();
-
-    await userEvent.click(screen.getByLabelText('Poll Leaders'));
-
-    await waitFor(() => {
-      expect(screen.getByText('Failed to update page visibility')).toBeInTheDocument();
     });
   });
 });

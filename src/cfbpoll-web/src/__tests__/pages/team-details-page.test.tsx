@@ -212,399 +212,30 @@ describe('TeamDetailsPage', () => {
     mockSelectedSeason = 2024;
   });
 
-  describe('rendering', () => {
-    it('renders the page title', () => {
-      setupMocks();
-      renderPage();
-
-      expect(screen.getByText('Team Details')).toBeInTheDocument();
-    });
-
-    it('renders season and team selectors', () => {
-      setupMocks();
-      renderPage();
-
-      expect(screen.getByLabelText('Season:')).toBeInTheDocument();
-      expect(screen.getByLabelText('Team:')).toBeInTheDocument();
-    });
-
-    it('shows placeholder when no team is selected', () => {
-      setupMocks();
-      renderPage();
-
-      expect(
-        screen.getByText('Select a season and team to view details.')
-      ).toBeInTheDocument();
-    });
-
-    it('shows skeleton when team detail is loading', () => {
-      setupMocks({ teamDetailLoading: true });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
-    });
-  });
-
-  describe('team detail display', () => {
-    it('renders team name and conference', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      const heading = screen.getByRole('heading', { level: 2, name: 'USC' });
-      expect(heading).toBeInTheDocument();
-      expect(screen.getByText('Big Ten')).toBeInTheDocument();
-    });
-
-    it('renders rank and rating', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      expect(screen.getByText('#1')).toBeInTheDocument();
-      expect(screen.getByText('165.4200')).toBeInTheDocument();
-    });
-
-    it('renders SOS ranking and weighted SOS', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      expect(screen.getByText('#15')).toBeInTheDocument();
-      expect(screen.getByText('0.5820')).toBeInTheDocument();
-    });
-
-    it('renders record', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      expect(screen.getByText('11-0')).toBeInTheDocument();
-    });
-
-    it('applies team color as background', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      const banner = document.querySelector('[style*="background-color"]') as HTMLElement;
-      expect(banner).toBeInTheDocument();
-      expect(banner.style.backgroundColor).toBe('rgb(21, 71, 51)');
-    });
-
-    it('renders team logo with border classes', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      const logo = screen.getByAltText('USC logo');
-      expect(logo).toHaveClass('bg-surface');
-      expect(logo).toHaveClass('rounded-lg');
-      expect(logo).toHaveClass('p-1');
-    });
-  });
-
-  describe('schedule section', () => {
-    it('renders schedule table headers', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      expect(screen.getByText('Schedule')).toBeInTheDocument();
-      expect(screen.getByText('Week')).toBeInTheDocument();
-      expect(screen.getByText('Date')).toBeInTheDocument();
-      expect(screen.getByText('Opponent')).toBeInTheDocument();
-      expect(screen.getByText('Result')).toBeInTheDocument();
-    });
-
-    it('renders schedule header with team color', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      const scheduleHeader = screen.getByText('Schedule').closest('div');
-      expect(scheduleHeader).toBeInTheDocument();
-      expect(scheduleHeader!.style.backgroundColor).toBe('rgb(21, 71, 51)');
-    });
-
-    it('renders schedule game rows', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      expect(screen.getByText('Idaho')).toBeInTheDocument();
-      expect(screen.queryByText('at Florida')).not.toBeInTheDocument();
-      expect(screen.getByText('W 35-21')).toBeInTheDocument();
-    });
-
-    it('displays win results in green', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      const winResult = screen.getByText('W 42-14');
-      expect(winResult).toBeInTheDocument();
-      expect(winResult).toHaveClass('text-green-600');
-    });
-
-    it('shows "Post" label for postseason games', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      expect(screen.getByText('Post')).toBeInTheDocument();
-    });
-
-    it('shows empty state when no games', () => {
-      setupMocks({ teamDetailData: { ...mockTeamDetail, schedule: [] } });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      expect(screen.getByText('No games found for this season.')).toBeInTheDocument();
-    });
-
-    it('displays opponent rank when rank is 25 or less', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      expect(screen.getByText('#2')).toBeInTheDocument();
-    });
-
-    it('does not display opponent rank when rank is greater than 25', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      expect(screen.queryByText('#120')).not.toBeInTheDocument();
-    });
-
-    it('renders FBS opponent name as a clickable link', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      const floridaLink = screen.getByRole('link', { name: /Florida/ });
-      expect(floridaLink).toBeInTheDocument();
-      expect(floridaLink).toHaveAttribute('href', expect.stringContaining('/team-details?team=Florida'));
-    });
-
-    it('does not render FCS opponent name as a clickable link', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      expect(screen.queryByRole('link', { name: /Idaho/ })).not.toBeInTheDocument();
-      expect(screen.getByText('Idaho')).toBeInTheDocument();
-    });
-
-    it('opponent link includes season and week parameters', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      const floridaLink = screen.getByRole('link', { name: /Florida/ });
-      expect(floridaLink).toHaveAttribute('href', expect.stringContaining('season=2024'));
-    });
-  });
-
-  describe('record breakdown sections', () => {
-    it('renders Record by Location section', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      expect(screen.getByText('Record by Location')).toBeInTheDocument();
-      expect(screen.getByText('Home')).toBeInTheDocument();
-      expect(screen.getByText('Away')).toBeInTheDocument();
-      expect(screen.getByText('Neutral')).toBeInTheDocument();
-    });
-
-    it('renders record breakdown headers with team colors', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      const locationHeader = screen.getByText('Record by Location');
-      expect(locationHeader.style.backgroundColor).toBe('rgb(21, 71, 51)');
-
-      const rankHeader = screen.getByText('Record vs Opponent Rank');
-      expect(rankHeader.style.backgroundColor).toBe('rgb(21, 71, 51)');
-    });
-
-    it('renders Record vs Opponent Rank section', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      expect(screen.getByText('Record vs Opponent Rank')).toBeInTheDocument();
-      expect(screen.getByText('vs #1-10')).toBeInTheDocument();
-      expect(screen.getByText('vs #11-25')).toBeInTheDocument();
-      expect(screen.getByText('vs #26-50')).toBeInTheDocument();
-      expect(screen.getByText('vs #51-100')).toBeInTheDocument();
-      expect(screen.getByText('vs #101+')).toBeInTheDocument();
-    });
-
-    it('displays dash for zero-record entries', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      const neutralRow = screen.getByText('Neutral').closest('div');
-      expect(neutralRow?.textContent).toContain('-');
-    });
-
-    it('expands record row on click to show individual games', async () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      const homeRow = screen.getByText('Home').closest('button');
-      expect(homeRow).toBeInTheDocument();
-      await userEvent.click(homeRow!);
-
-      const expandedContent = document.querySelector('.ml-4');
-      expect(expandedContent).toBeInTheDocument();
-      expect(expandedContent!.textContent).toContain('Idaho');
-    });
-
-    it('shows colored result in expanded game list', async () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      const homeRow = screen.getByText('Home').closest('button');
-      await userEvent.click(homeRow!);
-
-      const winResult = screen.getByText('W 42-14', { selector: '.ml-4 span' });
-      expect(winResult).toHaveClass('text-green-600');
-    });
-
-    it('collapses record row on second click', async () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      const homeRow = screen.getByText('Home').closest('button');
-      await userEvent.click(homeRow!);
-      expect(document.querySelector('.ml-4')).toBeInTheDocument();
-
-      await userEvent.click(homeRow!);
-      expect(document.querySelector('.ml-4')).not.toBeInTheDocument();
-    });
-
-    it('does not make record row expandable when there are no games', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      const neutralLabel = screen.getByText('Neutral');
-      const neutralRow = neutralLabel.closest('div');
-      expect(neutralRow).not.toHaveAttribute('role', 'button');
-    });
-
-    it('shows opponent rank in expanded game list', async () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      const homeRow = screen.getByText('Home').closest('button');
-      await userEvent.click(homeRow!);
-
-      expect(screen.getByText(/^#120/)).toBeInTheDocument();
-    });
-
-    it('includes FCS opponents with null rank in vs #101+ expanded list', async () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      const rank101Row = screen.getByText('vs #101+').closest('button');
-      expect(rank101Row).toBeInTheDocument();
-      await userEvent.click(rank101Row!);
-
-      const expandedContent = rank101Row!.parentElement!.querySelector('.ml-4');
-      expect(expandedContent).toBeInTheDocument();
-      expect(expandedContent!.textContent).toContain('Portland State');
-    });
-  });
-
-  describe('team selector', () => {
-    it('populates team dropdown from rankings data', () => {
-      setupMocks();
-      renderPage();
-
-      const teamSelect = screen.getByLabelText('Team:') as HTMLSelectElement;
-      const options = Array.from(teamSelect.options).map(o => o.text);
-      expect(options).toContain('Florida');
-      expect(options).toContain('USC');
-    });
-
-    it('sorts team options alphabetically', () => {
-      setupMocks();
-      renderPage();
-
-      const teamSelect = screen.getByLabelText('Team:') as HTMLSelectElement;
-      const teamOptions = Array.from(teamSelect.options)
-        .filter(o => o.value !== '')
-        .map(o => o.text);
-      expect(teamOptions).toEqual(['Florida', 'USC']);
-    });
-
-    it('handles team selection change', async () => {
-      setupMocks();
-      renderPage();
-
-      const teamSelect = screen.getByLabelText('Team:');
-      await userEvent.selectOptions(teamSelect, 'USC');
-
-      expect(vi.mocked(useTeamDetail)).toHaveBeenCalled();
-    });
-  });
-
-  describe('URL parameter handling', () => {
-    it('reads initial team from URL params', () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      const teamSelect = screen.getByLabelText('Team:') as HTMLSelectElement;
-      expect(teamSelect.value).toBe('USC');
-    });
-
-    it('calls setSelectedSeason with URL season param', () => {
-      setupMocks();
-      renderPage('/team-details?season=2023');
-
-      expect(mockSetSelectedSeason).toHaveBeenCalledWith(2023);
-    });
-  });
-
-  describe('season change', () => {
-    it('preserves team selection when season changes', async () => {
-      setupMocks({ teamDetailData: mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      const seasonSelect = screen.getByLabelText('Season:') as HTMLSelectElement;
-      await userEvent.selectOptions(seasonSelect, '2023');
-
-      expect(mockSetSelectedSeason).toHaveBeenCalledWith(2023);
-      const teamSelect = screen.getByLabelText('Team:') as HTMLSelectElement;
-      expect(teamSelect.value).toBe('USC');
-    });
-
-    it('clears team when team does not exist in new season rankings', () => {
-      const rankingsWithoutUSC = {
-        ...mockRankingsData,
-        rankings: [mockRankingsData.rankings[1]],
+  describe('division display', () => {
+    it('renders conference with division when present', () => {
+      const detailWithDivision = {
+        ...mockTeamDetail,
+        conference: 'SEC',
+        division: 'East',
       };
-      setupMocks({ rankingsData: rankingsWithoutUSC });
-      renderPage('/team-details?team=USC&season=2023');
 
-      const teamSelect = screen.getByLabelText('Team:') as HTMLSelectElement;
-      expect(teamSelect.value).toBe('');
+      setupMocks({ teamDetailData: detailWithDivision });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      expect(screen.getByText('SEC - East')).toBeInTheDocument();
+    });
+
+    it('renders conference without division when division is empty', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      expect(screen.getByText('Big Ten')).toBeInTheDocument();
+      expect(screen.queryByText('Big Ten -')).not.toBeInTheDocument();
     });
   });
 
   describe('error handling', () => {
-    it('shows error alert when weeks fail to load', () => {
-      const refetch = vi.fn();
-      vi.mocked(useWeeks).mockReturnValue({
-        data: undefined,
-        isLoading: false,
-        error: new Error('Weeks failed'),
-        refetch,
-      } as unknown as ReturnType<typeof useWeeks>);
-      vi.mocked(useRankings).mockReturnValue({
-        data: undefined,
-        isLoading: false,
-        error: null,
-        refetch,
-      } as unknown as ReturnType<typeof useRankings>);
-      vi.mocked(useTeamDetail).mockReturnValue({
-        data: undefined,
-        isLoading: false,
-        error: null,
-        refetch,
-      } as unknown as ReturnType<typeof useTeamDetail>);
-
-      renderPage();
-
-      expect(screen.getByText(/Weeks failed/)).toBeInTheDocument();
-    });
-
     it('calls refetch when retry is clicked for error', async () => {
       const refetch = vi.fn();
       vi.mocked(useWeeks).mockReturnValue({
@@ -632,11 +263,195 @@ describe('TeamDetailsPage', () => {
       expect(refetch).toHaveBeenCalled();
     });
 
+    it('shows error alert when weeks fail to load', () => {
+      const refetch = vi.fn();
+      vi.mocked(useWeeks).mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: new Error('Weeks failed'),
+        refetch,
+      } as unknown as ReturnType<typeof useWeeks>);
+      vi.mocked(useRankings).mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch,
+      } as unknown as ReturnType<typeof useRankings>);
+      vi.mocked(useTeamDetail).mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        error: null,
+        refetch,
+      } as unknown as ReturnType<typeof useTeamDetail>);
+
+      renderPage();
+
+      expect(screen.getByText(/Weeks failed/)).toBeInTheDocument();
+    });
+
     it('shows no details message when team selected but no data returned', () => {
       setupMocks({ teamDetailData: undefined });
       renderPage('/team-details?team=USC&season=2024&week=12');
 
       expect(screen.getByText('No details available for the selected team.')).toBeInTheDocument();
+    });
+  });
+
+  describe('logo error handling', () => {
+    it('hides logo when image fails to load', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      const logo = screen.getByAltText('USC logo');
+      expect(logo).toBeInTheDocument();
+
+      fireEvent.error(logo);
+
+      expect(screen.queryByAltText('USC logo')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('record breakdown sections', () => {
+    it('collapses record row on second click', async () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      const homeRow = screen.getByText('Home').closest('button');
+      await userEvent.click(homeRow!);
+      expect(document.querySelector('.ml-4')).toBeInTheDocument();
+
+      await userEvent.click(homeRow!);
+      expect(document.querySelector('.ml-4')).not.toBeInTheDocument();
+    });
+
+    it('displays dash for zero-record entries', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      const neutralRow = screen.getByText('Neutral').closest('div');
+      expect(neutralRow?.textContent).toContain('-');
+    });
+
+    it('does not make record row expandable when there are no games', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      const neutralLabel = screen.getByText('Neutral');
+      const neutralRow = neutralLabel.closest('div');
+      expect(neutralRow).not.toHaveAttribute('role', 'button');
+    });
+
+    it('expands record row on click to show individual games', async () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      const homeRow = screen.getByText('Home').closest('button');
+      expect(homeRow).toBeInTheDocument();
+      await userEvent.click(homeRow!);
+
+      const expandedContent = document.querySelector('.ml-4');
+      expect(expandedContent).toBeInTheDocument();
+      expect(expandedContent!.textContent).toContain('Idaho');
+    });
+
+    it('includes FCS opponents with null rank in vs #101+ expanded list', async () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      const rank101Row = screen.getByText('vs #101+').closest('button');
+      expect(rank101Row).toBeInTheDocument();
+      await userEvent.click(rank101Row!);
+
+      const expandedContent = rank101Row!.parentElement!.querySelector('.ml-4');
+      expect(expandedContent).toBeInTheDocument();
+      expect(expandedContent!.textContent).toContain('Portland State');
+    });
+
+    it('renders record breakdown headers with team colors', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      const locationHeader = screen.getByText('Record by Location');
+      expect(locationHeader.style.backgroundColor).toBe('rgb(21, 71, 51)');
+
+      const rankHeader = screen.getByText('Record vs Opponent Rank');
+      expect(rankHeader.style.backgroundColor).toBe('rgb(21, 71, 51)');
+    });
+
+    it('renders Record by Location section', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      expect(screen.getByText('Record by Location')).toBeInTheDocument();
+      expect(screen.getByText('Home')).toBeInTheDocument();
+      expect(screen.getByText('Away')).toBeInTheDocument();
+      expect(screen.getByText('Neutral')).toBeInTheDocument();
+    });
+
+    it('renders Record vs Opponent Rank section', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      expect(screen.getByText('Record vs Opponent Rank')).toBeInTheDocument();
+      expect(screen.getByText('vs #1-10')).toBeInTheDocument();
+      expect(screen.getByText('vs #11-25')).toBeInTheDocument();
+      expect(screen.getByText('vs #26-50')).toBeInTheDocument();
+      expect(screen.getByText('vs #51-100')).toBeInTheDocument();
+      expect(screen.getByText('vs #101+')).toBeInTheDocument();
+    });
+
+    it('shows colored result in expanded game list', async () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      const homeRow = screen.getByText('Home').closest('button');
+      await userEvent.click(homeRow!);
+
+      const winResult = screen.getByText('W 42-14', { selector: '.ml-4 span' });
+      expect(winResult).toHaveClass('text-green-600');
+    });
+
+    it('shows opponent rank in expanded game list', async () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      const homeRow = screen.getByText('Home').closest('button');
+      await userEvent.click(homeRow!);
+
+      expect(screen.getByText(/^#120/)).toBeInTheDocument();
+    });
+  });
+
+  describe('rendering', () => {
+    it('renders season and team selectors', () => {
+      setupMocks();
+      renderPage();
+
+      expect(screen.getByLabelText('Season:')).toBeInTheDocument();
+      expect(screen.getByLabelText('Team:')).toBeInTheDocument();
+    });
+
+    it('renders the page title', () => {
+      setupMocks();
+      renderPage();
+
+      expect(screen.getByText('Team Details')).toBeInTheDocument();
+    });
+
+    it('shows placeholder when no team is selected', () => {
+      setupMocks();
+      renderPage();
+
+      expect(
+        screen.getByText('Select a season and team to view details.')
+      ).toBeInTheDocument();
+    });
+
+    it('shows skeleton when team detail is loading', () => {
+      setupMocks({ teamDetailLoading: true });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
     });
   });
 
@@ -657,65 +472,6 @@ describe('TeamDetailsPage', () => {
 
       expect(screen.getAllByText('Autzen Stadium').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Mercedes-Benz Stadium').length).toBeGreaterThan(0);
-    });
-
-    it('shows TBD date when gameDate is null', () => {
-      const detailWithTbdGame = {
-        ...mockTeamDetail,
-        schedule: [
-          {
-            gameDate: null,
-            isHome: true,
-            isWin: null,
-            neutralSite: false,
-            opponentLogoURL: 'https://example.com/tbd.png',
-            opponentName: 'TBD Opponent',
-            opponentRank: null,
-            opponentRecord: null,
-            opponentScore: null,
-            seasonType: 'regular',
-            startTimeTbd: true,
-            teamScore: null,
-            venue: null,
-            week: 13,
-          },
-        ],
-      };
-
-      setupMocks({ teamDetailData: detailWithTbdGame as unknown as typeof mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      expect(screen.getByText('TBD')).toBeInTheDocument();
-    });
-
-    it('shows loss result in red', () => {
-      const detailWithLoss = {
-        ...mockTeamDetail,
-        schedule: [
-          {
-            gameDate: '2024-09-21T12:00:00',
-            isHome: false,
-            isWin: false,
-            neutralSite: false,
-            opponentLogoURL: 'https://example.com/boise.png',
-            opponentName: 'Boise State',
-            opponentRank: 5,
-            opponentRecord: '11-0',
-            opponentScore: 35,
-            seasonType: 'regular',
-            startTimeTbd: false,
-            teamScore: 21,
-            venue: null,
-            week: 3,
-          },
-        ],
-      };
-
-      setupMocks({ teamDetailData: detailWithLoss as unknown as typeof mockTeamDetail });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      const lossResult = screen.getByText('L 21-35');
-      expect(lossResult).toHaveClass('text-red-600');
     });
 
     it('shows "at" prefix for away games', () => {
@@ -755,42 +511,286 @@ describe('TeamDetailsPage', () => {
       const neutralCell = screen.getByText(/vs.*Florida/);
       expect(neutralCell).toBeInTheDocument();
     });
+
+    it('shows loss result in red', () => {
+      const detailWithLoss = {
+        ...mockTeamDetail,
+        schedule: [
+          {
+            gameDate: '2024-09-21T12:00:00',
+            isHome: false,
+            isWin: false,
+            neutralSite: false,
+            opponentLogoURL: 'https://example.com/boise.png',
+            opponentName: 'Boise State',
+            opponentRank: 5,
+            opponentRecord: '11-0',
+            opponentScore: 35,
+            seasonType: 'regular',
+            startTimeTbd: false,
+            teamScore: 21,
+            venue: null,
+            week: 3,
+          },
+        ],
+      };
+
+      setupMocks({ teamDetailData: detailWithLoss as unknown as typeof mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      const lossResult = screen.getByText('L 21-35');
+      expect(lossResult).toHaveClass('text-red-600');
+    });
+
+    it('shows TBD date when gameDate is null', () => {
+      const detailWithTbdGame = {
+        ...mockTeamDetail,
+        schedule: [
+          {
+            gameDate: null,
+            isHome: true,
+            isWin: null,
+            neutralSite: false,
+            opponentLogoURL: 'https://example.com/tbd.png',
+            opponentName: 'TBD Opponent',
+            opponentRank: null,
+            opponentRecord: null,
+            opponentScore: null,
+            seasonType: 'regular',
+            startTimeTbd: true,
+            teamScore: null,
+            venue: null,
+            week: 13,
+          },
+        ],
+      };
+
+      setupMocks({ teamDetailData: detailWithTbdGame as unknown as typeof mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      expect(screen.getByText('TBD')).toBeInTheDocument();
+    });
   });
 
-  describe('logo error handling', () => {
-    it('hides logo when image fails to load', () => {
+  describe('schedule section', () => {
+    it('displays opponent rank when rank is 25 or less', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      expect(screen.getByText('#2')).toBeInTheDocument();
+    });
+
+    it('displays win results in green', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      const winResult = screen.getByText('W 42-14');
+      expect(winResult).toBeInTheDocument();
+      expect(winResult).toHaveClass('text-green-600');
+    });
+
+    it('does not display opponent rank when rank is greater than 25', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      expect(screen.queryByText('#120')).not.toBeInTheDocument();
+    });
+
+    it('does not render FCS opponent name as a clickable link', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      expect(screen.queryByRole('link', { name: /Idaho/ })).not.toBeInTheDocument();
+      expect(screen.getByText('Idaho')).toBeInTheDocument();
+    });
+
+    it('opponent link includes season and week parameters', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      const floridaLink = screen.getByRole('link', { name: /Florida/ });
+      expect(floridaLink).toHaveAttribute('href', expect.stringContaining('season=2024'));
+    });
+
+    it('renders FBS opponent name as a clickable link', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      const floridaLink = screen.getByRole('link', { name: /Florida/ });
+      expect(floridaLink).toBeInTheDocument();
+      expect(floridaLink).toHaveAttribute('href', expect.stringContaining('/team-details?team=Florida'));
+    });
+
+    it('renders schedule game rows', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      expect(screen.getByText('Idaho')).toBeInTheDocument();
+      expect(screen.queryByText('at Florida')).not.toBeInTheDocument();
+      expect(screen.getByText('W 35-21')).toBeInTheDocument();
+    });
+
+    it('renders schedule header with team color', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      const scheduleHeader = screen.getByText('Schedule').closest('div');
+      expect(scheduleHeader).toBeInTheDocument();
+      expect(scheduleHeader!.style.backgroundColor).toBe('rgb(21, 71, 51)');
+    });
+
+    it('renders schedule table headers', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      expect(screen.getByText('Schedule')).toBeInTheDocument();
+      expect(screen.getByText('Week')).toBeInTheDocument();
+      expect(screen.getByText('Date')).toBeInTheDocument();
+      expect(screen.getByText('Opponent')).toBeInTheDocument();
+      expect(screen.getByText('Result')).toBeInTheDocument();
+    });
+
+    it('shows "Post" label for postseason games', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      expect(screen.getByText('Post')).toBeInTheDocument();
+    });
+
+    it('shows empty state when no games', () => {
+      setupMocks({ teamDetailData: { ...mockTeamDetail, schedule: [] } });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      expect(screen.getByText('No games found for this season.')).toBeInTheDocument();
+    });
+  });
+
+  describe('season change', () => {
+    it('clears team when team does not exist in new season rankings', () => {
+      const rankingsWithoutUSC = {
+        ...mockRankingsData,
+        rankings: [mockRankingsData.rankings[1]],
+      };
+      setupMocks({ rankingsData: rankingsWithoutUSC });
+      renderPage('/team-details?team=USC&season=2023');
+
+      const teamSelect = screen.getByLabelText('Team:') as HTMLSelectElement;
+      expect(teamSelect.value).toBe('');
+    });
+
+    it('preserves team selection when season changes', async () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      const seasonSelect = screen.getByLabelText('Season:') as HTMLSelectElement;
+      await userEvent.selectOptions(seasonSelect, '2023');
+
+      expect(mockSetSelectedSeason).toHaveBeenCalledWith(2023);
+      const teamSelect = screen.getByLabelText('Team:') as HTMLSelectElement;
+      expect(teamSelect.value).toBe('USC');
+    });
+  });
+
+  describe('team detail display', () => {
+    it('applies team color as background', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      const banner = document.querySelector('[style*="background-color"]') as HTMLElement;
+      expect(banner).toBeInTheDocument();
+      expect(banner.style.backgroundColor).toBe('rgb(21, 71, 51)');
+    });
+
+    it('renders rank and rating', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      expect(screen.getByText('#1')).toBeInTheDocument();
+      expect(screen.getByText('165.4200')).toBeInTheDocument();
+    });
+
+    it('renders record', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      expect(screen.getByText('11-0')).toBeInTheDocument();
+    });
+
+    it('renders SOS ranking and weighted SOS', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      expect(screen.getByText('#15')).toBeInTheDocument();
+      expect(screen.getByText('0.5820')).toBeInTheDocument();
+    });
+
+    it('renders team logo with border classes', () => {
       setupMocks({ teamDetailData: mockTeamDetail });
       renderPage('/team-details?team=USC&season=2024&week=12');
 
       const logo = screen.getByAltText('USC logo');
-      expect(logo).toBeInTheDocument();
-
-      fireEvent.error(logo);
-
-      expect(screen.queryByAltText('USC logo')).not.toBeInTheDocument();
-    });
-  });
-
-  describe('division display', () => {
-    it('renders conference with division when present', () => {
-      const detailWithDivision = {
-        ...mockTeamDetail,
-        conference: 'SEC',
-        division: 'East',
-      };
-
-      setupMocks({ teamDetailData: detailWithDivision });
-      renderPage('/team-details?team=USC&season=2024&week=12');
-
-      expect(screen.getByText('SEC - East')).toBeInTheDocument();
+      expect(logo).toHaveClass('bg-surface');
+      expect(logo).toHaveClass('rounded-lg');
+      expect(logo).toHaveClass('p-1');
     });
 
-    it('renders conference without division when division is empty', () => {
+    it('renders team name and conference', () => {
       setupMocks({ teamDetailData: mockTeamDetail });
       renderPage('/team-details?team=USC&season=2024&week=12');
 
+      const heading = screen.getByRole('heading', { level: 2, name: 'USC' });
+      expect(heading).toBeInTheDocument();
       expect(screen.getByText('Big Ten')).toBeInTheDocument();
-      expect(screen.queryByText('Big Ten -')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('team selector', () => {
+    it('handles team selection change', async () => {
+      setupMocks();
+      renderPage();
+
+      const teamSelect = screen.getByLabelText('Team:');
+      await userEvent.selectOptions(teamSelect, 'USC');
+
+      expect(vi.mocked(useTeamDetail)).toHaveBeenCalled();
+    });
+
+    it('populates team dropdown from rankings data', () => {
+      setupMocks();
+      renderPage();
+
+      const teamSelect = screen.getByLabelText('Team:') as HTMLSelectElement;
+      const options = Array.from(teamSelect.options).map(o => o.text);
+      expect(options).toContain('Florida');
+      expect(options).toContain('USC');
+    });
+
+    it('sorts team options alphabetically', () => {
+      setupMocks();
+      renderPage();
+
+      const teamSelect = screen.getByLabelText('Team:') as HTMLSelectElement;
+      const teamOptions = Array.from(teamSelect.options)
+        .filter(o => o.value !== '')
+        .map(o => o.text);
+      expect(teamOptions).toEqual(['Florida', 'USC']);
+    });
+  });
+
+  describe('URL parameter handling', () => {
+    it('calls setSelectedSeason with URL season param', () => {
+      setupMocks();
+      renderPage('/team-details?season=2023');
+
+      expect(mockSetSelectedSeason).toHaveBeenCalledWith(2023);
+    });
+
+    it('reads initial team from URL params', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024&week=12');
+
+      const teamSelect = screen.getByLabelText('Team:') as HTMLSelectElement;
+      expect(teamSelect.value).toBe('USC');
     });
   });
 });
