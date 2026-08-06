@@ -79,7 +79,7 @@ export function Layout() {
     : null;
 
   return (
-    <div className="min-h-screen bg-page-bg overflow-x-hidden flex flex-col">
+    <div className="min-h-screen bg-page-bg flex flex-col">
       <header className="sticky top-0 z-40">
         <nav className="bg-nav-bg/95 backdrop-blur-md text-white shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

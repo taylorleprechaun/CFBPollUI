@@ -83,7 +83,7 @@ vi.mock('../hooks/use-page-visibility', () => ({
 }));
 
 afterEach(() => {
-  sessionStorage.clear();
+  localStorage.clear();
   mockPredictionsPageEnabled = true;
 });
 
@@ -168,19 +168,19 @@ describe('App', () => {
     });
   });
 
-  it('redirects /login to admin/snapshots when authenticated', async () => {
-    sessionStorage.setItem('cfbpoll_token', 'test-token');
-    sessionStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
+  it('redirects /login to home when authenticated', async () => {
+    localStorage.setItem('cfbpoll_token', 'test-token');
+    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
 
     renderApp('/login');
     await waitFor(() => {
-      expect(screen.getByText('Snapshots Page Content')).toBeInTheDocument();
+      expect(screen.getByText('Home Page Content')).toBeInTheDocument();
     });
   });
 
   it('redirects /admin to /admin/snapshots when authenticated', async () => {
-    sessionStorage.setItem('cfbpoll_token', 'test-token');
-    sessionStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
+    localStorage.setItem('cfbpoll_token', 'test-token');
+    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
 
     renderApp('/admin');
     await waitFor(() => {
@@ -189,8 +189,8 @@ describe('App', () => {
   });
 
   it('renders snapshots page at /admin/snapshots when authenticated', async () => {
-    sessionStorage.setItem('cfbpoll_token', 'test-token');
-    sessionStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
+    localStorage.setItem('cfbpoll_token', 'test-token');
+    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
 
     renderApp('/admin/snapshots');
     await waitFor(() => {
@@ -199,8 +199,8 @@ describe('App', () => {
   });
 
   it('renders predictions page at /admin/predictions when authenticated', async () => {
-    sessionStorage.setItem('cfbpoll_token', 'test-token');
-    sessionStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
+    localStorage.setItem('cfbpoll_token', 'test-token');
+    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
 
     renderApp('/admin/predictions');
     await waitFor(() => {
@@ -209,8 +209,8 @@ describe('App', () => {
   });
 
   it('renders settings page at /admin/settings when authenticated', async () => {
-    sessionStorage.setItem('cfbpoll_token', 'test-token');
-    sessionStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
+    localStorage.setItem('cfbpoll_token', 'test-token');
+    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
 
     renderApp('/admin/settings');
     await waitFor(() => {

@@ -39,7 +39,7 @@ function ToggleSwitch({ checked, disabled, label, onChange }: ToggleSwitchProps)
 }
 
 export function SettingsPage() {
-  useDocumentTitle('Settings - CFB Poll');
+  useDocumentTitle('Taylor Steinberg - Settings');
 
   const { token, logout } = useAuth();
   const { allTimeEnabled, pollLeadersEnabled, predictionsPageEnabled, seasonTrendsEnabled } = usePageVisibility();

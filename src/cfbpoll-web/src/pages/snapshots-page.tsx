@@ -26,7 +26,7 @@ import { getWeekLabel } from '../lib/week-utils';
 import type { CalculateResponse } from '../schemas/admin';
 
 export function SnapshotsPage() {
-  useDocumentTitle('Snapshots - CFB Poll');
+  useDocumentTitle('Taylor Steinberg - Snapshots');
 
   const { token } = useAuth();
 

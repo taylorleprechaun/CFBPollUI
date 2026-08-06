@@ -8,7 +8,7 @@ import { toErrorMessage } from '../lib/error-utils';
 const INPUT_CLASS = 'w-full px-3 py-2 border border-border bg-surface text-text-primary rounded-md focus:outline-none focus:ring-2 focus:ring-accent';
 
 export function LoginPage() {
-  useDocumentTitle('Login - CFB Poll');
+  useDocumentTitle('Taylor Steinberg - Login');
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -28,7 +28,7 @@ export function LoginPage() {
 
     try {
       await login(username, password);
-      navigate('/admin/snapshots');
+      navigate('/');
     } catch (err) {
       setError(toErrorMessage(err, 'Login failed'));
     } finally {

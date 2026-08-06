@@ -87,7 +87,7 @@ describe('LoginPage', () => {
     });
   });
 
-  it('navigates to admin on successful login', async () => {
+  it('navigates to home on successful login', async () => {
     mockLogin.mockResolvedValue(undefined);
     renderLoginPage();
 
@@ -96,7 +96,7 @@ describe('LoginPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Log In' }));
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/admin/snapshots');
+      expect(mockNavigate).toHaveBeenCalledWith('/');
     });
   });
 

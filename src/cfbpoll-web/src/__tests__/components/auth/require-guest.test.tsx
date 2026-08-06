@@ -21,7 +21,7 @@ function renderWithRoutes(initialRoute: string) {
         <Route element={<RequireGuest />}>
           <Route path="/login" element={<div>Login Content</div>} />
         </Route>
-        <Route path="/admin/snapshots" element={<div>Admin Page</div>} />
+        <Route path="/" element={<div>Home Page</div>} />
       </Routes>
     </MemoryRouter>
   );
@@ -35,11 +35,11 @@ describe('RequireGuest', () => {
     expect(screen.getByText('Login Content')).toBeInTheDocument();
   });
 
-  it('redirects to admin when authenticated', () => {
+  it('redirects to home when authenticated', () => {
     mockIsAuthenticated = true;
     renderWithRoutes('/login');
 
-    expect(screen.getByText('Admin Page')).toBeInTheDocument();
+    expect(screen.getByText('Home Page')).toBeInTheDocument();
     expect(screen.queryByText('Login Content')).not.toBeInTheDocument();
   });
 });

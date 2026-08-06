@@ -15,7 +15,7 @@ import { ApiError } from '../lib/api-error';
 import { getWeekLabel } from '../lib/week-utils';
 
 export function PublicPredictionsPage() {
-  useDocumentTitle('Predictions - CFB Poll');
+  useDocumentTitle('Taylor Steinberg - Predictions');
 
   const [searchParams] = useSearchParams();
   const initialSeasonApplied = useRef(false);

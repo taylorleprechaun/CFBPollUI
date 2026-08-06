@@ -30,7 +30,7 @@ import { getWeekLabel } from '../lib/week-utils';
 import type { CalculatePredictionsResponse } from '../schemas/admin';
 
 export function PredictionsPage() {
-  useDocumentTitle('Predictions - CFB Poll');
+  useDocumentTitle('Taylor Steinberg - Manage Predictions');
 
   const { token } = useAuth();
 
