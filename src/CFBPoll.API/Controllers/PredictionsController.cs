@@ -41,4 +41,18 @@ public class PredictionsController : ControllerBase
             resultsPublished: published.Value.ResultsPublished,
             isGraded: published.Value.ResultsPublished));
     }
+
+    /// <summary>
+    /// Retrieves the seasons that have at least one published prediction week.
+    /// </summary>
+    /// <returns>Season years, in descending order, that have published predictions.</returns>
+    [HttpGet("api/v1/predictions/seasons")]
+    public async Task<ActionResult<SeasonsResponseDTO>> GetPredictionSeasons()
+    {
+        _logger.LogInformation("Fetching seasons with published predictions");
+
+        var seasons = await _predictionsModule.GetPublishedSeasonsAsync();
+
+        return Ok(new SeasonsResponseDTO { Seasons = seasons });
+    }
 }

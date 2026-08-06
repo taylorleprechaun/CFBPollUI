@@ -36,6 +36,21 @@ public class PredictionsModuleTests
     }
 
     [Fact]
+    public async Task GetAllSummariesAsync_DelegatesToData()
+    {
+        var expected = new List<PredictionsSummary>
+        {
+            new() { Season = 2024, Week = 1, IsPublished = true, GameCount = 10 }
+        };
+        _mockPredictionsData.Setup(x => x.GetAllSummariesAsync()).ReturnsAsync(expected);
+
+        var result = await _predictionsModule.GetAllSummariesAsync();
+
+        Assert.Single(result);
+        _mockPredictionsData.Verify(x => x.GetAllSummariesAsync(), Times.Once);
+    }
+
+    [Fact]
     public async Task GetAsync_DelegatesToData()
     {
         var expected = new PredictionsResult { Season = 2024, Week = 5 };
@@ -58,18 +73,15 @@ public class PredictionsModuleTests
     }
 
     [Fact]
-    public async Task GetAllSummariesAsync_DelegatesToData()
+    public async Task GetPublishedSeasonsAsync_DelegatesToData()
     {
-        var expected = new List<PredictionsSummary>
-        {
-            new() { Season = 2024, Week = 1, IsPublished = true, GameCount = 10 }
-        };
-        _mockPredictionsData.Setup(x => x.GetAllSummariesAsync()).ReturnsAsync(expected);
+        var expected = new List<int> { 2025, 2024 };
+        _mockPredictionsData.Setup(x => x.GetPublishedSeasonsAsync()).ReturnsAsync(expected);
 
-        var result = await _predictionsModule.GetAllSummariesAsync();
+        var result = await _predictionsModule.GetPublishedSeasonsAsync();
 
-        Assert.Single(result);
-        _mockPredictionsData.Verify(x => x.GetAllSummariesAsync(), Times.Once);
+        Assert.Equal(expected, result);
+        _mockPredictionsData.Verify(x => x.GetPublishedSeasonsAsync(), Times.Once);
     }
 
     [Fact]

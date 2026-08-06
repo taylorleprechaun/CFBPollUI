@@ -37,6 +37,11 @@ export async function fetchWeeks(season: number): Promise<WeeksResponse> {
   return parseResponse(response, WeeksResponseSchema);
 }
 
+export async function fetchPredictionSeasons(): Promise<SeasonsResponse> {
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/predictions/seasons`);
+  return parseResponse(response, SeasonsResponseSchema);
+}
+
 export async function fetchRankings(
   season: number,
   week: number

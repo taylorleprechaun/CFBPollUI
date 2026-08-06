@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchSeasons, fetchWeeks, fetchRankings, fetchPredictions, fetchConferences, fetchTeamDetail, fetchPageVisibility, fetchPollLeaders, fetchTrackRecord } from '../services/api';
+import { fetchSeasons, fetchWeeks, fetchPredictionSeasons, fetchRankings, fetchPredictions, fetchConferences, fetchTeamDetail, fetchPageVisibility, fetchPollLeaders, fetchTrackRecord } from '../services/api';
 
 describe('API service', () => {
   beforeEach(() => {
@@ -36,6 +36,21 @@ describe('API service', () => {
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/v1/seasons/2024/weeks'),
+      undefined
+    );
+  });
+
+  it('constructs correct URL for fetchPredictionSeasons', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ seasons: [2025, 2024] }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    await fetchPredictionSeasons();
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/v1/predictions/seasons'),
       undefined
     );
   });

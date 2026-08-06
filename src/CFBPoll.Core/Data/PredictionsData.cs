@@ -122,6 +122,25 @@ public class PredictionsData : IPredictionsData
         return (predictions, reader.GetInt32(1) == 1);
     }
 
+    public async Task<IEnumerable<int>> GetPublishedSeasonsAsync()
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT DISTINCT Season FROM PredictionsSnapshot WHERE Published = 1 ORDER BY Season DESC";
+
+        await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
+        List<int> seasons = [];
+
+        while (await reader.ReadAsync().ConfigureAwait(false))
+        {
+            seasons.Add(reader.GetInt32(0));
+        }
+
+        return seasons;
+    }
+
     public async Task<IEnumerable<int>> GetPublishedWeekNumbersAsync(int season)
     {
         await using var connection = new SqliteConnection(_connectionString);

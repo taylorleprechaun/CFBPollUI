@@ -37,6 +37,11 @@ public class PredictionsModule : IPredictionsModule
         return await _predictionsData.GetPublishedAsync(season, week).ConfigureAwait(false);
     }
 
+    public async Task<IEnumerable<int>> GetPublishedSeasonsAsync()
+    {
+        return await _predictionsData.GetPublishedSeasonsAsync().ConfigureAwait(false);
+    }
+
     public async Task<IEnumerable<int>> GetPublishedWeekNumbersAsync(int season)
     {
         return await _predictionsData.GetPublishedWeekNumbersAsync(season).ConfigureAwait(false);

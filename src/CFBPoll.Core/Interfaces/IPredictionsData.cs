@@ -34,6 +34,12 @@ public interface IPredictionsData
     Task<(PredictionsResult Predictions, bool ResultsPublished)?> GetPublishedAsync(int season, int week);
 
     /// <summary>
+    /// Retrieves the distinct seasons that have at least one published prediction week, in
+    /// descending order.
+    /// </summary>
+    Task<IEnumerable<int>> GetPublishedSeasonsAsync();
+
+    /// <summary>
     /// Retrieves the published prediction week numbers for the given season.
     /// </summary>
     Task<IEnumerable<int>> GetPublishedWeekNumbersAsync(int season);

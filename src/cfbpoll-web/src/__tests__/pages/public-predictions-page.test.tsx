@@ -7,17 +7,29 @@ import { PublicPredictionsPage } from '../../pages/public-predictions-page';
 import { ApiError } from '../../lib/api-error';
 
 const mockSetSelectedSeason = vi.fn();
-const mockRefetchSeasons = vi.fn();
-let mockSeasonsError: Error | null = null;
 
 vi.mock('../../hooks/use-season', () => ({
   useSeason: () => ({
     seasons: [2024, 2023],
     seasonsLoading: false,
-    seasonsError: mockSeasonsError,
+    seasonsError: null,
     selectedSeason: 2024,
     setSelectedSeason: mockSetSelectedSeason,
-    refetchSeasons: mockRefetchSeasons,
+    refetchSeasons: vi.fn(),
+  }),
+}));
+
+let mockPredictionSeasonsData: { seasons: number[] } | undefined;
+let mockPredictionSeasonsLoading = false;
+let mockPredictionSeasonsError: Error | null = null;
+const mockRefetchPredictionSeasons = vi.fn();
+
+vi.mock('../../hooks/use-prediction-seasons', () => ({
+  usePredictionSeasons: () => ({
+    data: mockPredictionSeasonsData,
+    isLoading: mockPredictionSeasonsLoading,
+    error: mockPredictionSeasonsError,
+    refetch: mockRefetchPredictionSeasons,
   }),
 }));
 
@@ -81,7 +93,9 @@ describe('PublicPredictionsPage', () => {
     };
     mockWeeksLoading = false;
     mockWeeksError = null;
-    mockSeasonsError = null;
+    mockPredictionSeasonsData = { seasons: [2024, 2023] };
+    mockPredictionSeasonsLoading = false;
+    mockPredictionSeasonsError = null;
     mockPredictionsData = undefined;
     mockPredictionsLoading = false;
     mockPredictionsError = null;
@@ -91,6 +105,25 @@ describe('PublicPredictionsPage', () => {
   it('renders heading', () => {
     renderPage();
     expect(screen.getByRole('heading', { name: 'Predictions' })).toBeInTheDocument();
+  });
+
+  it('only lists seasons with published predictions in the season dropdown', () => {
+    mockPredictionSeasonsData = { seasons: [2024] };
+
+    renderPage();
+
+    const seasonSelect = screen.getByLabelText('Season:') as HTMLSelectElement;
+    const optionValues = Array.from(seasonSelect.options).map((o) => o.value);
+    expect(optionValues).toEqual(['2024']);
+  });
+
+  it('falls back to the latest published prediction season when the globally selected season has none', () => {
+    mockPredictionSeasonsData = { seasons: [2023] };
+
+    renderPage();
+
+    const seasonSelect = screen.getByLabelText('Season:') as HTMLSelectElement;
+    expect(seasonSelect.value).toBe('2023');
   });
 
   it('shows an empty-season message when no weeks have published predictions', () => {
@@ -445,12 +478,12 @@ describe('PublicPredictionsPage', () => {
   });
 
   it('retries only the seasons query when only it has errored', async () => {
-    mockSeasonsError = new Error('Seasons failed');
+    mockPredictionSeasonsError = new Error('Seasons failed');
 
     renderPage();
     await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
 
-    expect(mockRefetchSeasons).toHaveBeenCalledTimes(1);
+    expect(mockRefetchPredictionSeasons).toHaveBeenCalledTimes(1);
     expect(mockRefetchWeeks).not.toHaveBeenCalled();
     expect(mockRefetchPredictions).not.toHaveBeenCalled();
   });
@@ -462,7 +495,7 @@ describe('PublicPredictionsPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
 
     expect(mockRefetchWeeks).toHaveBeenCalledTimes(1);
-    expect(mockRefetchSeasons).not.toHaveBeenCalled();
+    expect(mockRefetchPredictionSeasons).not.toHaveBeenCalled();
     expect(mockRefetchPredictions).not.toHaveBeenCalled();
   });
 
@@ -473,7 +506,7 @@ describe('PublicPredictionsPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
 
     expect(mockRefetchPredictions).toHaveBeenCalledTimes(1);
-    expect(mockRefetchSeasons).not.toHaveBeenCalled();
+    expect(mockRefetchPredictionSeasons).not.toHaveBeenCalled();
     expect(mockRefetchWeeks).not.toHaveBeenCalled();
   });
 
