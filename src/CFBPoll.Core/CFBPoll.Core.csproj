@@ -11,10 +11,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Modules\Archive\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="CollegeFootballData" Version="5.13.2" />
     <PackageReference Include="EPPlus" Version="7.7.2" />

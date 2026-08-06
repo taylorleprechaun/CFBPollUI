@@ -1,0 +1,112 @@
+name: Deploy CFBPoll
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure deploy key for private submodule
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PROPRIETARY_DEPLOY_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Run backend tests
+        run: dotnet test --configuration Release
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "lts/*"
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: src/cfbpoll-web
+
+      - name: Run frontend tests
+        run: npx vitest run
+        working-directory: src/cfbpoll-web
+
+  deploy:
+    needs: test
+    # Only deploy on a push landing on main (or a manual dispatch) — pull_request runs the
+    # test job for PR feedback but must never touch the deploy secrets/server.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure deploy key for private submodule
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PROPRIETARY_DEPLOY_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Publish
+        run: dotnet publish src/CFBPoll.API -c Release -o publish
+
+      - name: Write private appsettings
+        env:
+          APPSETTINGS_PRIVATE_JSON: ${{ secrets.APPSETTINGS_PRIVATE_JSON }}
+        run: printf '%s' "$APPSETTINGS_PRIVATE_JSON" > appsettings-private.json
+
+      - name: Configure SSH
+        env:
+          LINODE_SSH_KEY: ${{ secrets.LINODE_SSH_KEY }}
+          LINODE_KNOWN_HOSTS: ${{ secrets.LINODE_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$LINODE_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$LINODE_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      # Stop the service before touching any files on disk. Copying a new build over a running
+      # process's files causes it to crash mid-request when the runtime tries to JIT a code path
+      # from a now half-overwritten assembly, which can hang incoming requests until systemd
+      # kills and restarts it.
+      - name: Stop service
+        env:
+          LINODE_USER: ${{ secrets.LINODE_USER }}
+          LINODE_HOST: ${{ secrets.LINODE_HOST }}
+        run: ssh -i ~/.ssh/deploy_key "$LINODE_USER@$LINODE_HOST" "sudo systemctl stop cfbpoll-api"
+
+      # Never touches data/ — scp only adds/overwrites files present in the publish output,
+      # it does not delete or sync anything else on the remote (no --delete, no rsync).
+      - name: Deploy application files
+        env:
+          LINODE_USER: ${{ secrets.LINODE_USER }}
+          LINODE_HOST: ${{ secrets.LINODE_HOST }}
+        run: scp -i ~/.ssh/deploy_key -r publish/* "$LINODE_USER@$LINODE_HOST:/var/www/cfbpoll-api/"
+
+      - name: Deploy private configuration
+        env:
+          LINODE_USER: ${{ secrets.LINODE_USER }}
+          LINODE_HOST: ${{ secrets.LINODE_HOST }}
+        run: scp -i ~/.ssh/deploy_key appsettings-private.json "$LINODE_USER@$LINODE_HOST:/var/www/cfbpoll-api/appsettings-private.json"
+
+      - name: Start service
+        env:
+          LINODE_USER: ${{ secrets.LINODE_USER }}
+          LINODE_HOST: ${{ secrets.LINODE_HOST }}
+        run: ssh -i ~/.ssh/deploy_key "$LINODE_USER@$LINODE_HOST" "sudo systemctl start cfbpoll-api"
