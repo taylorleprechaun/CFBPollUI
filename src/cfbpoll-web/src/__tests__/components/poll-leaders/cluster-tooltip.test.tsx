@@ -23,68 +23,127 @@ function createContainerRef() {
 }
 
 describe('ClusterTooltip', () => {
-  it('returns null when not active', () => {
-    const containerRef = createContainerRef();
-    const { container } = render(
-      <ClusterTooltip
-        active={false}
-        allPoints={mockPoints}
-        containerRef={containerRef}
-        coordinate={{ x: 100, y: 100 }}
-        payload={[{ payload: mockPoints[0] }]}
-        topN="10"
-      />
-    );
+  it('clamps tooltip left to 4px when flipping would go negative', () => {
+    const originalInnerWidth = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', { value: 10, writable: true, configurable: true });
+    const widthSpy = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(100);
 
-    expect(container.innerHTML).toBe('');
-  });
-
-  it('returns null when payload is undefined', () => {
+    const singlePoint: ChartDataPoint[] = [
+      { logoURL: 'https://example.com/alabama.png', teamName: 'Alabama', top5Count: 7, top10Count: 10, top25Count: 18, x: 18, y: 10 },
+    ];
     const containerRef = createContainerRef();
-    const { container } = render(
+
+    render(
       <ClusterTooltip
         active={true}
-        allPoints={mockPoints}
+        allPoints={singlePoint}
         containerRef={containerRef}
-        coordinate={{ x: 100, y: 100 }}
-        payload={undefined}
+        coordinate={{ x: 5, y: 100 }}
+        payload={[{ payload: singlePoint[0] }]}
         topN="10"
       />
     );
 
-    expect(container.innerHTML).toBe('');
+    const tooltip = screen.getByText('Alabama').closest('.grid') as HTMLElement;
+    expect(tooltip.style.left).toBe('4px');
+
+    widthSpy.mockRestore();
+    Object.defineProperty(window, 'innerWidth', { value: originalInnerWidth, writable: true, configurable: true });
   });
 
-  it('returns null when payload is empty', () => {
+  it('clamps tooltip top to minTop when tooltip would render above it', () => {
+    const singlePoint: ChartDataPoint[] = [
+      { logoURL: 'https://example.com/alabama.png', teamName: 'Alabama', top5Count: 7, top10Count: 10, top25Count: 18, x: 18, y: 10 },
+    ];
     const containerRef = createContainerRef();
-    const { container } = render(
+
+    render(
       <ClusterTooltip
         active={true}
-        allPoints={mockPoints}
+        allPoints={singlePoint}
         containerRef={containerRef}
-        coordinate={{ x: 100, y: 100 }}
-        payload={[]}
+        coordinate={{ x: 100, y: 50 }}
+        minTop={200}
+        payload={[{ payload: singlePoint[0] }]}
         topN="10"
       />
     );
 
-    expect(container.innerHTML).toBe('');
+    const tooltip = screen.getByText('Alabama').closest('.grid') as HTMLElement;
+    expect(tooltip.style.top).toBe('200px');
   });
 
-  it('returns null when coordinate is undefined', () => {
+  it('filters out distant points based on proximity', () => {
+    const spreadPoints: ChartDataPoint[] = [
+      { logoURL: 'https://example.com/alabama.png', teamName: 'Alabama', top5Count: 7, top10Count: 10, top25Count: 18, x: 0, y: 0 },
+      { logoURL: 'https://example.com/texas.png', teamName: 'Texas', top5Count: 3, top10Count: 6, top25Count: 100, x: 100, y: 100 },
+    ];
     const containerRef = createContainerRef();
-    const { container } = render(
+
+    render(
       <ClusterTooltip
         active={true}
-        allPoints={mockPoints}
+        allPoints={spreadPoints}
         containerRef={containerRef}
-        coordinate={undefined}
-        payload={[{ payload: mockPoints[0] }]}
+        coordinate={{ x: 100, y: 100 }}
+        payload={[{ payload: spreadPoints[0] }]}
         topN="10"
       />
     );
 
-    expect(container.innerHTML).toBe('');
+    expect(screen.getByText('Alabama')).toBeInTheDocument();
+    expect(screen.queryByText('Texas')).not.toBeInTheDocument();
+  });
+
+  it('flips tooltip to left side when it would overflow viewport right edge', () => {
+    const originalInnerWidth = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', { value: 200, writable: true, configurable: true });
+    const widthSpy = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(100);
+
+    const singlePoint: ChartDataPoint[] = [
+      { logoURL: 'https://example.com/alabama.png', teamName: 'Alabama', top5Count: 7, top10Count: 10, top25Count: 18, x: 18, y: 10 },
+    ];
+    const containerRef = createContainerRef();
+
+    render(
+      <ClusterTooltip
+        active={true}
+        allPoints={singlePoint}
+        containerRef={containerRef}
+        coordinate={{ x: 300, y: 100 }}
+        payload={[{ payload: singlePoint[0] }]}
+        topN="10"
+      />
+    );
+
+    const tooltip = screen.getByText('Alabama').closest('.grid') as HTMLElement;
+    const left = parseInt(tooltip.style.left, 10);
+    expect(left).toBeLessThanOrEqual(200);
+
+    widthSpy.mockRestore();
+    Object.defineProperty(window, 'innerWidth', { value: originalInnerWidth, writable: true, configurable: true });
+  });
+
+  it('renders team logos with alt text', () => {
+    const singlePoint: ChartDataPoint[] = [
+      { logoURL: 'https://example.com/ohio-state.png', teamName: 'Ohio State', top5Count: 5, top10Count: 8, top25Count: 15, x: 15, y: 8 },
+    ];
+    const containerRef = createContainerRef();
+
+    render(
+      <ClusterTooltip
+        active={true}
+        allPoints={singlePoint}
+        containerRef={containerRef}
+        coordinate={{ x: 100, y: 100 }}
+        payload={[{ payload: singlePoint[0] }]}
+        topN="10"
+      />
+    );
+
+    const logo = screen.getByRole('img', { name: 'Ohio State' });
+    expect(logo).toBeInTheDocument();
+    expect(logo).toHaveAttribute('src', 'https://example.com/ohio-state.png');
   });
 
   it('renders team names sorted alphabetically', () => {
@@ -108,6 +167,70 @@ describe('ClusterTooltip', () => {
 
     const teamNames = screen.getAllByRole('img').map((img) => img.getAttribute('alt'));
     expect(teamNames).toEqual(['Alabama', 'Michigan', 'Texas']);
+  });
+
+  it('returns null when coordinate is undefined', () => {
+    const containerRef = createContainerRef();
+    const { container } = render(
+      <ClusterTooltip
+        active={true}
+        allPoints={mockPoints}
+        containerRef={containerRef}
+        coordinate={undefined}
+        payload={[{ payload: mockPoints[0] }]}
+        topN="10"
+      />
+    );
+
+    expect(container.innerHTML).toBe('');
+  });
+
+  it('returns null when not active', () => {
+    const containerRef = createContainerRef();
+    const { container } = render(
+      <ClusterTooltip
+        active={false}
+        allPoints={mockPoints}
+        containerRef={containerRef}
+        coordinate={{ x: 100, y: 100 }}
+        payload={[{ payload: mockPoints[0] }]}
+        topN="10"
+      />
+    );
+
+    expect(container.innerHTML).toBe('');
+  });
+
+  it('returns null when payload is empty', () => {
+    const containerRef = createContainerRef();
+    const { container } = render(
+      <ClusterTooltip
+        active={true}
+        allPoints={mockPoints}
+        containerRef={containerRef}
+        coordinate={{ x: 100, y: 100 }}
+        payload={[]}
+        topN="10"
+      />
+    );
+
+    expect(container.innerHTML).toBe('');
+  });
+
+  it('returns null when payload is undefined', () => {
+    const containerRef = createContainerRef();
+    const { container } = render(
+      <ClusterTooltip
+        active={true}
+        allPoints={mockPoints}
+        containerRef={containerRef}
+        coordinate={{ x: 100, y: 100 }}
+        payload={undefined}
+        topN="10"
+      />
+    );
+
+    expect(container.innerHTML).toBe('');
   });
 
   it('shows top10Count values when topN is 10', () => {
@@ -150,28 +273,6 @@ describe('ClusterTooltip', () => {
 
     expect(screen.getByText('Alabama')).toBeInTheDocument();
     expect(screen.getByText('(18, 7)')).toBeInTheDocument();
-  });
-
-  it('renders team logos with alt text', () => {
-    const singlePoint: ChartDataPoint[] = [
-      { logoURL: 'https://example.com/ohio-state.png', teamName: 'Ohio State', top5Count: 5, top10Count: 8, top25Count: 15, x: 15, y: 8 },
-    ];
-    const containerRef = createContainerRef();
-
-    render(
-      <ClusterTooltip
-        active={true}
-        allPoints={singlePoint}
-        containerRef={containerRef}
-        coordinate={{ x: 100, y: 100 }}
-        payload={[{ payload: singlePoint[0] }]}
-        topN="10"
-      />
-    );
-
-    const logo = screen.getByRole('img', { name: 'Ohio State' });
-    expect(logo).toBeInTheDocument();
-    expect(logo).toHaveAttribute('src', 'https://example.com/ohio-state.png');
   });
 
   it('uses single-column grid for a single team', () => {
@@ -217,106 +318,5 @@ describe('ClusterTooltip', () => {
     const tooltip = screen.getByText('Alabama').closest('.grid');
     expect(tooltip).toHaveClass('grid-cols-2');
     expect(tooltip).not.toHaveClass('grid-cols-1');
-  });
-
-  it('clamps tooltip top to minTop when tooltip would render above it', () => {
-    const singlePoint: ChartDataPoint[] = [
-      { logoURL: 'https://example.com/alabama.png', teamName: 'Alabama', top5Count: 7, top10Count: 10, top25Count: 18, x: 18, y: 10 },
-    ];
-    const containerRef = createContainerRef();
-
-    render(
-      <ClusterTooltip
-        active={true}
-        allPoints={singlePoint}
-        containerRef={containerRef}
-        coordinate={{ x: 100, y: 50 }}
-        minTop={200}
-        payload={[{ payload: singlePoint[0] }]}
-        topN="10"
-      />
-    );
-
-    const tooltip = screen.getByText('Alabama').closest('.grid') as HTMLElement;
-    expect(tooltip.style.top).toBe('200px');
-  });
-
-  it('flips tooltip to left side when it would overflow viewport right edge', () => {
-    const originalInnerWidth = window.innerWidth;
-    Object.defineProperty(window, 'innerWidth', { value: 200, writable: true, configurable: true });
-    const widthSpy = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(100);
-
-    const singlePoint: ChartDataPoint[] = [
-      { logoURL: 'https://example.com/alabama.png', teamName: 'Alabama', top5Count: 7, top10Count: 10, top25Count: 18, x: 18, y: 10 },
-    ];
-    const containerRef = createContainerRef();
-
-    render(
-      <ClusterTooltip
-        active={true}
-        allPoints={singlePoint}
-        containerRef={containerRef}
-        coordinate={{ x: 300, y: 100 }}
-        payload={[{ payload: singlePoint[0] }]}
-        topN="10"
-      />
-    );
-
-    const tooltip = screen.getByText('Alabama').closest('.grid') as HTMLElement;
-    const left = parseInt(tooltip.style.left, 10);
-    expect(left).toBeLessThanOrEqual(200);
-
-    widthSpy.mockRestore();
-    Object.defineProperty(window, 'innerWidth', { value: originalInnerWidth, writable: true, configurable: true });
-  });
-
-  it('clamps tooltip left to 4px when flipping would go negative', () => {
-    const originalInnerWidth = window.innerWidth;
-    Object.defineProperty(window, 'innerWidth', { value: 10, writable: true, configurable: true });
-    const widthSpy = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(100);
-
-    const singlePoint: ChartDataPoint[] = [
-      { logoURL: 'https://example.com/alabama.png', teamName: 'Alabama', top5Count: 7, top10Count: 10, top25Count: 18, x: 18, y: 10 },
-    ];
-    const containerRef = createContainerRef();
-
-    render(
-      <ClusterTooltip
-        active={true}
-        allPoints={singlePoint}
-        containerRef={containerRef}
-        coordinate={{ x: 5, y: 100 }}
-        payload={[{ payload: singlePoint[0] }]}
-        topN="10"
-      />
-    );
-
-    const tooltip = screen.getByText('Alabama').closest('.grid') as HTMLElement;
-    expect(tooltip.style.left).toBe('4px');
-
-    widthSpy.mockRestore();
-    Object.defineProperty(window, 'innerWidth', { value: originalInnerWidth, writable: true, configurable: true });
-  });
-
-  it('filters out distant points based on proximity', () => {
-    const spreadPoints: ChartDataPoint[] = [
-      { logoURL: 'https://example.com/alabama.png', teamName: 'Alabama', top5Count: 7, top10Count: 10, top25Count: 18, x: 0, y: 0 },
-      { logoURL: 'https://example.com/texas.png', teamName: 'Texas', top5Count: 3, top10Count: 6, top25Count: 100, x: 100, y: 100 },
-    ];
-    const containerRef = createContainerRef();
-
-    render(
-      <ClusterTooltip
-        active={true}
-        allPoints={spreadPoints}
-        containerRef={containerRef}
-        coordinate={{ x: 100, y: 100 }}
-        payload={[{ payload: spreadPoints[0] }]}
-        topN="10"
-      />
-    );
-
-    expect(screen.getByText('Alabama')).toBeInTheDocument();
-    expect(screen.queryByText('Texas')).not.toBeInTheDocument();
   });
 });

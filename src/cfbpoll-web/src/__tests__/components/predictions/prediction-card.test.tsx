@@ -34,22 +34,6 @@ function buildPrediction(overrides: Partial<GamePredictionPublic> = {}): GamePre
 }
 
 describe('PredictionCard', () => {
-  it('renders both teams with logos, names, and scores', () => {
-    render(<PredictionCard prediction={buildPrediction()} />);
-
-    expect(screen.getByText('Iowa')).toBeInTheDocument();
-    expect(screen.getByText('17')).toBeInTheDocument();
-    // Nebraska is both the home team and the predicted winner, so it appears twice.
-    expect(screen.getAllByText('Nebraska').length).toBeGreaterThan(0);
-    expect(screen.getByText('28')).toBeInTheDocument();
-  });
-
-  it('renders a neutral site indicator', () => {
-    render(<PredictionCard prediction={buildPrediction({ neutralSite: true })} />);
-
-    expect(screen.getByText('(N)')).toBeInTheDocument();
-  });
-
   it('does not show the final score when showGrades is false', () => {
     render(
       <PredictionCard
@@ -61,15 +45,39 @@ describe('PredictionCard', () => {
     expect(screen.queryByText(/Final:/)).not.toBeInTheDocument();
   });
 
-  it('shows the final score when showGrades is true and actual scores are present', () => {
+  it('renders a neutral site indicator', () => {
+    render(<PredictionCard prediction={buildPrediction({ neutralSite: true })} />);
+
+    expect(screen.getByText('(N)')).toBeInTheDocument();
+  });
+
+  it('renders both teams with logos, names, and scores', () => {
+    render(<PredictionCard prediction={buildPrediction()} />);
+
+    expect(screen.getByText('Iowa')).toBeInTheDocument();
+    expect(screen.getByText('17')).toBeInTheDocument();
+    // Nebraska is both the home team and the predicted winner, so it appears twice.
+    expect(screen.getAllByText('Nebraska').length).toBeGreaterThan(0);
+    expect(screen.getByText('28')).toBeInTheDocument();
+  });
+
+  it('renders N/A when no betting line is available', () => {
     render(
       <PredictionCard
-        prediction={buildPrediction({ actualAwayScore: 17, actualHomeScore: 28 })}
-        showGrades={true}
+        prediction={buildPrediction({ bettingSpread: null, bettingOverUnder: null, mySpreadPick: '', myOverUnderPick: '' })}
       />
     );
 
-    expect(screen.getByText((_, element) => element?.textContent === 'Final: 17-28')).toBeInTheDocument();
+    expect(screen.getAllByText('N/A').length).toBeGreaterThan(0);
+  });
+
+  it('renders the predicted winner name and formatted spread/over-under values with their picks', () => {
+    render(<PredictionCard prediction={buildPrediction()} />);
+
+    expect(screen.getAllByText('Nebraska').length).toBeGreaterThan(0);
+    expect(screen.getByText('Nebraska -3.5')).toBeInTheDocument();
+    expect(screen.getByText('45.5')).toBeInTheDocument();
+    expect(screen.getByText('Pick: Over')).toBeInTheDocument();
   });
 
   it('shows labeled rows for Winner, Spread, and O/U, with the pick folded into each row', () => {
@@ -82,13 +90,15 @@ describe('PredictionCard', () => {
     expect(screen.queryByText('O/U Pick')).not.toBeInTheDocument();
   });
 
-  it('renders the predicted winner name and formatted spread/over-under values with their picks', () => {
-    render(<PredictionCard prediction={buildPrediction()} />);
+  it('shows the final score when showGrades is true and actual scores are present', () => {
+    render(
+      <PredictionCard
+        prediction={buildPrediction({ actualAwayScore: 17, actualHomeScore: 28 })}
+        showGrades={true}
+      />
+    );
 
-    expect(screen.getAllByText('Nebraska').length).toBeGreaterThan(0);
-    expect(screen.getByText('Nebraska -3.5')).toBeInTheDocument();
-    expect(screen.getByText('45.5')).toBeInTheDocument();
-    expect(screen.getByText('Pick: Over')).toBeInTheDocument();
+    expect(screen.getByText((_, element) => element?.textContent === 'Final: 17-28')).toBeInTheDocument();
   });
 
   it('uses the away team logo for the winner row when the away team is the predicted winner', () => {
@@ -104,16 +114,6 @@ describe('PredictionCard', () => {
     }
   });
 
-  it('renders N/A when no betting line is available', () => {
-    render(
-      <PredictionCard
-        prediction={buildPrediction({ bettingSpread: null, bettingOverUnder: null, mySpreadPick: '', myOverUnderPick: '' })}
-      />
-    );
-
-    expect(screen.getAllByText('N/A').length).toBeGreaterThan(0);
-  });
-
   describe('graded display', () => {
     it('does not apply grading pill styles when showGrades is false', () => {
       const prediction = buildPrediction({ winnerGrade: 'Correct' });
@@ -123,25 +123,6 @@ describe('PredictionCard', () => {
       for (const el of screen.getAllByText('Nebraska')) {
         expect(el.className).not.toContain('bg-green-100');
       }
-    });
-
-    it('highlights a correct winner pick in green', () => {
-      const prediction = buildPrediction({ winnerGrade: 'Correct' });
-
-      render(<PredictionCard prediction={prediction} showGrades={true} />);
-
-      const winner = screen.getByText('Nebraska', { selector: 'span.rounded-lg' });
-      expect(winner.className).toContain('bg-green-100');
-    });
-
-    it('highlights an incorrect winner pick in red and shows the actual winner', () => {
-      const prediction = buildPrediction({ actualWinner: 'Iowa', winnerGrade: 'Incorrect' });
-
-      render(<PredictionCard prediction={prediction} showGrades={true} />);
-
-      const winner = screen.getByText('Nebraska', { selector: 'span.rounded-lg' });
-      expect(winner.className).toContain('bg-red-100');
-      expect(screen.getByText('Actual: Iowa')).toBeInTheDocument();
     });
 
     it('highlights a correct spread pick in green with no actual-value caption', () => {
@@ -158,12 +139,13 @@ describe('PredictionCard', () => {
       expect(screen.queryByText(/Correct:/)).not.toBeInTheDocument();
     });
 
-    it('highlights an incorrect spread pick in red and shows the covering team', () => {
-      const prediction = buildPrediction({ spreadGrade: 'Incorrect', actualSpreadCoveringTeam: 'Iowa' });
+    it('highlights a correct winner pick in green', () => {
+      const prediction = buildPrediction({ winnerGrade: 'Correct' });
 
       render(<PredictionCard prediction={prediction} showGrades={true} />);
 
-      expect(screen.getByText('Correct: Iowa')).toBeInTheDocument();
+      const winner = screen.getByText('Nebraska', { selector: 'span.rounded-lg' });
+      expect(winner.className).toContain('bg-green-100');
     });
 
     it('highlights an incorrect over/under pick in red and shows the actual result', () => {
@@ -173,9 +155,40 @@ describe('PredictionCard', () => {
 
       expect(screen.getByText('Correct: Under')).toBeInTheDocument();
     });
+
+    it('highlights an incorrect spread pick in red and shows the covering team', () => {
+      const prediction = buildPrediction({ spreadGrade: 'Incorrect', actualSpreadCoveringTeam: 'Iowa' });
+
+      render(<PredictionCard prediction={prediction} showGrades={true} />);
+
+      expect(screen.getByText('Correct: Iowa')).toBeInTheDocument();
+    });
+
+    it('highlights an incorrect winner pick in red and shows the actual winner', () => {
+      const prediction = buildPrediction({ actualWinner: 'Iowa', winnerGrade: 'Incorrect' });
+
+      render(<PredictionCard prediction={prediction} showGrades={true} />);
+
+      const winner = screen.getByText('Nebraska', { selector: 'span.rounded-lg' });
+      expect(winner.className).toContain('bg-red-100');
+      expect(screen.getByText('Actual: Iowa')).toBeInTheDocument();
+    });
   });
 
   describe('team name links and rank badges', () => {
+    it('does not show a rank badge for a team absent from rankByTeam', () => {
+      const rankByTeam = new Map([['nebraska', 3]]);
+
+      render(
+        <MemoryRouter>
+          <PredictionCard prediction={buildPrediction()} season={2024} rankByTeam={rankByTeam} />
+        </MemoryRouter>
+      );
+
+      const awayLink = screen.getByRole('link', { name: 'Iowa' });
+      expect(awayLink.textContent).toBe('Iowa');
+    });
+
     it('renders team names as links to team-details when season is provided', () => {
       render(
         <MemoryRouter>
@@ -204,19 +217,6 @@ describe('PredictionCard', () => {
 
       const awayLink = screen.getByRole('link', { name: /Iowa/ });
       expect(awayLink.textContent).toBe('#3 Iowa');
-    });
-
-    it('does not show a rank badge for a team absent from rankByTeam', () => {
-      const rankByTeam = new Map([['nebraska', 3]]);
-
-      render(
-        <MemoryRouter>
-          <PredictionCard prediction={buildPrediction()} season={2024} rankByTeam={rankByTeam} />
-        </MemoryRouter>
-      );
-
-      const awayLink = screen.getByRole('link', { name: 'Iowa' });
-      expect(awayLink.textContent).toBe('Iowa');
     });
   });
 });

@@ -12,6 +12,14 @@ describe('SeasonSelector', () => {
     isLoading: false,
   };
 
+  it('calls onSeasonChange when a season is selected', async () => {
+    render(<SeasonSelector {...defaultProps} />);
+
+    await userEvent.selectOptions(screen.getByLabelText('Season:'), '2023');
+
+    expect(defaultProps.onSeasonChange).toHaveBeenCalledWith(2023);
+  });
+
   it('renders season options', () => {
     render(<SeasonSelector {...defaultProps} />);
 
@@ -21,12 +29,11 @@ describe('SeasonSelector', () => {
     expect(screen.getByRole('option', { name: '2022' })).toBeInTheDocument();
   });
 
-  it('calls onSeasonChange when a season is selected', async () => {
-    render(<SeasonSelector {...defaultProps} />);
+  it('renders without error when selectedSeason is null', () => {
+    render(<SeasonSelector {...defaultProps} selectedSeason={null} seasons={[]} />);
 
-    await userEvent.selectOptions(screen.getByLabelText('Season:'), '2023');
-
-    expect(defaultProps.onSeasonChange).toHaveBeenCalledWith(2023);
+    const select = screen.getByLabelText('Season:') as HTMLSelectElement;
+    expect(select.value).toBe('');
   });
 
   it('shows loading option and disables select when isLoading is true', () => {
@@ -35,12 +42,5 @@ describe('SeasonSelector', () => {
     const select = screen.getByLabelText('Season:');
     expect(select).toBeDisabled();
     expect(screen.getByRole('option', { name: 'Loading...' })).toBeInTheDocument();
-  });
-
-  it('renders without error when selectedSeason is null', () => {
-    render(<SeasonSelector {...defaultProps} selectedSeason={null} seasons={[]} />);
-
-    const select = screen.getByLabelText('Season:') as HTMLSelectElement;
-    expect(select.value).toBe('');
   });
 });

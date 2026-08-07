@@ -46,31 +46,6 @@ describe('RecordRow', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders record as a button when there are games', () => {
-    renderWithContainer({
-      label: 'Home',
-      record: { wins: 3, losses: 1 },
-      schedule: [createGame()],
-      filter: () => true,
-    });
-
-    const button = screen.getByRole('button');
-    expect(button).toBeInTheDocument();
-    expect(screen.getByText('3-1')).toBeInTheDocument();
-  });
-
-  it('renders a dash when there are no games', () => {
-    renderWithContainer({
-      label: 'Away',
-      record: { wins: 0, losses: 0 },
-      schedule: [],
-      filter: () => true,
-    });
-
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
-    expect(screen.getByText('-')).toBeInTheDocument();
-  });
-
   it('calls scrollIntoView when expanding', () => {
     const mockScrollIntoView = vi.fn();
     const mockRaf = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
@@ -124,6 +99,42 @@ describe('RecordRow', () => {
     mockRaf.mockRestore();
   });
 
+  it('does not expand when there are no games', () => {
+    renderWithContainer({
+      label: 'Neutral',
+      record: { wins: 0, losses: 0 },
+      schedule: [],
+      filter: () => true,
+    });
+
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('renders a dash when there are no games', () => {
+    renderWithContainer({
+      label: 'Away',
+      record: { wins: 0, losses: 0 },
+      schedule: [],
+      filter: () => true,
+    });
+
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.getByText('-')).toBeInTheDocument();
+  });
+
+  it('renders record as a button when there are games', () => {
+    renderWithContainer({
+      label: 'Home',
+      record: { wins: 3, losses: 1 },
+      schedule: [createGame()],
+      filter: () => true,
+    });
+
+    const button = screen.getByRole('button');
+    expect(button).toBeInTheDocument();
+    expect(screen.getByText('3-1')).toBeInTheDocument();
+  });
+
   it('shows matching games when expanded', () => {
     const games = [
       createGame({ opponentName: 'Florida', week: 1 }),
@@ -141,16 +152,5 @@ describe('RecordRow', () => {
 
     expect(screen.getByText('Florida')).toBeInTheDocument();
     expect(screen.getByText('Texas')).toBeInTheDocument();
-  });
-
-  it('does not expand when there are no games', () => {
-    renderWithContainer({
-      label: 'Neutral',
-      record: { wins: 0, losses: 0 },
-      schedule: [],
-      filter: () => true,
-    });
-
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 });
