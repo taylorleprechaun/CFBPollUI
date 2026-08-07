@@ -56,7 +56,7 @@ describe('useAllTime', () => {
     );
   });
 
-  it('returns error on fetch failure', async () => {
+  it('refetch after error succeeds', async () => {
     vi.mocked(global.fetch).mockResolvedValue({
       ok: false,
       status: 500,
@@ -68,7 +68,21 @@ describe('useAllTime', () => {
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(result.current.error).toBeDefined();
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          bestTeams: [],
+          hardestSchedules: [],
+          worstTeams: [],
+        }),
+    } as Response);
+
+    await result.current.refetch();
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.bestTeams).toHaveLength(0);
   });
 
   it('returns all-time data on success', async () => {
@@ -106,7 +120,7 @@ describe('useAllTime', () => {
     expect(result.current.data?.bestTeams[0].teamName).toBe('Florida');
   });
 
-  it('refetch after error succeeds', async () => {
+  it('returns error on fetch failure', async () => {
     vi.mocked(global.fetch).mockResolvedValue({
       ok: false,
       status: 500,
@@ -118,20 +132,6 @@ describe('useAllTime', () => {
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
-
-    vi.mocked(global.fetch).mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          bestTeams: [],
-          hardestSchedules: [],
-          worstTeams: [],
-        }),
-    } as Response);
-
-    await result.current.refetch();
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.bestTeams).toHaveLength(0);
+    expect(result.current.error).toBeDefined();
   });
 });

@@ -4,16 +4,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { PageVisibilityContext, type PageVisibilityContextValue, usePageVisibility } from '../../hooks/use-page-visibility';
 
 describe('usePageVisibility', () => {
-  it('throws when used outside PageVisibilityProvider', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-    expect(() => renderHook(() => usePageVisibility())).toThrow(
-      'usePageVisibility must be used within a PageVisibilityProvider'
-    );
-
-    consoleError.mockRestore();
-  });
-
   it('returns context values when inside provider', () => {
     const mockContextValue: PageVisibilityContextValue = {
       allTimeEnabled: false,
@@ -34,5 +24,15 @@ describe('usePageVisibility', () => {
     expect(result.current.allTimeEnabled).toBe(false);
     expect(result.current.isLoading).toBe(false);
     expect(result.current.pollLeadersEnabled).toBe(true);
+  });
+
+  it('throws when used outside PageVisibilityProvider', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(() => renderHook(() => usePageVisibility())).toThrow(
+      'usePageVisibility must be used within a PageVisibilityProvider'
+    );
+
+    consoleError.mockRestore();
   });
 });

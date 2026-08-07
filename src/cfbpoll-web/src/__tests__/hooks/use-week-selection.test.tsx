@@ -6,18 +6,6 @@ import type { Week } from '../../types';
 import { useWeekSelection } from '../../hooks/use-week-selection';
 
 describe('useWeekSelection', () => {
-  it('returns null when no weeks provided', () => {
-    const { result } = renderHook(() => useWeekSelection(undefined));
-
-    expect(result.current.selectedWeek).toBeNull();
-  });
-
-  it('returns null when weeks array is empty', () => {
-    const { result } = renderHook(() => useWeekSelection([]));
-
-    expect(result.current.selectedWeek).toBeNull();
-  });
-
   it('auto-selects last week when weeks are available', () => {
     const weeks: Week[] = [
       { weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: true },
@@ -39,21 +27,6 @@ describe('useWeekSelection', () => {
     const { result } = renderHook(() => useWeekSelection(weeks));
 
     expect(result.current.selectedWeek).toBe(5);
-  });
-
-  it('preserves manual selection', () => {
-    const weeks: Week[] = [
-      { weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: true },
-      { weekNumber: 5, label: 'Week 5', predictionsPublished: false, rankingsPublished: false },
-    ];
-
-    const { result } = renderHook(() => useWeekSelection(weeks));
-
-    act(() => {
-      result.current.setSelectedWeek(1);
-    });
-
-    expect(result.current.selectedWeek).toBe(1);
   });
 
   it('auto-selects when reset to null', () => {
@@ -87,5 +60,32 @@ describe('useWeekSelection', () => {
     rerender({ w: weeks });
 
     expect(result.current.selectedWeek).toBe(3);
+  });
+
+  it('preserves manual selection', () => {
+    const weeks: Week[] = [
+      { weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: true },
+      { weekNumber: 5, label: 'Week 5', predictionsPublished: false, rankingsPublished: false },
+    ];
+
+    const { result } = renderHook(() => useWeekSelection(weeks));
+
+    act(() => {
+      result.current.setSelectedWeek(1);
+    });
+
+    expect(result.current.selectedWeek).toBe(1);
+  });
+
+  it('returns null when no weeks provided', () => {
+    const { result } = renderHook(() => useWeekSelection(undefined));
+
+    expect(result.current.selectedWeek).toBeNull();
+  });
+
+  it('returns null when weeks array is empty', () => {
+    const { result } = renderHook(() => useWeekSelection([]));
+
+    expect(result.current.selectedWeek).toBeNull();
   });
 });

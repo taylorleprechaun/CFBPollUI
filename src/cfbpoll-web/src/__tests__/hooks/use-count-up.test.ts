@@ -12,22 +12,18 @@ afterEach(() => {
 });
 
 describe('useCountUp', () => {
-  it('returns 0 when enabled is false', () => {
-    const { result } = renderHook(() =>
-      useCountUp({ end: 100, enabled: false }),
+  it('cancels animation frame on cleanup', () => {
+    const mockCancel = vi.fn();
+    vi.stubGlobal('requestAnimationFrame', vi.fn().mockReturnValue(42));
+    vi.stubGlobal('cancelAnimationFrame', mockCancel);
+
+    const { unmount } = renderHook(() =>
+      useCountUp({ end: 100, enabled: true }),
     );
 
-    expect(result.current).toBe(0);
-  });
+    unmount();
 
-  it('returns end value immediately when prefers-reduced-motion is set', () => {
-    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: true }));
-
-    const { result } = renderHook(() =>
-      useCountUp({ end: 42, enabled: true }),
-    );
-
-    expect(result.current).toBe(42);
+    expect(mockCancel).toHaveBeenCalledWith(42);
   });
 
   it('reaches end value after animation completes', () => {
@@ -55,20 +51,6 @@ describe('useCountUp', () => {
     expect(result.current).toBe(100);
   });
 
-  it('cancels animation frame on cleanup', () => {
-    const mockCancel = vi.fn();
-    vi.stubGlobal('requestAnimationFrame', vi.fn().mockReturnValue(42));
-    vi.stubGlobal('cancelAnimationFrame', mockCancel);
-
-    const { unmount } = renderHook(() =>
-      useCountUp({ end: 100, enabled: true }),
-    );
-
-    unmount();
-
-    expect(mockCancel).toHaveBeenCalledWith(42);
-  });
-
   it('resets to 0 when enabled changes from true to false', () => {
     vi.stubGlobal('requestAnimationFrame', vi.fn().mockReturnValue(1));
     vi.stubGlobal('cancelAnimationFrame', vi.fn());
@@ -81,5 +63,23 @@ describe('useCountUp', () => {
     rerender({ enabled: false });
 
     expect(result.current).toBe(0);
+  });
+
+  it('returns 0 when enabled is false', () => {
+    const { result } = renderHook(() =>
+      useCountUp({ end: 100, enabled: false }),
+    );
+
+    expect(result.current).toBe(0);
+  });
+
+  it('returns end value immediately when prefers-reduced-motion is set', () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: true }));
+
+    const { result } = renderHook(() =>
+      useCountUp({ end: 42, enabled: true }),
+    );
+
+    expect(result.current).toBe(42);
   });
 });

@@ -53,17 +53,18 @@ describe('usePredictionSeasons', () => {
     expect(result.current.data?.seasons).toEqual([2025, 2024]);
   });
 
-  it('returns loading state initially', () => {
-    vi.mocked(global.fetch).mockImplementation(
-      () => new Promise(() => {}) // Never resolves
-    );
+  it('returns empty array when no seasons have published predictions', async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ seasons: [] }),
+    } as Response);
 
     const { result } = renderHook(() => usePredictionSeasons(), {
       wrapper: createWrapper(),
     });
 
-    expect(result.current.isLoading).toBe(true);
-    expect(result.current.data).toBeUndefined();
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.seasons).toEqual([]);
   });
 
   it('returns error on fetch failure', async () => {
@@ -81,17 +82,16 @@ describe('usePredictionSeasons', () => {
     expect(result.current.error).toBeDefined();
   });
 
-  it('returns empty array when no seasons have published predictions', async () => {
-    vi.mocked(global.fetch).mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ seasons: [] }),
-    } as Response);
+  it('returns loading state initially', () => {
+    vi.mocked(global.fetch).mockImplementation(
+      () => new Promise(() => {}) // Never resolves
+    );
 
     const { result } = renderHook(() => usePredictionSeasons(), {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.seasons).toEqual([]);
+    expect(result.current.isLoading).toBe(true);
+    expect(result.current.data).toBeUndefined();
   });
 });

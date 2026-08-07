@@ -26,14 +26,14 @@ describe('usePrediction', () => {
     vi.resetAllMocks();
   });
 
-  it('does not fetch when token is null', () => {
-    renderHook(() => usePrediction(null, 2024, 5), { wrapper: createWrapper() });
+  it('does not fetch when season is null', () => {
+    renderHook(() => usePrediction('test-token', null, 5), { wrapper: createWrapper() });
 
     expect(fetchPrediction).not.toHaveBeenCalled();
   });
 
-  it('does not fetch when season is null', () => {
-    renderHook(() => usePrediction('test-token', null, 5), { wrapper: createWrapper() });
+  it('does not fetch when token is null', () => {
+    renderHook(() => usePrediction(null, 2024, 5), { wrapper: createWrapper() });
 
     expect(fetchPrediction).not.toHaveBeenCalled();
   });

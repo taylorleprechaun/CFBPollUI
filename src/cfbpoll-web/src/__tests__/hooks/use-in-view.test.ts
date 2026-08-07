@@ -33,12 +33,6 @@ function triggerIntersection(isIntersecting: boolean) {
 }
 
 describe('useInView', () => {
-  it('starts with inView false', () => {
-    const { result } = renderHook(() => useInView());
-
-    expect(result.current.inView).toBe(false);
-  });
-
   it('becomes true on intersection', () => {
     const { result } = renderHook(() => useInView());
     const element = document.createElement('div');
@@ -49,46 +43,6 @@ describe('useInView', () => {
     triggerIntersection(true);
 
     expect(result.current.inView).toBe(true);
-  });
-
-  it('disconnects after first trigger when triggerOnce is true', () => {
-    const { result } = renderHook(() => useInView({ triggerOnce: true }));
-    const element = document.createElement('div');
-
-    act(() => {
-      result.current.ref(element);
-    });
-    triggerIntersection(true);
-
-    expect(mockDisconnect).toHaveBeenCalled();
-  });
-
-  it('does not disconnect after trigger when triggerOnce is false', () => {
-    const { result } = renderHook(() => useInView({ triggerOnce: false }));
-    const element = document.createElement('div');
-
-    act(() => {
-      result.current.ref(element);
-    });
-    triggerIntersection(true);
-
-    expect(mockDisconnect).not.toHaveBeenCalled();
-  });
-
-  it('resets inView to false when element leaves viewport with triggerOnce false', () => {
-    const { result } = renderHook(() => useInView({ triggerOnce: false }));
-    const element = document.createElement('div');
-
-    act(() => {
-      result.current.ref(element);
-    });
-    triggerIntersection(true);
-
-    expect(result.current.inView).toBe(true);
-
-    triggerIntersection(false);
-
-    expect(result.current.inView).toBe(false);
   });
 
   it('cleans up observer on unmount', () => {
@@ -123,6 +77,18 @@ describe('useInView', () => {
     expect(mockObserve).toHaveBeenCalledTimes(2);
   });
 
+  it('disconnects after first trigger when triggerOnce is true', () => {
+    const { result } = renderHook(() => useInView({ triggerOnce: true }));
+    const element = document.createElement('div');
+
+    act(() => {
+      result.current.ref(element);
+    });
+    triggerIntersection(true);
+
+    expect(mockDisconnect).toHaveBeenCalled();
+  });
+
   it('does not create observer when ref is called with null', () => {
     const { result } = renderHook(() => useInView());
 
@@ -131,5 +97,39 @@ describe('useInView', () => {
     });
 
     expect(mockObserve).not.toHaveBeenCalled();
+  });
+
+  it('does not disconnect after trigger when triggerOnce is false', () => {
+    const { result } = renderHook(() => useInView({ triggerOnce: false }));
+    const element = document.createElement('div');
+
+    act(() => {
+      result.current.ref(element);
+    });
+    triggerIntersection(true);
+
+    expect(mockDisconnect).not.toHaveBeenCalled();
+  });
+
+  it('resets inView to false when element leaves viewport with triggerOnce false', () => {
+    const { result } = renderHook(() => useInView({ triggerOnce: false }));
+    const element = document.createElement('div');
+
+    act(() => {
+      result.current.ref(element);
+    });
+    triggerIntersection(true);
+
+    expect(result.current.inView).toBe(true);
+
+    triggerIntersection(false);
+
+    expect(result.current.inView).toBe(false);
+  });
+
+  it('starts with inView false', () => {
+    const { result } = renderHook(() => useInView());
+
+    expect(result.current.inView).toBe(false);
   });
 });

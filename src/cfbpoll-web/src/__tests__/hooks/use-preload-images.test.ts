@@ -15,14 +15,6 @@ describe('usePreloadImages', () => {
     });
   });
 
-  it('preloads each unique URL once', () => {
-    const urls = ['https://example.com/a.png', 'https://example.com/b.png'];
-
-    renderHook(() => usePreloadImages(urls));
-
-    expect(imageSrcs).toEqual(['https://example.com/a.png', 'https://example.com/b.png']);
-  });
-
   it('does not re-preload on rerender with same URLs', () => {
     const urls = ['https://example.com/a.png'];
 
@@ -41,6 +33,14 @@ describe('usePreloadImages', () => {
     renderHook(() => usePreloadImages([]));
 
     expect(imageSrcs).toHaveLength(0);
+  });
+
+  it('preloads each unique URL once', () => {
+    const urls = ['https://example.com/a.png', 'https://example.com/b.png'];
+
+    renderHook(() => usePreloadImages(urls));
+
+    expect(imageSrcs).toEqual(['https://example.com/a.png', 'https://example.com/b.png']);
   });
 
   it('preloads new URLs when data changes', () => {
