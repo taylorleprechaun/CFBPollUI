@@ -29,18 +29,18 @@ function renderWithRoutes(initialRoute: string) {
 }
 
 describe('RequireGuest', () => {
-  it('renders child route when not authenticated', () => {
-    mockIsAuthenticated = false;
-    renderWithRoutes('/login');
-
-    expect(screen.getByText('Login Content')).toBeInTheDocument();
-  });
-
   it('redirects to home when authenticated', () => {
     mockIsAuthenticated = true;
     renderWithRoutes('/login');
 
     expect(screen.getByText('Home Page')).toBeInTheDocument();
     expect(screen.queryByText('Login Content')).not.toBeInTheDocument();
+  });
+
+  it('renders child route when not authenticated', () => {
+    mockIsAuthenticated = false;
+    renderWithRoutes('/login');
+
+    expect(screen.getByText('Login Content')).toBeInTheDocument();
   });
 });

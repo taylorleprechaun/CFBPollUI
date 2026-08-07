@@ -4,12 +4,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { SuccessCheckmark } from '../../../components/admin';
 
 describe('SuccessCheckmark', () => {
-  it('renders checkmark SVG', () => {
-    render(<SuccessCheckmark onDone={vi.fn()} />);
-
-    expect(screen.getByLabelText('Success')).toBeInTheDocument();
-  });
-
   it('calls onDone after timeout', async () => {
     const onDone = vi.fn();
     render(<SuccessCheckmark onDone={onDone} />);
@@ -26,5 +20,11 @@ describe('SuccessCheckmark', () => {
     unmount();
 
     expect(onDone).not.toHaveBeenCalled();
+  });
+
+  it('renders checkmark SVG', () => {
+    render(<SuccessCheckmark onDone={vi.fn()} />);
+
+    expect(screen.getByLabelText('Success')).toBeInTheDocument();
   });
 });

@@ -29,18 +29,18 @@ function renderWithRoutes(initialRoute: string) {
 }
 
 describe('RequireAuth', () => {
-  it('renders child route when authenticated', () => {
-    mockIsAuthenticated = true;
-    renderWithRoutes('/admin');
-
-    expect(screen.getByText('Admin Content')).toBeInTheDocument();
-  });
-
   it('redirects to login when not authenticated', () => {
     mockIsAuthenticated = false;
     renderWithRoutes('/admin');
 
     expect(screen.getByText('Login Page')).toBeInTheDocument();
     expect(screen.queryByText('Admin Content')).not.toBeInTheDocument();
+  });
+
+  it('renders child route when authenticated', () => {
+    mockIsAuthenticated = true;
+    renderWithRoutes('/admin');
+
+    expect(screen.getByText('Admin Content')).toBeInTheDocument();
   });
 });

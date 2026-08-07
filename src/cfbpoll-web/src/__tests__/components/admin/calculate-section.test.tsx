@@ -21,19 +21,6 @@ const defaultProps = {
 };
 
 describe('CalculateSection', () => {
-  it('renders heading', () => {
-    render(<CalculateSection {...defaultProps} />);
-
-    expect(screen.getByText('Calculate Rankings')).toBeInTheDocument();
-  });
-
-  it('renders season and week selectors', () => {
-    render(<CalculateSection {...defaultProps} />);
-
-    expect(screen.getByLabelText('Season')).toBeInTheDocument();
-    expect(screen.getByLabelText('Week')).toBeInTheDocument();
-  });
-
   it('calls onCalculate when button is clicked', async () => {
     const onCalculate = vi.fn();
     render(<CalculateSection {...defaultProps} onCalculate={onCalculate} />);
@@ -43,22 +30,27 @@ describe('CalculateSection', () => {
     expect(onCalculate).toHaveBeenCalled();
   });
 
-  it('shows Calculating... text when isCalculating is true', () => {
-    render(<CalculateSection {...defaultProps} isCalculating={true} />);
+  it('calls onClearRefreshFeedback once the success checkmark finishes', async () => {
+    const onClearRefreshFeedback = vi.fn();
+    render(
+      <CalculateSection
+        {...defaultProps}
+        onRefreshCache={vi.fn()}
+        onClearRefreshFeedback={onClearRefreshFeedback}
+        refreshFeedback={{ key: 'refresh-cache-2024-5', type: 'success', message: 'Removed 8 cached entries' }}
+      />
+    );
 
-    expect(screen.getByRole('button', { name: 'Calculating...' })).toBeDisabled();
+    await waitFor(() => expect(onClearRefreshFeedback).toHaveBeenCalled(), { timeout: 3000 });
   });
 
-  it('disables button when season is null', () => {
-    render(<CalculateSection {...defaultProps} selectedSeason={null} />);
+  it('calls onRefreshCache when refresh button is clicked', async () => {
+    const onRefreshCache = vi.fn();
+    render(<CalculateSection {...defaultProps} onRefreshCache={onRefreshCache} />);
 
-    expect(screen.getByRole('button', { name: 'Calculate' })).toBeDisabled();
-  });
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
 
-  it('disables button when week is null', () => {
-    render(<CalculateSection {...defaultProps} selectedWeek={null} />);
-
-    expect(screen.getByRole('button', { name: 'Calculate' })).toBeDisabled();
+    expect(onRefreshCache).toHaveBeenCalled();
   });
 
   it('calls onSeasonChange and onWeekChange when season changes', async () => {
@@ -81,31 +73,16 @@ describe('CalculateSection', () => {
     expect(onWeekChange).toHaveBeenCalledWith(1);
   });
 
-  it('does not render refresh button when onRefreshCache is not provided', () => {
-    render(<CalculateSection {...defaultProps} />);
+  it('disables button when season is null', () => {
+    render(<CalculateSection {...defaultProps} selectedSeason={null} />);
 
-    expect(screen.queryByRole('button', { name: 'Refresh Cached Data' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Calculate' })).toBeDisabled();
   });
 
-  it('renders refresh button when onRefreshCache is provided', () => {
-    render(<CalculateSection {...defaultProps} onRefreshCache={vi.fn()} />);
+  it('disables button when week is null', () => {
+    render(<CalculateSection {...defaultProps} selectedWeek={null} />);
 
-    expect(screen.getByRole('button', { name: 'Refresh Cached Data' })).toBeInTheDocument();
-  });
-
-  it('calls onRefreshCache when refresh button is clicked', async () => {
-    const onRefreshCache = vi.fn();
-    render(<CalculateSection {...defaultProps} onRefreshCache={onRefreshCache} />);
-
-    await userEvent.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
-
-    expect(onRefreshCache).toHaveBeenCalled();
-  });
-
-  it('shows Refreshing... text when isRefreshingCache is true', () => {
-    render(<CalculateSection {...defaultProps} onRefreshCache={vi.fn()} isRefreshingCache={true} />);
-
-    expect(screen.getByRole('button', { name: 'Refreshing...' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Calculate' })).toBeDisabled();
   });
 
   it('disables refresh button when season is null', () => {
@@ -114,16 +91,47 @@ describe('CalculateSection', () => {
     expect(screen.getByRole('button', { name: 'Refresh Cached Data' })).toBeDisabled();
   });
 
-  it('shows success feedback message matching the selected season and week', () => {
+  it('does not render refresh button when onRefreshCache is not provided', () => {
+    render(<CalculateSection {...defaultProps} />);
+
+    expect(screen.queryByRole('button', { name: 'Refresh Cached Data' })).not.toBeInTheDocument();
+  });
+
+  it('does not show feedback for a different season/week key', () => {
     render(
       <CalculateSection
         {...defaultProps}
         onRefreshCache={vi.fn()}
-        refreshFeedback={{ key: 'refresh-cache-2024-5', type: 'success', message: 'Removed 8 cached entries' }}
+        refreshFeedback={{ key: 'refresh-cache-2023-1', type: 'success', message: 'Removed 3 cached entries' }}
       />
     );
 
-    expect(screen.getByText('Removed 8 cached entries')).toBeInTheDocument();
+    expect(screen.queryByText('Removed 3 cached entries')).not.toBeInTheDocument();
+  });
+
+  it('renders heading', () => {
+    render(<CalculateSection {...defaultProps} />);
+
+    expect(screen.getByText('Calculate Rankings')).toBeInTheDocument();
+  });
+
+  it('renders refresh button when onRefreshCache is provided', () => {
+    render(<CalculateSection {...defaultProps} onRefreshCache={vi.fn()} />);
+
+    expect(screen.getByRole('button', { name: 'Refresh Cached Data' })).toBeInTheDocument();
+  });
+
+  it('renders season and week selectors', () => {
+    render(<CalculateSection {...defaultProps} />);
+
+    expect(screen.getByLabelText('Season')).toBeInTheDocument();
+    expect(screen.getByLabelText('Week')).toBeInTheDocument();
+  });
+
+  it('shows Calculating... text when isCalculating is true', () => {
+    render(<CalculateSection {...defaultProps} isCalculating={true} />);
+
+    expect(screen.getByRole('button', { name: 'Calculating...' })).toBeDisabled();
   });
 
   it('shows error feedback message matching the selected season and week', () => {
@@ -138,29 +146,21 @@ describe('CalculateSection', () => {
     expect(screen.getByText('Refresh failed')).toBeInTheDocument();
   });
 
-  it('calls onClearRefreshFeedback once the success checkmark finishes', async () => {
-    const onClearRefreshFeedback = vi.fn();
+  it('shows Refreshing... text when isRefreshingCache is true', () => {
+    render(<CalculateSection {...defaultProps} onRefreshCache={vi.fn()} isRefreshingCache={true} />);
+
+    expect(screen.getByRole('button', { name: 'Refreshing...' })).toBeDisabled();
+  });
+
+  it('shows success feedback message matching the selected season and week', () => {
     render(
       <CalculateSection
         {...defaultProps}
         onRefreshCache={vi.fn()}
-        onClearRefreshFeedback={onClearRefreshFeedback}
         refreshFeedback={{ key: 'refresh-cache-2024-5', type: 'success', message: 'Removed 8 cached entries' }}
       />
     );
 
-    await waitFor(() => expect(onClearRefreshFeedback).toHaveBeenCalled(), { timeout: 3000 });
-  });
-
-  it('does not show feedback for a different season/week key', () => {
-    render(
-      <CalculateSection
-        {...defaultProps}
-        onRefreshCache={vi.fn()}
-        refreshFeedback={{ key: 'refresh-cache-2023-1', type: 'success', message: 'Removed 3 cached entries' }}
-      />
-    );
-
-    expect(screen.queryByText('Removed 3 cached entries')).not.toBeInTheDocument();
+    expect(screen.getByText('Removed 8 cached entries')).toBeInTheDocument();
   });
 });

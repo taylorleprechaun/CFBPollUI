@@ -24,19 +24,6 @@ const defaultProps = {
 };
 
 describe('CalculateSection with custom labels', () => {
-  it('renders custom heading', () => {
-    render(<CalculateSection {...defaultProps} />);
-
-    expect(screen.getByText('Generate Predictions')).toBeInTheDocument();
-  });
-
-  it('renders season and week selectors', () => {
-    render(<CalculateSection {...defaultProps} />);
-
-    expect(screen.getByLabelText('Season')).toBeInTheDocument();
-    expect(screen.getByLabelText('Week')).toBeInTheDocument();
-  });
-
   it('calls onCalculate when button is clicked', async () => {
     const onCalculate = vi.fn();
     render(<CalculateSection {...defaultProps} onCalculate={onCalculate} />);
@@ -44,24 +31,6 @@ describe('CalculateSection with custom labels', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Generate' }));
 
     expect(onCalculate).toHaveBeenCalled();
-  });
-
-  it('shows custom pending text when isCalculating is true', () => {
-    render(<CalculateSection {...defaultProps} isCalculating={true} />);
-
-    expect(screen.getByRole('button', { name: 'Generating...' })).toBeDisabled();
-  });
-
-  it('disables button when season is null', () => {
-    render(<CalculateSection {...defaultProps} selectedSeason={null} />);
-
-    expect(screen.getByRole('button', { name: 'Generate' })).toBeDisabled();
-  });
-
-  it('disables button when week is null', () => {
-    render(<CalculateSection {...defaultProps} selectedWeek={null} />);
-
-    expect(screen.getByRole('button', { name: 'Generate' })).toBeDisabled();
   });
 
   it('calls onSeasonChange and onWeekChange when season changes', async () => {
@@ -82,5 +51,36 @@ describe('CalculateSection with custom labels', () => {
     await userEvent.selectOptions(screen.getByLabelText('Week'), '1');
 
     expect(onWeekChange).toHaveBeenCalledWith(1);
+  });
+
+  it('disables button when season is null', () => {
+    render(<CalculateSection {...defaultProps} selectedSeason={null} />);
+
+    expect(screen.getByRole('button', { name: 'Generate' })).toBeDisabled();
+  });
+
+  it('disables button when week is null', () => {
+    render(<CalculateSection {...defaultProps} selectedWeek={null} />);
+
+    expect(screen.getByRole('button', { name: 'Generate' })).toBeDisabled();
+  });
+
+  it('renders custom heading', () => {
+    render(<CalculateSection {...defaultProps} />);
+
+    expect(screen.getByText('Generate Predictions')).toBeInTheDocument();
+  });
+
+  it('renders season and week selectors', () => {
+    render(<CalculateSection {...defaultProps} />);
+
+    expect(screen.getByLabelText('Season')).toBeInTheDocument();
+    expect(screen.getByLabelText('Week')).toBeInTheDocument();
+  });
+
+  it('shows custom pending text when isCalculating is true', () => {
+    render(<CalculateSection {...defaultProps} isCalculating={true} />);
+
+    expect(screen.getByRole('button', { name: 'Generating...' })).toBeDisabled();
   });
 });
