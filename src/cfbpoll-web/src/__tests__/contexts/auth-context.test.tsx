@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { AuthProvider } from '../../contexts/auth-context';
 import { useAuth } from '../../hooks/use-auth';
 
@@ -25,37 +26,12 @@ function TestConsumer() {
 describe('AuthContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    sessionStorage.clear();
+    localStorage.clear();
   });
 
-  it('starts unauthenticated when no token in storage', () => {
-    render(
-      <AuthProvider>
-        <TestConsumer />
-      </AuthProvider>
-    );
-
-    expect(screen.getByTestId('auth-status').textContent).toBe('not-authenticated');
-    expect(screen.getByTestId('token').textContent).toBe('no-token');
-  });
-
-  it('restores token from sessionStorage if not expired', () => {
-    sessionStorage.setItem('cfbpoll_token', 'stored-token');
-    sessionStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 60000));
-
-    render(
-      <AuthProvider>
-        <TestConsumer />
-      </AuthProvider>
-    );
-
-    expect(screen.getByTestId('auth-status').textContent).toBe('authenticated');
-    expect(screen.getByTestId('token').textContent).toBe('stored-token');
-  });
-
-  it('clears expired token from sessionStorage on mount', () => {
-    sessionStorage.setItem('cfbpoll_token', 'expired-token');
-    sessionStorage.setItem('cfbpoll_token_expiry', String(Date.now() - 1000));
+  it('clears expired token from localStorage on mount', () => {
+    localStorage.setItem('cfbpoll_token', 'expired-token');
+    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() - 1000));
 
     render(
       <AuthProvider>
@@ -87,7 +63,7 @@ describe('AuthContext', () => {
       expect(screen.getByTestId('token').textContent).toBe('new-jwt-token');
     });
 
-    expect(sessionStorage.getItem('cfbpoll_token')).toBe('new-jwt-token');
+    expect(localStorage.getItem('cfbpoll_token')).toBe('new-jwt-token');
   });
 
   it('logout clears token and storage', async () => {
@@ -115,7 +91,32 @@ describe('AuthContext', () => {
     });
 
     expect(screen.getByTestId('auth-status').textContent).toBe('not-authenticated');
-    expect(sessionStorage.getItem('cfbpoll_token')).toBeNull();
+    expect(localStorage.getItem('cfbpoll_token')).toBeNull();
+  });
+
+  it('restores token from localStorage if not expired', () => {
+    localStorage.setItem('cfbpoll_token', 'stored-token');
+    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 60000));
+
+    render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>
+    );
+
+    expect(screen.getByTestId('auth-status').textContent).toBe('authenticated');
+    expect(screen.getByTestId('token').textContent).toBe('stored-token');
+  });
+
+  it('starts unauthenticated when no token in storage', () => {
+    render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>
+    );
+
+    expect(screen.getByTestId('auth-status').textContent).toBe('not-authenticated');
+    expect(screen.getByTestId('token').textContent).toBe('no-token');
   });
 
   it('throws error when useAuth is used outside AuthProvider', () => {

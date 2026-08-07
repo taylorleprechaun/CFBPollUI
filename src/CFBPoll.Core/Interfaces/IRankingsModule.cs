@@ -21,9 +21,14 @@ public interface IRankingsModule
     Task<RankingsResult> GenerateRankingsAsync(SeasonData seasonData, IDictionary<string, RatingDetails> ratings);
 
     /// <summary>
-    /// Retrieves all persisted week summaries including draft and published.
+    /// Retrieves a published snapshot for the given season and week.
     /// </summary>
-    Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync();
+    Task<RankingsResult?> GetPublishedSnapshotAsync(int season, int week);
+
+    /// <summary>
+    /// Retrieves all published snapshots within the given season range.
+    /// </summary>
+    Task<IEnumerable<RankingsResult>> GetPublishedSnapshotsBySeasonRangeAsync(int minSeason, int maxSeason);
 
     /// <summary>
     /// Retrieves the published week numbers for the given season.
@@ -37,19 +42,14 @@ public interface IRankingsModule
     Task<IDictionary<string, int?>> GetRankDeltasAsync(int season, int week, IEnumerable<RankedTeam> currentRankings);
 
     /// <summary>
-    /// Retrieves a published snapshot for the given season and week.
-    /// </summary>
-    Task<RankingsResult?> GetPublishedSnapshotAsync(int season, int week);
-
-    /// <summary>
-    /// Retrieves all published snapshots within the given season range.
-    /// </summary>
-    Task<IEnumerable<RankingsResult>> GetPublishedSnapshotsBySeasonRangeAsync(int minSeason, int maxSeason);
-
-    /// <summary>
     /// Retrieves a snapshot for the given season and week regardless of published status.
     /// </summary>
     Task<RankingsResult?> GetSnapshotAsync(int season, int week);
+
+    /// <summary>
+    /// Retrieves all persisted week summaries including draft and published.
+    /// </summary>
+    Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync();
 
     /// <summary>
     /// Publishes a snapshot for the given season and week.

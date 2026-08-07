@@ -28,12 +28,6 @@ public class PollLeadersMapperTests
     }
 
     [Fact]
-    public void ToDTO_WithNullInput_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() => PollLeadersMapper.ToDTO(null!));
-    }
-
-    [Fact]
     public void ToDTO_WithDefaultValues_MapsCorrectly()
     {
         var entry = new PollLeaderEntry();
@@ -45,6 +39,12 @@ public class PollLeadersMapperTests
         Assert.Equal(0, result.Top5Count);
         Assert.Equal(0, result.Top10Count);
         Assert.Equal(0, result.Top25Count);
+    }
+
+    [Fact]
+    public void ToDTO_WithNullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => PollLeadersMapper.ToDTO(null!));
     }
 
     [Fact]
@@ -104,22 +104,35 @@ public class PollLeadersMapperTests
     }
 
     [Fact]
-    public void ToResponseDTO_WithNullInput_ThrowsArgumentNullException()
+    public void ToResponseDTO_MultipleEntries_AllMappedCorrectly()
     {
-        Assert.Throws<ArgumentNullException>(() => PollLeadersMapper.ToResponseDTO(null!));
-    }
-
-    [Fact]
-    public void ToResponseDTO_WithEmptyLists_ReturnsEmptyLists()
-    {
-        var pollLeadersResult = new PollLeadersResult();
+        var pollLeadersResult = new PollLeadersResult
+        {
+            AllWeeks = new List<PollLeaderEntry>
+            {
+                new() { LogoURL = "https://example.com/a.png", TeamName = "Alabama", Top5Count = 10, Top10Count = 15, Top25Count = 20 },
+                new() { LogoURL = "https://example.com/b.png", TeamName = "Florida", Top5Count = 5, Top10Count = 8, Top25Count = 12 },
+                new() { LogoURL = "https://example.com/c.png", TeamName = "Iowa", Top5Count = 2, Top10Count = 4, Top25Count = 6 }
+            },
+            FinalWeeksOnly = []
+        };
 
         var dto = PollLeadersMapper.ToResponseDTO(pollLeadersResult);
 
-        Assert.Empty(dto.AllWeeks);
-        Assert.Empty(dto.FinalWeeksOnly);
-        Assert.Equal(0, dto.MinAvailableSeason);
-        Assert.Equal(0, dto.MaxAvailableSeason);
+        var allWeeks = dto.AllWeeks.ToList();
+        Assert.Equal(3, allWeeks.Count);
+
+        Assert.Equal("Alabama", allWeeks[0].TeamName);
+        Assert.Equal("https://example.com/a.png", allWeeks[0].LogoURL);
+        Assert.Equal(10, allWeeks[0].Top5Count);
+
+        Assert.Equal("Florida", allWeeks[1].TeamName);
+        Assert.Equal("https://example.com/b.png", allWeeks[1].LogoURL);
+        Assert.Equal(5, allWeeks[1].Top5Count);
+
+        Assert.Equal("Iowa", allWeeks[2].TeamName);
+        Assert.Equal("https://example.com/c.png", allWeeks[2].LogoURL);
+        Assert.Equal(2, allWeeks[2].Top5Count);
     }
 
     [Fact]
@@ -153,34 +166,21 @@ public class PollLeadersMapperTests
     }
 
     [Fact]
-    public void ToResponseDTO_MultipleEntries_AllMappedCorrectly()
+    public void ToResponseDTO_WithEmptyLists_ReturnsEmptyLists()
     {
-        var pollLeadersResult = new PollLeadersResult
-        {
-            AllWeeks = new List<PollLeaderEntry>
-            {
-                new() { LogoURL = "https://example.com/a.png", TeamName = "Alabama", Top5Count = 10, Top10Count = 15, Top25Count = 20 },
-                new() { LogoURL = "https://example.com/b.png", TeamName = "Florida", Top5Count = 5, Top10Count = 8, Top25Count = 12 },
-                new() { LogoURL = "https://example.com/c.png", TeamName = "Iowa", Top5Count = 2, Top10Count = 4, Top25Count = 6 }
-            },
-            FinalWeeksOnly = []
-        };
+        var pollLeadersResult = new PollLeadersResult();
 
         var dto = PollLeadersMapper.ToResponseDTO(pollLeadersResult);
 
-        var allWeeks = dto.AllWeeks.ToList();
-        Assert.Equal(3, allWeeks.Count);
+        Assert.Empty(dto.AllWeeks);
+        Assert.Empty(dto.FinalWeeksOnly);
+        Assert.Equal(0, dto.MinAvailableSeason);
+        Assert.Equal(0, dto.MaxAvailableSeason);
+    }
 
-        Assert.Equal("Alabama", allWeeks[0].TeamName);
-        Assert.Equal("https://example.com/a.png", allWeeks[0].LogoURL);
-        Assert.Equal(10, allWeeks[0].Top5Count);
-
-        Assert.Equal("Florida", allWeeks[1].TeamName);
-        Assert.Equal("https://example.com/b.png", allWeeks[1].LogoURL);
-        Assert.Equal(5, allWeeks[1].Top5Count);
-
-        Assert.Equal("Iowa", allWeeks[2].TeamName);
-        Assert.Equal("https://example.com/c.png", allWeeks[2].LogoURL);
-        Assert.Equal(2, allWeeks[2].Top5Count);
+    [Fact]
+    public void ToResponseDTO_WithNullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => PollLeadersMapper.ToResponseDTO(null!));
     }
 }

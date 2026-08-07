@@ -11,9 +11,9 @@ namespace CFBPoll.API.Tests.Controllers;
 
 public class PollLeadersControllerTests
 {
+    private readonly PollLeadersController _controller;
     private readonly Mock<ILogger<PollLeadersController>> _mockLogger;
     private readonly Mock<IPollLeadersModule> _mockPollLeadersModule;
-    private readonly PollLeadersController _controller;
 
     public PollLeadersControllerTests()
     {
@@ -26,6 +26,15 @@ public class PollLeadersControllerTests
     }
 
     [Fact]
+    public void Constructor_NullLogger_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new PollLeadersController(
+                new Mock<IPollLeadersModule>().Object,
+                null!));
+    }
+
+    [Fact]
     public void Constructor_NullPollLeadersModule_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
@@ -35,12 +44,85 @@ public class PollLeadersControllerTests
     }
 
     [Fact]
-    public void Constructor_NullLogger_ThrowsArgumentNullException()
+    public async Task GetPollLeaders_EmptyResult_ReturnsOkWithEmptyLists()
     {
-        Assert.Throws<ArgumentNullException>(
-            () => new PollLeadersController(
-                new Mock<IPollLeadersModule>().Object,
-                null!));
+        _mockPollLeadersModule
+            .Setup(x => x.GetPollLeadersAsync(null, null))
+            .ReturnsAsync(new PollLeadersResult());
+
+        var result = await _controller.GetPollLeaders(null, null);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<PollLeadersResponseDTO>(okResult.Value);
+
+        Assert.Empty(response.AllWeeks);
+        Assert.Empty(response.FinalWeeksOnly);
+    }
+
+    [Fact]
+    public async Task GetPollLeaders_EqualMinAndMaxSeason_ReturnsOk()
+    {
+        _mockPollLeadersModule
+            .Setup(x => x.GetPollLeadersAsync(2023, 2023))
+            .ReturnsAsync(new PollLeadersResult());
+
+        var result = await _controller.GetPollLeaders(2023, 2023);
+
+        Assert.IsType<OkObjectResult>(result.Result);
+        _mockPollLeadersModule.Verify(x => x.GetPollLeadersAsync(2023, 2023), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetPollLeaders_MinSeasonGreaterThanMaxSeason_ReturnsBadRequest()
+    {
+        var result = await _controller.GetPollLeaders(2024, 2020);
+
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
+        var errorResponse = Assert.IsType<ErrorResponseDTO>(badRequestResult.Value);
+        Assert.Equal(400, errorResponse.StatusCode);
+        Assert.Contains("minSeason", errorResponse.Message);
+
+        _mockPollLeadersModule.Verify(
+            x => x.GetPollLeadersAsync(It.IsAny<int?>(), It.IsAny<int?>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetPollLeaders_NullParams_PassesNullToModule()
+    {
+        _mockPollLeadersModule
+            .Setup(x => x.GetPollLeadersAsync(null, null))
+            .ReturnsAsync(new PollLeadersResult());
+
+        var result = await _controller.GetPollLeaders(null, null);
+
+        Assert.IsType<OkObjectResult>(result.Result);
+        _mockPollLeadersModule.Verify(x => x.GetPollLeadersAsync(null, null), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetPollLeaders_OnlyMaxSeason_PassesMaxSeasonWithNullMin()
+    {
+        _mockPollLeadersModule
+            .Setup(x => x.GetPollLeadersAsync(null, 2023))
+            .ReturnsAsync(new PollLeadersResult());
+
+        var result = await _controller.GetPollLeaders(null, 2023);
+
+        Assert.IsType<OkObjectResult>(result.Result);
+        _mockPollLeadersModule.Verify(x => x.GetPollLeadersAsync(null, 2023), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetPollLeaders_OnlyMinSeason_PassesMinSeasonWithNullMax()
+    {
+        _mockPollLeadersModule
+            .Setup(x => x.GetPollLeadersAsync(2021, null))
+            .ReturnsAsync(new PollLeadersResult());
+
+        var result = await _controller.GetPollLeaders(2021, null);
+
+        Assert.IsType<OkObjectResult>(result.Result);
+        _mockPollLeadersModule.Verify(x => x.GetPollLeadersAsync(2021, null), Times.Once);
     }
 
     [Fact]
@@ -94,87 +176,5 @@ public class PollLeadersControllerTests
 
         Assert.Equal(2020, response.MinAvailableSeason);
         Assert.Equal(2023, response.MaxAvailableSeason);
-    }
-
-    [Fact]
-    public async Task GetPollLeaders_NullParams_PassesNullToModule()
-    {
-        _mockPollLeadersModule
-            .Setup(x => x.GetPollLeadersAsync(null, null))
-            .ReturnsAsync(new PollLeadersResult());
-
-        var result = await _controller.GetPollLeaders(null, null);
-
-        Assert.IsType<OkObjectResult>(result.Result);
-        _mockPollLeadersModule.Verify(x => x.GetPollLeadersAsync(null, null), Times.Once);
-    }
-
-    [Fact]
-    public async Task GetPollLeaders_MinSeasonGreaterThanMaxSeason_ReturnsBadRequest()
-    {
-        var result = await _controller.GetPollLeaders(2024, 2020);
-
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var errorResponse = Assert.IsType<ErrorResponseDTO>(badRequestResult.Value);
-        Assert.Equal(400, errorResponse.StatusCode);
-        Assert.Contains("minSeason", errorResponse.Message);
-
-        _mockPollLeadersModule.Verify(
-            x => x.GetPollLeadersAsync(It.IsAny<int?>(), It.IsAny<int?>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task GetPollLeaders_EqualMinAndMaxSeason_ReturnsOk()
-    {
-        _mockPollLeadersModule
-            .Setup(x => x.GetPollLeadersAsync(2023, 2023))
-            .ReturnsAsync(new PollLeadersResult());
-
-        var result = await _controller.GetPollLeaders(2023, 2023);
-
-        Assert.IsType<OkObjectResult>(result.Result);
-        _mockPollLeadersModule.Verify(x => x.GetPollLeadersAsync(2023, 2023), Times.Once);
-    }
-
-    [Fact]
-    public async Task GetPollLeaders_EmptyResult_ReturnsOkWithEmptyLists()
-    {
-        _mockPollLeadersModule
-            .Setup(x => x.GetPollLeadersAsync(null, null))
-            .ReturnsAsync(new PollLeadersResult());
-
-        var result = await _controller.GetPollLeaders(null, null);
-
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var response = Assert.IsType<PollLeadersResponseDTO>(okResult.Value);
-
-        Assert.Empty(response.AllWeeks);
-        Assert.Empty(response.FinalWeeksOnly);
-    }
-
-    [Fact]
-    public async Task GetPollLeaders_OnlyMinSeason_PassesMinSeasonWithNullMax()
-    {
-        _mockPollLeadersModule
-            .Setup(x => x.GetPollLeadersAsync(2021, null))
-            .ReturnsAsync(new PollLeadersResult());
-
-        var result = await _controller.GetPollLeaders(2021, null);
-
-        Assert.IsType<OkObjectResult>(result.Result);
-        _mockPollLeadersModule.Verify(x => x.GetPollLeadersAsync(2021, null), Times.Once);
-    }
-
-    [Fact]
-    public async Task GetPollLeaders_OnlyMaxSeason_PassesMaxSeasonWithNullMin()
-    {
-        _mockPollLeadersModule
-            .Setup(x => x.GetPollLeadersAsync(null, 2023))
-            .ReturnsAsync(new PollLeadersResult());
-
-        var result = await _controller.GetPollLeaders(null, 2023);
-
-        Assert.IsType<OkObjectResult>(result.Result);
-        _mockPollLeadersModule.Verify(x => x.GetPollLeadersAsync(null, 2023), Times.Once);
     }
 }

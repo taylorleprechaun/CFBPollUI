@@ -1,8 +1,10 @@
-import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { TrackRecordTable } from '../../../components/track-record/track-record-table';
+import { describe, expect, it } from 'vitest';
+
 import type { TrackRecordWeek } from '../../../schemas';
+
+import { TrackRecordTable } from '../../../components/track-record/track-record-table';
 
 function buildWeek(overrides: Partial<TrackRecordWeek> = {}): TrackRecordWeek {
   return {
@@ -24,6 +26,13 @@ function renderTable(props: React.ComponentProps<typeof TrackRecordTable>) {
 }
 
 describe('TrackRecordTable', () => {
+  it('links the week label to that week on the public predictions page', () => {
+    renderTable({ weeks: [buildWeek({ season: 2023, week: 4 })] });
+
+    const link = screen.getByRole('link', { name: '2023 Week 5' });
+    expect(link).toHaveAttribute('href', '/predictions?season=2023&week=4');
+  });
+
   it('renders a skeleton when loading', () => {
     renderTable({ isLoading: true, weeks: [] });
 
@@ -39,18 +48,18 @@ describe('TrackRecordTable', () => {
     expect(screen.getByText('O/U')).toBeInTheDocument();
   });
 
-  it('renders the season and week label for each row', () => {
-    renderTable({ weeks: [buildWeek({ season: 2023, week: 4 })] });
-
-    expect(screen.getByText('2023 Week 5')).toBeInTheDocument();
-  });
-
   it('renders formatted totals per category', () => {
     renderTable({ weeks: [buildWeek()] });
 
     expect(screen.getByText('5-0')).toBeInTheDocument();
     expect(screen.getByText('4-1')).toBeInTheDocument();
     expect(screen.getByText('3-2')).toBeInTheDocument();
+  });
+
+  it('renders no data rows when weeks is empty', () => {
+    renderTable({ weeks: [] });
+
+    expect(screen.getAllByRole('row')).toHaveLength(1);
   });
 
   it('renders one row per week', () => {
@@ -61,17 +70,10 @@ describe('TrackRecordTable', () => {
     expect(screen.getAllByRole('row')).toHaveLength(3);
   });
 
-  it('renders no data rows when weeks is empty', () => {
-    renderTable({ weeks: [] });
-
-    expect(screen.getAllByRole('row')).toHaveLength(1);
-  });
-
-  it('links the week label to that week on the public predictions page', () => {
+  it('renders the season and week label for each row', () => {
     renderTable({ weeks: [buildWeek({ season: 2023, week: 4 })] });
 
-    const link = screen.getByRole('link', { name: '2023 Week 5' });
-    expect(link).toHaveAttribute('href', '/predictions?season=2023&week=4');
+    expect(screen.getByText('2023 Week 5')).toBeInTheDocument();
   });
 
   it('wraps the table in a horizontally scrollable container for mobile viewports', () => {

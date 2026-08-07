@@ -6,6 +6,15 @@ namespace CFBPoll.Core.Tests.Models;
 public class GameTests
 {
     [Fact]
+    public void Game_AdvancedStatsDefaultToNull()
+    {
+        var game = new Game();
+
+        Assert.Null(game.HomeAdvancedStats);
+        Assert.Null(game.AwayAdvancedStats);
+    }
+
+    [Fact]
     public void Game_AdvancedStatsPropertiesCanBeSetAndRetrieved()
     {
         var homeAdvancedStats = new AdvancedGameStats
@@ -48,14 +57,5 @@ public class GameTests
         Assert.Equal(6, game.Week);
         Assert.Equal("regular", game.SeasonType);
         Assert.True(game.NeutralSite);
-    }
-
-    [Fact]
-    public void Game_AdvancedStatsDefaultToNull()
-    {
-        var game = new Game();
-
-        Assert.Null(game.HomeAdvancedStats);
-        Assert.Null(game.AwayAdvancedStats);
     }
 }

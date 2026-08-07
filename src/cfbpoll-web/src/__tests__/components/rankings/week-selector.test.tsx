@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 
 import { WeekSelector } from '../../../components/rankings/week-selector';
 
@@ -15,14 +15,6 @@ describe('WeekSelector', () => {
     isLoading: false,
   };
 
-  it('renders week options', () => {
-    render(<WeekSelector {...defaultProps} />);
-
-    expect(screen.getByLabelText('Week:')).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Week 2' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Week 6' })).toBeInTheDocument();
-  });
-
   it('calls onWeekChange when a week is selected', async () => {
     render(<WeekSelector {...defaultProps} />);
 
@@ -31,12 +23,19 @@ describe('WeekSelector', () => {
     expect(defaultProps.onWeekChange).toHaveBeenCalledWith(5);
   });
 
-  it('shows loading option and disables select when isLoading is true', () => {
-    render(<WeekSelector {...defaultProps} isLoading={true} weeks={[]} />);
+  it('renders week options', () => {
+    render(<WeekSelector {...defaultProps} />);
 
-    const select = screen.getByLabelText('Week:');
-    expect(select).toBeDisabled();
-    expect(screen.getByRole('option', { name: 'Loading...' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Week:')).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Week 2' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Week 6' })).toBeInTheDocument();
+  });
+
+  it('renders without error when selectedWeek is null', () => {
+    render(<WeekSelector {...defaultProps} selectedWeek={null} />);
+
+    const select = screen.getByLabelText('Week:') as HTMLSelectElement;
+    expect(select.value).toBe('1');
   });
 
   it('shows a select-a-season placeholder and disables select when there are no weeks', () => {
@@ -47,10 +46,11 @@ describe('WeekSelector', () => {
     expect(screen.getByRole('option', { name: 'Select a season' })).toBeInTheDocument();
   });
 
-  it('renders without error when selectedWeek is null', () => {
-    render(<WeekSelector {...defaultProps} selectedWeek={null} />);
+  it('shows loading option and disables select when isLoading is true', () => {
+    render(<WeekSelector {...defaultProps} isLoading={true} weeks={[]} />);
 
-    const select = screen.getByLabelText('Week:') as HTMLSelectElement;
-    expect(select.value).toBe('1');
+    const select = screen.getByLabelText('Week:');
+    expect(select).toBeDisabled();
+    expect(screen.getByRole('option', { name: 'Loading...' })).toBeInTheDocument();
   });
 });

@@ -32,12 +32,6 @@ public class PollLeadersModule : IPollLeadersModule
         _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
     }
 
-    public async Task InvalidateCacheAsync()
-    {
-        var count = await _cache.RemoveByPrefixAsync(CACHE_KEY_PREFIX).ConfigureAwait(false);
-        _logger.LogDebug("Invalidated {Count} poll leaders cache entries", count);
-    }
-
     public async Task<PollLeadersResult> GetPollLeadersAsync(int? minSeason, int? maxSeason)
     {
         var snapshots = await _rankingsModule.GetSnapshotsAsync().ConfigureAwait(false);
@@ -93,6 +87,12 @@ public class PollLeadersModule : IPollLeadersModule
         await _cache.SetAsync(cacheKey, result, expiresAt).ConfigureAwait(false);
 
         return result;
+    }
+
+    public async Task InvalidateCacheAsync()
+    {
+        var count = await _cache.RemoveByPrefixAsync(CACHE_KEY_PREFIX).ConfigureAwait(false);
+        _logger.LogDebug("Invalidated {Count} poll leaders cache entries", count);
     }
 
     private void AggregateSnapshot(

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 
-import { useSeason } from '../hooks/use-season';
+import type { CalculateResponse } from '../schemas/admin';
+
 import {
   CalculateSection,
   PersistedSnapshotsSection,
@@ -18,15 +19,15 @@ import {
 import { useAdminPageState } from '../hooks/use-admin-page-state';
 import { useAuth } from '../hooks/use-auth';
 import { useDocumentTitle } from '../hooks/use-document-title';
+import { useSeason } from '../hooks/use-season';
 import { useSnapshots } from '../hooks/use-snapshots';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
 import { toError } from '../lib/error-utils';
 import { getWeekLabel } from '../lib/week-utils';
-import type { CalculateResponse } from '../schemas/admin';
 
 export function SnapshotsPage() {
-  useDocumentTitle('Snapshots - CFB Poll');
+  useDocumentTitle('Taylor Steinberg - Snapshots');
 
   const { token } = useAuth();
 

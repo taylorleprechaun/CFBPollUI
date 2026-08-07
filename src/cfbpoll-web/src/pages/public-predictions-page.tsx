@@ -1,21 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { useRankings } from '../hooks/use-rankings';
-import { useSeason } from '../hooks/use-season';
-import { useWeeks } from '../hooks/use-weeks';
-import { useDocumentTitle } from '../hooks/use-document-title';
-import { usePublicPredictions } from '../hooks/use-public-predictions';
-import { useWeekSelection } from '../hooks/use-week-selection';
 import { ErrorAlert } from '../components/error';
 import { PredictionsTable } from '../components/predictions/predictions-table';
 import { SeasonSelector } from '../components/rankings/season-selector';
 import { WeekSelector } from '../components/rankings/week-selector';
+import { useDocumentTitle } from '../hooks/use-document-title';
+import { usePredictionSeasons } from '../hooks/use-prediction-seasons';
+import { usePublicPredictions } from '../hooks/use-public-predictions';
+import { useRankings } from '../hooks/use-rankings';
+import { useSeason } from '../hooks/use-season';
+import { useWeekSelection } from '../hooks/use-week-selection';
+import { useWeeks } from '../hooks/use-weeks';
 import { ApiError } from '../lib/api-error';
 import { getWeekLabel } from '../lib/week-utils';
 
 export function PublicPredictionsPage() {
-  useDocumentTitle('Predictions - CFB Poll');
+  useDocumentTitle('Taylor Steinberg - Predictions');
 
   const [searchParams] = useSearchParams();
   const initialSeasonApplied = useRef(false);
@@ -23,19 +24,29 @@ export function PublicPredictionsPage() {
 
   const {
     seasons,
-    seasonsLoading,
-    seasonsError,
-    refetchSeasons,
     selectedSeason,
     setSelectedSeason,
   } = useSeason();
+
+  const {
+    data: predictionSeasonsData,
+    isLoading: predictionSeasonsLoading,
+    error: predictionSeasonsError,
+    refetch: refetchPredictionSeasons,
+  } = usePredictionSeasons();
+
+  const predictionSeasons = predictionSeasonsData?.seasons ?? [];
+
+  const effectiveSeason = predictionSeasons.includes(selectedSeason ?? -1)
+    ? selectedSeason
+    : predictionSeasons[0] ?? null;
 
   const {
     data: weeksData,
     isLoading: weeksLoading,
     error: weeksError,
     refetch: refetchWeeks,
-  } = useWeeks(selectedSeason);
+  } = useWeeks(effectiveSeason);
 
   const publishedWeeks = useMemo(
     () => weeksData?.weeks?.filter((w) => w.predictionsPublished) ?? [],
@@ -51,9 +62,9 @@ export function PublicPredictionsPage() {
     isLoading: predictionsLoading,
     error: predictionsError,
     refetch: refetchPredictions,
-  } = usePublicPredictions(selectedSeason, selectedWeek, maxSeason);
+  } = usePublicPredictions(effectiveSeason, selectedWeek, maxSeason);
 
-  const { data: rankingsData } = useRankings(selectedSeason, selectedWeek, maxSeason);
+  const { data: rankingsData } = useRankings(effectiveSeason, selectedWeek, maxSeason);
 
   const rankByTeam = useMemo(
     () => new Map(rankingsData?.rankings.map((r) => [r.teamName.toLowerCase(), r.rank]) ?? []),
@@ -105,9 +116,9 @@ export function PublicPredictionsPage() {
   const showTop25Empty = top25Only && !predictionsLoading && predictionsData !== undefined && displayedPredictions.length === 0;
 
   const isNotFound = predictionsError instanceof ApiError && predictionsError.statusCode === 404;
-  const error = seasonsError || weeksError || (isNotFound ? null : predictionsError);
+  const error = predictionSeasonsError || weeksError || (isNotFound ? null : predictionsError);
   const handleRetry = () => {
-    if (seasonsError) refetchSeasons();
+    if (predictionSeasonsError) refetchPredictionSeasons();
     if (weeksError) refetchWeeks();
     if (predictionsError) refetchPredictions();
   };
@@ -118,10 +129,10 @@ export function PublicPredictionsPage() {
         <h1 className="text-2xl font-bold text-text-primary mb-4">Predictions</h1>
         <div className="flex flex-wrap gap-4">
           <SeasonSelector
-            seasons={seasons}
-            selectedSeason={selectedSeason}
+            seasons={predictionSeasons}
+            selectedSeason={effectiveSeason}
             onSeasonChange={handleSeasonChange}
-            isLoading={seasonsLoading}
+            isLoading={predictionSeasonsLoading}
           />
           <WeekSelector
             weeks={publishedWeeks}
@@ -172,7 +183,7 @@ export function PublicPredictionsPage() {
             predictions={displayedPredictions}
             isLoading={predictionsLoading}
             rankByTeam={rankByTeam}
-            season={selectedSeason}
+            season={effectiveSeason}
             showGrades={predictionsData?.resultsPublished ?? false}
           />
         </div>

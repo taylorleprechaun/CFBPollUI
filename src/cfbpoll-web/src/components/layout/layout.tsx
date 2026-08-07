@@ -1,5 +1,4 @@
 import { useState } from 'react';
-
 import { Link, Outlet, useLocation } from 'react-router-dom';
 
 import { useAuth } from '../../hooks/use-auth';
@@ -31,10 +30,6 @@ const ADMIN_ITEMS: NavItem[] = [
 interface NavGroup {
   items: NavItem[];
   label: string;
-}
-
-function isGroupActive(pathname: string, items: NavItem[]): boolean {
-  return items.some((item) => isActiveLink(pathname, item.to));
 }
 
 export function Layout() {
@@ -79,7 +74,7 @@ export function Layout() {
     : null;
 
   return (
-    <div className="min-h-screen bg-page-bg overflow-x-hidden flex flex-col">
+    <div className="min-h-screen bg-page-bg flex flex-col">
       <header className="sticky top-0 z-40">
         <nav className="bg-nav-bg/95 backdrop-blur-md text-white shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -258,4 +253,8 @@ export function Layout() {
       </footer>
     </div>
   );
+}
+
+function isGroupActive(pathname: string, items: NavItem[]): boolean {
+  return items.some((item) => isActiveLink(pathname, item.to));
 }

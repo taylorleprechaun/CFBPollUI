@@ -12,13 +12,6 @@ namespace CFBPoll.Core.Tests.Data;
 public class CacheDataTests
 {
     [Fact]
-    public void Constructor_ThrowsOnNullOptions()
-    {
-        Assert.Throws<ArgumentNullException>(() =>
-            new CacheData(null!, new Mock<ILogger<CacheData>>().Object));
-    }
-
-    [Fact]
     public void Constructor_ThrowsOnNullLogger()
     {
         var options = new Mock<IOptions<CacheOptions>>();
@@ -29,174 +22,10 @@ public class CacheDataTests
     }
 
     [Fact]
-    public async Task InitializeAsync_CreatesTable()
+    public void Constructor_ThrowsOnNullOptions()
     {
-        var (data, tempPath) = CreateCacheDataWithFile();
-        try
-        {
-            await data.InitializeAsync();
-
-            await using var connection = new SqliteConnection($"Data Source={tempPath};Pooling=false");
-            await connection.OpenAsync();
-            await using var command = connection.CreateCommand();
-            command.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='CacheEntry'";
-            var result = await command.ExecuteScalarAsync();
-
-            Assert.Equal("CacheEntry", result);
-        }
-        finally
-        {
-            CleanupFile(tempPath);
-        }
-    }
-
-    [Fact]
-    public async Task SetEntryAsync_AndGetEntryAsync_RoundTrips()
-    {
-        var (data, tempPath) = CreateCacheDataWithFile();
-        try
-        {
-            await data.InitializeAsync();
-
-            var entry = new CacheDataEntry
-            {
-                CacheKey = "test_key",
-                CachedAt = DateTime.UtcNow,
-                Data = [1, 2, 3, 4, 5],
-                ExpiresAt = DateTime.UtcNow.AddHours(1)
-            };
-
-            var setResult = await data.SetEntryAsync(entry);
-            Assert.True(setResult);
-
-            var result = await data.GetEntryAsync("test_key");
-
-            Assert.NotNull(result);
-            Assert.Equal("test_key", result.CacheKey);
-            Assert.Equal(entry.Data, result.Data);
-        }
-        finally
-        {
-            CleanupFile(tempPath);
-        }
-    }
-
-    [Fact]
-    public async Task GetEntryAsync_ReturnsNull_WhenNotFound()
-    {
-        var (data, tempPath) = CreateCacheDataWithFile();
-        try
-        {
-            await data.InitializeAsync();
-
-            var result = await data.GetEntryAsync("nonexistent_key");
-
-            Assert.Null(result);
-        }
-        finally
-        {
-            CleanupFile(tempPath);
-        }
-    }
-
-    [Fact]
-    public async Task SetEntryAsync_OverwritesExistingEntry()
-    {
-        var (data, tempPath) = CreateCacheDataWithFile();
-        try
-        {
-            await data.InitializeAsync();
-
-            var original = new CacheDataEntry
-            {
-                CacheKey = "test_key",
-                CachedAt = DateTime.UtcNow,
-                Data = [1, 2, 3],
-                ExpiresAt = DateTime.UtcNow.AddHours(1)
-            };
-            await data.SetEntryAsync(original);
-
-            var replacement = new CacheDataEntry
-            {
-                CacheKey = "test_key",
-                CachedAt = DateTime.UtcNow,
-                Data = [4, 5, 6],
-                ExpiresAt = DateTime.UtcNow.AddHours(2)
-            };
-            await data.SetEntryAsync(replacement);
-
-            var result = await data.GetEntryAsync("test_key");
-
-            Assert.NotNull(result);
-            Assert.Equal(replacement.Data, result.Data);
-        }
-        finally
-        {
-            CleanupFile(tempPath);
-        }
-    }
-
-    [Fact]
-    public async Task SetEntryAsync_ThrowsOnNullEntry()
-    {
-        var (data, tempPath) = CreateCacheDataWithFile();
-        try
-        {
-            await data.InitializeAsync();
-            await Assert.ThrowsAsync<ArgumentNullException>(() => data.SetEntryAsync(null!));
-        }
-        finally
-        {
-            CleanupFile(tempPath);
-        }
-    }
-
-    [Fact]
-    public async Task RemoveAsync_RemovesExistingEntry_ReturnsTrue()
-    {
-        var (data, tempPath) = CreateCacheDataWithFile();
-        try
-        {
-            await data.InitializeAsync();
-
-            var entry = new CacheDataEntry
-            {
-                CacheKey = "test_key",
-                CachedAt = DateTime.UtcNow,
-                Data = [1, 2, 3],
-                ExpiresAt = DateTime.UtcNow.AddHours(1)
-            };
-            await data.SetEntryAsync(entry);
-
-            var removed = await data.RemoveAsync("test_key");
-
-            Assert.True(removed);
-
-            var result = await data.GetEntryAsync("test_key");
-            Assert.Null(result);
-        }
-        finally
-        {
-            CleanupFile(tempPath);
-        }
-    }
-
-    [Fact]
-    public async Task RemoveAsync_NonExisting_ReturnsFalse()
-    {
-        var (data, tempPath) = CreateCacheDataWithFile();
-        try
-        {
-            await data.InitializeAsync();
-
-            var removed = await data.RemoveAsync("nonexistent_key");
-
-            Assert.False(removed);
-        }
-        finally
-        {
-            CleanupFile(tempPath);
-        }
+        Assert.Throws<ArgumentNullException>(() =>
+            new CacheData(null!, new Mock<ILogger<CacheData>>().Object));
     }
 
     [Fact]
@@ -241,6 +70,24 @@ public class CacheDataTests
     }
 
     [Fact]
+    public async Task DeleteExpiredAsync_HandlesEmptyTable()
+    {
+        var (data, tempPath) = CreateCacheDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var count = await data.DeleteExpiredAsync(DateTime.UtcNow);
+
+            Assert.Equal(0, count);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
     public async Task DeleteExpiredAsync_ReturnsZero_WhenNoExpiredEntries()
     {
         var (data, tempPath) = CreateCacheDataWithFile();
@@ -268,16 +115,118 @@ public class CacheDataTests
     }
 
     [Fact]
-    public async Task DeleteExpiredAsync_HandlesEmptyTable()
+    public async Task GetEntryAsync_PreservesDateTimes()
     {
         var (data, tempPath) = CreateCacheDataWithFile();
         try
         {
             await data.InitializeAsync();
 
-            var count = await data.DeleteExpiredAsync(DateTime.UtcNow);
+            var cachedAt = new DateTime(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
+            var expiresAt = new DateTime(2024, 6, 16, 12, 0, 0, DateTimeKind.Utc);
 
-            Assert.Equal(0, count);
+            var entry = new CacheDataEntry
+            {
+                CacheKey = "datetime_key",
+                CachedAt = cachedAt,
+                Data = [1],
+                ExpiresAt = expiresAt
+            };
+            await data.SetEntryAsync(entry);
+
+            var result = await data.GetEntryAsync("datetime_key");
+
+            Assert.NotNull(result);
+            Assert.Equal(cachedAt, result.CachedAt.ToUniversalTime());
+            Assert.Equal(expiresAt, result.ExpiresAt.ToUniversalTime());
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetEntryAsync_ReturnsNull_WhenNotFound()
+    {
+        var (data, tempPath) = CreateCacheDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var result = await data.GetEntryAsync("nonexistent_key");
+
+            Assert.Null(result);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task InitializeAsync_CreatesTable()
+    {
+        var (data, tempPath) = CreateCacheDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await using var connection = new SqliteConnection($"Data Source={tempPath};Pooling=false");
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name='CacheEntry'";
+            var result = await command.ExecuteScalarAsync();
+
+            Assert.Equal("CacheEntry", result);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task RemoveAsync_NonExisting_ReturnsFalse()
+    {
+        var (data, tempPath) = CreateCacheDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var removed = await data.RemoveAsync("nonexistent_key");
+
+            Assert.False(removed);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task RemoveAsync_RemovesExistingEntry_ReturnsTrue()
+    {
+        var (data, tempPath) = CreateCacheDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var entry = new CacheDataEntry
+            {
+                CacheKey = "test_key",
+                CachedAt = DateTime.UtcNow,
+                Data = [1, 2, 3],
+                ExpiresAt = DateTime.UtcNow.AddHours(1)
+            };
+            await data.SetEntryAsync(entry);
+
+            var removed = await data.RemoveAsync("test_key");
+
+            Assert.True(removed);
+
+            var result = await data.GetEntryAsync("test_key");
+            Assert.Null(result);
         }
         finally
         {
@@ -358,23 +307,6 @@ public class CacheDataTests
     }
 
     [Fact]
-    public async Task RemoveByPrefixAsync_ThrowsOnNullPrefix()
-    {
-        var (data, tempPath) = CreateCacheDataWithFile();
-        try
-        {
-            await data.InitializeAsync();
-
-            await Assert.ThrowsAsync<ArgumentNullException>(() =>
-                data.RemoveByPrefixAsync(null!));
-        }
-        finally
-        {
-            CleanupFile(tempPath);
-        }
-    }
-
-    [Fact]
     public async Task RemoveByPrefixAsync_ThrowsOnEmptyPrefix()
     {
         var (data, tempPath) = CreateCacheDataWithFile();
@@ -384,6 +316,23 @@ public class CacheDataTests
 
             await Assert.ThrowsAsync<ArgumentException>(() =>
                 data.RemoveByPrefixAsync(""));
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task RemoveByPrefixAsync_ThrowsOnNullPrefix()
+    {
+        var (data, tempPath) = CreateCacheDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await Assert.ThrowsAsync<ArgumentNullException>(() =>
+                data.RemoveByPrefixAsync(null!));
         }
         finally
         {
@@ -409,34 +358,99 @@ public class CacheDataTests
     }
 
     [Fact]
-    public async Task GetEntryAsync_PreservesDateTimes()
+    public async Task SetEntryAsync_AndGetEntryAsync_RoundTrips()
     {
         var (data, tempPath) = CreateCacheDataWithFile();
         try
         {
             await data.InitializeAsync();
 
-            var cachedAt = new DateTime(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
-            var expiresAt = new DateTime(2024, 6, 16, 12, 0, 0, DateTimeKind.Utc);
-
             var entry = new CacheDataEntry
             {
-                CacheKey = "datetime_key",
-                CachedAt = cachedAt,
-                Data = [1],
-                ExpiresAt = expiresAt
+                CacheKey = "test_key",
+                CachedAt = DateTime.UtcNow,
+                Data = [1, 2, 3, 4, 5],
+                ExpiresAt = DateTime.UtcNow.AddHours(1)
             };
-            await data.SetEntryAsync(entry);
 
-            var result = await data.GetEntryAsync("datetime_key");
+            var setResult = await data.SetEntryAsync(entry);
+            Assert.True(setResult);
+
+            var result = await data.GetEntryAsync("test_key");
 
             Assert.NotNull(result);
-            Assert.Equal(cachedAt, result.CachedAt.ToUniversalTime());
-            Assert.Equal(expiresAt, result.ExpiresAt.ToUniversalTime());
+            Assert.Equal("test_key", result.CacheKey);
+            Assert.Equal(entry.Data, result.Data);
         }
         finally
         {
             CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task SetEntryAsync_OverwritesExistingEntry()
+    {
+        var (data, tempPath) = CreateCacheDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var original = new CacheDataEntry
+            {
+                CacheKey = "test_key",
+                CachedAt = DateTime.UtcNow,
+                Data = [1, 2, 3],
+                ExpiresAt = DateTime.UtcNow.AddHours(1)
+            };
+            await data.SetEntryAsync(original);
+
+            var replacement = new CacheDataEntry
+            {
+                CacheKey = "test_key",
+                CachedAt = DateTime.UtcNow,
+                Data = [4, 5, 6],
+                ExpiresAt = DateTime.UtcNow.AddHours(2)
+            };
+            await data.SetEntryAsync(replacement);
+
+            var result = await data.GetEntryAsync("test_key");
+
+            Assert.NotNull(result);
+            Assert.Equal(replacement.Data, result.Data);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task SetEntryAsync_ThrowsOnNullEntry()
+    {
+        var (data, tempPath) = CreateCacheDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+            await Assert.ThrowsAsync<ArgumentNullException>(() => data.SetEntryAsync(null!));
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    private static void CleanupFile(string filePath)
+    {
+        SqliteConnection.ClearAllPools();
+        try
+        {
+            if (File.Exists(filePath))
+                File.Delete(filePath);
+        }
+        catch
+        {
+            // Best-effort cleanup
         }
     }
 
@@ -452,19 +466,5 @@ public class CacheDataTests
 
         var logger = new Mock<ILogger<CacheData>>();
         return (new CacheData(options.Object, logger.Object), tempPath);
-    }
-
-    private static void CleanupFile(string filePath)
-    {
-        SqliteConnection.ClearAllPools();
-        try
-        {
-            if (File.Exists(filePath))
-                File.Delete(filePath);
-        }
-        catch
-        {
-            // Best-effort cleanup
-        }
     }
 }

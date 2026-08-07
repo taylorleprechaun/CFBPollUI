@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { describe, expect, it } from 'vitest';
+
 import { NavDropdown } from '../../../components/layout/nav-dropdown';
 
 const items = [
@@ -24,48 +25,18 @@ function renderDropdown(props: Partial<Parameters<typeof NavDropdown>[0]> = {}) 
 }
 
 describe('NavDropdown', () => {
-  it('renders the label button', () => {
-    renderDropdown();
-
-    expect(screen.getByRole('button', { name: /Rankings/i })).toBeInTheDocument();
-  });
-
-  it('dropdown is closed by default', () => {
-    renderDropdown();
-
-    expect(screen.queryByText('Teams')).not.toBeInTheDocument();
-    expect(screen.getByRole('button')).toHaveAttribute('aria-expanded', 'false');
-  });
-
-  it('opens dropdown on click', async () => {
-    renderDropdown();
-
-    await userEvent.click(screen.getByRole('button', { name: /Rankings/i }));
-
-    expect(screen.getByText('Teams')).toBeInTheDocument();
-    expect(screen.getByText('Trends')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Rankings/i })).toHaveAttribute('aria-expanded', 'true');
-  });
-
-  it('closes dropdown on second click', async () => {
-    renderDropdown();
+  it('applies active styling when isActive is true', () => {
+    renderDropdown({ isActive: true });
 
     const button = screen.getByRole('button', { name: /Rankings/i });
-    await userEvent.click(button);
-    expect(screen.getByText('Teams')).toBeInTheDocument();
-
-    await userEvent.click(button);
-    expect(screen.queryByText('Teams')).not.toBeInTheDocument();
+    expect(button.className).toContain('bg-nav-active');
   });
 
-  it('closes dropdown on Escape', async () => {
-    renderDropdown();
+  it('applies inactive styling when isActive is false', () => {
+    renderDropdown({ isActive: false });
 
-    await userEvent.click(screen.getByRole('button', { name: /Rankings/i }));
-    expect(screen.getByText('Teams')).toBeInTheDocument();
-
-    await userEvent.keyboard('{Escape}');
-    expect(screen.queryByText('Teams')).not.toBeInTheDocument();
+    const button = screen.getByRole('button', { name: /Rankings/i });
+    expect(button.className).not.toContain('bg-nav-active');
   });
 
   it('closes dropdown on click outside', async () => {
@@ -85,24 +56,48 @@ describe('NavDropdown', () => {
     expect(screen.queryByText('Teams')).not.toBeInTheDocument();
   });
 
+  it('closes dropdown on Escape', async () => {
+    renderDropdown();
+
+    await userEvent.click(screen.getByRole('button', { name: /Rankings/i }));
+    expect(screen.getByText('Teams')).toBeInTheDocument();
+
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByText('Teams')).not.toBeInTheDocument();
+  });
+
+  it('closes dropdown on second click', async () => {
+    renderDropdown();
+
+    const button = screen.getByRole('button', { name: /Rankings/i });
+    await userEvent.click(button);
+    expect(screen.getByText('Teams')).toBeInTheDocument();
+
+    await userEvent.click(button);
+    expect(screen.queryByText('Teams')).not.toBeInTheDocument();
+  });
+
+  it('dropdown is closed by default', () => {
+    renderDropdown();
+
+    expect(screen.queryByText('Teams')).not.toBeInTheDocument();
+    expect(screen.getByRole('button')).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('has aria-haspopup attribute', () => {
     renderDropdown();
 
     expect(screen.getByRole('button')).toHaveAttribute('aria-haspopup', 'true');
   });
 
-  it('applies active styling when isActive is true', () => {
-    renderDropdown({ isActive: true });
+  it('opens dropdown on click', async () => {
+    renderDropdown();
 
-    const button = screen.getByRole('button', { name: /Rankings/i });
-    expect(button.className).toContain('bg-nav-active');
-  });
+    await userEvent.click(screen.getByRole('button', { name: /Rankings/i }));
 
-  it('applies inactive styling when isActive is false', () => {
-    renderDropdown({ isActive: false });
-
-    const button = screen.getByRole('button', { name: /Rankings/i });
-    expect(button.className).not.toContain('bg-nav-active');
+    expect(screen.getByText('Teams')).toBeInTheDocument();
+    expect(screen.getByText('Trends')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Rankings/i })).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('renders all items as links', async () => {
@@ -112,5 +107,11 @@ describe('NavDropdown', () => {
 
     const links = screen.getAllByRole('link');
     expect(links).toHaveLength(3);
+  });
+
+  it('renders the label button', () => {
+    renderDropdown();
+
+    expect(screen.getByRole('button', { name: /Rankings/i })).toBeInTheDocument();
   });
 });

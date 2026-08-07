@@ -1,18 +1,19 @@
-import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
-import { SunIcon, MoonIcon } from '../../../../components/ui/icons/theme-icon';
+import { describe, expect, it } from 'vitest';
 
-describe('SunIcon', () => {
+import { MoonIcon, SunIcon } from '../../../../components/ui/icons/theme-icon';
+
+describe('MoonIcon', () => {
   it('renders an svg element', () => {
-    const { container } = render(<SunIcon />);
+    const { container } = render(<MoonIcon />);
 
     expect(container.querySelector('svg')).toBeInTheDocument();
   });
 });
 
-describe('MoonIcon', () => {
+describe('SunIcon', () => {
   it('renders an svg element', () => {
-    const { container } = render(<MoonIcon />);
+    const { container } = render(<SunIcon />);
 
     expect(container.querySelector('svg')).toBeInTheDocument();
   });

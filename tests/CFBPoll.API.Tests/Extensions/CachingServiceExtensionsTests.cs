@@ -102,21 +102,6 @@ public class CachingServiceExtensionsTests
     }
 
     [Fact]
-    public void AddCFBDataServiceWithCaching_RegistersCacheCleanupHostedService()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        var configuration = BuildConfiguration(apiKey: "test-api-key");
-
-        services.AddCFBDataServiceWithCaching(configuration);
-
-        var provider = services.BuildServiceProvider();
-        var hostedServices = provider.GetServices<IHostedService>();
-
-        Assert.Contains(hostedServices, s => s is CacheCleanupHostedService);
-    }
-
-    [Fact]
     public void AddCFBDataServiceWithCaching_RegistersCFBDataService()
     {
         var services = new ServiceCollection();
@@ -132,7 +117,7 @@ public class CachingServiceExtensionsTests
     }
 
     [Fact]
-    public void AddCFBDataServiceWithCaching_RegistersICacheData()
+    public void AddCFBDataServiceWithCaching_RegistersCacheCleanupHostedService()
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -141,10 +126,9 @@ public class CachingServiceExtensionsTests
         services.AddCFBDataServiceWithCaching(configuration);
 
         var provider = services.BuildServiceProvider();
-        var cacheData = provider.GetService<ICacheData>();
+        var hostedServices = provider.GetServices<IHostedService>();
 
-        Assert.NotNull(cacheData);
-        Assert.IsType<CacheData>(cacheData);
+        Assert.Contains(hostedServices, s => s is CacheCleanupHostedService);
     }
 
     [Fact]
@@ -164,6 +148,22 @@ public class CachingServiceExtensionsTests
     }
 
     [Fact]
+    public void AddCFBDataServiceWithCaching_RegistersICacheData()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration(apiKey: "test-api-key");
+
+        services.AddCFBDataServiceWithCaching(configuration);
+
+        var provider = services.BuildServiceProvider();
+        var cacheData = provider.GetService<ICacheData>();
+
+        Assert.NotNull(cacheData);
+        Assert.IsType<CacheData>(cacheData);
+    }
+
+    [Fact]
     public void AddCFBDataServiceWithCaching_RegistersIPersistentCache()
     {
         var services = new ServiceCollection();
@@ -178,6 +178,7 @@ public class CachingServiceExtensionsTests
         Assert.NotNull(cache);
         Assert.IsType<CacheModule>(cache);
     }
+
     [Fact]
     public void AddCFBDataServiceWithCaching_RegistersServicesAsSingletons()
     {
@@ -264,6 +265,7 @@ public class CachingServiceExtensionsTests
 
         Assert.NotNull(service);
     }
+
     [Fact]
     public void AddCFBDataServiceWithCaching_UsesDefaultPreferredProvider()
     {
@@ -278,6 +280,7 @@ public class CachingServiceExtensionsTests
 
         Assert.NotNull(service);
     }
+
     [Fact]
     public void AddRankingsModule_RegistersAsSingleton()
     {
@@ -338,6 +341,7 @@ public class CachingServiceExtensionsTests
 
         mockCacheData.Verify(x => x.InitializeAsync(), Times.Once);
     }
+
     private static IConfiguration BuildConfiguration(
         string? apiKey,
         int? calendarExpirationHours = null,

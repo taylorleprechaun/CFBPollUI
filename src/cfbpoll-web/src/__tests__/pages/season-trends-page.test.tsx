@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { describe, expect, it, vi } from 'vitest';
 
 import { rechartsMock } from '../mocks/recharts';
 
@@ -74,17 +74,49 @@ function renderPage() {
 }
 
 describe('SeasonTrendsPage', () => {
-  it('renders loading state when isLoading is true', () => {
+  it('calls refetch when retry button is clicked', async () => {
+    const mockRefetch = vi.fn();
     vi.mocked(useSeasonTrends).mockReturnValue({
       data: undefined,
-      isLoading: true,
+      isLoading: false,
+      error: new Error('Network error'),
+      refetch: mockRefetch,
+    } as unknown as ReturnType<typeof useSeasonTrends>);
+
+    renderPage();
+
+    await userEvent.click(screen.getByText('Retry'));
+
+    expect(mockRefetch).toHaveBeenCalled();
+  });
+
+  it('changes season when dropdown changes', async () => {
+    vi.mocked(useSeasonTrends).mockReturnValue({
+      data: mockData,
+      isLoading: false,
       error: null,
       refetch: vi.fn(),
     } as unknown as ReturnType<typeof useSeasonTrends>);
 
     renderPage();
 
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    const seasonSelect = screen.getByLabelText('Season');
+    await userEvent.selectOptions(seasonSelect, '2023');
+
+    expect(mockSetSelectedSeason).toHaveBeenCalledWith(2023);
+  });
+
+  it('does not render chart when data is undefined', () => {
+    vi.mocked(useSeasonTrends).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useSeasonTrends>);
+
+    renderPage();
+
+    expect(screen.queryByTestId('line-chart')).not.toBeInTheDocument();
   });
 
   it('renders chart with data', () => {
@@ -118,20 +150,17 @@ describe('SeasonTrendsPage', () => {
     expect(screen.getByText('Retry')).toBeInTheDocument();
   });
 
-  it('calls refetch when retry button is clicked', async () => {
-    const mockRefetch = vi.fn();
+  it('renders loading state when isLoading is true', () => {
     vi.mocked(useSeasonTrends).mockReturnValue({
       data: undefined,
-      isLoading: false,
-      error: new Error('Network error'),
-      refetch: mockRefetch,
+      isLoading: true,
+      error: null,
+      refetch: vi.fn(),
     } as unknown as ReturnType<typeof useSeasonTrends>);
 
     renderPage();
 
-    await userEvent.click(screen.getByText('Retry'));
-
-    expect(mockRefetch).toHaveBeenCalled();
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
   it('renders season dropdown', () => {
@@ -145,34 +174,5 @@ describe('SeasonTrendsPage', () => {
     renderPage();
 
     expect(screen.getByLabelText('Season')).toBeInTheDocument();
-  });
-
-  it('changes season when dropdown changes', async () => {
-    vi.mocked(useSeasonTrends).mockReturnValue({
-      data: mockData,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useSeasonTrends>);
-
-    renderPage();
-
-    const seasonSelect = screen.getByLabelText('Season');
-    await userEvent.selectOptions(seasonSelect, '2023');
-
-    expect(mockSetSelectedSeason).toHaveBeenCalledWith(2023);
-  });
-
-  it('does not render chart when data is undefined', () => {
-    vi.mocked(useSeasonTrends).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useSeasonTrends>);
-
-    renderPage();
-
-    expect(screen.queryByTestId('line-chart')).not.toBeInTheDocument();
   });
 });

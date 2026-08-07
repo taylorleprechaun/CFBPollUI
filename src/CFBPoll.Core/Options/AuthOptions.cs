@@ -2,7 +2,7 @@ namespace CFBPoll.Core.Options;
 
 public class AuthOptions
 {
-    public const string SectionName = "Auth";
+    public const string SECTION_NAME = "Auth";
 
     public int ExpirationMinutes { get; set; } = 480;
     public string Issuer { get; set; } = string.Empty;

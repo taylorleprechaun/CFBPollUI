@@ -1,7 +1,8 @@
-import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { describe, expect, it, vi } from 'vitest';
+
 import { AllTimePage } from '../../pages/all-time-page';
 
 vi.mock('../../hooks/use-all-time', () => ({
@@ -67,7 +68,7 @@ function renderPage() {
 }
 
 describe('AllTimePage', () => {
-  it('renders page title', () => {
+  it('collapses hardest schedules section when header is clicked', async () => {
     vi.mocked(useAllTime).mockReturnValue({
       data: mockAllTimeData,
       isLoading: false,
@@ -77,132 +78,14 @@ describe('AllTimePage', () => {
 
     renderPage();
 
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'All-Time Rankings' })
-    ).toBeInTheDocument();
-  });
-
-  it('renders section headings', () => {
-    vi.mocked(useAllTime).mockReturnValue({
-      data: mockAllTimeData,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useAllTime>);
-
-    renderPage();
-
-    expect(
-      screen.getByRole('heading', { level: 2, name: 'Best Teams' })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('heading', { level: 2, name: 'Worst Teams' })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('heading', { level: 2, name: 'Hardest Schedules' })
-    ).toBeInTheDocument();
-  });
-
-  it('renders team names from data', () => {
-    vi.mocked(useAllTime).mockReturnValue({
-      data: mockAllTimeData,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useAllTime>);
-
-    renderPage();
-
-    expect(screen.getByText('Florida')).toBeInTheDocument();
-    expect(screen.getByText('Nebraska')).toBeInTheDocument();
+    const hardestButton = screen.getByRole('button', { name: /Hardest Schedules/ });
     expect(screen.getByText('Notre Dame')).toBeInTheDocument();
-  });
 
-  it('renders team names as links to team details', () => {
-    vi.mocked(useAllTime).mockReturnValue({
-      data: mockAllTimeData,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useAllTime>);
+    await userEvent.click(hardestButton);
 
-    renderPage();
-
-    const floridaLink = screen.getByRole('link', { name: 'Florida' });
-    expect(floridaLink).toHaveAttribute(
-      'href',
-      '/team-details?team=Florida&season=2023'
-    );
-  });
-
-  it('shows table skeletons when loading', () => {
-    vi.mocked(useAllTime).mockReturnValue({
-      data: undefined,
-      isLoading: true,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useAllTime>);
-
-    renderPage();
-
-    const skeletons = document.querySelectorAll('.animate-pulse');
-    expect(skeletons.length).toBeGreaterThan(0);
-  });
-
-  it('shows error alert when error occurs', () => {
-    vi.mocked(useAllTime).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      error: new Error('Something went wrong'),
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useAllTime>);
-
-    renderPage();
-
-    expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
-  });
-
-  it('shows retry button on error', () => {
-    const mockRefetch = vi.fn();
-    vi.mocked(useAllTime).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      error: new Error('Something went wrong'),
-      refetch: mockRefetch,
-    } as unknown as ReturnType<typeof useAllTime>);
-
-    renderPage();
-
-    expect(screen.getByText('Retry')).toBeInTheDocument();
-  });
-
-  it('renders empty tables when data has empty arrays', () => {
-    vi.mocked(useAllTime).mockReturnValue({
-      data: { bestTeams: [], worstTeams: [], hardestSchedules: [] },
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useAllTime>);
-
-    renderPage();
-
-    const emptyMessages = screen.getAllByText('No data available.');
-    expect(emptyMessages).toHaveLength(3);
-  });
-
-  it('sections are expanded by default with aria-expanded', () => {
-    vi.mocked(useAllTime).mockReturnValue({
-      data: mockAllTimeData,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useAllTime>);
-
-    renderPage();
-
-    const buttons = screen.getAllByRole('button', { expanded: true });
-    expect(buttons).toHaveLength(3);
+    expect(hardestButton).toHaveAttribute('aria-expanded', 'false');
+    const contentDiv = hardestButton.nextElementSibling as HTMLElement;
+    expect(contentDiv.style.gridTemplateRows).toBe('0fr');
   });
 
   it('collapses section when header is clicked', async () => {
@@ -245,26 +128,6 @@ describe('AllTimePage', () => {
     expect(contentDiv.style.gridTemplateRows).toBe('0fr');
   });
 
-  it('collapses hardest schedules section when header is clicked', async () => {
-    vi.mocked(useAllTime).mockReturnValue({
-      data: mockAllTimeData,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof useAllTime>);
-
-    renderPage();
-
-    const hardestButton = screen.getByRole('button', { name: /Hardest Schedules/ });
-    expect(screen.getByText('Notre Dame')).toBeInTheDocument();
-
-    await userEvent.click(hardestButton);
-
-    expect(hardestButton).toHaveAttribute('aria-expanded', 'false');
-    const contentDiv = hardestButton.nextElementSibling as HTMLElement;
-    expect(contentDiv.style.gridTemplateRows).toBe('0fr');
-  });
-
   it('re-expands section when header is clicked again', async () => {
     vi.mocked(useAllTime).mockReturnValue({
       data: mockAllTimeData,
@@ -284,5 +147,143 @@ describe('AllTimePage', () => {
     await userEvent.click(bestTeamsButton);
     expect(bestTeamsButton).toHaveAttribute('aria-expanded', 'true');
     expect(contentDiv.style.gridTemplateRows).toBe('1fr');
+  });
+
+  it('renders empty tables when data has empty arrays', () => {
+    vi.mocked(useAllTime).mockReturnValue({
+      data: { bestTeams: [], worstTeams: [], hardestSchedules: [] },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useAllTime>);
+
+    renderPage();
+
+    const emptyMessages = screen.getAllByText('No data available.');
+    expect(emptyMessages).toHaveLength(3);
+  });
+
+  it('renders page title', () => {
+    vi.mocked(useAllTime).mockReturnValue({
+      data: mockAllTimeData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useAllTime>);
+
+    renderPage();
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'All-Time Rankings' })
+    ).toBeInTheDocument();
+  });
+
+  it('renders section headings', () => {
+    vi.mocked(useAllTime).mockReturnValue({
+      data: mockAllTimeData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useAllTime>);
+
+    renderPage();
+
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Best Teams' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Worst Teams' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Hardest Schedules' })
+    ).toBeInTheDocument();
+  });
+
+  it('renders team names as links to team details', () => {
+    vi.mocked(useAllTime).mockReturnValue({
+      data: mockAllTimeData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useAllTime>);
+
+    renderPage();
+
+    const floridaLink = screen.getByRole('link', { name: 'Florida' });
+    expect(floridaLink).toHaveAttribute(
+      'href',
+      '/team-details?team=Florida&season=2023'
+    );
+  });
+
+  it('renders team names from data', () => {
+    vi.mocked(useAllTime).mockReturnValue({
+      data: mockAllTimeData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useAllTime>);
+
+    renderPage();
+
+    expect(screen.getByText('Florida')).toBeInTheDocument();
+    expect(screen.getByText('Nebraska')).toBeInTheDocument();
+    expect(screen.getByText('Notre Dame')).toBeInTheDocument();
+  });
+
+  it('sections are expanded by default with aria-expanded', () => {
+    vi.mocked(useAllTime).mockReturnValue({
+      data: mockAllTimeData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useAllTime>);
+
+    renderPage();
+
+    const buttons = screen.getAllByRole('button', { expanded: true });
+    expect(buttons).toHaveLength(3);
+  });
+
+  it('shows error alert when error occurs', () => {
+    vi.mocked(useAllTime).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error('Something went wrong'),
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useAllTime>);
+
+    renderPage();
+
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+  });
+
+  it('shows retry button on error', () => {
+    const mockRefetch = vi.fn();
+    vi.mocked(useAllTime).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error('Something went wrong'),
+      refetch: mockRefetch,
+    } as unknown as ReturnType<typeof useAllTime>);
+
+    renderPage();
+
+    expect(screen.getByText('Retry')).toBeInTheDocument();
+  });
+
+  it('shows table skeletons when loading', () => {
+    vi.mocked(useAllTime).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useAllTime>);
+
+    renderPage();
+
+    const skeletons = document.querySelectorAll('.animate-pulse');
+    expect(skeletons.length).toBeGreaterThan(0);
   });
 });

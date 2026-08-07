@@ -1,7 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { usePrediction } from '../../hooks/use-prediction';
 
 vi.mock('../../services/admin-api', () => ({
@@ -24,14 +26,14 @@ describe('usePrediction', () => {
     vi.resetAllMocks();
   });
 
-  it('does not fetch when token is null', () => {
-    renderHook(() => usePrediction(null, 2024, 5), { wrapper: createWrapper() });
+  it('does not fetch when season is null', () => {
+    renderHook(() => usePrediction('test-token', null, 5), { wrapper: createWrapper() });
 
     expect(fetchPrediction).not.toHaveBeenCalled();
   });
 
-  it('does not fetch when season is null', () => {
-    renderHook(() => usePrediction('test-token', null, 5), { wrapper: createWrapper() });
+  it('does not fetch when token is null', () => {
+    renderHook(() => usePrediction(null, 2024, 5), { wrapper: createWrapper() });
 
     expect(fetchPrediction).not.toHaveBeenCalled();
   });

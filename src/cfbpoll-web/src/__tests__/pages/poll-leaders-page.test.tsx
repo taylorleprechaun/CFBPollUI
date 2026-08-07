@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { describe, expect, it, vi } from 'vitest';
 
 import { rechartsMock } from '../mocks/recharts';
 
@@ -52,75 +52,19 @@ function renderPage(initialEntries: string[] = ['/poll-leaders']) {
 }
 
 describe('PollLeadersPage', () => {
-  it('renders loading state when isLoading is true', () => {
-    vi.mocked(usePollLeaders).mockReturnValue({
-      data: undefined,
-      isLoading: true,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof usePollLeaders>);
-
-    renderPage();
-
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
-  });
-
-  it('renders chart with data', () => {
+  it('applies reduced opacity on chart container while refetching', () => {
     vi.mocked(usePollLeaders).mockReturnValue({
       data: mockData,
+      isFetching: true,
       isLoading: false,
       error: null,
       refetch: vi.fn(),
     } as unknown as ReturnType<typeof usePollLeaders>);
 
-    renderPage();
+    renderPage(['/poll-leaders?minSeason=2002&maxSeason=2024']);
 
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'Poll Leaders' })
-    ).toBeInTheDocument();
-  });
-
-  it('renders year range selectors when data is loaded', () => {
-    vi.mocked(usePollLeaders).mockReturnValue({
-      data: mockData,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof usePollLeaders>);
-
-    renderPage();
-
-    expect(screen.getByLabelText('Minimum year')).toBeInTheDocument();
-    expect(screen.getByLabelText('Maximum year')).toBeInTheDocument();
-  });
-
-  it('renders error state with retry button', () => {
-    vi.mocked(usePollLeaders).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      error: new Error('Something went wrong'),
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof usePollLeaders>);
-
-    renderPage();
-
-    expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
-    expect(screen.getByText('Retry')).toBeInTheDocument();
-  });
-
-  it('does not render year selectors or chart when data is undefined', () => {
-    vi.mocked(usePollLeaders).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof usePollLeaders>);
-
-    renderPage();
-
-    expect(screen.queryByLabelText('Minimum year')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Maximum year')).not.toBeInTheDocument();
+    const chartContainer = screen.getByTestId('scatter-chart').closest('.bg-surface');
+    expect(chartContainer).toHaveClass('opacity-60');
   });
 
   it('calls refetch when retry button is clicked', async () => {
@@ -167,81 +111,19 @@ describe('PollLeadersPage', () => {
     expect(screen.getByText('Top 5')).toHaveAttribute('aria-pressed', 'false');
   });
 
-  it('reads mode=final from search params', () => {
+  it('does not apply reduced opacity when not refetching', () => {
     vi.mocked(usePollLeaders).mockReturnValue({
       data: mockData,
+      isFetching: false,
       isLoading: false,
       error: null,
       refetch: vi.fn(),
     } as unknown as ReturnType<typeof usePollLeaders>);
 
-    renderPage(['/poll-leaders?mode=final']);
+    renderPage(['/poll-leaders?minSeason=2002&maxSeason=2024']);
 
-    expect(screen.getByText('Final Only')).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText('All Weeks')).toHaveAttribute('aria-pressed', 'false');
-  });
-
-  it('reads topN=5 from search params', () => {
-    vi.mocked(usePollLeaders).mockReturnValue({
-      data: mockData,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof usePollLeaders>);
-
-    renderPage(['/poll-leaders?topN=5']);
-
-    expect(screen.getByText('Top 5')).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText('Top 10')).toHaveAttribute('aria-pressed', 'false');
-  });
-
-  it('updates mode when mode toggle is clicked', async () => {
-    vi.mocked(usePollLeaders).mockReturnValue({
-      data: mockData,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof usePollLeaders>);
-
-    renderPage();
-
-    await userEvent.click(screen.getByText('Final Only'));
-
-    expect(screen.getByText('Final Only')).toHaveAttribute('aria-pressed', 'true');
-  });
-
-  it('updates topN when topN toggle is clicked', async () => {
-    vi.mocked(usePollLeaders).mockReturnValue({
-      data: mockData,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof usePollLeaders>);
-
-    renderPage();
-
-    await userEvent.click(screen.getByText('Top 5'));
-
-    expect(screen.getByText('Top 5')).toHaveAttribute('aria-pressed', 'true');
-  });
-
-  it('seeds search params from API data when none are set', async () => {
-    vi.mocked(usePollLeaders).mockReturnValue({
-      data: mockData,
-      isLoading: false,
-      error: null,
-      refetch: vi.fn(),
-    } as unknown as ReturnType<typeof usePollLeaders>);
-
-    renderPage();
-
-    await waitFor(() => {
-      const minSlider = screen.getByLabelText('Minimum year') as HTMLInputElement;
-      expect(minSlider.value).toBe('2002');
-    });
-
-    const maxSlider = screen.getByLabelText('Maximum year') as HTMLInputElement;
-    expect(maxSlider.value).toBe('2024');
+    const chartContainer = screen.getByTestId('scatter-chart').closest('.bg-surface');
+    expect(chartContainer).not.toHaveClass('opacity-60');
   });
 
   it('does not overwrite existing search params with API data', () => {
@@ -258,6 +140,20 @@ describe('PollLeadersPage', () => {
     const maxSlider = screen.getByLabelText('Maximum year') as HTMLInputElement;
     expect(minSlider.value).toBe('2010');
     expect(maxSlider.value).toBe('2020');
+  });
+
+  it('does not render year selectors or chart when data is undefined', () => {
+    vi.mocked(usePollLeaders).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof usePollLeaders>);
+
+    renderPage();
+
+    expect(screen.queryByLabelText('Minimum year')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Maximum year')).not.toBeInTheDocument();
   });
 
   it('normalizes invalid mode param to all', () => {
@@ -288,7 +184,7 @@ describe('PollLeadersPage', () => {
     expect(screen.getByText('Top 5')).toHaveAttribute('aria-pressed', 'false');
   });
 
-  it('updates minSeason when min slider changes', () => {
+  it('reads mode=final from search params', () => {
     vi.mocked(usePollLeaders).mockReturnValue({
       data: mockData,
       isLoading: false,
@@ -296,12 +192,100 @@ describe('PollLeadersPage', () => {
       refetch: vi.fn(),
     } as unknown as ReturnType<typeof usePollLeaders>);
 
-    renderPage(['/poll-leaders?minSeason=2002&maxSeason=2024']);
+    renderPage(['/poll-leaders?mode=final']);
 
-    fireEvent.change(screen.getByLabelText('Minimum year'), { target: { value: '2010' } });
+    expect(screen.getByText('Final Only')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('All Weeks')).toHaveAttribute('aria-pressed', 'false');
+  });
 
-    const minSlider = screen.getByLabelText('Minimum year') as HTMLInputElement;
-    expect(minSlider.value).toBe('2010');
+  it('reads topN=5 from search params', () => {
+    vi.mocked(usePollLeaders).mockReturnValue({
+      data: mockData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof usePollLeaders>);
+
+    renderPage(['/poll-leaders?topN=5']);
+
+    expect(screen.getByText('Top 5')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Top 10')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('renders chart with data', () => {
+    vi.mocked(usePollLeaders).mockReturnValue({
+      data: mockData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof usePollLeaders>);
+
+    renderPage();
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Poll Leaders' })
+    ).toBeInTheDocument();
+  });
+
+  it('renders error state with retry button', () => {
+    vi.mocked(usePollLeaders).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error('Something went wrong'),
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof usePollLeaders>);
+
+    renderPage();
+
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+    expect(screen.getByText('Retry')).toBeInTheDocument();
+  });
+
+  it('renders loading state when isLoading is true', () => {
+    vi.mocked(usePollLeaders).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof usePollLeaders>);
+
+    renderPage();
+
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+  });
+
+  it('renders year range selectors when data is loaded', () => {
+    vi.mocked(usePollLeaders).mockReturnValue({
+      data: mockData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof usePollLeaders>);
+
+    renderPage();
+
+    expect(screen.getByLabelText('Minimum year')).toBeInTheDocument();
+    expect(screen.getByLabelText('Maximum year')).toBeInTheDocument();
+  });
+
+  it('seeds search params from API data when none are set', async () => {
+    vi.mocked(usePollLeaders).mockReturnValue({
+      data: mockData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof usePollLeaders>);
+
+    renderPage();
+
+    await waitFor(() => {
+      const minSlider = screen.getByLabelText('Minimum year') as HTMLInputElement;
+      expect(minSlider.value).toBe('2002');
+    });
+
+    const maxSlider = screen.getByLabelText('Maximum year') as HTMLInputElement;
+    expect(maxSlider.value).toBe('2024');
   });
 
   it('updates maxSeason when max slider changes', () => {
@@ -320,10 +304,9 @@ describe('PollLeadersPage', () => {
     expect(maxSlider.value).toBe('2020');
   });
 
-  it('applies reduced opacity on chart container while refetching', () => {
+  it('updates minSeason when min slider changes', () => {
     vi.mocked(usePollLeaders).mockReturnValue({
       data: mockData,
-      isFetching: true,
       isLoading: false,
       error: null,
       refetch: vi.fn(),
@@ -331,22 +314,39 @@ describe('PollLeadersPage', () => {
 
     renderPage(['/poll-leaders?minSeason=2002&maxSeason=2024']);
 
-    const chartContainer = screen.getByTestId('scatter-chart').closest('.bg-surface');
-    expect(chartContainer).toHaveClass('opacity-60');
+    fireEvent.change(screen.getByLabelText('Minimum year'), { target: { value: '2010' } });
+
+    const minSlider = screen.getByLabelText('Minimum year') as HTMLInputElement;
+    expect(minSlider.value).toBe('2010');
   });
 
-  it('does not apply reduced opacity when not refetching', () => {
+  it('updates mode when mode toggle is clicked', async () => {
     vi.mocked(usePollLeaders).mockReturnValue({
       data: mockData,
-      isFetching: false,
       isLoading: false,
       error: null,
       refetch: vi.fn(),
     } as unknown as ReturnType<typeof usePollLeaders>);
 
-    renderPage(['/poll-leaders?minSeason=2002&maxSeason=2024']);
+    renderPage();
 
-    const chartContainer = screen.getByTestId('scatter-chart').closest('.bg-surface');
-    expect(chartContainer).not.toHaveClass('opacity-60');
+    await userEvent.click(screen.getByText('Final Only'));
+
+    expect(screen.getByText('Final Only')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('updates topN when topN toggle is clicked', async () => {
+    vi.mocked(usePollLeaders).mockReturnValue({
+      data: mockData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof usePollLeaders>);
+
+    renderPage();
+
+    await userEvent.click(screen.getByText('Top 5'));
+
+    expect(screen.getByText('Top 5')).toHaveAttribute('aria-pressed', 'true');
   });
 });

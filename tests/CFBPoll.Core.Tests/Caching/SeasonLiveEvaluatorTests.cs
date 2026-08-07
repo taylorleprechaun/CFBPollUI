@@ -27,6 +27,7 @@ public class SeasonLiveEvaluatorTests
 
         Assert.True(result);
     }
+
     [Fact]
     public void IsSeasonLive_CurrentSeasonMidYear_ReturnsTrue()
     {
@@ -59,6 +60,7 @@ public class SeasonLiveEvaluatorTests
 
         Assert.False(result);
     }
+
     [Fact]
     public void IsSeasonLive_Feb29GraceDay_NonLeapBoundaryYear_ClampsToLastDayOfMonth()
     {
@@ -70,6 +72,7 @@ public class SeasonLiveEvaluatorTests
 
         Assert.False(result);
     }
+
     [Fact]
     public void IsSeasonLive_NullOptions_ThrowsArgumentNullException()
     {

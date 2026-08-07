@@ -24,6 +24,15 @@ public class PageVisibilityModuleTests
     }
 
     [Fact]
+    public void Constructor_NullLogger_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new PageVisibilityModule(
+                new Mock<IPageVisibilityData>().Object,
+                null!));
+    }
+
+    [Fact]
     public void Constructor_NullPageVisibilityData_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
@@ -33,12 +42,14 @@ public class PageVisibilityModuleTests
     }
 
     [Fact]
-    public void Constructor_NullLogger_ThrowsArgumentNullException()
+    public async Task GetPageVisibilityAsync_DataThrows_PropagatesException()
     {
-        Assert.Throws<ArgumentNullException>(
-            () => new PageVisibilityModule(
-                new Mock<IPageVisibilityData>().Object,
-                null!));
+        _mockPageVisibilityData
+            .Setup(x => x.GetPageVisibilityAsync())
+            .ThrowsAsync(new InvalidOperationException("Database unavailable"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _module.GetPageVisibilityAsync());
     }
 
     [Fact]
@@ -59,6 +70,23 @@ public class PageVisibilityModuleTests
         Assert.Equal(expected.AllTimeEnabled, result.AllTimeEnabled);
         Assert.Equal(expected.PollLeadersEnabled, result.PollLeadersEnabled);
         _mockPageVisibilityData.Verify(x => x.GetPageVisibilityAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdatePageVisibilityAsync_DataThrows_PropagatesException()
+    {
+        var visibility = new PageVisibility
+        {
+            AllTimeEnabled = true,
+            PollLeadersEnabled = true
+        };
+
+        _mockPageVisibilityData
+            .Setup(x => x.UpdatePageVisibilityAsync(visibility))
+            .ThrowsAsync(new InvalidOperationException("Database unavailable"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _module.UpdatePageVisibilityAsync(visibility));
     }
 
     [Fact]
@@ -96,33 +124,5 @@ public class PageVisibilityModuleTests
         var result = await _module.UpdatePageVisibilityAsync(visibility);
 
         Assert.False(result);
-    }
-
-    [Fact]
-    public async Task GetPageVisibilityAsync_DataThrows_PropagatesException()
-    {
-        _mockPageVisibilityData
-            .Setup(x => x.GetPageVisibilityAsync())
-            .ThrowsAsync(new InvalidOperationException("Database unavailable"));
-
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _module.GetPageVisibilityAsync());
-    }
-
-    [Fact]
-    public async Task UpdatePageVisibilityAsync_DataThrows_PropagatesException()
-    {
-        var visibility = new PageVisibility
-        {
-            AllTimeEnabled = true,
-            PollLeadersEnabled = true
-        };
-
-        _mockPageVisibilityData
-            .Setup(x => x.UpdatePageVisibilityAsync(visibility))
-            .ThrowsAsync(new InvalidOperationException("Database unavailable"));
-
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _module.UpdatePageVisibilityAsync(visibility));
     }
 }

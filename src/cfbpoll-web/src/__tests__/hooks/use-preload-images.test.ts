@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { usePreloadImages } from '../../hooks/use-preload-images';
 
 describe('usePreloadImages', () => {
@@ -12,14 +13,6 @@ describe('usePreloadImages', () => {
         imageSrcs.push(value);
       }
     });
-  });
-
-  it('preloads each unique URL once', () => {
-    const urls = ['https://example.com/a.png', 'https://example.com/b.png'];
-
-    renderHook(() => usePreloadImages(urls));
-
-    expect(imageSrcs).toEqual(['https://example.com/a.png', 'https://example.com/b.png']);
   });
 
   it('does not re-preload on rerender with same URLs', () => {
@@ -40,6 +33,14 @@ describe('usePreloadImages', () => {
     renderHook(() => usePreloadImages([]));
 
     expect(imageSrcs).toHaveLength(0);
+  });
+
+  it('preloads each unique URL once', () => {
+    const urls = ['https://example.com/a.png', 'https://example.com/b.png'];
+
+    renderHook(() => usePreloadImages(urls));
+
+    expect(imageSrcs).toEqual(['https://example.com/a.png', 'https://example.com/b.png']);
   });
 
   it('preloads new URLs when data changes', () => {

@@ -1,19 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { safeFetch } from '../../lib/safe-fetch';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { ApiError } from '../../lib/api-error';
+import { safeFetch } from '../../lib/safe-fetch';
 
 describe('safeFetch', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-  });
-
-  it('returns response on success', async () => {
-    const mockResponse = { ok: true, status: 200 } as Response;
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockResponse));
-
-    const result = await safeFetch('https://example.com/api');
-
-    expect(result).toBe(mockResponse);
   });
 
   it('passes options to fetch', async () => {
@@ -26,11 +18,13 @@ describe('safeFetch', () => {
     expect(mockFetch).toHaveBeenCalledWith('https://example.com/api', options);
   });
 
-  it('throws ApiError with message on network Error', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Connection refused')));
+  it('returns response on success', async () => {
+    const mockResponse = { ok: true, status: 200 } as Response;
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockResponse));
 
-    await expect(safeFetch('https://example.com/api')).rejects.toThrow('Connection refused');
-    await expect(safeFetch('https://example.com/api')).rejects.toBeInstanceOf(ApiError);
+    const result = await safeFetch('https://example.com/api');
+
+    expect(result).toBe(mockResponse);
   });
 
   it('throws ApiError with generic message on non-Error network failure', async () => {
@@ -55,6 +49,13 @@ describe('safeFetch', () => {
       expect((error as ApiError).statusCode).toBe(404);
       expect((error as ApiError).traceId).toBe('abc-123');
     }
+  });
+
+  it('throws ApiError with message on network Error', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Connection refused')));
+
+    await expect(safeFetch('https://example.com/api')).rejects.toThrow('Connection refused');
+    await expect(safeFetch('https://example.com/api')).rejects.toBeInstanceOf(ApiError);
   });
 
   it('throws ApiError with status message when JSON body fails to parse', async () => {

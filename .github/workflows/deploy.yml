@@ -46,6 +46,10 @@ jobs:
         run: npx vitest run
         working-directory: src/cfbpoll-web
 
+      - name: Lint frontend
+        run: npx eslint .
+        working-directory: src/cfbpoll-web
+
   deploy:
     needs: test
     # Only deploy on a push landing on main (or a manual dispatch) — pull_request runs the

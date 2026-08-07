@@ -1,15 +1,15 @@
 import {
+  type ColumnDef,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
-  useReactTable,
-  type ColumnDef,
   type SortingState,
+  useReactTable,
 } from '@tanstack/react-table';
 import { useState } from 'react';
 
-import { SortAscIcon, SortDescIcon, SortNeutralIcon } from './icons';
 import { EmptyState } from './empty-state';
+import { SortAscIcon, SortDescIcon, SortNeutralIcon } from './icons';
 import { TableSkeleton } from './table-skeleton';
 
 interface SortableTableProps<T> {

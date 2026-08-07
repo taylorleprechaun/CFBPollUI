@@ -4,6 +4,18 @@ export class ApiError extends Error {
   public readonly statusCode: number;
   public readonly traceId?: string;
 
+  get isClientError(): boolean {
+    return this.statusCode >= 400 && this.statusCode < 500;
+  }
+
+  get isNetworkError(): boolean {
+    return this.statusCode === 0;
+  }
+
+  get isServerError(): boolean {
+    return this.statusCode >= 500;
+  }
+
   constructor(message: string, statusCode: number, traceId?: string) {
     super(message);
     this.name = 'ApiError';
@@ -14,18 +26,6 @@ export class ApiError extends Error {
   static fromResponse(response: Response, body?: { message?: string; traceId?: string }): ApiError {
     const message = body?.message || `Request failed with status ${response.status}`;
     return new ApiError(message, response.status, body?.traceId);
-  }
-
-  get isNetworkError(): boolean {
-    return this.statusCode === 0;
-  }
-
-  get isClientError(): boolean {
-    return this.statusCode >= 400 && this.statusCode < 500;
-  }
-
-  get isServerError(): boolean {
-    return this.statusCode >= 500;
   }
 }
 

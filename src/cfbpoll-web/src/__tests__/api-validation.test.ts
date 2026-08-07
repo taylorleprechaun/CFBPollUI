@@ -1,23 +1,27 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ZodError } from 'zod';
+
 import { ApiError, ValidationError } from '../lib/api-error';
-import { fetchSeasons, fetchWeeks, fetchRankings } from '../services/api';
+import { fetchRankings, fetchSeasons, fetchWeeks } from '../services/api';
 
 describe('API Error Classes', () => {
   describe('ApiError', () => {
+    it('creates error from response', () => {
+      const response = { ok: false, status: 400 } as Response;
+      const body = { message: 'Bad request', traceId: 'trace-456' };
+      const error = ApiError.fromResponse(response, body);
+
+      expect(error.message).toBe('Bad request');
+      expect(error.statusCode).toBe(400);
+      expect(error.traceId).toBe('trace-456');
+    });
+
     it('creates error with correct properties', () => {
       const error = new ApiError('Test error', 404, 'trace-123');
       expect(error.message).toBe('Test error');
       expect(error.statusCode).toBe(404);
       expect(error.traceId).toBe('trace-123');
       expect(error.name).toBe('ApiError');
-    });
-
-    it('identifies network errors', () => {
-      const error = new ApiError('Network error', 0);
-      expect(error.isNetworkError).toBe(true);
-      expect(error.isClientError).toBe(false);
-      expect(error.isServerError).toBe(false);
     });
 
     it('identifies client errors (4xx)', () => {
@@ -27,21 +31,18 @@ describe('API Error Classes', () => {
       expect(error.isServerError).toBe(false);
     });
 
+    it('identifies network errors', () => {
+      const error = new ApiError('Network error', 0);
+      expect(error.isNetworkError).toBe(true);
+      expect(error.isClientError).toBe(false);
+      expect(error.isServerError).toBe(false);
+    });
+
     it('identifies server errors (5xx)', () => {
       const error = new ApiError('Server error', 500);
       expect(error.isNetworkError).toBe(false);
       expect(error.isClientError).toBe(false);
       expect(error.isServerError).toBe(true);
-    });
-
-    it('creates error from response', () => {
-      const response = { ok: false, status: 400 } as Response;
-      const body = { message: 'Bad request', traceId: 'trace-456' };
-      const error = ApiError.fromResponse(response, body);
-
-      expect(error.message).toBe('Bad request');
-      expect(error.statusCode).toBe(400);
-      expect(error.traceId).toBe('trace-456');
     });
 
     it('uses default message when body has no message', () => {
@@ -83,64 +84,6 @@ describe('API Functions with Validation', () => {
     global.fetch = originalFetch;
   });
 
-  describe('fetchSeasons', () => {
-    it('returns validated data on success', async () => {
-      const mockResponse = { seasons: [2024, 2023, 2022] };
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockResponse),
-      } as Response);
-
-      const result = await fetchSeasons();
-      expect(result.seasons).toEqual([2024, 2023, 2022]);
-    });
-
-    it('throws ApiError on HTTP error', async () => {
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: false,
-        status: 500,
-        json: () => Promise.resolve({ message: 'Server error' }),
-      } as Response);
-
-      await expect(fetchSeasons()).rejects.toThrow(ApiError);
-    });
-
-    it('throws ValidationError on invalid response', async () => {
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ invalid: 'data' }),
-      } as Response);
-
-      await expect(fetchSeasons()).rejects.toThrow(ValidationError);
-    });
-
-    it('throws ApiError on network failure', async () => {
-      vi.mocked(global.fetch).mockRejectedValue(new Error('Network error'));
-
-      await expect(fetchSeasons()).rejects.toThrow(ApiError);
-    });
-  });
-
-  describe('fetchWeeks', () => {
-    it('returns validated data on success', async () => {
-      const mockResponse = {
-        season: 2024,
-        weeks: [
-          { weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: true },
-          { weekNumber: 2, label: 'Week 2', predictionsPublished: false, rankingsPublished: false },
-        ],
-      };
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve(mockResponse),
-      } as Response);
-
-      const result = await fetchWeeks(2024);
-      expect(result.season).toBe(2024);
-      expect(result.weeks).toHaveLength(2);
-    });
-  });
-
   describe('fetchRankings', () => {
     it('returns validated data on success', async () => {
       const mockResponse = {
@@ -172,6 +115,64 @@ describe('API Functions with Validation', () => {
       expect(result.season).toBe(2024);
       expect(result.week).toBe(5);
       expect(result.rankings).toHaveLength(1);
+    });
+  });
+
+  describe('fetchSeasons', () => {
+    it('returns validated data on success', async () => {
+      const mockResponse = { seasons: [2024, 2023, 2022] };
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockResponse),
+      } as Response);
+
+      const result = await fetchSeasons();
+      expect(result.seasons).toEqual([2024, 2023, 2022]);
+    });
+
+    it('throws ApiError on HTTP error', async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ message: 'Server error' }),
+      } as Response);
+
+      await expect(fetchSeasons()).rejects.toThrow(ApiError);
+    });
+
+    it('throws ApiError on network failure', async () => {
+      vi.mocked(global.fetch).mockRejectedValue(new Error('Network error'));
+
+      await expect(fetchSeasons()).rejects.toThrow(ApiError);
+    });
+
+    it('throws ValidationError on invalid response', async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ invalid: 'data' }),
+      } as Response);
+
+      await expect(fetchSeasons()).rejects.toThrow(ValidationError);
+    });
+  });
+
+  describe('fetchWeeks', () => {
+    it('returns validated data on success', async () => {
+      const mockResponse = {
+        season: 2024,
+        weeks: [
+          { weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: true },
+          { weekNumber: 2, label: 'Week 2', predictionsPublished: false, rankingsPublished: false },
+        ],
+      };
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockResponse),
+      } as Response);
+
+      const result = await fetchWeeks(2024);
+      expect(result.season).toBe(2024);
+      expect(result.weeks).toHaveLength(2);
     });
   });
 });

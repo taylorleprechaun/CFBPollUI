@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
-import { TeamLogo } from '../rankings/team-logo';
+
 import type { ScheduleGame } from '../../types';
+
+import { TeamLogo } from '../rankings/team-logo';
 
 interface ScheduleRowProps {
   fbsTeamNames: Set<string>;

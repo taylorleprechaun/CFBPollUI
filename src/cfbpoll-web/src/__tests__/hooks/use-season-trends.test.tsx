@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor } from '@testing-library/react';
 import { type ReactNode } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { useSeasonTrends } from '../../hooks/use-season-trends';
 
 const createWrapper = () => {
@@ -68,6 +69,22 @@ describe('useSeasonTrends', () => {
     );
   });
 
+  it('returns error on fetch failure', async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({ message: 'Server error' }),
+    } as Response);
+
+    const { Wrapper } = createWrapper();
+    const { result } = renderHook(() => useSeasonTrends(2024, 2024), {
+      wrapper: Wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toBeDefined();
+  });
+
   it('returns season trends data on success', async () => {
     const mockResponse = {
       season: 2024,
@@ -97,22 +114,6 @@ describe('useSeasonTrends', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.teams).toHaveLength(1);
     expect(result.current.data?.teams[0].teamName).toBe('Ohio State');
-  });
-
-  it('returns error on fetch failure', async () => {
-    vi.mocked(global.fetch).mockResolvedValue({
-      ok: false,
-      status: 500,
-      json: () => Promise.resolve({ message: 'Server error' }),
-    } as Response);
-
-    const { Wrapper } = createWrapper();
-    const { result } = renderHook(() => useSeasonTrends(2024, 2024), {
-      wrapper: Wrapper,
-    });
-
-    await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(result.current.error).toBeDefined();
   });
 
   it('uses infinite stale time for historical seasons', () => {

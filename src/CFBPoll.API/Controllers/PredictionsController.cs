@@ -21,6 +21,20 @@ public class PredictionsController : ControllerBase
     }
 
     /// <summary>
+    /// Retrieves the seasons that have at least one published prediction week.
+    /// </summary>
+    /// <returns>Season years, in descending order, that have published predictions.</returns>
+    [HttpGet("api/v1/predictions/seasons")]
+    public async Task<ActionResult<SeasonsResponseDTO>> GetPredictionSeasons()
+    {
+        _logger.LogInformation("Fetching seasons with published predictions");
+
+        var seasons = await _predictionsModule.GetPublishedSeasonsAsync();
+
+        return Ok(new SeasonsResponseDTO { Seasons = seasons });
+    }
+
+    /// <summary>
     /// Retrieves published predictions for the specified season and week.
     /// </summary>
     /// <param name="season">The season year.</param>

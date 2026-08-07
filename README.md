@@ -14,12 +14,21 @@ This was created using Claude Code with a lot of guidelines to follow my code st
 - [Setup](#setup)
 - [Running the Application](#running-the-application)
 - [API Endpoints](#api-endpoints)
+- [Code Conventions](#code-conventions)
 - [Testing](#testing)
 
 ## TODO
 
-Last Updated 3/9/2026
-- Add a page to view a team's history to see season results and rankings over time.
+Last Updated 8/6/2026
+- Performance improvements around the system
+- More QoL upgrades
+- Partial predictions support for bowl season / playoff rounds
+- Shareable rankings card
+- Ongoing algorithm updates for rating and predictions
+- Head-to-head team comparisons, including across seasons
+- Conference ratings
+- Remaining strength of schedule
+- ...and more
 
 ## Features
 
@@ -82,15 +91,16 @@ Controllers (Presentation)         Modules (Business Logic)          Data Layer
 -----------------------------      --------------------------        ----------
 AdminController                    AdminModule
   -> IAdminModule                    -> ICFBDataService
-  -> IRankingsModule
-                                     -> IExcelExportModule
+  -> IRankingsModule                  -> IExcelExportModule
                                      -> IPersistentCache
                                      -> IPollLeadersModule
                                      -> IPredictionCalculatorModule
+                                     -> IPredictionGradingModule
                                      -> IPredictionsModule
                                      -> IRankingsModule
                                      -> IRatingModule
                                      -> ISeasonTrendsModule
+                                     -> ITrackRecordModule
 
 AllTimeController                  AllTimeModule
   -> IAllTimeModule                  -> ICFBDataService
@@ -98,6 +108,10 @@ AllTimeController                  AllTimeModule
 
 AuthController                     AuthModule
   -> IAuthModule                     -> IOptions<AuthOptions>
+
+ConferencesController
+  -> IConferenceModule
+  -> ICFBDataService
 
                                    CacheModule (IPersistentCache)    CacheData
                                      -> ICacheData                     -> SQLite
@@ -111,33 +125,38 @@ PollLeadersController              PollLeadersModule
                                      -> IPersistentCache
                                      -> IRankingsModule
 
+PredictionsController              PredictionsModule
+  -> IPredictionsModule              -> IPredictionsData              PredictionsData
+                                                                       -> SQLite
+
+RankingsController                 RankingsModule
+  -> ICFBDataService                 -> IRankingsData                 RankingsData
+  -> IRankingsModule                                                  -> SQLite
+  -> IRatingModule
+
+SeasonsController
+  -> ICFBDataService
+  -> IPredictionsModule
+  -> IRankingsModule
+  -> ISeasonModule
+
 SeasonTrendsController             SeasonTrendsModule
   -> ISeasonTrendsModule             -> ICFBDataService
                                      -> IPersistentCache
                                      -> IRankingsModule
                                      -> ISeasonModule
 
-RankingsController                 RankingsModule
-  -> ICFBDataService                 -> IRankingsData               RankingsData
-  -> IRankingsModule                 -> ISeasonModule                 -> SQLite
-  -> IRatingModule
-
-SeasonsController
-  -> ICFBDataService
-  -> IRankingsModule
-  -> ISeasonModule
-
-                                   PredictionsModule
-                                     -> IPredictionsData              PredictionsData
-                                                                       -> SQLite
-
 TeamsController                    TeamsModule
   -> ITeamsModule                    -> ICFBDataService
                                      -> IRankingsModule
                                      -> IRatingModule
+
+TrackRecordController              TrackRecordModule
+  -> ITrackRecordModule              -> IPersistentCache
+                                     -> IPredictionsModule
 ```
 
-Only `RankingsModule` has a direct dependency on `IRankingsData`, only `PredictionsModule` has a direct dependency on `IPredictionsData`, only `CacheModule` has a direct dependency on `ICacheData`, and only `PageVisibilityModule` has a direct dependency on `IPageVisibilityData`. Controllers never reference data-layer interfaces.
+Only `RankingsModule` has a direct dependency on `IRankingsData`, only `PredictionsModule` has a direct dependency on `IPredictionsData`, only `CacheModule` has a direct dependency on `ICacheData`, and only `PageVisibilityModule` has a direct dependency on `IPageVisibilityData`. Controllers never reference data-layer interfaces. `IPredictionGradingModule` (grading logic) and `IConferenceModule` (conference data transformation) have no further module or data-layer dependencies of their own.
 
 ## Prerequisites
 
@@ -252,11 +271,14 @@ The frontend runs at `http://localhost:5173`.
 | `GET /api/v1/conferences` | Returns FBS conferences |
 | `GET /api/v1/page-visibility` | Returns current page visibility settings |
 | `GET /api/v1/poll-leaders?minSeason={min}&maxSeason={max}` | Returns per-team ranking appearance counts across published snapshots |
+| `GET /api/v1/predictions/seasons` | Returns seasons that have at least one published prediction week |
+| `GET /api/v1/seasons/{season}/weeks/{week}/predictions` | Returns published predictions for the specified season/week |
 | `GET /api/v1/seasons/{season}/trends` | Returns season trends showing rank progression across published weeks |
 | `GET /api/v1/seasons/{season}/weeks/{week}/rankings` | Returns ranked teams for the specified week |
 | `GET /api/v1/seasons` | Returns available seasons (2002 to present) |
-| `GET /api/v1/seasons/{season}/weeks` | Returns all weeks for a season with rankings publication status |
+| `GET /api/v1/seasons/{season}/weeks` | Returns all weeks for a season with rankings and predictions publication status |
 | `GET /api/v1/teams/{teamName}?season={s}&week={w}` | Returns team details including schedule and record breakdowns |
+| `GET /api/v1/track-record` | Returns the all-time prediction track record (right/wrong/push per pick category, overall and by graded week) |
 
 ### Authentication
 
@@ -273,35 +295,47 @@ The frontend runs at `http://localhost:5173`.
 | `DELETE /api/v1/admin/seasons/{season}/weeks/{week}/snapshot` | Delete a snapshot |
 | `GET /api/v1/admin/snapshots` | List all persisted snapshots |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/snapshot/export` | Download rankings as Excel |
-| `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Retrieve persisted predictions for a season/week without recalculating |
+| `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Retrieve persisted predictions for a season/week without recalculating or re-grading |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Calculate predictions for a season/week and save as draft |
 | `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Update a prediction (currently supports publishing) |
 | `DELETE /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Delete a prediction |
 | `GET /api/v1/admin/predictions` | List all persisted prediction summaries |
+| `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction/grade` | Grade predictions against actual final scores and save as draft |
+| `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/prediction/results` | Publish graded results, making them visible on the public predictions page |
+| `POST /api/v1/admin/seasons/{season}/weeks/{week}/cache` | Clear cached CollegeFootballData API responses for a season/week without recalculating |
 | `PUT /api/v1/page-visibility` | Update page visibility settings |
+
+## Code Conventions
+
+A few ordering/formatting conventions are worth calling out since they're enforced with varying degrees of automation rather than being self-evident from a diff:
+
+- **C# member ordering**: Within each class, fields/constants → properties → constructor → public methods → private methods, alphabetical within each section. This is a manual/code-review convention, not automated tooling — it was applied as a one-time formatting pass and isn't re-run by a linter, since off-the-shelf tooling sorts ordinally in a way that conflicts with this project's casing conventions.
+- **TypeScript/React member ordering**: Top-level `function`/`class` declarations (including exports) are sorted alphabetically, enforced automatically by [`eslint-plugin-perfectionist`](https://github.com/azat-io/eslint-plugin-perfectionist)'s `sort-modules` rule. Colocated prop `interface`/`type` declarations are excluded from sorting so an `XProps` type stays directly above the component it describes.
+- **Git hooks**: A committed [Husky](https://typicode.github.io/husky/) setup runs `eslint --fix` on staged `.ts`/`.tsx` files before every commit and `tsc -b` before every push. CI re-runs `eslint .` as a backstop for local hook bypasses.
+- **Test block ordering**: `describe`/`it()` blocks in Vitest test files are alphabetized — sibling `describe`s, nested `describe`s, and `it()`s within each `describe`. This is enforced by convention/code review only, since `describe`/`it()` are call expressions rather than declarations and no lint rule can safely reorder them automatically.
 
 ## Testing
 
-The project includes 1,992 unit and integration tests across backend and frontend.
+The project includes 2,004 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (871 tests)
+# Backend tests (876 tests)
 dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (1,121 tests)
+# Frontend tests (1,128 tests)
 cd src/cfbpoll-web
 npm test
 ```
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-871-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1121-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-876-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1128-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-98%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
 ![Web Coverage](https://img.shields.io/badge/Web_Coverage-99%25-brightgreen)

@@ -1,6 +1,7 @@
+import type { GameGrade } from '../../schemas';
+
 import { gradeClasses } from '../../lib/grade-classes';
 import { formatPick } from '../../lib/prediction-format-utils';
-import type { GameGrade } from '../../schemas';
 
 interface GradedPickProps {
   actualValue: string | null;

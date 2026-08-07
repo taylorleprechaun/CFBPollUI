@@ -14,6 +14,23 @@ namespace CFBPoll.API.Tests.Extensions;
 public class DatabaseServiceExtensionsTests
 {
     [Fact]
+    public void AddDatabase_RegistersAsSingleton()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration();
+
+        services.AddDatabase(configuration);
+
+        var provider = services.BuildServiceProvider();
+
+        var data1 = provider.GetService<IRankingsData>();
+        var data2 = provider.GetService<IRankingsData>();
+
+        Assert.Same(data1, data2);
+    }
+
+    [Fact]
     public void AddDatabase_RegistersDatabaseOptions()
     {
         var services = new ServiceCollection();
@@ -46,6 +63,22 @@ public class DatabaseServiceExtensionsTests
     }
 
     [Fact]
+    public void AddDatabase_RegistersIPredictionsData()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration();
+
+        services.AddDatabase(configuration);
+
+        var provider = services.BuildServiceProvider();
+        var data = provider.GetService<IPredictionsData>();
+
+        Assert.NotNull(data);
+        Assert.IsType<PredictionsData>(data);
+    }
+
+    [Fact]
     public void AddDatabase_RegistersIRankingsData()
     {
         var services = new ServiceCollection();
@@ -71,39 +104,6 @@ public class DatabaseServiceExtensionsTests
         var result = services.AddDatabase(configuration);
 
         Assert.Same(services, result);
-    }
-
-    [Fact]
-    public void AddDatabase_RegistersAsSingleton()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        var configuration = BuildConfiguration();
-
-        services.AddDatabase(configuration);
-
-        var provider = services.BuildServiceProvider();
-
-        var data1 = provider.GetService<IRankingsData>();
-        var data2 = provider.GetService<IRankingsData>();
-
-        Assert.Same(data1, data2);
-    }
-
-    [Fact]
-    public void AddDatabase_RegistersIPredictionsData()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        var configuration = BuildConfiguration();
-
-        services.AddDatabase(configuration);
-
-        var provider = services.BuildServiceProvider();
-        var data = provider.GetService<IPredictionsData>();
-
-        Assert.NotNull(data);
-        Assert.IsType<PredictionsData>(data);
     }
 
     [Fact]

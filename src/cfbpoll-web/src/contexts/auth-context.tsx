@@ -1,24 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { loginUser } from '../services/admin-api';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
 import { AuthContext, type AuthContextValue } from '../hooks/use-auth';
+import { loginUser } from '../services/admin-api';
 
 const TOKEN_KEY = 'cfbpoll_token';
 const EXPIRY_KEY = 'cfbpoll_token_expiry';
-
-function getStoredToken(): { token: string; expiryMs: number } | null {
-  const stored = sessionStorage.getItem(TOKEN_KEY);
-  const expiry = sessionStorage.getItem(EXPIRY_KEY);
-  if (!stored || !expiry) return null;
-
-  const expiryMs = Number(expiry);
-  if (Date.now() >= expiryMs) {
-    sessionStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(EXPIRY_KEY);
-    return null;
-  }
-
-  return { token: stored, expiryMs };
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => {
@@ -36,8 +22,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     clearExpiryTimer();
-    sessionStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(EXPIRY_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(EXPIRY_KEY);
     setToken(null);
   }, [clearExpiryTimer]);
 
@@ -50,8 +36,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (username: string, password: string) => {
     const response = await loginUser(username, password);
     const expiryMs = Date.now() + response.expiresIn * 1000;
-    sessionStorage.setItem(TOKEN_KEY, response.token);
-    sessionStorage.setItem(EXPIRY_KEY, String(expiryMs));
+    localStorage.setItem(TOKEN_KEY, response.token);
+    localStorage.setItem(EXPIRY_KEY, String(expiryMs));
     setToken(response.token);
     scheduleExpiry(expiryMs);
   }, [scheduleExpiry]);
@@ -76,4 +62,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
+}
+
+function getStoredToken(): { expiryMs: number; token: string; } | null {
+  const stored = localStorage.getItem(TOKEN_KEY);
+  const expiry = localStorage.getItem(EXPIRY_KEY);
+  if (!stored || !expiry) return null;
+
+  const expiryMs = Number(expiry);
+  if (Date.now() >= expiryMs) {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(EXPIRY_KEY);
+    return null;
+  }
+
+  return { token: stored, expiryMs };
 }

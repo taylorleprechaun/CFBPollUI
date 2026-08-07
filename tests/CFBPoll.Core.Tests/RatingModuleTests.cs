@@ -19,28 +19,6 @@ public class RatingModuleTests
     }
 
     [Fact]
-    public async Task RateTeamsAsync_WithNoGames_ReturnsRatingsWithZeroSOS()
-    {
-        var seasonData = new SeasonData
-        {
-            Season = 2024,
-            Week = 6,
-            Teams = new Dictionary<string, TeamInfo>
-            {
-                ["Team A"] = new TeamInfo { Name = "Team A", Wins = 0, Losses = 0, Games = [] }
-            },
-            Games = []
-        };
-
-        var ratings = await _ratingModule.RateTeamsAsync(seasonData);
-
-        Assert.Single(ratings);
-        Assert.True(ratings.ContainsKey("Team A"));
-        Assert.Equal(0.0, ratings["Team A"].StrengthOfSchedule);
-        Assert.Equal(0.0, ratings["Team A"].WeightedStrengthOfSchedule);
-    }
-
-    [Fact]
     public async Task RateTeamsAsync_CalculatesSOSCorrectly()
     {
         var gamesA = new List<Game>
@@ -69,63 +47,6 @@ public class RatingModuleTests
 
         Assert.Equal(0.0, ratings["Team A"].StrengthOfSchedule);
         Assert.Equal(1.0, ratings["Team B"].StrengthOfSchedule);
-    }
-
-    [Fact]
-    public async Task RateTeamsAsync_RecordsWinsAndLosses()
-    {
-        var games = new List<Game>
-        {
-            new Game { HomeTeam = "Team A", AwayTeam = "Team B", HomePoints = 28, AwayPoints = 14, Week = 1 },
-            new Game { HomeTeam = "Team A", AwayTeam = "Team C", HomePoints = 35, AwayPoints = 21, Week = 2 }
-        };
-
-        var seasonData = new SeasonData
-        {
-            Season = 2024,
-            Week = 6,
-            Teams = new Dictionary<string, TeamInfo>
-            {
-                ["Team A"] = new TeamInfo { Name = "Team A", Wins = 2, Losses = 0, Games = games },
-                ["Team B"] = new TeamInfo { Name = "Team B", Wins = 0, Losses = 1, Games = [games[0]] },
-                ["Team C"] = new TeamInfo { Name = "Team C", Wins = 0, Losses = 1, Games = [games[1]] }
-            },
-            Games = games
-        };
-
-        var ratings = await _ratingModule.RateTeamsAsync(seasonData);
-
-        Assert.Equal(2, ratings["Team A"].Wins);
-        Assert.Equal(0, ratings["Team A"].Losses);
-        Assert.Equal(0, ratings["Team B"].Wins);
-        Assert.Equal(1, ratings["Team B"].Losses);
-    }
-
-    [Fact]
-    public async Task RateTeamsAsync_IgnoresGamesWithNullPoints()
-    {
-        var gamesA = new List<Game>
-        {
-            new Game { HomeTeam = "Team A", AwayTeam = "Team B", HomePoints = 28, AwayPoints = 14, Week = 1 },
-            new Game { HomeTeam = "Team A", AwayTeam = "Team C", HomePoints = null, AwayPoints = null, Week = 2 }
-        };
-
-        var seasonData = new SeasonData
-        {
-            Season = 2024,
-            Week = 6,
-            Teams = new Dictionary<string, TeamInfo>
-            {
-                ["Team A"] = new TeamInfo { Name = "Team A", Wins = 1, Losses = 0, Games = gamesA },
-                ["Team B"] = new TeamInfo { Name = "Team B", Wins = 0, Losses = 1, Games = [gamesA[0]] },
-                ["Team C"] = new TeamInfo { Name = "Team C", Wins = 0, Losses = 0, Games = [] }
-            },
-            Games = gamesA
-        };
-
-        var ratings = await _ratingModule.RateTeamsAsync(seasonData);
-
-        Assert.Equal(0.0, ratings["Team A"].StrengthOfSchedule);
     }
 
     [Fact]
@@ -198,5 +119,84 @@ public class RatingModuleTests
 
         Assert.Single(ratings);
         Assert.Equal(0.0, ratings["Team A"].StrengthOfSchedule);
+    }
+
+    [Fact]
+    public async Task RateTeamsAsync_IgnoresGamesWithNullPoints()
+    {
+        var gamesA = new List<Game>
+        {
+            new Game { HomeTeam = "Team A", AwayTeam = "Team B", HomePoints = 28, AwayPoints = 14, Week = 1 },
+            new Game { HomeTeam = "Team A", AwayTeam = "Team C", HomePoints = null, AwayPoints = null, Week = 2 }
+        };
+
+        var seasonData = new SeasonData
+        {
+            Season = 2024,
+            Week = 6,
+            Teams = new Dictionary<string, TeamInfo>
+            {
+                ["Team A"] = new TeamInfo { Name = "Team A", Wins = 1, Losses = 0, Games = gamesA },
+                ["Team B"] = new TeamInfo { Name = "Team B", Wins = 0, Losses = 1, Games = [gamesA[0]] },
+                ["Team C"] = new TeamInfo { Name = "Team C", Wins = 0, Losses = 0, Games = [] }
+            },
+            Games = gamesA
+        };
+
+        var ratings = await _ratingModule.RateTeamsAsync(seasonData);
+
+        Assert.Equal(0.0, ratings["Team A"].StrengthOfSchedule);
+    }
+
+    [Fact]
+    public async Task RateTeamsAsync_RecordsWinsAndLosses()
+    {
+        var games = new List<Game>
+        {
+            new Game { HomeTeam = "Team A", AwayTeam = "Team B", HomePoints = 28, AwayPoints = 14, Week = 1 },
+            new Game { HomeTeam = "Team A", AwayTeam = "Team C", HomePoints = 35, AwayPoints = 21, Week = 2 }
+        };
+
+        var seasonData = new SeasonData
+        {
+            Season = 2024,
+            Week = 6,
+            Teams = new Dictionary<string, TeamInfo>
+            {
+                ["Team A"] = new TeamInfo { Name = "Team A", Wins = 2, Losses = 0, Games = games },
+                ["Team B"] = new TeamInfo { Name = "Team B", Wins = 0, Losses = 1, Games = [games[0]] },
+                ["Team C"] = new TeamInfo { Name = "Team C", Wins = 0, Losses = 1, Games = [games[1]] }
+            },
+            Games = games
+        };
+
+        var ratings = await _ratingModule.RateTeamsAsync(seasonData);
+
+        Assert.Equal(2, ratings["Team A"].Wins);
+        Assert.Equal(0, ratings["Team A"].Losses);
+        Assert.Equal(0, ratings["Team B"].Wins);
+        Assert.Equal(1, ratings["Team B"].Losses);
+    }
+
+    [Fact]
+    public async Task RateTeamsAsync_WithNoGames_ReturnsRatingsWithZeroSOS()
+    {
+        var seasonData = new SeasonData
+        {
+            Season = 2024,
+            Week = 6,
+            Teams = new Dictionary<string, TeamInfo>
+            {
+                ["Team A"] = new TeamInfo { Name = "Team A", Wins = 0, Losses = 0, Games = [] }
+            },
+            Games = []
+        };
+
+        var ratings = await _ratingModule.RateTeamsAsync(seasonData);
+
+        Assert.Single(ratings);
+        Assert.True(ratings.ContainsKey("Team A"));
+        Assert.Equal(0.0, ratings["Team A"].StrengthOfSchedule);
+        Assert.Equal(0.0, ratings["Team A"].WeightedStrengthOfSchedule);
     }
 }

@@ -11,9 +11,9 @@ namespace CFBPoll.API.Tests.Controllers;
 
 public class TrackRecordControllerTests
 {
+    private readonly TrackRecordController _controller;
     private readonly Mock<ILogger<TrackRecordController>> _mockLogger;
     private readonly Mock<ITrackRecordModule> _mockTrackRecordModule;
-    private readonly TrackRecordController _controller;
 
     public TrackRecordControllerTests()
     {
@@ -26,6 +26,15 @@ public class TrackRecordControllerTests
     }
 
     [Fact]
+    public void Constructor_NullLogger_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new TrackRecordController(
+                new Mock<ITrackRecordModule>().Object,
+                null!));
+    }
+
+    [Fact]
     public void Constructor_NullTrackRecordModule_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
@@ -35,12 +44,26 @@ public class TrackRecordControllerTests
     }
 
     [Fact]
-    public void Constructor_NullLogger_ThrowsArgumentNullException()
+    public async Task GetTrackRecord_CallsModuleOnce()
     {
-        Assert.Throws<ArgumentNullException>(
-            () => new TrackRecordController(
-                new Mock<ITrackRecordModule>().Object,
-                null!));
+        _mockTrackRecordModule.Setup(x => x.GetTrackRecordAsync()).ReturnsAsync(new TrackRecordResult());
+
+        await _controller.GetTrackRecord();
+
+        _mockTrackRecordModule.Verify(x => x.GetTrackRecordAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetTrackRecord_EmptyResult_ReturnsOkWithEmptyWeeks()
+    {
+        _mockTrackRecordModule.Setup(x => x.GetTrackRecordAsync()).ReturnsAsync(new TrackRecordResult());
+
+        var result = await _controller.GetTrackRecord();
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<TrackRecordResponseDTO>(okResult.Value);
+
+        Assert.Empty(response.Weeks);
     }
 
     [Fact]
@@ -77,28 +100,5 @@ public class TrackRecordControllerTests
         Assert.Single(response.Weeks);
         Assert.Equal(2024, response.Weeks.First().Season);
         Assert.Equal(3, response.Weeks.First().Week);
-    }
-
-    [Fact]
-    public async Task GetTrackRecord_EmptyResult_ReturnsOkWithEmptyWeeks()
-    {
-        _mockTrackRecordModule.Setup(x => x.GetTrackRecordAsync()).ReturnsAsync(new TrackRecordResult());
-
-        var result = await _controller.GetTrackRecord();
-
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var response = Assert.IsType<TrackRecordResponseDTO>(okResult.Value);
-
-        Assert.Empty(response.Weeks);
-    }
-
-    [Fact]
-    public async Task GetTrackRecord_CallsModuleOnce()
-    {
-        _mockTrackRecordModule.Setup(x => x.GetTrackRecordAsync()).ReturnsAsync(new TrackRecordResult());
-
-        await _controller.GetTrackRecord();
-
-        _mockTrackRecordModule.Verify(x => x.GetTrackRecordAsync(), Times.Once);
     }
 }

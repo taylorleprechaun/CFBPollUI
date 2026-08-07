@@ -38,51 +38,6 @@ public class RankingsData : IRankingsData
         return rowsAffected > 0;
     }
 
-    public async Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync()
-    {
-        await using var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync().ConfigureAwait(false);
-
-        await using var command = connection.CreateCommand();
-        command.CommandText = "SELECT Season, Week, Published, CreatedAt FROM RankingsSnapshot ORDER BY Season DESC, Week DESC";
-
-        await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
-        List<SnapshotSummary> results = [];
-
-        while (await reader.ReadAsync().ConfigureAwait(false))
-        {
-            results.Add(new SnapshotSummary
-            {
-                Season = reader.GetInt32(0),
-                Week = reader.GetInt32(1),
-                IsPublished = reader.GetInt32(2) == 1,
-                CreatedAt = DateTime.Parse(reader.GetString(3))
-            });
-        }
-
-        return results;
-    }
-
-    public async Task<IEnumerable<int>> GetPublishedWeekNumbersAsync(int season)
-    {
-        await using var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync().ConfigureAwait(false);
-
-        await using var command = connection.CreateCommand();
-        command.CommandText = "SELECT Week FROM RankingsSnapshot WHERE Season = @Season AND Published = 1 ORDER BY Week";
-        command.Parameters.AddWithValue("@Season", season);
-
-        await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
-        List<int> weeks = [];
-
-        while (await reader.ReadAsync().ConfigureAwait(false))
-        {
-            weeks.Add(reader.GetInt32(0));
-        }
-
-        return weeks;
-    }
-
     public async Task<RankingsResult?> GetPreviousPublishedSnapshotAsync(int season, int week)
     {
         await using var connection = new SqliteConnection(_connectionString);
@@ -156,6 +111,26 @@ public class RankingsData : IRankingsData
         return results;
     }
 
+    public async Task<IEnumerable<int>> GetPublishedWeekNumbersAsync(int season)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT Week FROM RankingsSnapshot WHERE Season = @Season AND Published = 1 ORDER BY Week";
+        command.Parameters.AddWithValue("@Season", season);
+
+        await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
+        List<int> weeks = [];
+
+        while (await reader.ReadAsync().ConfigureAwait(false))
+        {
+            weeks.Add(reader.GetInt32(0));
+        }
+
+        return weeks;
+    }
+
     public async Task<RankingsResult?> GetSnapshotAsync(int season, int week)
     {
         await using var connection = new SqliteConnection(_connectionString);
@@ -172,6 +147,31 @@ public class RankingsData : IRankingsData
             return null;
 
         return JsonSerializer.Deserialize<RankingsResult>(json);
+    }
+
+    public async Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync()
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT Season, Week, Published, CreatedAt FROM RankingsSnapshot ORDER BY Season DESC, Week DESC";
+
+        await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
+        List<SnapshotSummary> results = [];
+
+        while (await reader.ReadAsync().ConfigureAwait(false))
+        {
+            results.Add(new SnapshotSummary
+            {
+                Season = reader.GetInt32(0),
+                Week = reader.GetInt32(1),
+                IsPublished = reader.GetInt32(2) == 1,
+                CreatedAt = DateTime.Parse(reader.GetString(3))
+            });
+        }
+
+        return results;
     }
 
     public async Task InitializeAsync()

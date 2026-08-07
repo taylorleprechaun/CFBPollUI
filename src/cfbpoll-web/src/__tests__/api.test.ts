@@ -1,61 +1,26 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchSeasons, fetchWeeks, fetchRankings, fetchPredictions, fetchConferences, fetchTeamDetail, fetchPageVisibility, fetchPollLeaders, fetchTrackRecord } from '../services/api';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { fetchConferences, fetchPageVisibility, fetchPollLeaders, fetchPredictions, fetchPredictionSeasons, fetchRankings, fetchSeasons, fetchTeamDetail, fetchTrackRecord, fetchWeeks } from '../services/api';
 
 describe('API service', () => {
   beforeEach(() => {
     vi.resetAllMocks();
   });
 
-  it('constructs correct URL for fetchSeasons', async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ seasons: [2024, 2023, 2022] }),
-    });
-    vi.stubGlobal('fetch', mockFetch);
-
-    await fetchSeasons();
-
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/v1/seasons'),
-      undefined
-    );
-  });
-
-  it('constructs correct URL for fetchWeeks', async () => {
+  it('constructs correct URL for fetchConferences', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () =>
         Promise.resolve({
-          season: 2024,
-          weeks: [{ weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: false }],
+          conferences: [{ id: 1, label: 'ACC', name: 'Atlantic Coast Conference' }],
         }),
     });
     vi.stubGlobal('fetch', mockFetch);
 
-    await fetchWeeks(2024);
+    await fetchConferences();
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/v1/seasons/2024/weeks'),
-      undefined
-    );
-  });
-
-  it('constructs correct URL for fetchRankings', async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          season: 2024,
-          week: 12,
-          rankings: [],
-        }),
-    });
-    vi.stubGlobal('fetch', mockFetch);
-
-    await fetchRankings(2024, 12);
-
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/v1/seasons/2024/weeks/12/rankings'),
+      expect.stringContaining('/api/v1/conferences'),
       undefined
     );
   });
@@ -81,20 +46,52 @@ describe('API service', () => {
     );
   });
 
-  it('constructs correct URL for fetchConferences', async () => {
+  it('constructs correct URL for fetchPredictionSeasons', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ seasons: [2025, 2024] }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    await fetchPredictionSeasons();
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/v1/predictions/seasons'),
+      undefined
+    );
+  });
+
+  it('constructs correct URL for fetchRankings', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () =>
         Promise.resolve({
-          conferences: [{ id: 1, label: 'ACC', name: 'Atlantic Coast Conference' }],
+          season: 2024,
+          week: 12,
+          rankings: [],
         }),
     });
     vi.stubGlobal('fetch', mockFetch);
 
-    await fetchConferences();
+    await fetchRankings(2024, 12);
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/v1/conferences'),
+      expect.stringContaining('/api/v1/seasons/2024/weeks/12/rankings'),
+      undefined
+    );
+  });
+
+  it('constructs correct URL for fetchSeasons', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ seasons: [2024, 2023, 2022] }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    await fetchSeasons();
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/v1/seasons'),
       undefined
     );
   });
@@ -134,6 +131,25 @@ describe('API service', () => {
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining('/api/v1/teams/USC?season=2024&week=12'),
+      undefined
+    );
+  });
+
+  it('constructs correct URL for fetchWeeks', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          season: 2024,
+          weeks: [{ weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: false }],
+        }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    await fetchWeeks(2024);
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/v1/seasons/2024/weeks'),
       undefined
     );
   });
@@ -223,26 +239,6 @@ describe('API service', () => {
       expect(calledUrl).toContain('maxSeason=2024');
     });
 
-    it('includes only minSeason when maxSeason is undefined', async () => {
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            allWeeks: [],
-            finalWeeksOnly: [],
-            maxAvailableSeason: 2024,
-            minAvailableSeason: 2015,
-          }),
-      });
-      vi.stubGlobal('fetch', mockFetch);
-
-      await fetchPollLeaders(2015);
-
-      const calledUrl = mockFetch.mock.calls[0][0] as string;
-      expect(calledUrl).toContain('minSeason=2015');
-      expect(calledUrl).not.toContain('maxSeason');
-    });
-
     it('includes only maxSeason when minSeason is undefined', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
@@ -261,6 +257,26 @@ describe('API service', () => {
       const calledUrl = mockFetch.mock.calls[0][0] as string;
       expect(calledUrl).not.toContain('minSeason');
       expect(calledUrl).toContain('maxSeason=2020');
+    });
+
+    it('includes only minSeason when maxSeason is undefined', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            allWeeks: [],
+            finalWeeksOnly: [],
+            maxAvailableSeason: 2024,
+            minAvailableSeason: 2015,
+          }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await fetchPollLeaders(2015);
+
+      const calledUrl = mockFetch.mock.calls[0][0] as string;
+      expect(calledUrl).toContain('minSeason=2015');
+      expect(calledUrl).not.toContain('maxSeason');
     });
 
     it('throws on failed fetch', async () => {

@@ -1,11 +1,12 @@
 import { useId } from 'react';
+
 import { SELECT_BASE } from '../ui/button-styles';
 
 interface SeasonSelectorProps {
+  isLoading: boolean;
+  onSeasonChange: (season: number) => void;
   seasons: number[];
   selectedSeason: number | null;
-  onSeasonChange: (season: number) => void;
-  isLoading: boolean;
 }
 
 export function SeasonSelector({

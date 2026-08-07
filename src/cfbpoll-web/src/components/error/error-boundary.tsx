@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
-import { ErrorBoundary as ReactErrorBoundary, type FallbackProps } from 'react-error-boundary';
+import { type FallbackProps, ErrorBoundary as ReactErrorBoundary } from 'react-error-boundary';
+
 import { toErrorMessage } from '../../lib/error-utils';
 import { BUTTON_PRIMARY } from '../ui/button-styles';
 import { WarningTriangleIcon } from '../ui/icons';
@@ -7,6 +8,22 @@ import { WarningTriangleIcon } from '../ui/icons';
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+}
+
+export function ErrorBoundary({ children, fallback }: Props) {
+  if (fallback) {
+    return (
+      <ReactErrorBoundary fallbackRender={() => <>{fallback}</>} onError={handleError}>
+        {children}
+      </ReactErrorBoundary>
+    );
+  }
+
+  return (
+    <ReactErrorBoundary FallbackComponent={DefaultFallback} onError={handleError}>
+      {children}
+    </ReactErrorBoundary>
+  );
 }
 
 function DefaultFallback({ error, resetErrorBoundary }: FallbackProps) {
@@ -37,20 +54,4 @@ function DefaultFallback({ error, resetErrorBoundary }: FallbackProps) {
 
 function handleError(error: unknown, info: { componentStack?: string | null }) {
   console.error('ErrorBoundary caught an error:', error, info);
-}
-
-export function ErrorBoundary({ children, fallback }: Props) {
-  if (fallback) {
-    return (
-      <ReactErrorBoundary fallbackRender={() => <>{fallback}</>} onError={handleError}>
-        {children}
-      </ReactErrorBoundary>
-    );
-  }
-
-  return (
-    <ReactErrorBoundary FallbackComponent={DefaultFallback} onError={handleError}>
-      {children}
-    </ReactErrorBoundary>
-  );
 }

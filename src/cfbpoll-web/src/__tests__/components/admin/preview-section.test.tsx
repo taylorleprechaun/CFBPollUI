@@ -1,6 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { describe, expect, it, vi } from 'vitest';
+
 import { PreviewSection } from '../../../components/admin';
 
 const defaultResult = {
@@ -30,19 +31,6 @@ function renderPreview(props = {}) {
 }
 
 describe('PreviewSection', () => {
-  it('renders preview heading with season and week', () => {
-    renderPreview();
-
-    expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
-  });
-
-  it('renders Download Excel and Publish buttons', () => {
-    renderPreview();
-
-    expect(screen.getByText('Download Excel')).toBeInTheDocument();
-    expect(screen.getByText('Publish')).toBeInTheDocument();
-  });
-
   it('calls onExport when Download Excel is clicked', () => {
     const onExport = vi.fn();
     renderPreview({ onExport });
@@ -61,12 +49,11 @@ describe('PreviewSection', () => {
     expect(onPublish).toHaveBeenCalledWith(2024, 5);
   });
 
-  it('shows not-persisted warning when persisted is false', () => {
-    renderPreview({
-      calculatedResult: { ...defaultResult, isPersisted: false },
-    });
+  it('disables buttons when isActionPending is true', () => {
+    renderPreview({ isActionPending: true });
 
-    expect(screen.getByText(/Rankings were not persisted/)).toBeInTheDocument();
+    expect(screen.getByText('Download Excel')).toBeDisabled();
+    expect(screen.getByText('Publish')).toBeDisabled();
   });
 
   it('does not show warning when persisted is true', () => {
@@ -75,40 +62,37 @@ describe('PreviewSection', () => {
     expect(screen.queryByText(/Rankings were not persisted/)).not.toBeInTheDocument();
   });
 
-  it('toggles expand/collapse on heading click', () => {
+  it('renders Download Excel and Publish buttons', () => {
     renderPreview();
 
-    const heading = screen.getByText(/Preview: 2024 Week 6/);
-    const chevron = () => heading.closest('button')!.querySelector('svg')!;
-
-    expect(chevron().classList.toString()).not.toContain('-rotate-90');
-
-    fireEvent.click(heading);
-    expect(chevron().classList.toString()).toContain('-rotate-90');
-
-    fireEvent.click(heading);
-    expect(chevron().classList.toString()).not.toContain('-rotate-90');
+    expect(screen.getByText('Download Excel')).toBeInTheDocument();
+    expect(screen.getByText('Publish')).toBeInTheDocument();
   });
 
-  it('toggles aria-expanded on the header button and points aria-controls at the content region', () => {
+  it('renders preview heading with season and week', () => {
     renderPreview();
 
-    const headerButton = screen.getByText(/Preview: 2024 Week 6/).closest('button')!;
-    expect(headerButton).toHaveAttribute('aria-expanded', 'true');
-
-    const contentId = headerButton.getAttribute('aria-controls');
-    expect(contentId).toBeTruthy();
-    expect(document.getElementById(contentId!)).not.toBeNull();
-
-    fireEvent.click(headerButton);
-    expect(headerButton).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByText(/Preview: 2024 Week 6/)).toBeInTheDocument();
   });
 
-  it('disables buttons when isActionPending is true', () => {
-    renderPreview({ isActionPending: true });
+  it('shows error message for matching feedback', () => {
+    renderPreview({
+      actionFeedback: {
+        key: 'preview-publish-2024-5',
+        type: 'error',
+        message: 'Server error',
+      },
+    });
 
-    expect(screen.getByText('Download Excel')).toBeDisabled();
-    expect(screen.getByText('Publish')).toBeDisabled();
+    expect(screen.getByText('Server error')).toBeInTheDocument();
+  });
+
+  it('shows not-persisted warning when persisted is false', () => {
+    renderPreview({
+      calculatedResult: { ...defaultResult, isPersisted: false },
+    });
+
+    expect(screen.getByText(/Rankings were not persisted/)).toBeInTheDocument();
   });
 
   it('shows success checkmark for matching feedback', () => {
@@ -134,15 +118,32 @@ describe('PreviewSection', () => {
     expect(screen.getByText('Published successfully')).toBeInTheDocument();
   });
 
-  it('shows error message for matching feedback', () => {
-    renderPreview({
-      actionFeedback: {
-        key: 'preview-publish-2024-5',
-        type: 'error',
-        message: 'Server error',
-      },
-    });
+  it('toggles aria-expanded on the header button and points aria-controls at the content region', () => {
+    renderPreview();
 
-    expect(screen.getByText('Server error')).toBeInTheDocument();
+    const headerButton = screen.getByText(/Preview: 2024 Week 6/).closest('button')!;
+    expect(headerButton).toHaveAttribute('aria-expanded', 'true');
+
+    const contentId = headerButton.getAttribute('aria-controls');
+    expect(contentId).toBeTruthy();
+    expect(document.getElementById(contentId!)).not.toBeNull();
+
+    fireEvent.click(headerButton);
+    expect(headerButton).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('toggles expand/collapse on heading click', () => {
+    renderPreview();
+
+    const heading = screen.getByText(/Preview: 2024 Week 6/);
+    const chevron = () => heading.closest('button')!.querySelector('svg')!;
+
+    expect(chevron().classList.toString()).not.toContain('-rotate-90');
+
+    fireEvent.click(heading);
+    expect(chevron().classList.toString()).toContain('-rotate-90');
+
+    fireEvent.click(heading);
+    expect(chevron().classList.toString()).not.toContain('-rotate-90');
   });
 });

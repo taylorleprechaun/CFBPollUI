@@ -1,8 +1,10 @@
 import { useId } from 'react';
+
 import type { Week } from '../../types';
+import type { ActionFeedback } from './types';
+
 import { BUTTON_PRIMARY, BUTTON_SECONDARY, SELECT_BASE } from '../ui/button-styles';
 import { FeedbackIndicator } from './feedback-indicator';
-import type { ActionFeedback } from './types';
 
 interface CalculateSectionProps {
   buttonLabel?: string;

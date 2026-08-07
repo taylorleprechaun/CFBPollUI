@@ -1,15 +1,16 @@
-import { useCallback, useMemo, useState } from 'react';
-
 import type { UseMutationResult } from '@tanstack/react-query';
 
+import { useCallback, useMemo, useState } from 'react';
+
 import type { ActionFeedback } from '../components/admin';
-import { toError } from '../lib/error-utils';
-import { runMutationWithFeedback } from '../lib/feedback-utils';
 import type { SeasonWeekParams } from './types';
 
+import { toError } from '../lib/error-utils';
+import { runMutationWithFeedback } from '../lib/feedback-utils';
+
 interface UseAdminPageStateOptions<TCalcResult> {
-  calculateMutation: UseMutationResult<TCalcResult, Error, SeasonWeekParams>;
   calcErrorLabel: string;
+  calculateMutation: UseMutationResult<TCalcResult, Error, SeasonWeekParams>;
   deleteMutation: UseMutationResult<void, Error, SeasonWeekParams>;
   getResultSeasonWeek: (result: TCalcResult) => SeasonWeekParams;
   items: { season: number }[] | undefined;

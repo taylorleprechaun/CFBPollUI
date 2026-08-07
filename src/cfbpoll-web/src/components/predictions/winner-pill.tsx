@@ -1,7 +1,8 @@
+import type { GamePredictionPublic } from '../../schemas';
+
 import { gradeClasses } from '../../lib/grade-classes';
 import { TeamLogo } from '../rankings/team-logo';
 import { TeamNameLabel } from './team-name-label';
-import type { GamePredictionPublic } from '../../schemas';
 
 interface WinnerPillProps {
   prediction: GamePredictionPublic;

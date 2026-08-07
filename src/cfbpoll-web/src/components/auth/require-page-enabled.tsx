@@ -1,4 +1,5 @@
 import { Navigate } from 'react-router-dom';
+
 import { usePageVisibility } from '../../hooks/use-page-visibility';
 
 interface RequirePageEnabledProps {

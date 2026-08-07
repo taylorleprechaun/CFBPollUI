@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 
 import { rechartsMock } from '../../mocks/recharts';
 
@@ -9,8 +9,9 @@ vi.mock('../../../hooks/use-theme', () => ({
   useTheme: () => ({ resolvedTheme: 'light' }),
 }));
 
-import { SeasonTrendsChart } from '../../../components/season-trends/season-trends-chart';
 import type { SeasonTrendsResponse } from '../../../schemas';
+
+import { SeasonTrendsChart } from '../../../components/season-trends/season-trends-chart';
 
 const mockData: SeasonTrendsResponse = {
   season: 2024,
@@ -45,39 +46,34 @@ const mockData: SeasonTrendsResponse = {
 };
 
 describe('SeasonTrendsChart', () => {
-  it('renders heading with season year', () => {
-    render(<SeasonTrendsChart data={mockData} />);
+  it('clears selection when chart background is clicked', () => {
+    const { container } = render(<SeasonTrendsChart data={mockData} />);
 
-    expect(
-      screen.getByRole('heading', { level: 2, name: '2024 Rank Progression' })
-    ).toBeInTheDocument();
+    const firstRect = container.querySelector('rect');
+    act(() => {
+      fireEvent.click(firstRect!);
+    });
+    expect(container.querySelector('style')).not.toBeNull();
+
+    act(() => {
+      fireEvent.click(screen.getByTestId('line-chart'));
+    });
+    expect(container.querySelector('style')).toBeNull();
   });
 
-  it('renders different season year in heading', () => {
-    const data2023: SeasonTrendsResponse = { ...mockData, season: 2023 };
-    render(<SeasonTrendsChart data={data2023} />);
+  it('clears selection when season changes', () => {
+    const { container, rerender } = render(<SeasonTrendsChart data={mockData} />);
 
-    expect(
-      screen.getByRole('heading', { level: 2, name: '2023 Rank Progression' })
-    ).toBeInTheDocument();
-  });
+    const firstRect = container.querySelector('rect');
+    act(() => {
+      fireEvent.click(firstRect!);
+    });
+    expect(container.querySelector('style')).not.toBeNull();
 
-  it('renders line chart', () => {
-    render(<SeasonTrendsChart data={mockData} />);
+    const newSeasonData: SeasonTrendsResponse = { ...mockData, season: 2023 };
+    rerender(<SeasonTrendsChart data={newSeasonData} />);
 
-    expect(screen.getByTestId('line-chart')).toBeInTheDocument();
-  });
-
-  it('returns null when no teams', () => {
-    const emptyData: SeasonTrendsResponse = {
-      season: 2024,
-      teams: [],
-      weeks: [],
-    };
-
-    const { container } = render(<SeasonTrendsChart data={emptyData} />);
-
-    expect(container.firstChild).toBeNull();
+    expect(container.querySelector('style')).toBeNull();
   });
 
   it('does not inject highlight CSS when no team is active', () => {
@@ -86,18 +82,43 @@ describe('SeasonTrendsChart', () => {
     expect(container.querySelector('style')).toBeNull();
   });
 
-  it('renders team dots via Line mock', () => {
+  it('does not show tooltip for unrelated team when a team is selected', () => {
     const { container } = render(<SeasonTrendsChart data={mockData} />);
 
-    const rects = container.querySelectorAll('rect');
-    expect(rects.length).toBeGreaterThan(0);
+    const ohioStateLine = container.querySelector('[data-testid="line-Ohio State"]');
+    const michiganLine = container.querySelector('[data-testid="line-Michigan"]');
+    const osuRect = ohioStateLine!.querySelector('rect');
+    const michRect = michiganLine!.querySelector('rect');
+
+    act(() => {
+      fireEvent.click(osuRect!);
+    });
+
+    act(() => {
+      fireEvent.mouseEnter(michRect!);
+    });
+
+    const tooltipContainer = container.querySelector('.absolute.pointer-events-none') as HTMLElement;
+    expect(tooltipContainer.style.opacity).toBe('0');
   });
 
-  it('renders tooltip container', () => {
+  it('hides tooltip on mouse leave', () => {
     const { container } = render(<SeasonTrendsChart data={mockData} />);
 
-    const tooltipContainer = container.querySelector('.absolute.pointer-events-none');
-    expect(tooltipContainer).toBeInTheDocument();
+    const ohioStateLine = container.querySelector('[data-testid="line-Ohio State"]');
+    const firstRect = ohioStateLine!.querySelector('rect');
+
+    act(() => {
+      fireEvent.mouseEnter(firstRect!);
+    });
+    expect(screen.getByText('Rank: #1')).toBeInTheDocument();
+
+    act(() => {
+      fireEvent.mouseLeave(firstRect!);
+    });
+
+    const tooltipContainer = container.querySelector('.absolute.pointer-events-none') as HTMLElement;
+    expect(tooltipContainer.style.opacity).toBe('0');
   });
 
   it('injects highlight CSS when a dot is clicked', () => {
@@ -132,114 +153,13 @@ describe('SeasonTrendsChart', () => {
     expect(container.querySelector('style')).toBeNull();
   });
 
-  it('switches highlight when a different team dot is clicked', () => {
-    const { container } = render(<SeasonTrendsChart data={mockData} />);
+  it('renders different season year in heading', () => {
+    const data2023: SeasonTrendsResponse = { ...mockData, season: 2023 };
+    render(<SeasonTrendsChart data={data2023} />);
 
-    const ohioStateLine = container.querySelector('[data-testid="line-Ohio State"]');
-    const michiganLine = container.querySelector('[data-testid="line-Michigan"]');
-    const osuRect = ohioStateLine!.querySelector('rect');
-    const michRect = michiganLine!.querySelector('rect');
-
-    act(() => {
-      fireEvent.click(osuRect!);
-    });
-
-    const styleEl = container.querySelector('style');
-    expect(styleEl!.textContent).toContain('trend-line-0 { opacity: 1');
-    expect(styleEl!.textContent).toContain('trend-line-1 { opacity: 0.15');
-
-    act(() => {
-      fireEvent.click(michRect!);
-    });
-
-    const updatedStyle = container.querySelector('style');
-    expect(updatedStyle!.textContent).toContain('trend-line-1 { opacity: 1');
-    expect(updatedStyle!.textContent).toContain('trend-line-0 { opacity: 0.15');
-  });
-
-  it('clears selection when chart background is clicked', () => {
-    const { container } = render(<SeasonTrendsChart data={mockData} />);
-
-    const firstRect = container.querySelector('rect');
-    act(() => {
-      fireEvent.click(firstRect!);
-    });
-    expect(container.querySelector('style')).not.toBeNull();
-
-    act(() => {
-      fireEvent.click(screen.getByTestId('line-chart'));
-    });
-    expect(container.querySelector('style')).toBeNull();
-  });
-
-  it('shows tooltip on dot hover', () => {
-    const { container } = render(<SeasonTrendsChart data={mockData} />);
-
-    const ohioStateLine = container.querySelector('[data-testid="line-Ohio State"]');
-    const firstRect = ohioStateLine!.querySelector('rect');
-
-    act(() => {
-      fireEvent.mouseEnter(firstRect!);
-    });
-
-    expect(screen.getByText('Ohio State')).toBeInTheDocument();
-    expect(screen.getByText('Rank: #1')).toBeInTheDocument();
-    expect(screen.getByText('Rating: 95.00')).toBeInTheDocument();
-    expect(screen.getByText('Record: 8-0')).toBeInTheDocument();
-  });
-
-  it('hides tooltip on mouse leave', () => {
-    const { container } = render(<SeasonTrendsChart data={mockData} />);
-
-    const ohioStateLine = container.querySelector('[data-testid="line-Ohio State"]');
-    const firstRect = ohioStateLine!.querySelector('rect');
-
-    act(() => {
-      fireEvent.mouseEnter(firstRect!);
-    });
-    expect(screen.getByText('Rank: #1')).toBeInTheDocument();
-
-    act(() => {
-      fireEvent.mouseLeave(firstRect!);
-    });
-
-    const tooltipContainer = container.querySelector('.absolute.pointer-events-none') as HTMLElement;
-    expect(tooltipContainer.style.opacity).toBe('0');
-  });
-
-  it('does not show tooltip for unrelated team when a team is selected', () => {
-    const { container } = render(<SeasonTrendsChart data={mockData} />);
-
-    const ohioStateLine = container.querySelector('[data-testid="line-Ohio State"]');
-    const michiganLine = container.querySelector('[data-testid="line-Michigan"]');
-    const osuRect = ohioStateLine!.querySelector('rect');
-    const michRect = michiganLine!.querySelector('rect');
-
-    act(() => {
-      fireEvent.click(osuRect!);
-    });
-
-    act(() => {
-      fireEvent.mouseEnter(michRect!);
-    });
-
-    const tooltipContainer = container.querySelector('.absolute.pointer-events-none') as HTMLElement;
-    expect(tooltipContainer.style.opacity).toBe('0');
-  });
-
-  it('clears selection when season changes', () => {
-    const { container, rerender } = render(<SeasonTrendsChart data={mockData} />);
-
-    const firstRect = container.querySelector('rect');
-    act(() => {
-      fireEvent.click(firstRect!);
-    });
-    expect(container.querySelector('style')).not.toBeNull();
-
-    const newSeasonData: SeasonTrendsResponse = { ...mockData, season: 2023 };
-    rerender(<SeasonTrendsChart data={newSeasonData} />);
-
-    expect(container.querySelector('style')).toBeNull();
+    expect(
+      screen.getByRole('heading', { level: 2, name: '2023 Rank Progression' })
+    ).toBeInTheDocument();
   });
 
   it('renders endpoint dots at larger size and mid-segment dots smaller', () => {
@@ -275,6 +195,59 @@ describe('SeasonTrendsChart', () => {
     expect(sizes).toContain('14');
   });
 
+  it('renders heading with season year', () => {
+    render(<SeasonTrendsChart data={mockData} />);
+
+    expect(
+      screen.getByRole('heading', { level: 2, name: '2024 Rank Progression' })
+    ).toBeInTheDocument();
+  });
+
+  it('renders line chart', () => {
+    render(<SeasonTrendsChart data={mockData} />);
+
+    expect(screen.getByTestId('line-chart')).toBeInTheDocument();
+  });
+
+  it('renders team dots via Line mock', () => {
+    const { container } = render(<SeasonTrendsChart data={mockData} />);
+
+    const rects = container.querySelectorAll('rect');
+    expect(rects.length).toBeGreaterThan(0);
+  });
+
+  it('renders tooltip container', () => {
+    const { container } = render(<SeasonTrendsChart data={mockData} />);
+
+    const tooltipContainer = container.querySelector('.absolute.pointer-events-none');
+    expect(tooltipContainer).toBeInTheDocument();
+  });
+
+  it('renders with team that has no color', () => {
+    const dataNoColor: SeasonTrendsResponse = {
+      season: 2024,
+      teams: [
+        {
+          altColor: '',
+          color: '',
+          conference: 'Independent',
+          logoURL: 'https://example.com/notre-dame.png',
+          rankings: [
+            { rank: 10, rating: 80.0, record: '5-2', weekNumber: 1 },
+          ],
+          teamName: 'Notre Dame',
+        },
+      ],
+      weeks: [{ label: 'Week 2', weekNumber: 1 }],
+    };
+
+    render(<SeasonTrendsChart data={dataNoColor} />);
+
+    expect(
+      screen.getByRole('heading', { level: 2, name: '2024 Rank Progression' })
+    ).toBeInTheDocument();
+  });
+
   it('renders with teams that have null rankings', () => {
     const dataWithUnranked: SeasonTrendsResponse = {
       season: 2024,
@@ -302,28 +275,56 @@ describe('SeasonTrendsChart', () => {
     expect(screen.getByTestId('line-chart')).toBeInTheDocument();
   });
 
-  it('renders with team that has no color', () => {
-    const dataNoColor: SeasonTrendsResponse = {
+  it('returns null when no teams', () => {
+    const emptyData: SeasonTrendsResponse = {
       season: 2024,
-      teams: [
-        {
-          altColor: '',
-          color: '',
-          conference: 'Independent',
-          logoURL: 'https://example.com/notre-dame.png',
-          rankings: [
-            { rank: 10, rating: 80.0, record: '5-2', weekNumber: 1 },
-          ],
-          teamName: 'Notre Dame',
-        },
-      ],
-      weeks: [{ label: 'Week 2', weekNumber: 1 }],
+      teams: [],
+      weeks: [],
     };
 
-    render(<SeasonTrendsChart data={dataNoColor} />);
+    const { container } = render(<SeasonTrendsChart data={emptyData} />);
 
-    expect(
-      screen.getByRole('heading', { level: 2, name: '2024 Rank Progression' })
-    ).toBeInTheDocument();
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('shows tooltip on dot hover', () => {
+    const { container } = render(<SeasonTrendsChart data={mockData} />);
+
+    const ohioStateLine = container.querySelector('[data-testid="line-Ohio State"]');
+    const firstRect = ohioStateLine!.querySelector('rect');
+
+    act(() => {
+      fireEvent.mouseEnter(firstRect!);
+    });
+
+    expect(screen.getByText('Ohio State')).toBeInTheDocument();
+    expect(screen.getByText('Rank: #1')).toBeInTheDocument();
+    expect(screen.getByText('Rating: 95.00')).toBeInTheDocument();
+    expect(screen.getByText('Record: 8-0')).toBeInTheDocument();
+  });
+
+  it('switches highlight when a different team dot is clicked', () => {
+    const { container } = render(<SeasonTrendsChart data={mockData} />);
+
+    const ohioStateLine = container.querySelector('[data-testid="line-Ohio State"]');
+    const michiganLine = container.querySelector('[data-testid="line-Michigan"]');
+    const osuRect = ohioStateLine!.querySelector('rect');
+    const michRect = michiganLine!.querySelector('rect');
+
+    act(() => {
+      fireEvent.click(osuRect!);
+    });
+
+    const styleEl = container.querySelector('style');
+    expect(styleEl!.textContent).toContain('trend-line-0 { opacity: 1');
+    expect(styleEl!.textContent).toContain('trend-line-1 { opacity: 0.15');
+
+    act(() => {
+      fireEvent.click(michRect!);
+    });
+
+    const updatedStyle = container.querySelector('style');
+    expect(updatedStyle!.textContent).toContain('trend-line-1 { opacity: 1');
+    expect(updatedStyle!.textContent).toContain('trend-line-0 { opacity: 0.15');
   });
 });

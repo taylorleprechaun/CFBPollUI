@@ -1,6 +1,7 @@
+import type { GamePredictionPublic } from '../../schemas';
+
 import { TeamLogo } from '../rankings/team-logo';
 import { TeamNameLabel } from './team-name-label';
-import type { GamePredictionPublic } from '../../schemas';
 
 interface PredictionScoreBlockProps {
   prediction: GamePredictionPublic;

@@ -1,11 +1,12 @@
+import type { GamePredictionPublic } from '../../schemas';
+
 import { formatOverUnder, formatPick, formatSpread } from '../../lib/prediction-format-utils';
+import { TableSkeleton } from '../ui/table-skeleton';
 import { GradedPick } from './graded-pick';
 import { PredictionCard } from './prediction-card';
 import { PredictionScoreBlock } from './prediction-score-block';
 import { WinnerActualCaption } from './winner-actual-caption';
 import { WinnerPill } from './winner-pill';
-import { TableSkeleton } from '../ui/table-skeleton';
-import type { GamePredictionPublic } from '../../schemas';
 
 const COLUMN_COUNT = 6;
 

@@ -61,6 +61,7 @@ public class AdminController : ControllerBase
             Predictions = PredictionsMapper.ToResponseDTO(result.Predictions, resultsPublished: false, isGraded: false)
         });
     }
+
     /// <summary>
     /// Deletes a snapshot for the specified season and week.
     /// </summary>

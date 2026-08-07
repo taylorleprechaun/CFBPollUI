@@ -1,14 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { toError, toErrorMessage } from '../../lib/error-utils';
 
 describe('toError', () => {
-  it('returns the original Error when given an Error instance', () => {
-    const original = new Error('something broke');
+  it('returns a new Error with fallback message when given null', () => {
+    const result = toError(null, 'null fallback');
 
-    const result = toError(original, 'fallback');
-
-    expect(result).toBe(original);
-    expect(result.message).toBe('something broke');
+    expect(result).toBeInstanceOf(Error);
+    expect(result.message).toBe('null fallback');
   });
 
   it('returns a new Error with fallback message when given a string', () => {
@@ -18,28 +17,24 @@ describe('toError', () => {
     expect(result.message).toBe('fallback message');
   });
 
-  it('returns a new Error with fallback message when given null', () => {
-    const result = toError(null, 'null fallback');
-
-    expect(result).toBeInstanceOf(Error);
-    expect(result.message).toBe('null fallback');
-  });
-
   it('returns a new Error with fallback message when given undefined', () => {
     const result = toError(undefined, 'undefined fallback');
 
     expect(result).toBeInstanceOf(Error);
     expect(result.message).toBe('undefined fallback');
   });
+
+  it('returns the original Error when given an Error instance', () => {
+    const original = new Error('something broke');
+
+    const result = toError(original, 'fallback');
+
+    expect(result).toBe(original);
+    expect(result.message).toBe('something broke');
+  });
 });
 
 describe('toErrorMessage', () => {
-  it('returns the Error message when given an Error instance', () => {
-    const result = toErrorMessage(new Error('real message'), 'fallback');
-
-    expect(result).toBe('real message');
-  });
-
   it('returns fallback message when given a non-Error value', () => {
     const result = toErrorMessage({ code: 500 }, 'fallback message');
 
@@ -50,5 +45,11 @@ describe('toErrorMessage', () => {
     const result = toErrorMessage(42, 'number fallback');
 
     expect(result).toBe('number fallback');
+  });
+
+  it('returns the Error message when given an Error instance', () => {
+    const result = toErrorMessage(new Error('real message'), 'fallback');
+
+    expect(result).toBe('real message');
   });
 });

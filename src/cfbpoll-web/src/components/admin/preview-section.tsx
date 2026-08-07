@@ -1,17 +1,18 @@
 import { useState } from 'react';
 
+import type { CalculateResponse } from '../../schemas/admin';
+import type { ActionFeedback } from './types';
+
 import { getWeekLabel } from '../../lib/week-utils';
 import { RankingsTable } from '../rankings/rankings-table';
 import { BUTTON_PRIMARY, BUTTON_SUCCESS } from '../ui/button-styles';
 import { CollapsibleContent } from '../ui/collapsible-content';
 import { CollapsibleTrigger } from '../ui/collapsible-trigger';
 import { FeedbackIndicator } from './feedback-indicator';
-import type { ActionFeedback } from './types';
-import type { CalculateResponse } from '../../schemas/admin';
 
 interface PreviewSectionProps {
-  calculatedResult: CalculateResponse;
   actionFeedback: ActionFeedback | null;
+  calculatedResult: CalculateResponse;
   isActionPending: boolean;
   onClearFeedback: () => void;
   onExport: (season: number, week: number) => void;

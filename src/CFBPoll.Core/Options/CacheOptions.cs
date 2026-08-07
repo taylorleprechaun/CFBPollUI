@@ -2,7 +2,7 @@ namespace CFBPoll.Core.Options;
 
 public class CacheOptions
 {
-    public const string SectionName = "Cache";
+    public const string SECTION_NAME = "Cache";
 
     public int CalendarExpirationHours { get; set; } = 168;
     public int CleanupIntervalMinutes { get; set; } = 60;

@@ -37,24 +37,24 @@ public class PollLeadersModuleTests
     }
 
     [Fact]
-    public void Constructor_NullCache_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(
-            () => new PollLeadersModule(
-                null!,
-                _mockCacheOptions.Object,
-                new Mock<ICFBDataService>().Object,
-                new Mock<ILogger<PollLeadersModule>>().Object,
-                new Mock<IRankingsModule>().Object));
-    }
-
-    [Fact]
     public void Constructor_NullCacheOptions_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
             () => new PollLeadersModule(
                 new Mock<IPersistentCache>().Object,
                 null!,
+                new Mock<ICFBDataService>().Object,
+                new Mock<ILogger<PollLeadersModule>>().Object,
+                new Mock<IRankingsModule>().Object));
+    }
+
+    [Fact]
+    public void Constructor_NullCache_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new PollLeadersModule(
+                null!,
+                _mockCacheOptions.Object,
                 new Mock<ICFBDataService>().Object,
                 new Mock<ILogger<PollLeadersModule>>().Object,
                 new Mock<IRankingsModule>().Object));
@@ -94,40 +94,6 @@ public class PollLeadersModuleTests
                 new Mock<ICFBDataService>().Object,
                 new Mock<ILogger<PollLeadersModule>>().Object,
                 null!));
-    }
-
-    [Fact]
-    public async Task GetPollLeadersAsync_NoPublishedSnapshots_ReturnsEmptyResult()
-    {
-        _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>());
-
-        var result = await _module.GetPollLeadersAsync(null, null);
-
-        Assert.Empty(result.AllWeeks);
-        Assert.Empty(result.FinalWeeksOnly);
-        Assert.Equal(0, result.MinAvailableSeason);
-        Assert.Equal(0, result.MaxAvailableSeason);
-    }
-
-    [Fact]
-    public async Task GetPollLeadersAsync_SkipsUnpublishedSnapshots()
-    {
-        _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
-            {
-                new() { Season = 2023, Week = 1, IsPublished = false },
-                new() { Season = 2023, Week = 2, IsPublished = false }
-            });
-
-        var result = await _module.GetPollLeadersAsync(null, null);
-
-        Assert.Empty(result.AllWeeks);
-        Assert.Empty(result.FinalWeeksOnly);
-        _mockRankingsModule.Verify(
-            x => x.GetPublishedSnapshotsBySeasonRangeAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
     }
 
     [Fact]
@@ -187,6 +153,215 @@ public class PollLeadersModuleTests
         Assert.Equal(2, ohioState.Top25Count);
         Assert.Equal(1, ohioState.Top10Count);
         Assert.Equal(0, ohioState.Top5Count);
+    }
+
+    [Fact]
+    public async Task GetPollLeadersAsync_AllWeeks_OrderedByTop25ThenTop10ThenTop5()
+    {
+        _mockRankingsModule
+            .Setup(x => x.GetSnapshotsAsync())
+            .ReturnsAsync(new List<SnapshotSummary>
+            {
+                new() { Season = 2023, Week = 1, IsPublished = true },
+                new() { Season = 2023, Week = 2, IsPublished = true }
+            });
+
+        _mockDataService
+            .Setup(x => x.GetCalendarAsync(2023))
+            .ReturnsAsync(new List<CalendarWeek>
+            {
+                new() { Week = 1, SeasonType = "regular" },
+                new() { Week = 2, SeasonType = "postseason" }
+            });
+
+        _mockRankingsModule
+            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2023))
+            .ReturnsAsync(new List<RankingsResult>
+            {
+                new()
+                {
+                    Season = 2023,
+                    Week = 1,
+                    Rankings = new List<RankedTeam>
+                    {
+                        CreateTeam("Alabama", 1, "https://example.com/alabama.png"),
+                        CreateTeam("Ohio State", 20, "https://example.com/ohiostate.png"),
+                        CreateTeam("Michigan", 6, "https://example.com/michigan.png")
+                    }
+                },
+                new()
+                {
+                    Season = 2023,
+                    Week = 2,
+                    Rankings = new List<RankedTeam>
+                    {
+                        CreateTeam("Alabama", 2, "https://example.com/alabama.png"),
+                        CreateTeam("Ohio State", 15, "https://example.com/ohiostate.png"),
+                        CreateTeam("Michigan", 3, "https://example.com/michigan.png")
+                    }
+                }
+            });
+
+        var result = await _module.GetPollLeadersAsync(null, null);
+
+        var allWeeks = result.AllWeeks.ToList();
+        Assert.Equal(3, allWeeks.Count);
+        Assert.Equal("Alabama", allWeeks[0].TeamName);
+        Assert.Equal("Michigan", allWeeks[1].TeamName);
+        Assert.Equal("Ohio State", allWeeks[2].TeamName);
+    }
+
+    [Fact]
+    public async Task GetPollLeadersAsync_AllWeeks_RankThresholdsCounted()
+    {
+        _mockRankingsModule
+            .Setup(x => x.GetSnapshotsAsync())
+            .ReturnsAsync(new List<SnapshotSummary>
+            {
+                new() { Season = 2023, Week = 1, IsPublished = true }
+            });
+
+        _mockDataService
+            .Setup(x => x.GetCalendarAsync(2023))
+            .ReturnsAsync(new List<CalendarWeek>
+            {
+                new() { Week = 1, SeasonType = "postseason" }
+            });
+
+        _mockRankingsModule
+            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2023))
+            .ReturnsAsync(new List<RankingsResult>
+            {
+                new()
+                {
+                    Season = 2023,
+                    Week = 1,
+                    Rankings = new List<RankedTeam>
+                    {
+                        CreateTeam("Alabama", 1, "https://example.com/alabama.png"),
+                        CreateTeam("Ohio State", 5, "https://example.com/ohiostate.png"),
+                        CreateTeam("Michigan", 10, "https://example.com/michigan.png"),
+                        CreateTeam("Texas", 25, "https://example.com/texas.png")
+                    }
+                }
+            });
+
+        var result = await _module.GetPollLeadersAsync(null, null);
+
+        var allWeeks = result.AllWeeks.ToList();
+
+        var alabama = allWeeks.First(e => e.TeamName == "Alabama");
+        Assert.Equal(1, alabama.Top5Count);
+        Assert.Equal(1, alabama.Top10Count);
+        Assert.Equal(1, alabama.Top25Count);
+
+        var ohioState = allWeeks.First(e => e.TeamName == "Ohio State");
+        Assert.Equal(1, ohioState.Top5Count);
+        Assert.Equal(1, ohioState.Top10Count);
+        Assert.Equal(1, ohioState.Top25Count);
+
+        var michigan = allWeeks.First(e => e.TeamName == "Michigan");
+        Assert.Equal(0, michigan.Top5Count);
+        Assert.Equal(1, michigan.Top10Count);
+        Assert.Equal(1, michigan.Top25Count);
+
+        var texas = allWeeks.First(e => e.TeamName == "Texas");
+        Assert.Equal(0, texas.Top5Count);
+        Assert.Equal(0, texas.Top10Count);
+        Assert.Equal(1, texas.Top25Count);
+    }
+
+    [Fact]
+    public async Task GetPollLeadersAsync_AvailableSeasonBounds_ReportsFromAllPublishedData()
+    {
+        _mockRankingsModule
+            .Setup(x => x.GetSnapshotsAsync())
+            .ReturnsAsync(new List<SnapshotSummary>
+            {
+                new() { Season = 2020, Week = 5, IsPublished = true },
+                new() { Season = 2021, Week = 5, IsPublished = true },
+                new() { Season = 2022, Week = 5, IsPublished = true },
+                new() { Season = 2023, Week = 5, IsPublished = true }
+            });
+
+        _mockRankingsModule
+            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2022, 2022))
+            .ReturnsAsync(new List<RankingsResult>
+            {
+                new()
+                {
+                    Season = 2022,
+                    Week = 5,
+                    Rankings = new List<RankedTeam>
+                    {
+                        CreateTeam("Nebraska", 10, "https://example.com/nebraska.png")
+                    }
+                }
+            });
+
+        _mockDataService
+            .Setup(x => x.GetCalendarAsync(2022))
+            .ReturnsAsync(new List<CalendarWeek>
+            {
+                new() { Week = 5, SeasonType = "postseason" }
+            });
+
+        var result = await _module.GetPollLeadersAsync(2022, 2022);
+
+        Assert.Equal(2020, result.MinAvailableSeason);
+        Assert.Equal(2023, result.MaxAvailableSeason);
+    }
+
+    [Fact]
+    public async Task GetPollLeadersAsync_CacheHit_ReturnsWithoutComputation()
+    {
+        _mockRankingsModule
+            .Setup(x => x.GetSnapshotsAsync())
+            .ReturnsAsync(new List<SnapshotSummary>
+            {
+                new() { Season = 2023, Week = 1, IsPublished = true }
+            });
+
+        var cachedResult = new PollLeadersResult
+        {
+            AllWeeks = new List<PollLeaderEntry>
+            {
+                new() { TeamName = "Alabama", Top25Count = 5 }
+            },
+            FinalWeeksOnly = [],
+            MinAvailableSeason = 2023,
+            MaxAvailableSeason = 2023
+        };
+
+        _mockCache
+            .Setup(x => x.GetAsync<PollLeadersResult>("poll-leaders_2023_2023"))
+            .ReturnsAsync(cachedResult);
+
+        var result = await _module.GetPollLeadersAsync(null, null);
+
+        Assert.Equal(cachedResult, result);
+        _mockRankingsModule.Verify(
+            x => x.GetPublishedSnapshotsBySeasonRangeAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetPollLeadersAsync_CacheMiss_StoresResult()
+    {
+        SetupSinglePublishedWeek(2023, 1, "postseason",
+            CreateTeam("Alabama", 1, "https://example.com/alabama.png"));
+
+        _mockCache
+            .Setup(x => x.GetAsync<PollLeadersResult>(It.IsAny<string>()))
+            .ReturnsAsync((PollLeadersResult?)null);
+        _mockCache
+            .Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<PollLeadersResult>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(true);
+
+        await _module.GetPollLeadersAsync(null, null);
+
+        _mockCache.Verify(
+            x => x.SetAsync("poll-leaders_2023_2023", It.IsAny<PollLeadersResult>(), It.IsAny<DateTime>()),
+            Times.Once);
     }
 
     [Fact]
@@ -282,91 +457,6 @@ public class PollLeadersModuleTests
     }
 
     [Fact]
-    public async Task GetPollLeadersAsync_YearRangeFilter_RespectsMinMaxParams()
-    {
-        _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
-            {
-                new() { Season = 2021, Week = 5, IsPublished = true },
-                new() { Season = 2022, Week = 5, IsPublished = true },
-                new() { Season = 2023, Week = 5, IsPublished = true }
-            });
-
-        _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2022, 2022))
-            .ReturnsAsync(new List<RankingsResult>
-            {
-                new()
-                {
-                    Season = 2022,
-                    Week = 5,
-                    Rankings = new List<RankedTeam>
-                    {
-                        CreateTeam("Florida", 1, "https://example.com/florida.png")
-                    }
-                }
-            });
-
-        _mockDataService
-            .Setup(x => x.GetCalendarAsync(2022))
-            .ReturnsAsync(new List<CalendarWeek>
-            {
-                new() { Week = 5, SeasonType = "postseason" }
-            });
-
-        var result = await _module.GetPollLeadersAsync(2022, 2022);
-
-        var allWeeks = result.AllWeeks.ToList();
-        Assert.Single(allWeeks);
-        Assert.Equal("Florida", allWeeks[0].TeamName);
-
-        _mockRankingsModule.Verify(
-            x => x.GetPublishedSnapshotsBySeasonRangeAsync(2022, 2022), Times.Once);
-    }
-
-    [Fact]
-    public async Task GetPollLeadersAsync_AvailableSeasonBounds_ReportsFromAllPublishedData()
-    {
-        _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
-            {
-                new() { Season = 2020, Week = 5, IsPublished = true },
-                new() { Season = 2021, Week = 5, IsPublished = true },
-                new() { Season = 2022, Week = 5, IsPublished = true },
-                new() { Season = 2023, Week = 5, IsPublished = true }
-            });
-
-        _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2022, 2022))
-            .ReturnsAsync(new List<RankingsResult>
-            {
-                new()
-                {
-                    Season = 2022,
-                    Week = 5,
-                    Rankings = new List<RankedTeam>
-                    {
-                        CreateTeam("Nebraska", 10, "https://example.com/nebraska.png")
-                    }
-                }
-            });
-
-        _mockDataService
-            .Setup(x => x.GetCalendarAsync(2022))
-            .ReturnsAsync(new List<CalendarWeek>
-            {
-                new() { Week = 5, SeasonType = "postseason" }
-            });
-
-        var result = await _module.GetPollLeadersAsync(2022, 2022);
-
-        Assert.Equal(2020, result.MinAvailableSeason);
-        Assert.Equal(2023, result.MaxAvailableSeason);
-    }
-
-    [Fact]
     public async Task GetPollLeadersAsync_FinalWeeksOnly_SkipsSeasonsWithNoPostseason()
     {
         _mockRankingsModule
@@ -444,203 +534,15 @@ public class PollLeadersModuleTests
     }
 
     [Fact]
-    public async Task GetPollLeadersAsync_TeamsOutsideTop25_ExcludedFromResults()
+    public async Task GetPollLeadersAsync_MapsLogoURL()
     {
-        _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
-            {
-                new() { Season = 2023, Week = 1, IsPublished = true }
-            });
-
-        _mockDataService
-            .Setup(x => x.GetCalendarAsync(2023))
-            .ReturnsAsync(new List<CalendarWeek>
-            {
-                new() { Week = 1, SeasonType = "postseason" }
-            });
-
-        _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2023))
-            .ReturnsAsync(new List<RankingsResult>
-            {
-                new()
-                {
-                    Season = 2023,
-                    Week = 1,
-                    Rankings = new List<RankedTeam>
-                    {
-                        CreateTeam("Alabama", 5, "https://example.com/alabama.png"),
-                        CreateTeam("Notre Dame", 26, "https://example.com/notredame.png"),
-                        CreateTeam("Texas", 50, "https://example.com/texas.png")
-                    }
-                }
-            });
+        SetupSinglePublishedWeek(2023, 1, "postseason",
+            CreateTeam("USC", 1, "https://example.com/usc.png"));
 
         var result = await _module.GetPollLeadersAsync(null, null);
 
-        var allWeeks = result.AllWeeks.ToList();
-        Assert.Single(allWeeks);
-        Assert.Equal("Alabama", allWeeks[0].TeamName);
-
-        var finalWeeks = result.FinalWeeksOnly.ToList();
-        Assert.Single(finalWeeks);
-        Assert.Equal("Alabama", finalWeeks[0].TeamName);
-    }
-
-    [Fact]
-    public async Task GetPollLeadersAsync_AllWeeks_RankThresholdsCounted()
-    {
-        _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
-            {
-                new() { Season = 2023, Week = 1, IsPublished = true }
-            });
-
-        _mockDataService
-            .Setup(x => x.GetCalendarAsync(2023))
-            .ReturnsAsync(new List<CalendarWeek>
-            {
-                new() { Week = 1, SeasonType = "postseason" }
-            });
-
-        _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2023))
-            .ReturnsAsync(new List<RankingsResult>
-            {
-                new()
-                {
-                    Season = 2023,
-                    Week = 1,
-                    Rankings = new List<RankedTeam>
-                    {
-                        CreateTeam("Alabama", 1, "https://example.com/alabama.png"),
-                        CreateTeam("Ohio State", 5, "https://example.com/ohiostate.png"),
-                        CreateTeam("Michigan", 10, "https://example.com/michigan.png"),
-                        CreateTeam("Texas", 25, "https://example.com/texas.png")
-                    }
-                }
-            });
-
-        var result = await _module.GetPollLeadersAsync(null, null);
-
-        var allWeeks = result.AllWeeks.ToList();
-
-        var alabama = allWeeks.First(e => e.TeamName == "Alabama");
-        Assert.Equal(1, alabama.Top5Count);
-        Assert.Equal(1, alabama.Top10Count);
-        Assert.Equal(1, alabama.Top25Count);
-
-        var ohioState = allWeeks.First(e => e.TeamName == "Ohio State");
-        Assert.Equal(1, ohioState.Top5Count);
-        Assert.Equal(1, ohioState.Top10Count);
-        Assert.Equal(1, ohioState.Top25Count);
-
-        var michigan = allWeeks.First(e => e.TeamName == "Michigan");
-        Assert.Equal(0, michigan.Top5Count);
-        Assert.Equal(1, michigan.Top10Count);
-        Assert.Equal(1, michigan.Top25Count);
-
-        var texas = allWeeks.First(e => e.TeamName == "Texas");
-        Assert.Equal(0, texas.Top5Count);
-        Assert.Equal(0, texas.Top10Count);
-        Assert.Equal(1, texas.Top25Count);
-    }
-
-    [Fact]
-    public async Task GetPollLeadersAsync_NullSnapshotFromBatch_HandledGracefully()
-    {
-        _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
-            {
-                new() { Season = 2023, Week = 1, IsPublished = true },
-                new() { Season = 2023, Week = 2, IsPublished = true }
-            });
-
-        _mockDataService
-            .Setup(x => x.GetCalendarAsync(2023))
-            .ReturnsAsync(new List<CalendarWeek>
-            {
-                new() { Week = 1, SeasonType = "regular" },
-                new() { Week = 2, SeasonType = "regular" }
-            });
-
-        _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2023))
-            .ReturnsAsync(new List<RankingsResult>
-            {
-                new()
-                {
-                    Season = 2023,
-                    Week = 2,
-                    Rankings = new List<RankedTeam>
-                    {
-                        CreateTeam("Oklahoma", 1, "https://example.com/oklahoma.png")
-                    }
-                }
-            });
-
-        var result = await _module.GetPollLeadersAsync(null, null);
-
-        var allWeeks = result.AllWeeks.ToList();
-        Assert.Single(allWeeks);
-        Assert.Equal("Oklahoma", allWeeks[0].TeamName);
-    }
-
-    [Fact]
-    public async Task GetPollLeadersAsync_MinSeasonOnly_FiltersFromMin()
-    {
-        _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
-            {
-                new() { Season = 2020, Week = 1, IsPublished = true },
-                new() { Season = 2021, Week = 1, IsPublished = true },
-                new() { Season = 2022, Week = 1, IsPublished = true }
-            });
-
-        _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2021, 2022))
-            .ReturnsAsync(new List<RankingsResult>
-            {
-                new()
-                {
-                    Season = 2021,
-                    Week = 1,
-                    Rankings = new List<RankedTeam>
-                    {
-                        CreateTeam("Florida", 1, "https://example.com/florida.png")
-                    }
-                },
-                new()
-                {
-                    Season = 2022,
-                    Week = 1,
-                    Rankings = new List<RankedTeam>
-                    {
-                        CreateTeam("Florida", 2, "https://example.com/florida.png")
-                    }
-                }
-            });
-
-        _mockDataService
-            .Setup(x => x.GetCalendarAsync(It.IsAny<int>()))
-            .ReturnsAsync(new List<CalendarWeek>
-            {
-                new() { Week = 1, SeasonType = "postseason" }
-            });
-
-        var result = await _module.GetPollLeadersAsync(2021, null);
-
-        var allWeeks = result.AllWeeks.ToList();
-        Assert.Single(allWeeks);
-        Assert.Equal("Florida", allWeeks[0].TeamName);
-        Assert.Equal(2, allWeeks[0].Top25Count);
-
-        _mockRankingsModule.Verify(
-            x => x.GetPublishedSnapshotsBySeasonRangeAsync(2021, 2022), Times.Once);
+        var entry = result.AllWeeks.First();
+        Assert.Equal("https://example.com/usc.png", entry.LogoURL);
     }
 
     [Fact]
@@ -698,71 +600,57 @@ public class PollLeadersModuleTests
     }
 
     [Fact]
-    public async Task GetPollLeadersAsync_MapsLogoURL()
-    {
-        SetupSinglePublishedWeek(2023, 1, "postseason",
-            CreateTeam("USC", 1, "https://example.com/usc.png"));
-
-        var result = await _module.GetPollLeadersAsync(null, null);
-
-        var entry = result.AllWeeks.First();
-        Assert.Equal("https://example.com/usc.png", entry.LogoURL);
-    }
-
-    [Fact]
-    public async Task GetPollLeadersAsync_AllWeeks_OrderedByTop25ThenTop10ThenTop5()
+    public async Task GetPollLeadersAsync_MinSeasonOnly_FiltersFromMin()
     {
         _mockRankingsModule
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
             {
-                new() { Season = 2023, Week = 1, IsPublished = true },
-                new() { Season = 2023, Week = 2, IsPublished = true }
-            });
-
-        _mockDataService
-            .Setup(x => x.GetCalendarAsync(2023))
-            .ReturnsAsync(new List<CalendarWeek>
-            {
-                new() { Week = 1, SeasonType = "regular" },
-                new() { Week = 2, SeasonType = "postseason" }
+                new() { Season = 2020, Week = 1, IsPublished = true },
+                new() { Season = 2021, Week = 1, IsPublished = true },
+                new() { Season = 2022, Week = 1, IsPublished = true }
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2023))
+            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2021, 2022))
             .ReturnsAsync(new List<RankingsResult>
             {
                 new()
                 {
-                    Season = 2023,
+                    Season = 2021,
                     Week = 1,
                     Rankings = new List<RankedTeam>
                     {
-                        CreateTeam("Alabama", 1, "https://example.com/alabama.png"),
-                        CreateTeam("Ohio State", 20, "https://example.com/ohiostate.png"),
-                        CreateTeam("Michigan", 6, "https://example.com/michigan.png")
+                        CreateTeam("Florida", 1, "https://example.com/florida.png")
                     }
                 },
                 new()
                 {
-                    Season = 2023,
-                    Week = 2,
+                    Season = 2022,
+                    Week = 1,
                     Rankings = new List<RankedTeam>
                     {
-                        CreateTeam("Alabama", 2, "https://example.com/alabama.png"),
-                        CreateTeam("Ohio State", 15, "https://example.com/ohiostate.png"),
-                        CreateTeam("Michigan", 3, "https://example.com/michigan.png")
+                        CreateTeam("Florida", 2, "https://example.com/florida.png")
                     }
                 }
             });
 
-        var result = await _module.GetPollLeadersAsync(null, null);
+        _mockDataService
+            .Setup(x => x.GetCalendarAsync(It.IsAny<int>()))
+            .ReturnsAsync(new List<CalendarWeek>
+            {
+                new() { Week = 1, SeasonType = "postseason" }
+            });
+
+        var result = await _module.GetPollLeadersAsync(2021, null);
 
         var allWeeks = result.AllWeeks.ToList();
-        Assert.Equal(3, allWeeks.Count);
-        Assert.Equal("Alabama", allWeeks[0].TeamName);
-        Assert.Equal("Michigan", allWeeks[1].TeamName);
-        Assert.Equal("Ohio State", allWeeks[2].TeamName);
+        Assert.Single(allWeeks);
+        Assert.Equal("Florida", allWeeks[0].TeamName);
+        Assert.Equal(2, allWeeks[0].Top25Count);
+
+        _mockRankingsModule.Verify(
+            x => x.GetPublishedSnapshotsBySeasonRangeAsync(2021, 2022), Times.Once);
     }
 
     [Fact]
@@ -817,7 +705,82 @@ public class PollLeadersModuleTests
     }
 
     [Fact]
-    public async Task GetPollLeadersAsync_CacheHit_ReturnsWithoutComputation()
+    public async Task GetPollLeadersAsync_NoPublishedSnapshots_ReturnsEmptyResult()
+    {
+        _mockRankingsModule
+            .Setup(x => x.GetSnapshotsAsync())
+            .ReturnsAsync(new List<SnapshotSummary>());
+
+        var result = await _module.GetPollLeadersAsync(null, null);
+
+        Assert.Empty(result.AllWeeks);
+        Assert.Empty(result.FinalWeeksOnly);
+        Assert.Equal(0, result.MinAvailableSeason);
+        Assert.Equal(0, result.MaxAvailableSeason);
+    }
+
+    [Fact]
+    public async Task GetPollLeadersAsync_NullSnapshotFromBatch_HandledGracefully()
+    {
+        _mockRankingsModule
+            .Setup(x => x.GetSnapshotsAsync())
+            .ReturnsAsync(new List<SnapshotSummary>
+            {
+                new() { Season = 2023, Week = 1, IsPublished = true },
+                new() { Season = 2023, Week = 2, IsPublished = true }
+            });
+
+        _mockDataService
+            .Setup(x => x.GetCalendarAsync(2023))
+            .ReturnsAsync(new List<CalendarWeek>
+            {
+                new() { Week = 1, SeasonType = "regular" },
+                new() { Week = 2, SeasonType = "regular" }
+            });
+
+        _mockRankingsModule
+            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2023))
+            .ReturnsAsync(new List<RankingsResult>
+            {
+                new()
+                {
+                    Season = 2023,
+                    Week = 2,
+                    Rankings = new List<RankedTeam>
+                    {
+                        CreateTeam("Oklahoma", 1, "https://example.com/oklahoma.png")
+                    }
+                }
+            });
+
+        var result = await _module.GetPollLeadersAsync(null, null);
+
+        var allWeeks = result.AllWeeks.ToList();
+        Assert.Single(allWeeks);
+        Assert.Equal("Oklahoma", allWeeks[0].TeamName);
+    }
+
+    [Fact]
+    public async Task GetPollLeadersAsync_SkipsUnpublishedSnapshots()
+    {
+        _mockRankingsModule
+            .Setup(x => x.GetSnapshotsAsync())
+            .ReturnsAsync(new List<SnapshotSummary>
+            {
+                new() { Season = 2023, Week = 1, IsPublished = false },
+                new() { Season = 2023, Week = 2, IsPublished = false }
+            });
+
+        var result = await _module.GetPollLeadersAsync(null, null);
+
+        Assert.Empty(result.AllWeeks);
+        Assert.Empty(result.FinalWeeksOnly);
+        _mockRankingsModule.Verify(
+            x => x.GetPublishedSnapshotsBySeasonRangeAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetPollLeadersAsync_TeamsOutsideTop25_ExcludedFromResults()
     {
         _mockRankingsModule
             .Setup(x => x.GetSnapshotsAsync())
@@ -826,46 +789,83 @@ public class PollLeadersModuleTests
                 new() { Season = 2023, Week = 1, IsPublished = true }
             });
 
-        var cachedResult = new PollLeadersResult
-        {
-            AllWeeks = new List<PollLeaderEntry>
+        _mockDataService
+            .Setup(x => x.GetCalendarAsync(2023))
+            .ReturnsAsync(new List<CalendarWeek>
             {
-                new() { TeamName = "Alabama", Top25Count = 5 }
-            },
-            FinalWeeksOnly = [],
-            MinAvailableSeason = 2023,
-            MaxAvailableSeason = 2023
-        };
+                new() { Week = 1, SeasonType = "postseason" }
+            });
 
-        _mockCache
-            .Setup(x => x.GetAsync<PollLeadersResult>("poll-leaders_2023_2023"))
-            .ReturnsAsync(cachedResult);
+        _mockRankingsModule
+            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2023))
+            .ReturnsAsync(new List<RankingsResult>
+            {
+                new()
+                {
+                    Season = 2023,
+                    Week = 1,
+                    Rankings = new List<RankedTeam>
+                    {
+                        CreateTeam("Alabama", 5, "https://example.com/alabama.png"),
+                        CreateTeam("Notre Dame", 26, "https://example.com/notredame.png"),
+                        CreateTeam("Texas", 50, "https://example.com/texas.png")
+                    }
+                }
+            });
 
         var result = await _module.GetPollLeadersAsync(null, null);
 
-        Assert.Equal(cachedResult, result);
-        _mockRankingsModule.Verify(
-            x => x.GetPublishedSnapshotsBySeasonRangeAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+        var allWeeks = result.AllWeeks.ToList();
+        Assert.Single(allWeeks);
+        Assert.Equal("Alabama", allWeeks[0].TeamName);
+
+        var finalWeeks = result.FinalWeeksOnly.ToList();
+        Assert.Single(finalWeeks);
+        Assert.Equal("Alabama", finalWeeks[0].TeamName);
     }
 
     [Fact]
-    public async Task GetPollLeadersAsync_CacheMiss_StoresResult()
+    public async Task GetPollLeadersAsync_YearRangeFilter_RespectsMinMaxParams()
     {
-        SetupSinglePublishedWeek(2023, 1, "postseason",
-            CreateTeam("Alabama", 1, "https://example.com/alabama.png"));
+        _mockRankingsModule
+            .Setup(x => x.GetSnapshotsAsync())
+            .ReturnsAsync(new List<SnapshotSummary>
+            {
+                new() { Season = 2021, Week = 5, IsPublished = true },
+                new() { Season = 2022, Week = 5, IsPublished = true },
+                new() { Season = 2023, Week = 5, IsPublished = true }
+            });
 
-        _mockCache
-            .Setup(x => x.GetAsync<PollLeadersResult>(It.IsAny<string>()))
-            .ReturnsAsync((PollLeadersResult?)null);
-        _mockCache
-            .Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<PollLeadersResult>(), It.IsAny<DateTime>()))
-            .ReturnsAsync(true);
+        _mockRankingsModule
+            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2022, 2022))
+            .ReturnsAsync(new List<RankingsResult>
+            {
+                new()
+                {
+                    Season = 2022,
+                    Week = 5,
+                    Rankings = new List<RankedTeam>
+                    {
+                        CreateTeam("Florida", 1, "https://example.com/florida.png")
+                    }
+                }
+            });
 
-        await _module.GetPollLeadersAsync(null, null);
+        _mockDataService
+            .Setup(x => x.GetCalendarAsync(2022))
+            .ReturnsAsync(new List<CalendarWeek>
+            {
+                new() { Week = 5, SeasonType = "postseason" }
+            });
 
-        _mockCache.Verify(
-            x => x.SetAsync("poll-leaders_2023_2023", It.IsAny<PollLeadersResult>(), It.IsAny<DateTime>()),
-            Times.Once);
+        var result = await _module.GetPollLeadersAsync(2022, 2022);
+
+        var allWeeks = result.AllWeeks.ToList();
+        Assert.Single(allWeeks);
+        Assert.Equal("Florida", allWeeks[0].TeamName);
+
+        _mockRankingsModule.Verify(
+            x => x.GetPublishedSnapshotsBySeasonRangeAsync(2022, 2022), Times.Once);
     }
 
     [Fact]
@@ -876,6 +876,25 @@ public class PollLeadersModuleTests
         await _module.InvalidateCacheAsync();
 
         _mockCache.Verify(x => x.RemoveByPrefixAsync("poll-leaders_"), Times.Once);
+    }
+
+    private static RankedTeam CreateTeam(string name, int rank, string logoURL)
+    {
+        return new RankedTeam
+        {
+            Conference = "Test Conference",
+            Details = new TeamDetails(),
+            Division = "Test Division",
+            LogoURL = logoURL,
+            Losses = 0,
+            Rank = rank,
+            Rating = 50.0,
+            RatingComponents = new Dictionary<string, double>(),
+            SOSRanking = rank,
+            TeamName = name,
+            WeightedSOS = 0.5,
+            Wins = 10
+        };
     }
 
     private void SetupSinglePublishedWeek(
@@ -906,24 +925,5 @@ public class PollLeadersModuleTests
                     Rankings = teams.ToList()
                 }
             });
-    }
-
-    private static RankedTeam CreateTeam(string name, int rank, string logoURL)
-    {
-        return new RankedTeam
-        {
-            Conference = "Test Conference",
-            Details = new TeamDetails(),
-            Division = "Test Division",
-            LogoURL = logoURL,
-            Losses = 0,
-            Rank = rank,
-            Rating = 50.0,
-            RatingComponents = new Dictionary<string, double>(),
-            SOSRanking = rank,
-            TeamName = name,
-            WeightedSOS = 0.5,
-            Wins = 10
-        };
     }
 }

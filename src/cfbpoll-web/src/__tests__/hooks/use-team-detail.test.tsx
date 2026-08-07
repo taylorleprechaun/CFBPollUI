@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor } from '@testing-library/react';
 import { type ReactNode } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { useTeamDetail } from '../../hooks/use-team-detail';
 
 const createWrapper = () => {
@@ -31,59 +32,96 @@ describe('useTeamDetail', () => {
     global.fetch = originalFetch;
   });
 
-  it('does not fetch when season is null', () => {
-    renderHook(() => useTeamDetail(null, 5, 'USC'), { wrapper: createWrapper() });
-    expect(global.fetch).not.toHaveBeenCalled();
-  });
-
-  it('does not fetch when week is null', () => {
-    renderHook(() => useTeamDetail(2024, null, 'USC'), { wrapper: createWrapper() });
-    expect(global.fetch).not.toHaveBeenCalled();
-  });
-
-  it('does not fetch when teamName is null', () => {
-    renderHook(() => useTeamDetail(2024, 5, null), { wrapper: createWrapper() });
-    expect(global.fetch).not.toHaveBeenCalled();
-  });
-
-  it('fetches when all params are provided', async () => {
-    const mockResponse = {
-      altColor: '#FFD700',
-      color: '#006400',
-      conference: 'Big Ten',
-      details: {
-        home: { wins: 6, losses: 0 },
-        away: { wins: 4, losses: 0 },
-        neutral: { wins: 1, losses: 0 },
-        vsRank1To10: { wins: 2, losses: 0 },
-        vsRank11To25: { wins: 3, losses: 0 },
-        vsRank26To50: { wins: 1, losses: 0 },
-        vsRank51To100: { wins: 2, losses: 0 },
-        vsRank101Plus: { wins: 3, losses: 0 },
-      },
-      division: '',
-      logoURL: 'https://example.com/usc.png',
-      rank: 1,
-      rating: 165.42,
-      record: '11-0',
-      schedule: [],
-      sosRanking: 15,
-      teamName: 'USC',
-      weightedSOS: 0.582,
-    };
-
+  it('accepts optional maxSeason parameter', async () => {
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve(mockResponse),
+      json: () => Promise.resolve(createMockTeamDetailResponse('USC')),
     } as Response);
 
-    const { result } = renderHook(() => useTeamDetail(2024, 5, 'USC'), {
+    const { result } = renderHook(() => useTeamDetail(2023, 5, 'USC', 2024), {
       wrapper: createWrapper(),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
     expect(global.fetch).toHaveBeenCalled();
+  });
+
+  it('changing season triggers new fetch', async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(createMockTeamDetailResponse('USC')),
+    } as Response);
+
+    const { result, rerender } = renderHook(
+      ({
+        season,
+        week,
+        teamName,
+      }: {
+        season: number;
+        teamName: string;
+        week: number;
+      }) => useTeamDetail(season, week, teamName),
+      {
+        wrapper: createWrapper(),
+        initialProps: { season: 2024, week: 5, teamName: 'USC' },
+      }
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(createMockTeamDetailResponse('USC')),
+    } as Response);
+
+    rerender({ season: 2023, week: 5, teamName: 'USC' });
+
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('season=2023'),
+        undefined
+      )
+    );
+  });
+
+  it('changing teamName triggers new fetch', async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(createMockTeamDetailResponse('USC')),
+    } as Response);
+
+    const { result, rerender } = renderHook(
+      ({
+        season,
+        week,
+        teamName,
+      }: {
+        season: number;
+        teamName: string;
+        week: number;
+      }) => useTeamDetail(season, week, teamName),
+      {
+        wrapper: createWrapper(),
+        initialProps: { season: 2024, week: 5, teamName: 'USC' },
+      }
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(createMockTeamDetailResponse('Florida')),
+    } as Response);
+
+    rerender({ season: 2024, week: 5, teamName: 'Florida' });
+
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/teams/Florida'),
+        undefined
+      )
+    );
   });
 
   it('constructs correct URL with encoded team name', async () => {
@@ -127,6 +165,85 @@ describe('useTeamDetail', () => {
       expect.stringContaining('/api/v1/teams/USC?season=2024&week=5'),
       undefined
     );
+  });
+
+  it('does not fetch when season is null', () => {
+    renderHook(() => useTeamDetail(null, 5, 'USC'), { wrapper: createWrapper() });
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('does not fetch when teamName is null', () => {
+    renderHook(() => useTeamDetail(2024, 5, null), { wrapper: createWrapper() });
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('does not fetch when week is null', () => {
+    renderHook(() => useTeamDetail(2024, null, 'USC'), { wrapper: createWrapper() });
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('fetches when all params are provided', async () => {
+    const mockResponse = {
+      altColor: '#FFD700',
+      color: '#006400',
+      conference: 'Big Ten',
+      details: {
+        home: { wins: 6, losses: 0 },
+        away: { wins: 4, losses: 0 },
+        neutral: { wins: 1, losses: 0 },
+        vsRank1To10: { wins: 2, losses: 0 },
+        vsRank11To25: { wins: 3, losses: 0 },
+        vsRank26To50: { wins: 1, losses: 0 },
+        vsRank51To100: { wins: 2, losses: 0 },
+        vsRank101Plus: { wins: 3, losses: 0 },
+      },
+      division: '',
+      logoURL: 'https://example.com/usc.png',
+      rank: 1,
+      rating: 165.42,
+      record: '11-0',
+      schedule: [],
+      sosRanking: 15,
+      teamName: 'USC',
+      weightedSOS: 0.582,
+    };
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockResponse),
+    } as Response);
+
+    const { result } = renderHook(() => useTeamDetail(2024, 5, 'USC'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(global.fetch).toHaveBeenCalled();
+  });
+
+  it('refetch after error succeeds', async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({ message: 'Server error' }),
+    } as Response);
+
+    const { result } = renderHook(() => useTeamDetail(2024, 5, 'USC'), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(createMockTeamDetailResponse('USC')),
+    } as Response);
+
+    await result.current.refetch();
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.teamName).toBe('USC');
   });
 
   it('returns error on fetch failure', async () => {
@@ -186,108 +303,6 @@ describe('useTeamDetail', () => {
     expect(result.current.data?.conference).toBe('Big Ten');
   });
 
-  it('refetch after error succeeds', async () => {
-    vi.mocked(global.fetch).mockResolvedValue({
-      ok: false,
-      status: 500,
-      json: () => Promise.resolve({ message: 'Server error' }),
-    } as Response);
-
-    const { result } = renderHook(() => useTeamDetail(2024, 5, 'USC'), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => expect(result.current.isError).toBe(true));
-
-    vi.mocked(global.fetch).mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(createMockTeamDetailResponse('USC')),
-    } as Response);
-
-    await result.current.refetch();
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.teamName).toBe('USC');
-  });
-
-  it('changing teamName triggers new fetch', async () => {
-    vi.mocked(global.fetch).mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(createMockTeamDetailResponse('USC')),
-    } as Response);
-
-    const { result, rerender } = renderHook(
-      ({
-        season,
-        week,
-        teamName,
-      }: {
-        season: number;
-        week: number;
-        teamName: string;
-      }) => useTeamDetail(season, week, teamName),
-      {
-        wrapper: createWrapper(),
-        initialProps: { season: 2024, week: 5, teamName: 'USC' },
-      }
-    );
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-    vi.mocked(global.fetch).mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(createMockTeamDetailResponse('Florida')),
-    } as Response);
-
-    rerender({ season: 2024, week: 5, teamName: 'Florida' });
-
-    await waitFor(() =>
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/teams/Florida'),
-        undefined
-      )
-    );
-  });
-
-  it('changing season triggers new fetch', async () => {
-    vi.mocked(global.fetch).mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(createMockTeamDetailResponse('USC')),
-    } as Response);
-
-    const { result, rerender } = renderHook(
-      ({
-        season,
-        week,
-        teamName,
-      }: {
-        season: number;
-        week: number;
-        teamName: string;
-      }) => useTeamDetail(season, week, teamName),
-      {
-        wrapper: createWrapper(),
-        initialProps: { season: 2024, week: 5, teamName: 'USC' },
-      }
-    );
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-    vi.mocked(global.fetch).mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(createMockTeamDetailResponse('USC')),
-    } as Response);
-
-    rerender({ season: 2023, week: 5, teamName: 'USC' });
-
-    await waitFor(() =>
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('season=2023'),
-        undefined
-      )
-    );
-  });
-
   it('transitioning from partial to complete params triggers fetch', async () => {
     const { result, rerender } = renderHook(
       ({
@@ -296,8 +311,8 @@ describe('useTeamDetail', () => {
         teamName,
       }: {
         season: number | null;
-        week: number | null;
         teamName: string | null;
+        week: number | null;
       }) => useTeamDetail(season, week, teamName),
       {
         wrapper: createWrapper(),
@@ -317,20 +332,6 @@ describe('useTeamDetail', () => {
     } as Response);
 
     rerender({ season: 2024, week: 5, teamName: 'USC' });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(global.fetch).toHaveBeenCalled();
-  });
-
-  it('accepts optional maxSeason parameter', async () => {
-    vi.mocked(global.fetch).mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(createMockTeamDetailResponse('USC')),
-    } as Response);
-
-    const { result } = renderHook(() => useTeamDetail(2023, 5, 'USC', 2024), {
-      wrapper: createWrapper(),
-    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(global.fetch).toHaveBeenCalled();

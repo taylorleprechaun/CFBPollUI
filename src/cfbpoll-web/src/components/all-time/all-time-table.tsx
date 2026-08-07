@@ -1,5 +1,7 @@
 import type { ColumnDef } from '@tanstack/react-table';
+
 import type { AllTimeEntry } from '../../types';
+
 import { SortableTable } from '../ui/sortable-table';
 
 interface AllTimeTableProps {

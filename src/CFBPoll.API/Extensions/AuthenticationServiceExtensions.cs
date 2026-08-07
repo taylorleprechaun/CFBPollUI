@@ -11,16 +11,16 @@ public static class AuthenticationServiceExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.Configure<AuthOptions>(configuration.GetSection(AuthOptions.SectionName));
+        services.Configure<AuthOptions>(configuration.GetSection(AuthOptions.SECTION_NAME));
 
-        var secret = configuration[$"{AuthOptions.SectionName}:Secret"];
-        var issuer = configuration[$"{AuthOptions.SectionName}:Issuer"];
+        var secret = configuration[$"{AuthOptions.SECTION_NAME}:Secret"];
+        var issuer = configuration[$"{AuthOptions.SECTION_NAME}:Issuer"];
 
         if (string.IsNullOrEmpty(secret))
-            throw new InvalidOperationException($"JWT configuration '{AuthOptions.SectionName}:Secret' is required but was not found. Ensure appsettings-private.json is present.");
+            throw new InvalidOperationException($"JWT configuration '{AuthOptions.SECTION_NAME}:Secret' is required but was not found. Ensure appsettings-private.json is present.");
 
         if (string.IsNullOrEmpty(issuer))
-            throw new InvalidOperationException($"JWT configuration '{AuthOptions.SectionName}:Issuer' is required but was not found. Ensure appsettings-private.json is present.");
+            throw new InvalidOperationException($"JWT configuration '{AuthOptions.SECTION_NAME}:Issuer' is required but was not found. Ensure appsettings-private.json is present.");
 
         services.AddAuthentication(options =>
         {

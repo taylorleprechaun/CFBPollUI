@@ -310,6 +310,53 @@ public class PredictionsDataTests
             CleanupFile(tempPath);
         }
     }
+
+    [Fact]
+    public async Task GetPublishedSeasonsAsync_NoPublishedWeeks_ReturnsEmpty()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveAsync(CreatePredictionsResult(2024, 1));
+
+            var seasons = (await data.GetPublishedSeasonsAsync()).ToList();
+
+            Assert.Empty(seasons);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetPublishedSeasonsAsync_ReturnsDistinctSeasonsDescending()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveAsync(CreatePredictionsResult(2023, 1));
+            await data.SaveAsync(CreatePredictionsResult(2024, 1));
+            await data.SaveAsync(CreatePredictionsResult(2024, 2));
+            await data.SaveAsync(CreatePredictionsResult(2025, 1));
+            await data.PublishAsync(2023, 1);
+            await data.PublishAsync(2024, 1);
+            await data.PublishAsync(2024, 2);
+
+            var seasons = (await data.GetPublishedSeasonsAsync()).ToList();
+
+            Assert.Equal(new List<int> { 2024, 2023 }, seasons);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
     [Fact]
     public async Task GetPublishedWeekNumbersAsync_NoPublishedWeeks_ReturnsEmpty()
     {

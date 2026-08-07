@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor } from '@testing-library/react';
 import { type ReactNode } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { usePollLeaders } from '../../hooks/use-poll-leaders';
 
 const createWrapper = () => {
@@ -33,6 +34,16 @@ describe('usePollLeaders', () => {
     global.fetch = originalFetch;
   });
 
+  it('does not fetch when only one param is provided', () => {
+    const { Wrapper } = createWrapper();
+    const { result } = renderHook(() => usePollLeaders(2002, undefined), {
+      wrapper: Wrapper,
+    });
+
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
   it('fetches poll leaders data with correct URL', async () => {
     const mockResponse = {
       allWeeks: [],
@@ -59,6 +70,28 @@ describe('usePollLeaders', () => {
     );
   });
 
+  it('fetches when both params are undefined for initial load', async () => {
+    const mockResponse = {
+      allWeeks: [],
+      finalWeeksOnly: [],
+      minAvailableSeason: 2002,
+      maxAvailableSeason: 2024,
+    };
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockResponse),
+    } as Response);
+
+    const { Wrapper } = createWrapper();
+    const { result } = renderHook(() => usePollLeaders(undefined, undefined), {
+      wrapper: Wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(global.fetch).toHaveBeenCalled();
+  });
+
   it('passes season params to API function', async () => {
     const mockResponse = {
       allWeeks: [],
@@ -82,38 +115,6 @@ describe('usePollLeaders', () => {
     const fetchUrl = vi.mocked(global.fetch).mock.calls[0][0] as string;
     expect(fetchUrl).toContain('minSeason=2010');
     expect(fetchUrl).toContain('maxSeason=2020');
-  });
-
-  it('fetches when both params are undefined for initial load', async () => {
-    const mockResponse = {
-      allWeeks: [],
-      finalWeeksOnly: [],
-      minAvailableSeason: 2002,
-      maxAvailableSeason: 2024,
-    };
-
-    vi.mocked(global.fetch).mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(mockResponse),
-    } as Response);
-
-    const { Wrapper } = createWrapper();
-    const { result } = renderHook(() => usePollLeaders(undefined, undefined), {
-      wrapper: Wrapper,
-    });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(global.fetch).toHaveBeenCalled();
-  });
-
-  it('does not fetch when only one param is provided', () => {
-    const { Wrapper } = createWrapper();
-    const { result } = renderHook(() => usePollLeaders(2002, undefined), {
-      wrapper: Wrapper,
-    });
-
-    expect(result.current.fetchStatus).toBe('idle');
-    expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it('returns error on fetch failure', async () => {

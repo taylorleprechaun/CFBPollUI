@@ -1,9 +1,9 @@
-import { useMemo, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { type ReactNode, useMemo } from 'react';
 
-import { fetchPageVisibility } from '../services/api';
-import { STALE_TIME_PAGE_VISIBILITY } from '../lib/query-config';
 import { PageVisibilityContext, type PageVisibilityContextValue } from '../hooks/use-page-visibility';
+import { STALE_TIME_PAGE_VISIBILITY } from '../lib/query-config';
+import { fetchPageVisibility } from '../services/api';
 
 export function PageVisibilityProvider({ children }: { children: ReactNode }) {
   const { data, isLoading } = useQuery({

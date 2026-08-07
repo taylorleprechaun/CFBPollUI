@@ -56,23 +56,6 @@ interface StatCardProps {
   suffix: string;
 }
 
-function StatCard({ label, numericValue, suffix }: StatCardProps) {
-  const { ref, inView } = useInView({ threshold: 0.2, triggerOnce: true });
-  const count = useCountUp({ end: numericValue, enabled: inView });
-
-  return (
-    <div
-      ref={ref}
-      className="bg-white/70 dark:bg-gray-800/60 backdrop-blur-md shadow-lg rounded-xl p-4 sm:p-6 text-center border border-white/20 dark:border-gray-700/40"
-    >
-      <div className="text-2xl sm:text-3xl font-extrabold text-accent">
-        {count}{suffix}
-      </div>
-      <div className="text-sm sm:text-base text-text-secondary mt-1">{label}</div>
-    </div>
-  );
-}
-
 export function HomePage() {
   useDocumentTitle('Taylor Steinberg - Home');
 
@@ -176,6 +159,23 @@ export function HomePage() {
         </div>
       </section>
 
+    </div>
+  );
+}
+
+function StatCard({ label, numericValue, suffix }: StatCardProps) {
+  const { ref, inView } = useInView({ threshold: 0.2, triggerOnce: true });
+  const count = useCountUp({ end: numericValue, enabled: inView });
+
+  return (
+    <div
+      ref={ref}
+      className="bg-white/70 dark:bg-gray-800/60 backdrop-blur-md shadow-lg rounded-xl p-4 sm:p-6 text-center border border-white/20 dark:border-gray-700/40"
+    >
+      <div className="text-2xl sm:text-3xl font-extrabold text-accent">
+        {count}{suffix}
+      </div>
+      <div className="text-sm sm:text-base text-text-secondary mt-1">{label}</div>
     </div>
   );
 }

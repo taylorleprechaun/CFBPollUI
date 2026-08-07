@@ -5,18 +5,6 @@ namespace CFBPoll.API.Mappers;
 
 public static class AllTimeMapper
 {
-    public static AllTimeResponseDTO ToResponseDTO(AllTimeResult result)
-    {
-        ArgumentNullException.ThrowIfNull(result);
-
-        return new AllTimeResponseDTO
-        {
-            BestTeams = result.BestTeams.Select(ToDTO),
-            HardestSchedules = result.HardestSchedules.Select(ToDTO),
-            WorstTeams = result.WorstTeams.Select(ToDTO)
-        };
-    }
-
     public static AllTimeEntryDTO ToDTO(AllTimeEntry entry)
     {
         ArgumentNullException.ThrowIfNull(entry);
@@ -34,6 +22,18 @@ public static class AllTimeMapper
             WeightedSOS = entry.WeightedSOS,
             Week = entry.Week,
             Wins = entry.Wins
+        };
+    }
+
+    public static AllTimeResponseDTO ToResponseDTO(AllTimeResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        return new AllTimeResponseDTO
+        {
+            BestTeams = result.BestTeams.Select(ToDTO),
+            HardestSchedules = result.HardestSchedules.Select(ToDTO),
+            WorstTeams = result.WorstTeams.Select(ToDTO)
         };
     }
 }

@@ -40,7 +40,7 @@ try
     });
 
     builder.Services.Configure<HistoricalDataOptions>(
-        builder.Configuration.GetSection(HistoricalDataOptions.SectionName));
+        builder.Configuration.GetSection(HistoricalDataOptions.SECTION_NAME));
 
     builder.Services.AddDatabase(builder.Configuration);
     builder.Services.AddCFBDataServiceWithCaching(builder.Configuration);

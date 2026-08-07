@@ -12,11 +12,12 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { PollLeaderEntry } from '../../schemas';
-import { useChartColors } from '../../hooks/use-chart-colors';
 
-import { ClusterTooltip } from './cluster-tooltip';
+import type { PollLeaderEntry } from '../../schemas';
 import type { ChartDataPoint } from './types';
+
+import { useChartColors } from '../../hooks/use-chart-colors';
+import { ClusterTooltip } from './cluster-tooltip';
 
 interface PollLeadersChartProps {
   children?: React.ReactNode;
@@ -32,25 +33,6 @@ interface PollLeadersChartProps {
 const LOGO_SIZE = 24;
 const TICK_COUNT = 5;
 
-function getNiceDomain(domain: [number, number]): [number, number] {
-  const niceTicks = getNiceTickValues(domain, TICK_COUNT, false);
-  if (niceTicks.length === 0) return domain;
-  return [
-    Math.min(domain[0], niceTicks[0]),
-    Math.max(domain[1], niceTicks[niceTicks.length - 1]),
-  ];
-}
-
-function projectToPixel(value: number, min: number, range: number, origin: number, size: number): number {
-  const normalized = range === 0 ? 0.5 : (value - min) / range;
-  return origin + normalized * size;
-}
-
-interface HitTargetProps {
-  cx?: number;
-  cy?: number;
-}
-
 export function HitTarget({ cx, cy }: HitTargetProps) {
   if (cx === undefined || cy === undefined) return null;
   return (
@@ -61,76 +43,6 @@ export function HitTarget({ cx, cy }: HitTargetProps) {
       height={LOGO_SIZE}
       fill="transparent"
     />
-  );
-}
-
-interface LogoOverlayProps {
-  data: ChartDataPoint[];
-}
-
-function LogoOverlay({ data }: LogoOverlayProps) {
-  const [fadingIn, setFadingIn] = useState<Set<string>>(new Set());
-  const [prevTeams, setPrevTeams] = useState<Set<string> | null>(null);
-
-  const plotArea = usePlotArea();
-  const xDomain = useXAxisDomain();
-  const yDomain = useYAxisDomain();
-
-  const currentTeams = useMemo(() => new Set(data.map((p) => p.teamName)), [data]);
-
-  if (currentTeams !== prevTeams) {
-    const newTeams = new Set<string>();
-    if (prevTeams !== null) {
-      for (const team of currentTeams) {
-        if (!prevTeams.has(team)) {
-          newTeams.add(team);
-        }
-      }
-    }
-    setPrevTeams(currentTeams);
-    if (newTeams.size > 0) {
-      setFadingIn(newTeams);
-    }
-  }
-
-  useEffect(() => {
-    if (fadingIn.size === 0) return;
-
-    const frameId = requestAnimationFrame(() => {
-      setFadingIn(new Set());
-    });
-    return () => cancelAnimationFrame(frameId);
-  }, [fadingIn]);
-
-  if (!plotArea || !xDomain || !yDomain) return null;
-
-  const [xMin, xMax] = getNiceDomain(xDomain as [number, number]);
-  const [yMin, yMax] = getNiceDomain(yDomain as [number, number]);
-  const xRange = xMax - xMin;
-  const yRange = yMax - yMin;
-
-  return (
-    <g>
-      {data.map((point) => {
-        const cx = projectToPixel(point.x, xMin, xRange, plotArea.x, plotArea.width);
-        const cy = plotArea.y + plotArea.height - projectToPixel(point.y, yMin, yRange, 0, plotArea.height);
-        return (
-          <image
-            key={point.teamName}
-            width={LOGO_SIZE}
-            height={LOGO_SIZE}
-            href={point.logoURL}
-            aria-label={point.teamName}
-            pointerEvents="none"
-            style={{
-              opacity: fadingIn.has(point.teamName) ? 0 : 1,
-              transform: `translate(${cx - LOGO_SIZE / 2}px, ${cy - LOGO_SIZE / 2}px)`,
-              transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in',
-            }}
-          />
-        );
-      })}
-    </g>
   );
 }
 
@@ -278,4 +190,93 @@ export function PollLeadersChart({
       </div>
     </div>
   );
+}
+
+interface HitTargetProps {
+  cx?: number;
+  cy?: number;
+}
+
+function getNiceDomain(domain: [number, number]): [number, number] {
+  const niceTicks = getNiceTickValues(domain, TICK_COUNT, false);
+  if (niceTicks.length === 0) return domain;
+  return [
+    Math.min(domain[0], niceTicks[0]),
+    Math.max(domain[1], niceTicks[niceTicks.length - 1]),
+  ];
+}
+
+interface LogoOverlayProps {
+  data: ChartDataPoint[];
+}
+
+function LogoOverlay({ data }: LogoOverlayProps) {
+  const [fadingIn, setFadingIn] = useState<Set<string>>(new Set());
+  const [prevTeams, setPrevTeams] = useState<Set<string> | null>(null);
+
+  const plotArea = usePlotArea();
+  const xDomain = useXAxisDomain();
+  const yDomain = useYAxisDomain();
+
+  const currentTeams = useMemo(() => new Set(data.map((p) => p.teamName)), [data]);
+
+  if (currentTeams !== prevTeams) {
+    const newTeams = new Set<string>();
+    if (prevTeams !== null) {
+      for (const team of currentTeams) {
+        if (!prevTeams.has(team)) {
+          newTeams.add(team);
+        }
+      }
+    }
+    setPrevTeams(currentTeams);
+    if (newTeams.size > 0) {
+      setFadingIn(newTeams);
+    }
+  }
+
+  useEffect(() => {
+    if (fadingIn.size === 0) return;
+
+    const frameId = requestAnimationFrame(() => {
+      setFadingIn(new Set());
+    });
+    return () => cancelAnimationFrame(frameId);
+  }, [fadingIn]);
+
+  if (!plotArea || !xDomain || !yDomain) return null;
+
+  const [xMin, xMax] = getNiceDomain(xDomain as [number, number]);
+  const [yMin, yMax] = getNiceDomain(yDomain as [number, number]);
+  const xRange = xMax - xMin;
+  const yRange = yMax - yMin;
+
+  return (
+    <g>
+      {data.map((point) => {
+        const cx = projectToPixel(point.x, xMin, xRange, plotArea.x, plotArea.width);
+        const cy = plotArea.y + plotArea.height - projectToPixel(point.y, yMin, yRange, 0, plotArea.height);
+        return (
+          <image
+            key={point.teamName}
+            width={LOGO_SIZE}
+            height={LOGO_SIZE}
+            href={point.logoURL}
+            aria-label={point.teamName}
+            pointerEvents="none"
+            style={{
+              opacity: fadingIn.has(point.teamName) ? 0 : 1,
+              transform: `translate(${cx - LOGO_SIZE / 2}px, ${cy - LOGO_SIZE / 2}px)`,
+              transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in',
+            }}
+          />
+        );
+      })}
+    </g>
+  );
+}
+
+function projectToPixel(value: number, min: number, range: number, origin: number, size: number): number {
+  const normalized = range === 0 ? 0.5 : (value - min) / range;
+  return origin + normalized * size;
 }

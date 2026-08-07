@@ -11,9 +11,9 @@ namespace CFBPoll.API.Tests.Controllers;
 
 public class AllTimeControllerTests
 {
+    private readonly AllTimeController _controller;
     private readonly Mock<IAllTimeModule> _mockAllTimeModule;
     private readonly Mock<ILogger<AllTimeController>> _mockLogger;
-    private readonly AllTimeController _controller;
 
     public AllTimeControllerTests()
     {
@@ -41,6 +41,23 @@ public class AllTimeControllerTests
             () => new AllTimeController(
                 new Mock<IAllTimeModule>().Object,
                 null!));
+    }
+
+    [Fact]
+    public async Task GetAllTimeRankings_EmptyResult_ReturnsOkWithEmptyLists()
+    {
+        _mockAllTimeModule
+            .Setup(x => x.GetAllTimeRankingsAsync())
+            .ReturnsAsync(new AllTimeResult());
+
+        var result = await _controller.GetAllTimeRankings();
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<AllTimeResponseDTO>(okResult.Value);
+
+        Assert.Empty(response.BestTeams);
+        Assert.Empty(response.HardestSchedules);
+        Assert.Empty(response.WorstTeams);
     }
 
     [Fact]
@@ -113,22 +130,5 @@ public class AllTimeControllerTests
 
         Assert.Single(response.WorstTeams);
         Assert.Equal("Team C", response.WorstTeams.First().TeamName);
-    }
-
-    [Fact]
-    public async Task GetAllTimeRankings_EmptyResult_ReturnsOkWithEmptyLists()
-    {
-        _mockAllTimeModule
-            .Setup(x => x.GetAllTimeRankingsAsync())
-            .ReturnsAsync(new AllTimeResult());
-
-        var result = await _controller.GetAllTimeRankings();
-
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var response = Assert.IsType<AllTimeResponseDTO>(okResult.Value);
-
-        Assert.Empty(response.BestTeams);
-        Assert.Empty(response.HardestSchedules);
-        Assert.Empty(response.WorstTeams);
     }
 }

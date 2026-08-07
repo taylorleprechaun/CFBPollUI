@@ -1,0 +1,1 @@
+cd src/cfbpoll-web && npx lint-staged

@@ -5,31 +5,6 @@ namespace CFBPoll.API.Mappers;
 
 public static class RankingsMapper
 {
-    public static RankingsResponseDTO ToResponseDTO(RankingsResult result)
-    {
-        ArgumentNullException.ThrowIfNull(result);
-
-        return new RankingsResponseDTO
-        {
-            Rankings = result.Rankings.Select(ToDTO),
-            Season = result.Season,
-            Week = result.Week
-        };
-    }
-
-    public static RankingsResponseDTO ToResponseDTO(RankingsResult result, IDictionary<string, int?> rankDeltas)
-    {
-        ArgumentNullException.ThrowIfNull(result);
-        ArgumentNullException.ThrowIfNull(rankDeltas);
-
-        return new RankingsResponseDTO
-        {
-            Rankings = result.Rankings.Select(team => ToDTO(team, rankDeltas)),
-            Season = result.Season,
-            Week = result.Week
-        };
-    }
-
     public static RankedTeamDTO ToDTO(RankedTeam team)
     {
         ArgumentNullException.ThrowIfNull(team);
@@ -86,6 +61,31 @@ public static class RankingsMapper
         {
             Losses = record.Losses,
             Wins = record.Wins
+        };
+    }
+
+    public static RankingsResponseDTO ToResponseDTO(RankingsResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        return new RankingsResponseDTO
+        {
+            Rankings = result.Rankings.Select(ToDTO),
+            Season = result.Season,
+            Week = result.Week
+        };
+    }
+
+    public static RankingsResponseDTO ToResponseDTO(RankingsResult result, IDictionary<string, int?> rankDeltas)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        ArgumentNullException.ThrowIfNull(rankDeltas);
+
+        return new RankingsResponseDTO
+        {
+            Rankings = result.Rankings.Select(team => ToDTO(team, rankDeltas)),
+            Season = result.Season,
+            Week = result.Week
         };
     }
 }

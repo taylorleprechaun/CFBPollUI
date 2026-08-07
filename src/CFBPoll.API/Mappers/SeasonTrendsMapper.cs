@@ -5,6 +5,19 @@ namespace CFBPoll.API.Mappers;
 
 public static class SeasonTrendsMapper
 {
+    public static SeasonTrendRankingDTO ToRankingDTO(SeasonTrendRanking model)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        return new SeasonTrendRankingDTO
+        {
+            Rank = model.Rank,
+            Rating = model.Rating,
+            Record = model.Record,
+            WeekNumber = model.WeekNumber
+        };
+    }
+
     public static SeasonTrendsResponseDTO ToResponseDTO(SeasonTrendsResult model)
     {
         ArgumentNullException.ThrowIfNull(model);
@@ -29,19 +42,6 @@ public static class SeasonTrendsMapper
             LogoURL = model.LogoURL,
             Rankings = model.Rankings.Select(ToRankingDTO).ToList(),
             TeamName = model.TeamName
-        };
-    }
-
-    public static SeasonTrendRankingDTO ToRankingDTO(SeasonTrendRanking model)
-    {
-        ArgumentNullException.ThrowIfNull(model);
-
-        return new SeasonTrendRankingDTO
-        {
-            Rank = model.Rank,
-            Rating = model.Rating,
-            Record = model.Record,
-            WeekNumber = model.WeekNumber
         };
     }
 

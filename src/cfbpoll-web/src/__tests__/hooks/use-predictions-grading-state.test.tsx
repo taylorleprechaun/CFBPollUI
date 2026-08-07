@@ -1,16 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
 import type { UseMutationResult } from '@tanstack/react-query';
-import { usePredictionsGradingState } from '../../hooks/use-predictions-grading-state';
+
+import { act, renderHook } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+
 import type { GradePredictionsResponse } from '../../schemas/admin';
 
-function fakeMutation<TData, TVariables>(overrides: Partial<UseMutationResult<TData, Error, TVariables>> = {}) {
-  return {
-    isPending: false,
-    mutateAsync: vi.fn(),
-    ...overrides,
-  } as unknown as UseMutationResult<TData, Error, TVariables>;
-}
+import { usePredictionsGradingState } from '../../hooks/use-predictions-grading-state';
 
 function baseOptions() {
   return {
@@ -20,6 +15,14 @@ function baseOptions() {
   };
 }
 
+function fakeMutation<TData, TVariables>(overrides: Partial<UseMutationResult<TData, Error, TVariables>> = {}) {
+  return {
+    isPending: false,
+    mutateAsync: vi.fn(),
+    ...overrides,
+  } as unknown as UseMutationResult<TData, Error, TVariables>;
+}
+
 const gradeResult: GradePredictionsResponse = {
   isPersisted: true,
   predictions: { isGraded: true, predictions: [], resultsPublished: false, season: 2024, week: 5 },
@@ -27,26 +30,25 @@ const gradeResult: GradePredictionsResponse = {
 };
 
 describe('usePredictionsGradingState', () => {
-  it('isGrading reflects gradeMutation.isPending', () => {
+  it('clearFeedback resets actionFeedback to null', async () => {
+    const mutateAsync = vi.fn().mockResolvedValue(gradeResult);
     const options = {
       ...baseOptions(),
-      gradeMutation: fakeMutation<GradePredictionsResponse, { season: number; week: number }>({ isPending: true }),
+      gradeMutation: fakeMutation<GradePredictionsResponse, { season: number; week: number }>({ mutateAsync }),
     };
 
     const { result } = renderHook(() => usePredictionsGradingState(options));
 
-    expect(result.current.isGrading).toBe(true);
-  });
+    await act(async () => {
+      await result.current.handleGrade(2024, 5);
+    });
+    expect(result.current.actionFeedback).not.toBeNull();
 
-  it('isPublishingResults reflects publishResultsMutation.isPending', () => {
-    const options = {
-      ...baseOptions(),
-      publishResultsMutation: fakeMutation<void, { season: number; week: number }>({ isPending: true }),
-    };
+    act(() => {
+      result.current.clearFeedback();
+    });
 
-    const { result } = renderHook(() => usePredictionsGradingState(options));
-
-    expect(result.current.isPublishingResults).toBe(true);
+    expect(result.current.actionFeedback).toBeNull();
   });
 
   it('handleGrade calls gradeMutation and invokes onGradeSuccess with success feedback', async () => {
@@ -129,24 +131,25 @@ describe('usePredictionsGradingState', () => {
     });
   });
 
-  it('clearFeedback resets actionFeedback to null', async () => {
-    const mutateAsync = vi.fn().mockResolvedValue(gradeResult);
+  it('isGrading reflects gradeMutation.isPending', () => {
     const options = {
       ...baseOptions(),
-      gradeMutation: fakeMutation<GradePredictionsResponse, { season: number; week: number }>({ mutateAsync }),
+      gradeMutation: fakeMutation<GradePredictionsResponse, { season: number; week: number }>({ isPending: true }),
     };
 
     const { result } = renderHook(() => usePredictionsGradingState(options));
 
-    await act(async () => {
-      await result.current.handleGrade(2024, 5);
-    });
-    expect(result.current.actionFeedback).not.toBeNull();
+    expect(result.current.isGrading).toBe(true);
+  });
 
-    act(() => {
-      result.current.clearFeedback();
-    });
+  it('isPublishingResults reflects publishResultsMutation.isPending', () => {
+    const options = {
+      ...baseOptions(),
+      publishResultsMutation: fakeMutation<void, { season: number; week: number }>({ isPending: true }),
+    };
 
-    expect(result.current.actionFeedback).toBeNull();
+    const { result } = renderHook(() => usePredictionsGradingState(options));
+
+    expect(result.current.isPublishingResults).toBe(true);
   });
 });

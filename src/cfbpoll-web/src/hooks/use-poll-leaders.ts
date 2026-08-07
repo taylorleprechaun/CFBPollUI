@@ -1,6 +1,5 @@
-import { useEffect } from 'react';
-
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 
 import { STALE_TIME_POLL_LEADERS } from '../lib/query-config';
 import { fetchPollLeaders } from '../services/api';

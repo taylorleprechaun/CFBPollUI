@@ -76,6 +76,21 @@ public class RankingsModule : IRankingsModule
         });
     }
 
+    public async Task<RankingsResult?> GetPublishedSnapshotAsync(int season, int week)
+    {
+        return await _rankingsData.GetPublishedSnapshotAsync(season, week).ConfigureAwait(false);
+    }
+
+    public async Task<IEnumerable<RankingsResult>> GetPublishedSnapshotsBySeasonRangeAsync(int minSeason, int maxSeason)
+    {
+        return await _rankingsData.GetPublishedSnapshotsBySeasonRangeAsync(minSeason, maxSeason).ConfigureAwait(false);
+    }
+
+    public async Task<IEnumerable<int>> GetPublishedWeekNumbersAsync(int season)
+    {
+        return await _rankingsData.GetPublishedWeekNumbersAsync(season).ConfigureAwait(false);
+    }
+
     public async Task<IDictionary<string, int?>> GetRankDeltasAsync(
         int season, int week, IEnumerable<RankedTeam> currentRankings)
     {
@@ -107,29 +122,14 @@ public class RankingsModule : IRankingsModule
             StringComparer.OrdinalIgnoreCase);
     }
 
-    public async Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync()
-    {
-        return await _rankingsData.GetSnapshotsAsync().ConfigureAwait(false);
-    }
-
-    public async Task<IEnumerable<int>> GetPublishedWeekNumbersAsync(int season)
-    {
-        return await _rankingsData.GetPublishedWeekNumbersAsync(season).ConfigureAwait(false);
-    }
-
-    public async Task<RankingsResult?> GetPublishedSnapshotAsync(int season, int week)
-    {
-        return await _rankingsData.GetPublishedSnapshotAsync(season, week).ConfigureAwait(false);
-    }
-
-    public async Task<IEnumerable<RankingsResult>> GetPublishedSnapshotsBySeasonRangeAsync(int minSeason, int maxSeason)
-    {
-        return await _rankingsData.GetPublishedSnapshotsBySeasonRangeAsync(minSeason, maxSeason).ConfigureAwait(false);
-    }
-
     public async Task<RankingsResult?> GetSnapshotAsync(int season, int week)
     {
         return await _rankingsData.GetSnapshotAsync(season, week).ConfigureAwait(false);
+    }
+
+    public async Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync()
+    {
+        return await _rankingsData.GetSnapshotsAsync().ConfigureAwait(false);
     }
 
     public async Task<bool> PublishSnapshotAsync(int season, int week)
@@ -185,11 +185,6 @@ public class RankingsModule : IRankingsModule
         };
     }
 
-    private Record UpdateRecord(Record record, bool isWin)
-    {
-        return isWin ? record.AddWin() : record.AddLoss();
-    }
-
     private TeamDetails UpdateLocationRecord(TeamDetails details, bool neutralSite, bool isHome, bool isWin)
     {
         if (neutralSite)
@@ -217,5 +212,10 @@ public class RankingsModule : IRankingsModule
             4 => details with { VsRank51To100 = UpdateRecord(details.VsRank51To100, isWin) },
             _ => details with { VsRank101Plus = UpdateRecord(details.VsRank101Plus, isWin) }
         };
+    }
+
+    private Record UpdateRecord(Record record, bool isWin)
+    {
+        return isWin ? record.AddWin() : record.AddLoss();
     }
 }

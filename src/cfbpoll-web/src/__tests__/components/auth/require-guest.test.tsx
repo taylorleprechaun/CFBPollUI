@@ -1,6 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { describe, expect, it, vi } from 'vitest';
+
 import { RequireGuest } from '../../../components/auth';
 
 let mockIsAuthenticated = false;
@@ -21,25 +22,25 @@ function renderWithRoutes(initialRoute: string) {
         <Route element={<RequireGuest />}>
           <Route path="/login" element={<div>Login Content</div>} />
         </Route>
-        <Route path="/admin/snapshots" element={<div>Admin Page</div>} />
+        <Route path="/" element={<div>Home Page</div>} />
       </Routes>
     </MemoryRouter>
   );
 }
 
 describe('RequireGuest', () => {
+  it('redirects to home when authenticated', () => {
+    mockIsAuthenticated = true;
+    renderWithRoutes('/login');
+
+    expect(screen.getByText('Home Page')).toBeInTheDocument();
+    expect(screen.queryByText('Login Content')).not.toBeInTheDocument();
+  });
+
   it('renders child route when not authenticated', () => {
     mockIsAuthenticated = false;
     renderWithRoutes('/login');
 
     expect(screen.getByText('Login Content')).toBeInTheDocument();
-  });
-
-  it('redirects to admin when authenticated', () => {
-    mockIsAuthenticated = true;
-    renderWithRoutes('/login');
-
-    expect(screen.getByText('Admin Page')).toBeInTheDocument();
-    expect(screen.queryByText('Login Content')).not.toBeInTheDocument();
   });
 });

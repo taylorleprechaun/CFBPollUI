@@ -1,6 +1,7 @@
-import { PersistedItemsSection } from './persisted-items-section';
-import type { ActionFeedback } from './types';
 import type { Snapshot } from '../../schemas/admin';
+import type { ActionFeedback } from './types';
+
+import { PersistedItemsSection } from './persisted-items-section';
 
 interface PersistedSnapshotsSectionProps {
   actionFeedback: ActionFeedback | null;

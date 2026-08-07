@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor } from '@testing-library/react';
 import { type ReactNode } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { useRankings } from '../../hooks/use-rankings';
 
 const createWrapper = () => {
@@ -31,115 +32,19 @@ describe('useRankings', () => {
     global.fetch = originalFetch;
   });
 
-  it('does not fetch when season is null', () => {
-    renderHook(() => useRankings(null, 1), { wrapper: createWrapper() });
-    expect(global.fetch).not.toHaveBeenCalled();
-  });
-
-  it('does not fetch when week is null', () => {
-    renderHook(() => useRankings(2024, null), { wrapper: createWrapper() });
-    expect(global.fetch).not.toHaveBeenCalled();
-  });
-
-  it('fetches when both season and week are provided', async () => {
-    const mockResponse = {
-      season: 2024,
-      week: 5,
-      rankings: [],
-    };
-
-    vi.mocked(global.fetch).mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(mockResponse),
-    } as Response);
-
-    const { result } = renderHook(() => useRankings(2024, 5), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-    expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/v1/seasons/2024/weeks/5/rankings'),
-      undefined
-    );
-  });
-
-  it('returns error on fetch failure', async () => {
-    vi.mocked(global.fetch).mockResolvedValue({
-      ok: false,
-      status: 500,
-      json: () => Promise.resolve({ message: 'Server error' }),
-    } as Response);
-
-    const { result } = renderHook(() => useRankings(2024, 5), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(result.current.error).toBeDefined();
-  });
-
-  it('returns rankings data on success', async () => {
-    const mockRankings = [
-      {
-        rank: 1,
-        rankDelta: null,
-        teamName: 'Florida',
-        logoURL: 'https://example.com/logo.png',
-        conference: 'SEC',
-        division: 'East',
-        wins: 5,
-        losses: 0,
-        record: '5-0',
-        rating: 85.5,
-        weightedSOS: 0.65,
-        sosRanking: 5,
-      },
-    ];
-
+  it('accepts optional maxSeason parameter', async () => {
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       json: () =>
-        Promise.resolve({
-          season: 2024,
-          week: 5,
-          rankings: mockRankings,
-        }),
+        Promise.resolve({ season: 2023, week: 5, rankings: [] }),
     } as Response);
 
-    const { result } = renderHook(() => useRankings(2024, 5), {
+    const { result } = renderHook(() => useRankings(2023, 5, 2024), {
       wrapper: createWrapper(),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.rankings).toHaveLength(1);
-    expect(result.current.data?.rankings[0].teamName).toBe('Florida');
-  });
-
-  it('refetch after error succeeds', async () => {
-    vi.mocked(global.fetch).mockResolvedValue({
-      ok: false,
-      status: 500,
-      json: () => Promise.resolve({ message: 'Server error' }),
-    } as Response);
-
-    const { result } = renderHook(() => useRankings(2024, 5), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => expect(result.current.isError).toBe(true));
-
-    vi.mocked(global.fetch).mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({ season: 2024, week: 5, rankings: [] }),
-    } as Response);
-
-    await result.current.refetch();
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.rankings).toHaveLength(0);
+    expect(global.fetch).toHaveBeenCalled();
   });
 
   it('changing season triggers new fetch', async () => {
@@ -211,6 +116,117 @@ describe('useRankings', () => {
     );
   });
 
+  it('does not fetch when season is null', () => {
+    renderHook(() => useRankings(null, 1), { wrapper: createWrapper() });
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('does not fetch when week is null', () => {
+    renderHook(() => useRankings(2024, null), { wrapper: createWrapper() });
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('fetches when both season and week are provided', async () => {
+    const mockResponse = {
+      season: 2024,
+      week: 5,
+      rankings: [],
+    };
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockResponse),
+    } as Response);
+
+    const { result } = renderHook(() => useRankings(2024, 5), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/v1/seasons/2024/weeks/5/rankings'),
+      undefined
+    );
+  });
+
+  it('refetch after error succeeds', async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({ message: 'Server error' }),
+    } as Response);
+
+    const { result } = renderHook(() => useRankings(2024, 5), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({ season: 2024, week: 5, rankings: [] }),
+    } as Response);
+
+    await result.current.refetch();
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.rankings).toHaveLength(0);
+  });
+
+  it('returns error on fetch failure', async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({ message: 'Server error' }),
+    } as Response);
+
+    const { result } = renderHook(() => useRankings(2024, 5), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toBeDefined();
+  });
+
+  it('returns rankings data on success', async () => {
+    const mockRankings = [
+      {
+        rank: 1,
+        rankDelta: null,
+        teamName: 'Florida',
+        logoURL: 'https://example.com/logo.png',
+        conference: 'SEC',
+        division: 'East',
+        wins: 5,
+        losses: 0,
+        record: '5-0',
+        rating: 85.5,
+        weightedSOS: 0.65,
+        sosRanking: 5,
+      },
+    ];
+
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          season: 2024,
+          week: 5,
+          rankings: mockRankings,
+        }),
+    } as Response);
+
+    const { result } = renderHook(() => useRankings(2024, 5), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.rankings).toHaveLength(1);
+    expect(result.current.data?.rankings[0].teamName).toBe('Florida');
+  });
+
   it('transitioning season from null to valid triggers fetch', async () => {
     const { result, rerender } = renderHook(
       ({
@@ -235,21 +251,6 @@ describe('useRankings', () => {
     } as Response);
 
     rerender({ season: 2024, week: 5 });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(global.fetch).toHaveBeenCalled();
-  });
-
-  it('accepts optional maxSeason parameter', async () => {
-    vi.mocked(global.fetch).mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({ season: 2023, week: 5, rankings: [] }),
-    } as Response);
-
-    const { result } = renderHook(() => useRankings(2023, 5, 2024), {
-      wrapper: createWrapper(),
-    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(global.fetch).toHaveBeenCalled();

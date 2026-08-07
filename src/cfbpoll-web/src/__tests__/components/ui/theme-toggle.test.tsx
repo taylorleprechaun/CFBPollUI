@@ -1,6 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
+
 import { ThemeToggle } from '../../../components/ui/theme-toggle';
 
 const mockSetTheme = vi.fn();
@@ -38,19 +39,19 @@ describe('ThemeToggle', () => {
     expect(mockSetTheme).toHaveBeenCalledWith('light');
   });
 
-  it('shows switch to light mode label when theme is dark', () => {
-    mockResolvedTheme = 'dark';
-
-    render(<ThemeToggle />);
-
-    expect(screen.getByRole('button')).toHaveAttribute('aria-label', 'Switch to light mode');
-  });
-
   it('shows switch to dark mode label when theme is light', () => {
     mockResolvedTheme = 'light';
 
     render(<ThemeToggle />);
 
     expect(screen.getByRole('button')).toHaveAttribute('aria-label', 'Switch to dark mode');
+  });
+
+  it('shows switch to light mode label when theme is dark', () => {
+    mockResolvedTheme = 'dark';
+
+    render(<ThemeToggle />);
+
+    expect(screen.getByRole('button')).toHaveAttribute('aria-label', 'Switch to light mode');
   });
 });

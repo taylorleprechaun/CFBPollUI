@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { LoginPage } from '../../pages/login-page';
 
 const mockNavigate = vi.fn();
@@ -39,16 +40,20 @@ describe('LoginPage', () => {
     mockIsAuthenticated = false;
   });
 
-  it('renders login form', () => {
+  it('disables button while submitting', async () => {
+    mockLogin.mockImplementation(() => new Promise(() => {}));
     renderLoginPage();
 
-    expect(screen.getByText('Admin Login')).toBeInTheDocument();
-    expect(screen.getByLabelText('Username')).toBeInTheDocument();
-    expect(screen.getByLabelText('Password')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Log In' })).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText('Username'), 'admin');
+    await userEvent.type(screen.getByLabelText('Password'), 'secret');
+    await userEvent.click(screen.getByRole('button', { name: 'Log In' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Logging in...' })).toBeDisabled();
+    });
   });
 
-  it('submits credentials on form submit', async () => {
+  it('navigates to home on successful login', async () => {
     mockLogin.mockResolvedValue(undefined);
     renderLoginPage();
 
@@ -57,8 +62,17 @@ describe('LoginPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Log In' }));
 
     await waitFor(() => {
-      expect(mockLogin).toHaveBeenCalledWith('admin', 'secret');
+      expect(mockNavigate).toHaveBeenCalledWith('/');
     });
+  });
+
+  it('renders login form', () => {
+    renderLoginPage();
+
+    expect(screen.getByText('Admin Login')).toBeInTheDocument();
+    expect(screen.getByLabelText('Username')).toBeInTheDocument();
+    expect(screen.getByLabelText('Password')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Log In' })).toBeInTheDocument();
   });
 
   it('shows error message on login failure', async () => {
@@ -87,7 +101,7 @@ describe('LoginPage', () => {
     });
   });
 
-  it('navigates to admin on successful login', async () => {
+  it('submits credentials on form submit', async () => {
     mockLogin.mockResolvedValue(undefined);
     renderLoginPage();
 
@@ -96,20 +110,7 @@ describe('LoginPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Log In' }));
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/admin/snapshots');
-    });
-  });
-
-  it('disables button while submitting', async () => {
-    mockLogin.mockImplementation(() => new Promise(() => {}));
-    renderLoginPage();
-
-    await userEvent.type(screen.getByLabelText('Username'), 'admin');
-    await userEvent.type(screen.getByLabelText('Password'), 'secret');
-    await userEvent.click(screen.getByRole('button', { name: 'Log In' }));
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Logging in...' })).toBeDisabled();
+      expect(mockLogin).toHaveBeenCalledWith('admin', 'secret');
     });
   });
 });

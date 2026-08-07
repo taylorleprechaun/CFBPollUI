@@ -39,6 +39,7 @@ public class CacheCleanupHostedServiceTests
         Assert.Throws<ArgumentNullException>(() =>
             new CacheCleanupHostedService(_mockCache.Object, null!, _mockLogger.Object));
     }
+
     [Fact]
     public async Task ExecuteAsync_CallsCleanupExpiredAsync_AfterStartupDelay()
     {

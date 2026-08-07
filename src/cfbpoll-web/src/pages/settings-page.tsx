@@ -1,12 +1,13 @@
-import { useId } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useId } from 'react';
 
-import { useAuth } from '../hooks/use-auth';
-import { usePageVisibility } from '../hooks/use-page-visibility';
-import { BUTTON_GHOST } from '../components/ui/button-styles';
-import { useDocumentTitle } from '../hooks/use-document-title';
-import { updatePageVisibility } from '../services/admin-api';
 import type { PageVisibility } from '../schemas';
+
+import { BUTTON_GHOST } from '../components/ui/button-styles';
+import { useAuth } from '../hooks/use-auth';
+import { useDocumentTitle } from '../hooks/use-document-title';
+import { usePageVisibility } from '../hooks/use-page-visibility';
+import { updatePageVisibility } from '../services/admin-api';
 
 interface ToggleSwitchProps {
   checked: boolean;
@@ -15,31 +16,8 @@ interface ToggleSwitchProps {
   onChange: (checked: boolean) => void;
 }
 
-function ToggleSwitch({ checked, disabled, label, onChange }: ToggleSwitchProps) {
-  const id = useId();
-
-  return (
-    <div className="flex items-center justify-between">
-      <label htmlFor={id} className="text-sm font-medium text-text-secondary">
-        {label}
-      </label>
-      <button
-        id={id}
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        disabled={disabled}
-        className={`relative inline-flex h-6 w-11 rounded-full transition-colors duration-200 disabled:opacity-50 ${checked ? 'bg-accent' : 'bg-border-strong'}`}
-      >
-        <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${checked ? 'translate-x-5' : 'translate-x-0.5'} mt-0.5`} />
-      </button>
-    </div>
-  );
-}
-
 export function SettingsPage() {
-  useDocumentTitle('Settings - CFB Poll');
+  useDocumentTitle('Taylor Steinberg - Settings');
 
   const { token, logout } = useAuth();
   const { allTimeEnabled, pollLeadersEnabled, predictionsPageEnabled, seasonTrendsEnabled } = usePageVisibility();
@@ -123,6 +101,29 @@ export function SettingsPage() {
           <p className="mt-3 text-sm text-red-600">Failed to update page visibility</p>
         )}
       </div>
+    </div>
+  );
+}
+
+function ToggleSwitch({ checked, disabled, label, onChange }: ToggleSwitchProps) {
+  const id = useId();
+
+  return (
+    <div className="flex items-center justify-between">
+      <label htmlFor={id} className="text-sm font-medium text-text-secondary">
+        {label}
+      </label>
+      <button
+        id={id}
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        disabled={disabled}
+        className={`relative inline-flex h-6 w-11 rounded-full transition-colors duration-200 disabled:opacity-50 ${checked ? 'bg-accent' : 'bg-border-strong'}`}
+      >
+        <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${checked ? 'translate-x-5' : 'translate-x-0.5'} mt-0.5`} />
+      </button>
     </div>
   );
 }

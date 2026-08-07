@@ -22,39 +22,6 @@ public class ValidateSeasonWeekAttributeTests
     }
 
     [Theory]
-    [InlineData(2001)]
-    [InlineData(1999)]
-    [InlineData(0)]
-    public void OnActionExecuting_SeasonBelowMinimum_ReturnsBadRequest(int season)
-    {
-        ActionExecutingContext context = CreateContext(
-            new Dictionary<string, object?> { { "season", season }, { "week", 1 } },
-            minimumYear: 2002);
-
-        _attribute.OnActionExecuting(context);
-
-        var badRequest = Assert.IsType<BadRequestObjectResult>(context.Result);
-        var error = Assert.IsType<ErrorResponseDTO>(badRequest.Value);
-        Assert.Equal("Invalid season year", error.Message);
-        Assert.Equal(400, error.StatusCode);
-    }
-
-    [Fact]
-    public void OnActionExecuting_SeasonTooFarInFuture_ReturnsBadRequest()
-    {
-        int futureYear = DateTime.UtcNow.Year + 2;
-        ActionExecutingContext context = CreateContext(
-            new Dictionary<string, object?> { { "season", futureYear }, { "week", 1 } },
-            minimumYear: 2002);
-
-        _attribute.OnActionExecuting(context);
-
-        var badRequest = Assert.IsType<BadRequestObjectResult>(context.Result);
-        var error = Assert.IsType<ErrorResponseDTO>(badRequest.Value);
-        Assert.Equal("Invalid season year", error.Message);
-    }
-
-    [Theory]
     [InlineData(0)]
     [InlineData(-1)]
     [InlineData(-100)]
@@ -73,10 +40,22 @@ public class ValidateSeasonWeekAttributeTests
     }
 
     [Fact]
-    public void OnActionExecuting_ValidSeasonAndWeek_DoesNotSetResult()
+    public void OnActionExecuting_NoSeasonArgument_DoesNotSetResult()
     {
         ActionExecutingContext context = CreateContext(
-            new Dictionary<string, object?> { { "season", 2023 }, { "week", 5 } },
+            new Dictionary<string, object?> { { "week", 5 } },
+            minimumYear: 2002);
+
+        _attribute.OnActionExecuting(context);
+
+        Assert.Null(context.Result);
+    }
+
+    [Fact]
+    public void OnActionExecuting_NoWeekArgument_DoesNotSetResult()
+    {
+        ActionExecutingContext context = CreateContext(
+            new Dictionary<string, object?> { { "season", 2023 } },
             minimumYear: 2002);
 
         _attribute.OnActionExecuting(context);
@@ -109,6 +88,39 @@ public class ValidateSeasonWeekAttributeTests
         Assert.Null(context.Result);
     }
 
+    [Theory]
+    [InlineData(2001)]
+    [InlineData(1999)]
+    [InlineData(0)]
+    public void OnActionExecuting_SeasonBelowMinimum_ReturnsBadRequest(int season)
+    {
+        ActionExecutingContext context = CreateContext(
+            new Dictionary<string, object?> { { "season", season }, { "week", 1 } },
+            minimumYear: 2002);
+
+        _attribute.OnActionExecuting(context);
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(context.Result);
+        var error = Assert.IsType<ErrorResponseDTO>(badRequest.Value);
+        Assert.Equal("Invalid season year", error.Message);
+        Assert.Equal(400, error.StatusCode);
+    }
+
+    [Fact]
+    public void OnActionExecuting_SeasonTooFarInFuture_ReturnsBadRequest()
+    {
+        int futureYear = DateTime.UtcNow.Year + 2;
+        ActionExecutingContext context = CreateContext(
+            new Dictionary<string, object?> { { "season", futureYear }, { "week", 1 } },
+            minimumYear: 2002);
+
+        _attribute.OnActionExecuting(context);
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(context.Result);
+        var error = Assert.IsType<ErrorResponseDTO>(badRequest.Value);
+        Assert.Equal("Invalid season year", error.Message);
+    }
+
     [Fact]
     public void OnActionExecuting_UsesMinimumYearFromOptions()
     {
@@ -122,22 +134,10 @@ public class ValidateSeasonWeekAttributeTests
     }
 
     [Fact]
-    public void OnActionExecuting_NoSeasonArgument_DoesNotSetResult()
+    public void OnActionExecuting_ValidSeasonAndWeek_DoesNotSetResult()
     {
         ActionExecutingContext context = CreateContext(
-            new Dictionary<string, object?> { { "week", 5 } },
-            minimumYear: 2002);
-
-        _attribute.OnActionExecuting(context);
-
-        Assert.Null(context.Result);
-    }
-
-    [Fact]
-    public void OnActionExecuting_NoWeekArgument_DoesNotSetResult()
-    {
-        ActionExecutingContext context = CreateContext(
-            new Dictionary<string, object?> { { "season", 2023 } },
+            new Dictionary<string, object?> { { "season", 2023 }, { "week", 5 } },
             minimumYear: 2002);
 
         _attribute.OnActionExecuting(context);

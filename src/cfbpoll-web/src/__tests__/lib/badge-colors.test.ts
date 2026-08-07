@@ -1,6 +1,8 @@
-import { describe, it, expect } from 'vitest';
-import { badgeColorClasses } from '../../lib/badge-colors';
+import { describe, expect, it } from 'vitest';
+
 import type { BadgeColor } from '../../lib/badge-colors';
+
+import { badgeColorClasses } from '../../lib/badge-colors';
 
 describe('badgeColorClasses', () => {
   const cases: [BadgeColor, string][] = [

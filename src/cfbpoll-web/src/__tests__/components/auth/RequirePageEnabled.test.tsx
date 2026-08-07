@@ -1,6 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { describe, expect, it, vi } from 'vitest';
+
 import { RequirePageEnabled } from '../../../components/auth/require-page-enabled';
 
 let mockIsLoading = false;
@@ -29,13 +30,6 @@ function renderWithRouter(enabled: boolean) {
 }
 
 describe('RequirePageEnabled', () => {
-  it('renders children when enabled is true', () => {
-    mockIsLoading = false;
-    renderWithRouter(true);
-
-    expect(screen.getByText('Protected Content')).toBeInTheDocument();
-  });
-
   it('redirects to / when enabled is false', () => {
     mockIsLoading = false;
     renderWithRouter(false);
@@ -44,12 +38,11 @@ describe('RequirePageEnabled', () => {
     expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
   });
 
-  it('shows loading fallback while isLoading is true', () => {
-    mockIsLoading = true;
+  it('renders children when enabled is true', () => {
+    mockIsLoading = false;
     renderWithRouter(true);
 
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
-    expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+    expect(screen.getByText('Protected Content')).toBeInTheDocument();
   });
 
   it('shows loading fallback when isLoading is true and enabled is false', () => {
@@ -59,5 +52,13 @@ describe('RequirePageEnabled', () => {
     expect(screen.getByText('Loading...')).toBeInTheDocument();
     expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
     expect(screen.queryByText('Home Page')).not.toBeInTheDocument();
+  });
+
+  it('shows loading fallback while isLoading is true', () => {
+    mockIsLoading = true;
+    renderWithRouter(true);
+
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
   });
 });

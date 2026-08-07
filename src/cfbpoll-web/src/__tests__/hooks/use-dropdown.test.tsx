@@ -1,8 +1,18 @@
-import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { describe, expect, it } from 'vitest';
+
 import { useDropdown } from '../../hooks/use-dropdown';
+
+function renderDropdown() {
+  return render(
+    <MemoryRouter>
+      <span>Outside</span>
+      <TestDropdown />
+    </MemoryRouter>
+  );
+}
 
 function TestDropdown() {
   const { containerRef, isOpen, toggle } = useDropdown();
@@ -17,39 +27,14 @@ function TestDropdown() {
   );
 }
 
-function renderDropdown() {
-  return render(
-    <MemoryRouter>
-      <span>Outside</span>
-      <TestDropdown />
-    </MemoryRouter>
-  );
-}
-
 describe('useDropdown', () => {
-  it('starts closed', () => {
-    renderDropdown();
-
-    expect(screen.queryByText('Dropdown Content')).not.toBeInTheDocument();
-    expect(screen.getByRole('button')).toHaveAttribute('aria-expanded', 'false');
-  });
-
-  it('opens on toggle', async () => {
-    renderDropdown();
-
-    await userEvent.click(screen.getByRole('button'));
-
-    expect(screen.getByText('Dropdown Content')).toBeInTheDocument();
-    expect(screen.getByRole('button')).toHaveAttribute('aria-expanded', 'true');
-  });
-
-  it('closes on second toggle', async () => {
+  it('closes on click outside', async () => {
     renderDropdown();
 
     await userEvent.click(screen.getByRole('button'));
     expect(screen.getByText('Dropdown Content')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button'));
+    await userEvent.click(screen.getByText('Outside'));
     expect(screen.queryByText('Dropdown Content')).not.toBeInTheDocument();
   });
 
@@ -63,13 +48,29 @@ describe('useDropdown', () => {
     expect(screen.queryByText('Dropdown Content')).not.toBeInTheDocument();
   });
 
-  it('closes on click outside', async () => {
+  it('closes on second toggle', async () => {
     renderDropdown();
 
     await userEvent.click(screen.getByRole('button'));
     expect(screen.getByText('Dropdown Content')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByText('Outside'));
+    await userEvent.click(screen.getByRole('button'));
     expect(screen.queryByText('Dropdown Content')).not.toBeInTheDocument();
+  });
+
+  it('opens on toggle', async () => {
+    renderDropdown();
+
+    await userEvent.click(screen.getByRole('button'));
+
+    expect(screen.getByText('Dropdown Content')).toBeInTheDocument();
+    expect(screen.getByRole('button')).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('starts closed', () => {
+    renderDropdown();
+
+    expect(screen.queryByText('Dropdown Content')).not.toBeInTheDocument();
+    expect(screen.getByRole('button')).toHaveAttribute('aria-expanded', 'false');
   });
 });

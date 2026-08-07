@@ -6,6 +6,32 @@ namespace CFBPoll.Core.Tests.Models;
 public class ScheduleGameTests
 {
     [Fact]
+    public void ScheduleGame_BooleanPropertiesDefaultToFalse()
+    {
+        var game = new ScheduleGame();
+
+        Assert.False(game.Completed);
+        Assert.False(game.NeutralSite);
+        Assert.False(game.StartTimeTbd);
+    }
+
+    [Fact]
+    public void ScheduleGame_NullablePropertiesDefaultToNull()
+    {
+        var game = new ScheduleGame();
+
+        Assert.Null(game.AwayPoints);
+        Assert.Null(game.AwayTeam);
+        Assert.Null(game.GameID);
+        Assert.Null(game.HomePoints);
+        Assert.Null(game.HomeTeam);
+        Assert.Null(game.SeasonType);
+        Assert.Null(game.StartDate);
+        Assert.Null(game.Venue);
+        Assert.Null(game.Week);
+    }
+
+    [Fact]
     public void ScheduleGame_PropertiesCanBeSetAndRetrieved()
     {
         var startDate = new DateTime(2024, 9, 7, 19, 0, 0);
@@ -38,31 +64,5 @@ public class ScheduleGameTests
         Assert.False(game.StartTimeTbd);
         Assert.Equal("Cotton Bowl", game.Venue);
         Assert.Equal(6, game.Week);
-    }
-
-    [Fact]
-    public void ScheduleGame_NullablePropertiesDefaultToNull()
-    {
-        var game = new ScheduleGame();
-
-        Assert.Null(game.AwayPoints);
-        Assert.Null(game.AwayTeam);
-        Assert.Null(game.GameID);
-        Assert.Null(game.HomePoints);
-        Assert.Null(game.HomeTeam);
-        Assert.Null(game.SeasonType);
-        Assert.Null(game.StartDate);
-        Assert.Null(game.Venue);
-        Assert.Null(game.Week);
-    }
-
-    [Fact]
-    public void ScheduleGame_BooleanPropertiesDefaultToFalse()
-    {
-        var game = new ScheduleGame();
-
-        Assert.False(game.Completed);
-        Assert.False(game.NeutralSite);
-        Assert.False(game.StartTimeTbd);
     }
 }

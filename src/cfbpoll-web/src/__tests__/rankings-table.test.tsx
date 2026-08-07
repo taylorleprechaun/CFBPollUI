@@ -1,9 +1,11 @@
-import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { RankingsTable } from '../components/rankings/rankings-table';
+import { describe, expect, it } from 'vitest';
+
 import type { RankedTeam } from '../types';
+
+import { RankingsTable } from '../components/rankings/rankings-table';
 
 const createMockTeam = (overrides: Partial<RankedTeam> = {}): RankedTeam => ({
   rank: 1,
@@ -69,8 +71,8 @@ const mockRankings: RankedTeam[] = [
 ];
 
 function renderTable(props: {
-  rankings?: RankedTeam[];
   isLoading?: boolean;
+  rankings?: RankedTeam[];
   selectedConference?: string | null;
   selectedSeason?: number | null;
 } = {}) {
@@ -88,16 +90,10 @@ function renderTable(props: {
 
 describe('RankingsTable', () => {
   describe('basic rendering', () => {
-    it('renders all columns', () => {
+    it('displays rating with 4 decimal places', () => {
       renderTable();
 
-      expect(screen.getByText('Rank')).toBeInTheDocument();
-      expect(screen.getByText('Team')).toBeInTheDocument();
-      expect(screen.getByText('Record')).toBeInTheDocument();
-      expect(screen.getByText('Rating')).toBeInTheDocument();
-      expect(screen.getByText('Weighted SOS')).toBeInTheDocument();
-      expect(screen.getByText('SOS Rank')).toBeInTheDocument();
-      expect(screen.getByText('\u0394')).toBeInTheDocument();
+      expect(screen.getByText('165.4200')).toBeInTheDocument();
     });
 
     it('displays team data', () => {
@@ -110,11 +106,22 @@ describe('RankingsTable', () => {
       expect(screen.getAllByText('10-1')).toHaveLength(2);
     });
 
-    it('shows loading state', () => {
-      renderTable({ rankings: [], isLoading: true });
+    it('displays weighted SOS with 4 decimal places', () => {
+      renderTable();
 
-      expect(screen.queryByText('Rank')).not.toBeInTheDocument();
-      expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
+      expect(screen.getByText('0.5820')).toBeInTheDocument();
+    });
+
+    it('renders all columns', () => {
+      renderTable();
+
+      expect(screen.getByText('Rank')).toBeInTheDocument();
+      expect(screen.getByText('Team')).toBeInTheDocument();
+      expect(screen.getByText('Record')).toBeInTheDocument();
+      expect(screen.getByText('Rating')).toBeInTheDocument();
+      expect(screen.getByText('Weighted SOS')).toBeInTheDocument();
+      expect(screen.getByText('SOS Rank')).toBeInTheDocument();
+      expect(screen.getByText('\u0394')).toBeInTheDocument();
     });
 
     it('shows empty state when no rankings', () => {
@@ -125,16 +132,11 @@ describe('RankingsTable', () => {
       ).toBeInTheDocument();
     });
 
-    it('displays rating with 4 decimal places', () => {
-      renderTable();
+    it('shows loading state', () => {
+      renderTable({ rankings: [], isLoading: true });
 
-      expect(screen.getByText('165.4200')).toBeInTheDocument();
-    });
-
-    it('displays weighted SOS with 4 decimal places', () => {
-      renderTable();
-
-      expect(screen.getByText('0.5820')).toBeInTheDocument();
+      expect(screen.queryByText('Rank')).not.toBeInTheDocument();
+      expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
     });
   });
 
@@ -145,6 +147,14 @@ describe('RankingsTable', () => {
       expect(screen.getByText('USC')).toBeInTheDocument();
       expect(screen.getByText('Ohio State')).toBeInTheDocument();
       expect(screen.queryByText('Texas')).not.toBeInTheDocument();
+    });
+
+    it('shows all teams when no conference is selected', () => {
+      renderTable();
+
+      expect(screen.getByText('USC')).toBeInTheDocument();
+      expect(screen.getByText('Ohio State')).toBeInTheDocument();
+      expect(screen.getByText('Texas')).toBeInTheDocument();
     });
 
     it('shows conference rank when conference is selected', () => {
@@ -160,78 +170,51 @@ describe('RankingsTable', () => {
       expect(screen.getByText('(15)')).toBeInTheDocument();
       expect(screen.getByText('(8)')).toBeInTheDocument();
     });
-
-    it('shows all teams when no conference is selected', () => {
-      renderTable();
-
-      expect(screen.getByText('USC')).toBeInTheDocument();
-      expect(screen.getByText('Ohio State')).toBeInTheDocument();
-      expect(screen.getByText('Texas')).toBeInTheDocument();
-    });
-  });
-
-  describe('sorting', () => {
-    it('allows clicking column headers to sort', async () => {
-      renderTable();
-
-      const ratingHeader = screen.getByText('Rating');
-      await userEvent.click(ratingHeader);
-
-      expect(ratingHeader.closest('th')).toBeInTheDocument();
-    });
-
-    it('shows descending indicator when numeric column is sorted first', async () => {
-      renderTable();
-
-      const rankHeader = screen.getByText('Rank');
-      await userEvent.click(rankHeader);
-
-      const th = rankHeader.closest('th')!;
-      expect(th).toHaveAttribute('aria-sort', 'descending');
-      expect(th.querySelector('svg')).toBeInTheDocument();
-    });
-
-    it('shows ascending indicator when numeric column is sorted twice', async () => {
-      renderTable();
-
-      const rankHeader = screen.getByText('Rank');
-      await userEvent.click(rankHeader);
-      await userEvent.click(rankHeader);
-
-      const th = rankHeader.closest('th')!;
-      expect(th).toHaveAttribute('aria-sort', 'ascending');
-      expect(th.querySelector('svg')).toBeInTheDocument();
-    });
-  });
-
-  describe('team logos', () => {
-    it('renders team logos', () => {
-      renderTable();
-
-      expect(screen.getByAltText('USC logo')).toBeInTheDocument();
-      expect(screen.getByAltText('Ohio State logo')).toBeInTheDocument();
-    });
-  });
-
-  describe('team name links', () => {
-    it('renders team name as link to team details', () => {
-      renderTable();
-
-      const uscLink = screen.getByText('USC').closest('a');
-      expect(uscLink).toBeInTheDocument();
-      expect(uscLink).toHaveAttribute('href', '/team-details?team=USC&season=2024');
-    });
-
-    it('renders link without season when not provided', () => {
-      renderTable({ selectedSeason: null });
-
-      const uscLink = screen.getByText('USC').closest('a');
-      expect(uscLink).toBeInTheDocument();
-      expect(uscLink).toHaveAttribute('href', '/team-details?team=USC');
-    });
   });
 
   describe('rank delta column', () => {
+    it('delta column is sortable', async () => {
+      renderTable();
+
+      const deltaHeader = screen.getByText('\u0394');
+      await userEvent.click(deltaHeader);
+
+      const th = deltaHeader.closest('th')!;
+      expect(th).toHaveAttribute('aria-sort');
+    });
+
+    it('does not show negative sign for negative delta', () => {
+      renderTable();
+
+      const downCell = screen.getByText((_content, element) =>
+        element?.tagName === 'SPAN' &&
+        element.classList.contains('text-red-600') &&
+        element.querySelector('svg') !== null
+      );
+      expect(downCell.textContent).not.toContain('-');
+    });
+
+    it('shows gray hyphen for null delta', () => {
+      const rankings = [createMockTeam({ rank: 1, rankDelta: null, teamName: 'Nebraska' })];
+      renderTable({ rankings });
+
+      const cells = screen.getAllByText('-');
+      const grayHyphen = cells.find(
+        (el) => el.tagName === 'SPAN' && el.classList.contains('text-text-muted')
+      );
+      expect(grayHyphen).toBeInTheDocument();
+    });
+
+    it('shows gray hyphen for zero delta', () => {
+      renderTable();
+
+      const cells = screen.getAllByText('-');
+      const grayHyphen = cells.find(
+        (el) => el.tagName === 'SPAN' && el.classList.contains('text-text-muted')
+      );
+      expect(grayHyphen).toBeInTheDocument();
+    });
+
     it('shows green up arrow for positive delta', () => {
       renderTable();
 
@@ -255,47 +238,66 @@ describe('RankingsTable', () => {
       expect(downCell).toBeInTheDocument();
       expect(downCell.querySelector('svg')).toBeInTheDocument();
     });
+  });
 
-    it('does not show negative sign for negative delta', () => {
+  describe('sorting', () => {
+    it('allows clicking column headers to sort', async () => {
       renderTable();
 
-      const downCell = screen.getByText((_content, element) =>
-        element?.tagName === 'SPAN' &&
-        element.classList.contains('text-red-600') &&
-        element.querySelector('svg') !== null
-      );
-      expect(downCell.textContent).not.toContain('-');
+      const ratingHeader = screen.getByText('Rating');
+      await userEvent.click(ratingHeader);
+
+      expect(ratingHeader.closest('th')).toBeInTheDocument();
     });
 
-    it('shows gray hyphen for zero delta', () => {
+    it('shows ascending indicator when numeric column is sorted twice', async () => {
       renderTable();
 
-      const cells = screen.getAllByText('-');
-      const grayHyphen = cells.find(
-        (el) => el.tagName === 'SPAN' && el.classList.contains('text-text-muted')
-      );
-      expect(grayHyphen).toBeInTheDocument();
+      const rankHeader = screen.getByText('Rank');
+      await userEvent.click(rankHeader);
+      await userEvent.click(rankHeader);
+
+      const th = rankHeader.closest('th')!;
+      expect(th).toHaveAttribute('aria-sort', 'ascending');
+      expect(th.querySelector('svg')).toBeInTheDocument();
     });
 
-    it('shows gray hyphen for null delta', () => {
-      const rankings = [createMockTeam({ rank: 1, rankDelta: null, teamName: 'Nebraska' })];
-      renderTable({ rankings });
-
-      const cells = screen.getAllByText('-');
-      const grayHyphen = cells.find(
-        (el) => el.tagName === 'SPAN' && el.classList.contains('text-text-muted')
-      );
-      expect(grayHyphen).toBeInTheDocument();
-    });
-
-    it('delta column is sortable', async () => {
+    it('shows descending indicator when numeric column is sorted first', async () => {
       renderTable();
 
-      const deltaHeader = screen.getByText('\u0394');
-      await userEvent.click(deltaHeader);
+      const rankHeader = screen.getByText('Rank');
+      await userEvent.click(rankHeader);
 
-      const th = deltaHeader.closest('th')!;
-      expect(th).toHaveAttribute('aria-sort');
+      const th = rankHeader.closest('th')!;
+      expect(th).toHaveAttribute('aria-sort', 'descending');
+      expect(th.querySelector('svg')).toBeInTheDocument();
+    });
+  });
+
+  describe('team logos', () => {
+    it('renders team logos', () => {
+      renderTable();
+
+      expect(screen.getByAltText('USC logo')).toBeInTheDocument();
+      expect(screen.getByAltText('Ohio State logo')).toBeInTheDocument();
+    });
+  });
+
+  describe('team name links', () => {
+    it('renders link without season when not provided', () => {
+      renderTable({ selectedSeason: null });
+
+      const uscLink = screen.getByText('USC').closest('a');
+      expect(uscLink).toBeInTheDocument();
+      expect(uscLink).toHaveAttribute('href', '/team-details?team=USC');
+    });
+
+    it('renders team name as link to team details', () => {
+      renderTable();
+
+      const uscLink = screen.getByText('USC').closest('a');
+      expect(uscLink).toBeInTheDocument();
+      expect(uscLink).toHaveAttribute('href', '/team-details?team=USC&season=2024');
     });
   });
 });

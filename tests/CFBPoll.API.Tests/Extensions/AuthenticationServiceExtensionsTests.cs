@@ -14,38 +14,6 @@ namespace CFBPoll.API.Tests.Extensions;
 public class AuthenticationServiceExtensionsTests
 {
     [Fact]
-    public void AddJwtAuthentication_RegistersAuthOptions()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        var configuration = BuildConfiguration();
-
-        services.AddJwtAuthentication(configuration);
-
-        var provider = services.BuildServiceProvider();
-        var options = provider.GetService<IOptions<AuthOptions>>();
-
-        Assert.NotNull(options);
-        Assert.Equal("testuser", options.Value.Username);
-        Assert.Equal("CFBPoll", options.Value.Issuer);
-    }
-
-    [Fact]
-    public void AddJwtAuthentication_RegistersAuthenticationServices()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        var configuration = BuildConfiguration();
-
-        services.AddJwtAuthentication(configuration);
-
-        var provider = services.BuildServiceProvider();
-        var authSchemeProvider = provider.GetService<IAuthenticationSchemeProvider>();
-
-        Assert.NotNull(authSchemeProvider);
-    }
-
-    [Fact]
     public async Task AddJwtAuthentication_ConfiguresJwtBearerAsDefault()
     {
         var services = new ServiceCollection();
@@ -60,18 +28,6 @@ public class AuthenticationServiceExtensionsTests
 
         Assert.NotNull(defaultScheme);
         Assert.Equal(JwtBearerDefaults.AuthenticationScheme, defaultScheme.Name);
-    }
-
-    [Fact]
-    public void AddJwtAuthentication_ReturnsServiceCollection()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        var configuration = BuildConfiguration();
-
-        var result = services.AddJwtAuthentication(configuration);
-
-        Assert.Same(services, result);
     }
 
     [Fact]
@@ -104,6 +60,26 @@ public class AuthenticationServiceExtensionsTests
     }
 
     [Fact]
+    public void AddJwtAuthentication_MissingIssuer_ThrowsInvalidOperationException()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configValues = new Dictionary<string, string?>
+        {
+            ["Auth:Username"] = "testuser",
+            ["Auth:Secret"] = "TestSecretKeyThatIsAtLeast32CharactersLong!"
+        };
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(configValues)
+            .Build();
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            services.AddJwtAuthentication(configuration));
+
+        Assert.Contains("Issuer", exception.Message);
+    }
+
+    [Fact]
     public void AddJwtAuthentication_MissingSecret_ThrowsInvalidOperationException()
     {
         var services = new ServiceCollection();
@@ -124,23 +100,47 @@ public class AuthenticationServiceExtensionsTests
     }
 
     [Fact]
-    public void AddJwtAuthentication_MissingIssuer_ThrowsInvalidOperationException()
+    public void AddJwtAuthentication_RegistersAuthOptions()
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        var configValues = new Dictionary<string, string?>
-        {
-            ["Auth:Username"] = "testuser",
-            ["Auth:Secret"] = "TestSecretKeyThatIsAtLeast32CharactersLong!"
-        };
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(configValues)
-            .Build();
+        var configuration = BuildConfiguration();
 
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            services.AddJwtAuthentication(configuration));
+        services.AddJwtAuthentication(configuration);
 
-        Assert.Contains("Issuer", exception.Message);
+        var provider = services.BuildServiceProvider();
+        var options = provider.GetService<IOptions<AuthOptions>>();
+
+        Assert.NotNull(options);
+        Assert.Equal("testuser", options.Value.Username);
+        Assert.Equal("CFBPoll", options.Value.Issuer);
+    }
+
+    [Fact]
+    public void AddJwtAuthentication_RegistersAuthenticationServices()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration();
+
+        services.AddJwtAuthentication(configuration);
+
+        var provider = services.BuildServiceProvider();
+        var authSchemeProvider = provider.GetService<IAuthenticationSchemeProvider>();
+
+        Assert.NotNull(authSchemeProvider);
+    }
+
+    [Fact]
+    public void AddJwtAuthentication_ReturnsServiceCollection()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration();
+
+        var result = services.AddJwtAuthentication(configuration);
+
+        Assert.Same(services, result);
     }
 
     private static IConfiguration BuildConfiguration()

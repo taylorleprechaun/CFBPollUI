@@ -9,6 +9,99 @@ namespace CFBPoll.API.Tests.Mappers;
 public class RankingsMapperTests
 {
     [Fact]
+    public void ToDTO_RankedTeam_ComputesRecordString()
+    {
+        var team = new RankedTeam
+        {
+            Wins = 11,
+            Losses = 2,
+            Details = new TeamDetails()
+        };
+
+        var result = RankingsMapper.ToDTO(team);
+
+        Assert.Equal("11-2", result.Record);
+    }
+
+    [Fact]
+    public void ToDTO_RankedTeam_MapsAllProperties()
+    {
+        var team = new RankedTeam
+        {
+            Conference = "SEC",
+            Details = new TeamDetails
+            {
+                Home = new Record { Wins = 5, Losses = 0 },
+                Away = new Record { Wins = 3, Losses = 1 }
+            },
+            Division = "East",
+            LogoURL = "https://example.com/logo.png",
+            Losses = 1,
+            Rank = 1,
+            Rating = 95.5,
+            SOSRanking = 5,
+            TeamName = "Florida",
+            WeightedSOS = 0.75,
+            Wins = 11
+        };
+
+        var result = RankingsMapper.ToDTO(team);
+
+        Assert.Equal("SEC", result.Conference);
+        Assert.Equal("East", result.Division);
+        Assert.Equal("https://example.com/logo.png", result.LogoURL);
+        Assert.Equal(1, result.Losses);
+        Assert.Equal(1, result.Rank);
+        Assert.Equal(95.5, result.Rating);
+        Assert.Equal(5, result.SOSRanking);
+        Assert.Equal("Florida", result.TeamName);
+        Assert.Equal(0.75, result.WeightedSOS);
+        Assert.Equal(11, result.Wins);
+    }
+
+    [Fact]
+    public void ToDTO_RankedTeam_MapsNestedDetails()
+    {
+        var team = new RankedTeam
+        {
+            Details = new TeamDetails
+            {
+                Home = new Record { Wins = 6, Losses = 0 },
+                Away = new Record { Wins = 4, Losses = 2 }
+            }
+        };
+
+        var result = RankingsMapper.ToDTO(team);
+
+        Assert.NotNull(result.Details);
+        Assert.Equal(6, result.Details.Home.Wins);
+        Assert.Equal(0, result.Details.Home.Losses);
+        Assert.Equal(4, result.Details.Away.Wins);
+        Assert.Equal(2, result.Details.Away.Losses);
+    }
+
+    [Fact]
+    public void ToDTO_RankedTeam_WithNullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => RankingsMapper.ToDTO((RankedTeam)null!));
+    }
+
+    [Fact]
+    public void ToDTO_RankedTeam_WithZeroRecord_ComputesCorrectly()
+    {
+        var team = new RankedTeam
+        {
+            Wins = 0,
+            Losses = 0,
+            Details = new TeamDetails()
+        };
+
+        var result = RankingsMapper.ToDTO(team);
+
+        Assert.Equal("0-0", result.Record);
+    }
+
+    [Fact]
     public void ToDTO_Record_MapsAllProperties()
     {
         var record = new Record { Wins = 5, Losses = 2 };
@@ -20,6 +113,12 @@ public class RankingsMapperTests
     }
 
     [Fact]
+    public void ToDTO_Record_WithNullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => RankingsMapper.ToDTO((Record)null!));
+    }
+
+    [Fact]
     public void ToDTO_Record_WithZeroValues_MapsCorrectly()
     {
         var record = new Record { Wins = 0, Losses = 0 };
@@ -28,12 +127,6 @@ public class RankingsMapperTests
 
         Assert.Equal(0, result.Wins);
         Assert.Equal(0, result.Losses);
-    }
-
-    [Fact]
-    public void ToDTO_Record_WithNullInput_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() => RankingsMapper.ToDTO((Record)null!));
     }
 
     [Fact]
@@ -78,162 +171,6 @@ public class RankingsMapperTests
     }
 
     [Fact]
-    public void ToDTO_RankedTeam_MapsAllProperties()
-    {
-        var team = new RankedTeam
-        {
-            Conference = "SEC",
-            Details = new TeamDetails
-            {
-                Home = new Record { Wins = 5, Losses = 0 },
-                Away = new Record { Wins = 3, Losses = 1 }
-            },
-            Division = "East",
-            LogoURL = "https://example.com/logo.png",
-            Losses = 1,
-            Rank = 1,
-            Rating = 95.5,
-            SOSRanking = 5,
-            TeamName = "Florida",
-            WeightedSOS = 0.75,
-            Wins = 11
-        };
-
-        var result = RankingsMapper.ToDTO(team);
-
-        Assert.Equal("SEC", result.Conference);
-        Assert.Equal("East", result.Division);
-        Assert.Equal("https://example.com/logo.png", result.LogoURL);
-        Assert.Equal(1, result.Losses);
-        Assert.Equal(1, result.Rank);
-        Assert.Equal(95.5, result.Rating);
-        Assert.Equal(5, result.SOSRanking);
-        Assert.Equal("Florida", result.TeamName);
-        Assert.Equal(0.75, result.WeightedSOS);
-        Assert.Equal(11, result.Wins);
-    }
-
-    [Fact]
-    public void ToDTO_RankedTeam_ComputesRecordString()
-    {
-        var team = new RankedTeam
-        {
-            Wins = 11,
-            Losses = 2,
-            Details = new TeamDetails()
-        };
-
-        var result = RankingsMapper.ToDTO(team);
-
-        Assert.Equal("11-2", result.Record);
-    }
-
-    [Fact]
-    public void ToDTO_RankedTeam_WithZeroRecord_ComputesCorrectly()
-    {
-        var team = new RankedTeam
-        {
-            Wins = 0,
-            Losses = 0,
-            Details = new TeamDetails()
-        };
-
-        var result = RankingsMapper.ToDTO(team);
-
-        Assert.Equal("0-0", result.Record);
-    }
-
-    [Fact]
-    public void ToDTO_RankedTeam_MapsNestedDetails()
-    {
-        var team = new RankedTeam
-        {
-            Details = new TeamDetails
-            {
-                Home = new Record { Wins = 6, Losses = 0 },
-                Away = new Record { Wins = 4, Losses = 2 }
-            }
-        };
-
-        var result = RankingsMapper.ToDTO(team);
-
-        Assert.NotNull(result.Details);
-        Assert.Equal(6, result.Details.Home.Wins);
-        Assert.Equal(0, result.Details.Home.Losses);
-        Assert.Equal(4, result.Details.Away.Wins);
-        Assert.Equal(2, result.Details.Away.Losses);
-    }
-
-    [Fact]
-    public void ToDTO_RankedTeam_WithNullInput_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() => RankingsMapper.ToDTO((RankedTeam)null!));
-    }
-
-    [Fact]
-    public void ToResponseDTO_MapsSeasonWeekAndRankings()
-    {
-        var result = new RankingsResult
-        {
-            Season = 2024,
-            Week = 12,
-            Rankings = new List<RankedTeam>
-            {
-                new() { Rank = 1, TeamName = "Florida", Wins = 11, Losses = 0, Details = new TeamDetails() },
-                new() { Rank = 2, TeamName = "Michigan", Wins = 11, Losses = 0, Details = new TeamDetails() }
-            }
-        };
-
-        var dto = RankingsMapper.ToResponseDTO(result);
-
-        Assert.Equal(2024, dto.Season);
-        Assert.Equal(12, dto.Week);
-        var rankings = dto.Rankings.ToList();
-        Assert.Equal(2, rankings.Count);
-        Assert.Equal("Florida", rankings[0].TeamName);
-        Assert.Equal("Michigan", rankings[1].TeamName);
-    }
-
-    [Fact]
-    public void ToResponseDTO_WithEmptyRankings_ReturnsEmptyList()
-    {
-        var result = new RankingsResult
-        {
-            Season = 2024,
-            Week = 1,
-            Rankings = new List<RankedTeam>()
-        };
-
-        var dto = RankingsMapper.ToResponseDTO(result);
-
-        Assert.Equal(2024, dto.Season);
-        Assert.Equal(1, dto.Week);
-        Assert.Empty(dto.Rankings);
-    }
-
-    [Fact]
-    public void ToResponseDTO_WithNullInput_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() => RankingsMapper.ToResponseDTO(null!));
-    }
-
-    [Fact]
-    public void ToDTO_WithRankDeltas_SetsRankDelta()
-    {
-        var team = new RankedTeam
-        {
-            TeamName = "Texas",
-            Rank = 3,
-            Details = new TeamDetails()
-        };
-        var deltas = new Dictionary<string, int?> { ["Texas"] = 5 };
-
-        var result = RankingsMapper.ToDTO(team, deltas);
-
-        Assert.Equal(5, result.RankDelta);
-    }
-
-    [Fact]
     public void ToDTO_WithRankDeltas_NegativeDelta_SetsCorrectly()
     {
         var team = new RankedTeam
@@ -266,6 +203,38 @@ public class RankingsMapperTests
     }
 
     [Fact]
+    public void ToDTO_WithRankDeltas_NullDictionary_ThrowsArgumentNullException()
+    {
+        var team = new RankedTeam { TeamName = "Oklahoma", Details = new TeamDetails() };
+
+        Assert.Throws<ArgumentNullException>(() => RankingsMapper.ToDTO(team, null!));
+    }
+
+    [Fact]
+    public void ToDTO_WithRankDeltas_NullTeam_ThrowsArgumentNullException()
+    {
+        var deltas = new Dictionary<string, int?>();
+
+        Assert.Throws<ArgumentNullException>(() => RankingsMapper.ToDTO((RankedTeam)null!, deltas));
+    }
+
+    [Fact]
+    public void ToDTO_WithRankDeltas_SetsRankDelta()
+    {
+        var team = new RankedTeam
+        {
+            TeamName = "Texas",
+            Rank = 3,
+            Details = new TeamDetails()
+        };
+        var deltas = new Dictionary<string, int?> { ["Texas"] = 5 };
+
+        var result = RankingsMapper.ToDTO(team, deltas);
+
+        Assert.Equal(5, result.RankDelta);
+    }
+
+    [Fact]
     public void ToDTO_WithRankDeltas_TeamNotInDictionary_SetsNull()
     {
         var team = new RankedTeam
@@ -282,19 +251,65 @@ public class RankingsMapperTests
     }
 
     [Fact]
-    public void ToDTO_WithRankDeltas_NullTeam_ThrowsArgumentNullException()
+    public void ToDTO_WithoutDeltas_RankDeltaDefaultsToNull()
     {
-        var deltas = new Dictionary<string, int?>();
+        var team = new RankedTeam
+        {
+            TeamName = "Alabama",
+            Rank = 1,
+            Details = new TeamDetails()
+        };
 
-        Assert.Throws<ArgumentNullException>(() => RankingsMapper.ToDTO((RankedTeam)null!, deltas));
+        var result = RankingsMapper.ToDTO(team);
+
+        Assert.Null(result.RankDelta);
     }
 
     [Fact]
-    public void ToDTO_WithRankDeltas_NullDictionary_ThrowsArgumentNullException()
+    public void ToResponseDTO_MapsSeasonWeekAndRankings()
     {
-        var team = new RankedTeam { TeamName = "Oklahoma", Details = new TeamDetails() };
+        var result = new RankingsResult
+        {
+            Season = 2024,
+            Week = 12,
+            Rankings = new List<RankedTeam>
+            {
+                new() { Rank = 1, TeamName = "Florida", Wins = 11, Losses = 0, Details = new TeamDetails() },
+                new() { Rank = 2, TeamName = "Michigan", Wins = 11, Losses = 0, Details = new TeamDetails() }
+            }
+        };
 
-        Assert.Throws<ArgumentNullException>(() => RankingsMapper.ToDTO(team, null!));
+        var dto = RankingsMapper.ToResponseDTO(result);
+
+        Assert.Equal(2024, dto.Season);
+        Assert.Equal(12, dto.Week);
+        var rankings = dto.Rankings.ToList();
+        Assert.Equal(2, rankings.Count);
+        Assert.Equal("Florida", rankings[0].TeamName);
+        Assert.Equal("Michigan", rankings[1].TeamName);
+    }
+
+    [Fact]
+    public void ToResponseDTO_PreservesRankingOrder()
+    {
+        var result = new RankingsResult
+        {
+            Season = 2024,
+            Week = 12,
+            Rankings = new List<RankedTeam>
+            {
+                new() { Rank = 3, TeamName = "Texas", Details = new TeamDetails() },
+                new() { Rank = 1, TeamName = "Florida", Details = new TeamDetails() },
+                new() { Rank = 2, TeamName = "Michigan", Details = new TeamDetails() }
+            }
+        };
+
+        var dto = RankingsMapper.ToResponseDTO(result);
+
+        var rankings = dto.Rankings.ToList();
+        Assert.Equal("Texas", rankings[0].TeamName);
+        Assert.Equal("Florida", rankings[1].TeamName);
+        Assert.Equal("Michigan", rankings[2].TeamName);
     }
 
     [Fact]
@@ -326,14 +341,6 @@ public class RankingsMapperTests
     }
 
     [Fact]
-    public void ToResponseDTO_WithDeltas_NullResult_ThrowsArgumentNullException()
-    {
-        var deltas = new Dictionary<string, int?>();
-
-        Assert.Throws<ArgumentNullException>(() => RankingsMapper.ToResponseDTO(null!, deltas));
-    }
-
-    [Fact]
     public void ToResponseDTO_WithDeltas_NullDictionary_ThrowsArgumentNullException()
     {
         var result = new RankingsResult { Season = 2024, Week = 1, Rankings = new List<RankedTeam>() };
@@ -342,40 +349,33 @@ public class RankingsMapperTests
     }
 
     [Fact]
-    public void ToDTO_WithoutDeltas_RankDeltaDefaultsToNull()
+    public void ToResponseDTO_WithDeltas_NullResult_ThrowsArgumentNullException()
     {
-        var team = new RankedTeam
-        {
-            TeamName = "Alabama",
-            Rank = 1,
-            Details = new TeamDetails()
-        };
+        var deltas = new Dictionary<string, int?>();
 
-        var result = RankingsMapper.ToDTO(team);
-
-        Assert.Null(result.RankDelta);
+        Assert.Throws<ArgumentNullException>(() => RankingsMapper.ToResponseDTO(null!, deltas));
     }
 
     [Fact]
-    public void ToResponseDTO_PreservesRankingOrder()
+    public void ToResponseDTO_WithEmptyRankings_ReturnsEmptyList()
     {
         var result = new RankingsResult
         {
             Season = 2024,
-            Week = 12,
-            Rankings = new List<RankedTeam>
-            {
-                new() { Rank = 3, TeamName = "Texas", Details = new TeamDetails() },
-                new() { Rank = 1, TeamName = "Florida", Details = new TeamDetails() },
-                new() { Rank = 2, TeamName = "Michigan", Details = new TeamDetails() }
-            }
+            Week = 1,
+            Rankings = new List<RankedTeam>()
         };
 
         var dto = RankingsMapper.ToResponseDTO(result);
 
-        var rankings = dto.Rankings.ToList();
-        Assert.Equal("Texas", rankings[0].TeamName);
-        Assert.Equal("Florida", rankings[1].TeamName);
-        Assert.Equal("Michigan", rankings[2].TeamName);
+        Assert.Equal(2024, dto.Season);
+        Assert.Equal(1, dto.Week);
+        Assert.Empty(dto.Rankings);
+    }
+
+    [Fact]
+    public void ToResponseDTO_WithNullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => RankingsMapper.ToResponseDTO(null!));
     }
 }

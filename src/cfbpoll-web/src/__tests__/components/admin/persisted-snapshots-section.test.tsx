@@ -1,5 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+
 import { PersistedSnapshotsSection } from '../../../components/admin';
 
 const defaultProps = {
@@ -13,107 +14,10 @@ const defaultProps = {
   onExport: vi.fn(),
   onPublish: vi.fn(),
   onToggleSeason: vi.fn(),
-  snapshots: [] as { season: number; week: number; isPublished: boolean; createdAt: string }[],
+  snapshots: [] as { createdAt: string; isPublished: boolean; season: number; week: number; }[],
 };
 
 describe('PersistedSnapshotsSection', () => {
-  it('renders heading', () => {
-    render(<PersistedSnapshotsSection {...defaultProps} />);
-
-    expect(screen.getByText('Persisted Snapshots')).toBeInTheDocument();
-  });
-
-  it('shows empty state when no snapshots', () => {
-    render(<PersistedSnapshotsSection {...defaultProps} />);
-
-    expect(screen.getByText('No persisted snapshots found.')).toBeInTheDocument();
-  });
-
-  it('shows a loading skeleton instead of the empty state while isLoading is true', () => {
-    render(<PersistedSnapshotsSection {...defaultProps} isLoading={true} />);
-
-    expect(screen.queryByText('No persisted snapshots found.')).not.toBeInTheDocument();
-  });
-
-  it('groups snapshots by season', () => {
-    render(
-      <PersistedSnapshotsSection
-        {...defaultProps}
-        snapshots={[
-          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
-          { season: 2024, week: 2, isPublished: false, createdAt: '2024-09-08T00:00:00Z' },
-          { season: 2023, week: 1, isPublished: true, createdAt: '2023-09-01T00:00:00Z' },
-        ]}
-      />
-    );
-
-    expect(screen.getByText('2024 Season')).toBeInTheDocument();
-    expect(screen.getByText('2023 Season')).toBeInTheDocument();
-    expect(screen.getByText('(2 snapshots)')).toBeInTheDocument();
-    expect(screen.getByText('(1 snapshot)')).toBeInTheDocument();
-  });
-
-  it('shows Published badge for published snapshots', () => {
-    render(
-      <PersistedSnapshotsSection
-        {...defaultProps}
-        snapshots={[
-          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
-        ]}
-      />
-    );
-
-    expect(screen.getByText('Published')).toBeInTheDocument();
-  });
-
-  it('shows Draft badge and Publish button for drafts', () => {
-    render(
-      <PersistedSnapshotsSection
-        {...defaultProps}
-        snapshots={[
-          { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
-        ]}
-      />
-    );
-
-    expect(screen.getByText('Draft')).toBeInTheDocument();
-    expect(screen.getByText('Publish')).toBeInTheDocument();
-  });
-
-  it('calls onToggleSeason when season header is clicked', () => {
-    const onToggleSeason = vi.fn();
-    render(
-      <PersistedSnapshotsSection
-        {...defaultProps}
-        onToggleSeason={onToggleSeason}
-        snapshots={[
-          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
-        ]}
-      />
-    );
-
-    fireEvent.click(screen.getByText('2024 Season'));
-
-    expect(onToggleSeason).toHaveBeenCalledWith(2024);
-  });
-
-  it('calls onPublish when Publish button is clicked', () => {
-    const onPublish = vi.fn();
-    render(
-      <PersistedSnapshotsSection
-        {...defaultProps}
-        onPublish={onPublish}
-        snapshots={[
-          { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
-        ]}
-      />
-    );
-
-    fireEvent.click(screen.getByText('Publish'));
-
-    expect(onPublish).toHaveBeenCalledWith(2024, 1);
-  });
-
   it('calls onDelete when Delete button is clicked', () => {
     const onDelete = vi.fn();
     render(
@@ -129,23 +33,6 @@ describe('PersistedSnapshotsSection', () => {
     fireEvent.click(screen.getByText('Delete'));
 
     expect(onDelete).toHaveBeenCalledWith(2024, 1, false);
-  });
-
-  it('calls onExport when Export button is clicked', () => {
-    const onExport = vi.fn();
-    render(
-      <PersistedSnapshotsSection
-        {...defaultProps}
-        onExport={onExport}
-        snapshots={[
-          { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
-        ]}
-      />
-    );
-
-    fireEvent.click(screen.getByText('Export'));
-
-    expect(onExport).toHaveBeenCalledWith(2024, 1);
   });
 
   it('calls onExpandAll and onCollapseAll', () => {
@@ -169,6 +56,57 @@ describe('PersistedSnapshotsSection', () => {
     expect(onCollapseAll).toHaveBeenCalled();
   });
 
+  it('calls onExport when Export button is clicked', () => {
+    const onExport = vi.fn();
+    render(
+      <PersistedSnapshotsSection
+        {...defaultProps}
+        onExport={onExport}
+        snapshots={[
+          { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
+        ]}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Export'));
+
+    expect(onExport).toHaveBeenCalledWith(2024, 1);
+  });
+
+  it('calls onPublish when Publish button is clicked', () => {
+    const onPublish = vi.fn();
+    render(
+      <PersistedSnapshotsSection
+        {...defaultProps}
+        onPublish={onPublish}
+        snapshots={[
+          { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
+        ]}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Publish'));
+
+    expect(onPublish).toHaveBeenCalledWith(2024, 1);
+  });
+
+  it('calls onToggleSeason when season header is clicked', () => {
+    const onToggleSeason = vi.fn();
+    render(
+      <PersistedSnapshotsSection
+        {...defaultProps}
+        onToggleSeason={onToggleSeason}
+        snapshots={[
+          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+        ]}
+      />
+    );
+
+    fireEvent.click(screen.getByText('2024 Season'));
+
+    expect(onToggleSeason).toHaveBeenCalledWith(2024);
+  });
+
   it('disables action buttons when isActionPending is true', () => {
     render(
       <PersistedSnapshotsSection
@@ -185,21 +123,115 @@ describe('PersistedSnapshotsSection', () => {
     expect(screen.getByText('Delete')).toBeDisabled();
   });
 
-  it('shows success checkmark for matching feedback', () => {
+  it('does not show a View button since onView is not passed', () => {
     render(
       <PersistedSnapshotsSection
         {...defaultProps}
-        actionFeedback={{
-          key: 'snapshot-publish-2024-1',
-          type: 'success',
-        }}
+        snapshots={[
+          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+        ]}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'View' })).not.toBeInTheDocument();
+  });
+
+  it('groups snapshots by season', () => {
+    render(
+      <PersistedSnapshotsSection
+        {...defaultProps}
+        snapshots={[
+          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+          { season: 2024, week: 2, isPublished: false, createdAt: '2024-09-08T00:00:00Z' },
+          { season: 2023, week: 1, isPublished: true, createdAt: '2023-09-01T00:00:00Z' },
+        ]}
+      />
+    );
+
+    expect(screen.getByText('2024 Season')).toBeInTheDocument();
+    expect(screen.getByText('2023 Season')).toBeInTheDocument();
+    expect(screen.getByText('(2 snapshots)')).toBeInTheDocument();
+    expect(screen.getByText('(1 snapshot)')).toBeInTheDocument();
+  });
+
+  it('renders heading', () => {
+    render(<PersistedSnapshotsSection {...defaultProps} />);
+
+    expect(screen.getByText('Persisted Snapshots')).toBeInTheDocument();
+  });
+
+  it('sets aria-controls pointing to content container', () => {
+    render(
+      <PersistedSnapshotsSection
+        {...defaultProps}
+        collapsedSeasons={new Set([2024])}
+        snapshots={[
+          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+        ]}
+      />
+    );
+
+    const seasonButton = screen.getByText('2024 Season').closest('button')!;
+    expect(seasonButton).toHaveAttribute('aria-expanded', 'false');
+    const controlsId = seasonButton.getAttribute('aria-controls')!;
+    expect(document.getElementById(controlsId)).toBeInTheDocument();
+  });
+
+  it('sets aria-expanded to true when season is expanded', () => {
+    render(
+      <PersistedSnapshotsSection
+        {...defaultProps}
+        collapsedSeasons={new Set()}
+        snapshots={[
+          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+        ]}
+      />
+    );
+
+    const seasonButton = screen.getByText('2024 Season').closest('button')!;
+    expect(seasonButton).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('shows a loading skeleton instead of the empty state while isLoading is true', () => {
+    render(<PersistedSnapshotsSection {...defaultProps} isLoading={true} />);
+
+    expect(screen.queryByText('No persisted snapshots found.')).not.toBeInTheDocument();
+  });
+
+  it('shows collapsed indicator when season is collapsed', () => {
+    render(
+      <PersistedSnapshotsSection
+        {...defaultProps}
+        collapsedSeasons={new Set([2024])}
+        snapshots={[
+          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+        ]}
+      />
+    );
+
+    const seasonButton = screen.getByText('2024 Season').closest('button')!;
+    const chevron = seasonButton.querySelector('svg')!;
+    expect(chevron.classList.toString()).toContain('-rotate-90');
+  });
+
+  it('shows Draft badge and Publish button for drafts', () => {
+    render(
+      <PersistedSnapshotsSection
+        {...defaultProps}
         snapshots={[
           { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
     );
 
-    expect(screen.getByLabelText('Success')).toBeInTheDocument();
+    expect(screen.getByText('Draft')).toBeInTheDocument();
+    expect(screen.getByText('Publish')).toBeInTheDocument();
+  });
+
+  it('shows empty state when no snapshots', () => {
+    render(<PersistedSnapshotsSection {...defaultProps} />);
+
+    expect(screen.getByText('No persisted snapshots found.')).toBeInTheDocument();
   });
 
   it('shows error message for matching feedback', () => {
@@ -220,64 +252,33 @@ describe('PersistedSnapshotsSection', () => {
     expect(screen.getByText('Publish failed')).toBeInTheDocument();
   });
 
-  it('shows collapsed indicator when season is collapsed', () => {
+  it('shows Published badge for published snapshots', () => {
     render(
       <PersistedSnapshotsSection
         {...defaultProps}
-        collapsedSeasons={new Set([2024])}
         snapshots={[
           { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
     );
 
-    const seasonButton = screen.getByText('2024 Season').closest('button')!;
-    const chevron = seasonButton.querySelector('svg')!;
-    expect(chevron.classList.toString()).toContain('-rotate-90');
+    expect(screen.getByText('Published')).toBeInTheDocument();
   });
 
-  it('sets aria-expanded to true when season is expanded', () => {
+  it('shows success checkmark for matching feedback', () => {
     render(
       <PersistedSnapshotsSection
         {...defaultProps}
-        collapsedSeasons={new Set()}
+        actionFeedback={{
+          key: 'snapshot-publish-2024-1',
+          type: 'success',
+        }}
         snapshots={[
-          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+          { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
     );
 
-    const seasonButton = screen.getByText('2024 Season').closest('button')!;
-    expect(seasonButton).toHaveAttribute('aria-expanded', 'true');
-  });
-
-  it('sets aria-controls pointing to content container', () => {
-    render(
-      <PersistedSnapshotsSection
-        {...defaultProps}
-        collapsedSeasons={new Set([2024])}
-        snapshots={[
-          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
-        ]}
-      />
-    );
-
-    const seasonButton = screen.getByText('2024 Season').closest('button')!;
-    expect(seasonButton).toHaveAttribute('aria-expanded', 'false');
-    const controlsId = seasonButton.getAttribute('aria-controls')!;
-    expect(document.getElementById(controlsId)).toBeInTheDocument();
-  });
-
-  it('does not show a View button since onView is not passed', () => {
-    render(
-      <PersistedSnapshotsSection
-        {...defaultProps}
-        snapshots={[
-          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
-        ]}
-      />
-    );
-
-    expect(screen.queryByRole('button', { name: 'View' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Success')).toBeInTheDocument();
   });
 });

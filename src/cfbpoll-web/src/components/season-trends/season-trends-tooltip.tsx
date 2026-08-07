@@ -1,4 +1,5 @@
 import type { SeasonTrendTeam, SeasonTrendWeek } from '../../schemas';
+
 import { getContrastTextColor } from '../../lib/color-utils';
 
 interface SeasonTrendsTooltipProps {

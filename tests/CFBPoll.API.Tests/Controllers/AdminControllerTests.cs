@@ -15,6 +15,7 @@ public class AdminControllerTests
     private readonly Mock<IAdminModule> _mockAdminModule;
     private readonly Mock<ILogger<AdminController>> _mockLogger;
     private readonly Mock<IRankingsModule> _mockRankingsModule;
+
     public AdminControllerTests()
     {
         _mockAdminModule = new Mock<IAdminModule>();
@@ -22,41 +23,6 @@ public class AdminControllerTests
         _mockRankingsModule = new Mock<IRankingsModule>();
 
         _controller = new AdminController(_mockAdminModule.Object, _mockLogger.Object, _mockRankingsModule.Object);
-    }
-
-    [Fact]
-    public async Task Calculate_ReturnsRankingsWithDeltas()
-    {
-        var rankedTeam = new RankedTeam { TeamName = "Ohio State", Rank = 1, Rating = 90, Details = new TeamDetails() };
-        var calculateResult = new CalculateRankingsResult
-        {
-            IsPersisted = true,
-            Rankings = new RankingsResult
-            {
-                Season = 2024,
-                Week = 5,
-                Rankings = [rankedTeam]
-            }
-        };
-
-        var deltas = new Dictionary<string, int?> { { "Ohio State", 2 } };
-
-        _mockAdminModule
-            .Setup(x => x.CalculateRankingsAsync(2024, 5))
-            .ReturnsAsync(calculateResult);
-
-        _mockRankingsModule
-            .Setup(x => x.GetRankDeltasAsync(2024, 5, It.IsAny<IEnumerable<RankedTeam>>()))
-            .ReturnsAsync(deltas);
-
-        var result = await _controller.Calculate(2024, 5);
-
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var response = Assert.IsType<CalculateResponseDTO>(okResult.Value);
-        Assert.True(response.IsPersisted);
-        Assert.Equal(2024, response.Rankings.Season);
-        var team = Assert.Single(response.Rankings.Rankings);
-        Assert.Equal(2, team.RankDelta);
     }
 
     [Fact]
@@ -101,6 +67,41 @@ public class AdminControllerTests
     }
 
     [Fact]
+    public async Task Calculate_ReturnsRankingsWithDeltas()
+    {
+        var rankedTeam = new RankedTeam { TeamName = "Ohio State", Rank = 1, Rating = 90, Details = new TeamDetails() };
+        var calculateResult = new CalculateRankingsResult
+        {
+            IsPersisted = true,
+            Rankings = new RankingsResult
+            {
+                Season = 2024,
+                Week = 5,
+                Rankings = [rankedTeam]
+            }
+        };
+
+        var deltas = new Dictionary<string, int?> { { "Ohio State", 2 } };
+
+        _mockAdminModule
+            .Setup(x => x.CalculateRankingsAsync(2024, 5))
+            .ReturnsAsync(calculateResult);
+
+        _mockRankingsModule
+            .Setup(x => x.GetRankDeltasAsync(2024, 5, It.IsAny<IEnumerable<RankedTeam>>()))
+            .ReturnsAsync(deltas);
+
+        var result = await _controller.Calculate(2024, 5);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<CalculateResponseDTO>(okResult.Value);
+        Assert.True(response.IsPersisted);
+        Assert.Equal(2024, response.Rankings.Season);
+        var team = Assert.Single(response.Rankings.Rankings);
+        Assert.Equal(2, team.RankDelta);
+    }
+
+    [Fact]
     public void Constructor_NullAdminModule_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
@@ -122,26 +123,6 @@ public class AdminControllerTests
     }
 
     [Fact]
-    public async Task Delete_Found_ReturnsOk()
-    {
-        _mockAdminModule.Setup(x => x.DeleteSnapshotAsync(2024, 5)).ReturnsAsync(true);
-
-        var result = await _controller.Delete(2024, 5);
-
-        Assert.IsType<OkResult>(result);
-    }
-
-    [Fact]
-    public async Task Delete_NotFound_ReturnsNotFound()
-    {
-        _mockAdminModule.Setup(x => x.DeleteSnapshotAsync(2024, 5)).ReturnsAsync(false);
-
-        var result = await _controller.Delete(2024, 5);
-
-        Assert.IsType<NotFoundObjectResult>(result);
-    }
-
-    [Fact]
     public async Task DeletePrediction_Found_ReturnsOk()
     {
         _mockAdminModule.Setup(x => x.DeletePredictionsAsync(2024, 5)).ReturnsAsync(true);
@@ -157,6 +138,26 @@ public class AdminControllerTests
         _mockAdminModule.Setup(x => x.DeletePredictionsAsync(2024, 5)).ReturnsAsync(false);
 
         var result = await _controller.DeletePrediction(2024, 5);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Delete_Found_ReturnsOk()
+    {
+        _mockAdminModule.Setup(x => x.DeleteSnapshotAsync(2024, 5)).ReturnsAsync(true);
+
+        var result = await _controller.Delete(2024, 5);
+
+        Assert.IsType<OkResult>(result);
+    }
+
+    [Fact]
+    public async Task Delete_NotFound_ReturnsNotFound()
+    {
+        _mockAdminModule.Setup(x => x.DeleteSnapshotAsync(2024, 5)).ReturnsAsync(false);
+
+        var result = await _controller.Delete(2024, 5);
 
         Assert.IsType<NotFoundObjectResult>(result);
     }

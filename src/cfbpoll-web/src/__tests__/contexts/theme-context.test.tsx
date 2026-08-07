@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { ThemeProvider } from '../../contexts/theme-context';
 import { useTheme } from '../../hooks/use-theme';
 
@@ -31,26 +32,6 @@ function TestConsumer() {
 }
 
 describe('ThemeContext', () => {
-  it('defaults to system theme when no localStorage value', () => {
-    render(
-      <ThemeProvider>
-        <TestConsumer />
-      </ThemeProvider>
-    );
-
-    expect(screen.getByTestId('theme').textContent).toBe('system');
-  });
-
-  it('resolves to light when system preference is light', () => {
-    render(
-      <ThemeProvider>
-        <TestConsumer />
-      </ThemeProvider>
-    );
-
-    expect(screen.getByTestId('resolved').textContent).toBe('light');
-  });
-
   it('adds dark class to document when stored theme is dark', () => {
     localStorage.setItem('cfbpoll_theme', 'dark');
 
@@ -61,18 +42,6 @@ describe('ThemeContext', () => {
     );
 
     expect(document.documentElement.classList.contains('dark')).toBe(true);
-  });
-
-  it('does not add dark class when stored theme is light', () => {
-    localStorage.setItem('cfbpoll_theme', 'light');
-
-    render(
-      <ThemeProvider>
-        <TestConsumer />
-      </ThemeProvider>
-    );
-
-    expect(document.documentElement.classList.contains('dark')).toBe(false);
   });
 
   it('adds dark class when system preference is dark and theme is system', () => {
@@ -92,79 +61,26 @@ describe('ThemeContext', () => {
     expect(screen.getByTestId('resolved').textContent).toBe('dark');
   });
 
-  it('persists theme to localStorage when setTheme is called', () => {
+  it('defaults to system theme when no localStorage value', () => {
     render(
       <ThemeProvider>
         <TestConsumer />
       </ThemeProvider>
     );
 
-    act(() => {
-      screen.getByText('Set Dark').click();
-    });
-
-    expect(localStorage.getItem('cfbpoll_theme')).toBe('dark');
+    expect(screen.getByTestId('theme').textContent).toBe('system');
   });
 
-  it('updates resolvedTheme when setTheme is called', () => {
-    render(
-      <ThemeProvider>
-        <TestConsumer />
-      </ThemeProvider>
-    );
-
-    act(() => {
-      screen.getByText('Set Dark').click();
-    });
-
-    expect(screen.getByTestId('resolved').textContent).toBe('dark');
-
-    act(() => {
-      screen.getByText('Set Light').click();
-    });
-
-    expect(screen.getByTestId('resolved').textContent).toBe('light');
-  });
-
-  it('restores stored theme from localStorage', () => {
-    localStorage.setItem('cfbpoll_theme', 'dark');
+  it('does not add dark class when stored theme is light', () => {
+    localStorage.setItem('cfbpoll_theme', 'light');
 
     render(
       <ThemeProvider>
         <TestConsumer />
       </ThemeProvider>
     );
-
-    expect(screen.getByTestId('theme').textContent).toBe('dark');
-    expect(screen.getByTestId('resolved').textContent).toBe('dark');
-  });
-
-  it('removes dark class when switching from dark to light', () => {
-    localStorage.setItem('cfbpoll_theme', 'dark');
-
-    render(
-      <ThemeProvider>
-        <TestConsumer />
-      </ThemeProvider>
-    );
-
-    expect(document.documentElement.classList.contains('dark')).toBe(true);
-
-    act(() => {
-      screen.getByText('Set Light').click();
-    });
 
     expect(document.documentElement.classList.contains('dark')).toBe(false);
-  });
-
-  it('throws error when useTheme is used outside ThemeProvider', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-    expect(() => render(<TestConsumer />)).toThrow(
-      'useTheme must be used within a ThemeProvider'
-    );
-
-    consoleError.mockRestore();
   });
 
   it('listens for system preference changes', () => {
@@ -192,6 +108,61 @@ describe('ThemeContext', () => {
     expect(screen.getByTestId('resolved').textContent).toBe('dark');
   });
 
+  it('persists theme to localStorage when setTheme is called', () => {
+    render(
+      <ThemeProvider>
+        <TestConsumer />
+      </ThemeProvider>
+    );
+
+    act(() => {
+      screen.getByText('Set Dark').click();
+    });
+
+    expect(localStorage.getItem('cfbpoll_theme')).toBe('dark');
+  });
+
+  it('removes dark class when switching from dark to light', () => {
+    localStorage.setItem('cfbpoll_theme', 'dark');
+
+    render(
+      <ThemeProvider>
+        <TestConsumer />
+      </ThemeProvider>
+    );
+
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+
+    act(() => {
+      screen.getByText('Set Light').click();
+    });
+
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+  });
+
+  it('resolves to light when system preference is light', () => {
+    render(
+      <ThemeProvider>
+        <TestConsumer />
+      </ThemeProvider>
+    );
+
+    expect(screen.getByTestId('resolved').textContent).toBe('light');
+  });
+
+  it('restores stored theme from localStorage', () => {
+    localStorage.setItem('cfbpoll_theme', 'dark');
+
+    render(
+      <ThemeProvider>
+        <TestConsumer />
+      </ThemeProvider>
+    );
+
+    expect(screen.getByTestId('theme').textContent).toBe('dark');
+    expect(screen.getByTestId('resolved').textContent).toBe('dark');
+  });
+
   it('switches back to light when the system preference changes back', () => {
     let changeHandler: ((e: MediaQueryListEvent) => void) | undefined;
     mockMatchMedia.mockReturnValue({
@@ -212,6 +183,36 @@ describe('ThemeContext', () => {
 
     act(() => {
       changeHandler!({ matches: false } as MediaQueryListEvent);
+    });
+
+    expect(screen.getByTestId('resolved').textContent).toBe('light');
+  });
+
+  it('throws error when useTheme is used outside ThemeProvider', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(() => render(<TestConsumer />)).toThrow(
+      'useTheme must be used within a ThemeProvider'
+    );
+
+    consoleError.mockRestore();
+  });
+
+  it('updates resolvedTheme when setTheme is called', () => {
+    render(
+      <ThemeProvider>
+        <TestConsumer />
+      </ThemeProvider>
+    );
+
+    act(() => {
+      screen.getByText('Set Dark').click();
+    });
+
+    expect(screen.getByTestId('resolved').textContent).toBe('dark');
+
+    act(() => {
+      screen.getByText('Set Light').click();
     });
 
     expect(screen.getByTestId('resolved').textContent).toBe('light');

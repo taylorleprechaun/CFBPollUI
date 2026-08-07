@@ -6,10 +6,6 @@ interface UseCountUpOptions {
   end: number;
 }
 
-function easeOutCubic(t: number): number {
-  return 1 - Math.pow(1 - t, 3);
-}
-
 export function useCountUp({
   end,
   duration = 1500,
@@ -52,4 +48,8 @@ export function useCountUp({
   if (!enabled) return 0;
   if (prefersReducedMotion) return end;
   return current;
+}
+
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
 }
