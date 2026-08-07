@@ -50,25 +50,135 @@ describe('Layout', () => {
     mockSeasonTrendsEnabled = true;
   });
 
-  it('renders navigation with brand and Home link', () => {
+  it('All-Time dropdown shows All-Time link when allTimeEnabled', async () => {
     renderLayout();
 
-    expect(screen.getByText('CFB Poll')).toBeInTheDocument();
-    expect(screen.getByText('Home')).toBeInTheDocument();
+    const allTimeButton = screen.getAllByRole('button', { name: /All-Time/i })[0];
+    await userEvent.click(allTimeButton);
+
+    const allTimeLinks = screen.getAllByText('All-Time');
+    // One is the button label, the others are in the dropdown
+    expect(allTimeLinks.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('renders Rankings dropdown button', () => {
+  it('closes mobile menu when close button is clicked', async () => {
+    const user = userEvent.setup();
     renderLayout();
 
-    const rankingsButtons = screen.getAllByRole('button', { name: /Rankings/i });
-    expect(rankingsButtons.length).toBeGreaterThanOrEqual(1);
+    await user.click(screen.getByLabelText('Open menu'));
+    expect(screen.getByLabelText('Close menu')).toBeInTheDocument();
+
+    await user.click(screen.getByLabelText('Close menu'));
+    expect(screen.getByLabelText('Open menu')).toBeInTheDocument();
+    expect(screen.getAllByText('Home')).toHaveLength(1);
   });
 
-  it('renders All-Time dropdown button when enabled', () => {
+  it('hides admin menu button when not authenticated', () => {
+    mockIsAuthenticated = false;
     renderLayout();
 
-    const allTimeButtons = screen.getAllByRole('button', { name: /All-Time/i });
-    expect(allTimeButtons.length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByLabelText('Admin menu')).not.toBeInTheDocument();
+  });
+
+  it('hides admin section in mobile menu when not authenticated', async () => {
+    mockIsAuthenticated = false;
+    const user = userEvent.setup();
+    renderLayout();
+
+    await user.click(screen.getByLabelText('Open menu'));
+
+    expect(screen.queryByText('Snapshots')).not.toBeInTheDocument();
+    expect(screen.queryByText('Predictions')).not.toBeInTheDocument();
+    expect(screen.queryByText('Settings')).not.toBeInTheDocument();
+  });
+
+  it('hides All-Time dropdown when both allTimeEnabled and pollLeadersEnabled are false', () => {
+    mockAllTimeEnabled = false;
+    mockPollLeadersEnabled = false;
+    renderLayout();
+
+    expect(screen.queryByRole('button', { name: /All-Time/i })).not.toBeInTheDocument();
+  });
+
+  it('hides All-Time link in dropdown when allTimeEnabled is false', async () => {
+    mockAllTimeEnabled = false;
+    mockPollLeadersEnabled = true;
+    renderLayout();
+
+    const allTimeButton = screen.getAllByRole('button', { name: /All-Time/i })[0];
+    await userEvent.click(allTimeButton);
+
+    // Only the button label should show, not a dropdown item link
+    const links = screen.queryAllByRole('link');
+    const allTimeLinks = links.filter(l => l.textContent === 'All-Time');
+    expect(allTimeLinks).toHaveLength(0);
+  });
+
+  it('hides conditional links in mobile menu when disabled', async () => {
+    mockAllTimeEnabled = false;
+    mockPollLeadersEnabled = false;
+    mockSeasonTrendsEnabled = false;
+    const user = userEvent.setup();
+    renderLayout();
+
+    await user.click(screen.getByLabelText('Open menu'));
+
+    expect(screen.queryByText('Leaders')).not.toBeInTheDocument();
+    // Trends should be hidden
+    expect(screen.queryByText('Trends')).not.toBeInTheDocument();
+  });
+
+  it('hides Leaders link when pollLeadersEnabled is false', async () => {
+    mockPollLeadersEnabled = false;
+    renderLayout();
+
+    const allTimeButton = screen.getAllByRole('button', { name: /All-Time/i })[0];
+    await userEvent.click(allTimeButton);
+
+    expect(screen.queryByText('Leaders')).not.toBeInTheDocument();
+  });
+
+  it('hides Predictions dropdown when predictionsPageEnabled is false', () => {
+    mockPredictionsPageEnabled = false;
+    renderLayout();
+
+    expect(screen.queryByRole('button', { name: /^Predictions$/i })).not.toBeInTheDocument();
+  });
+
+  it('hides Predictions section in mobile menu when disabled', async () => {
+    mockPredictionsPageEnabled = false;
+    const user = userEvent.setup();
+    renderLayout();
+
+    await user.click(screen.getByLabelText('Open menu'));
+
+    const predictionsLink = screen.queryAllByRole('link').find((l) => l.getAttribute('href') === '/predictions');
+    expect(predictionsLink).toBeUndefined();
+
+    const trackRecordLink = screen.queryAllByRole('link').find((l) => l.getAttribute('href') === '/track-record');
+    expect(trackRecordLink).toBeUndefined();
+  });
+
+  it('opens mobile menu with grouped sections', async () => {
+    const user = userEvent.setup();
+    renderLayout();
+
+    await user.click(screen.getByLabelText('Open menu'));
+
+    expect(screen.getByLabelText('Close menu')).toBeInTheDocument();
+    // Mobile should have section headers
+    const homeLinks = screen.getAllByText('Home');
+    expect(homeLinks).toHaveLength(2);
+  });
+
+  it('Rankings dropdown hides Trends when seasonTrendsEnabled is false', async () => {
+    mockSeasonTrendsEnabled = false;
+    renderLayout();
+
+    const rankingsButton = screen.getAllByRole('button', { name: /Rankings/i })[0];
+    await userEvent.click(rankingsButton);
+
+    expect(screen.queryByText('Trends')).not.toBeInTheDocument();
   });
 
   it('Rankings dropdown shows items on click', async () => {
@@ -89,47 +199,75 @@ describe('Layout', () => {
     expect(screen.getByText('Trends')).toBeInTheDocument();
   });
 
-  it('Rankings dropdown hides Trends when seasonTrendsEnabled is false', async () => {
-    mockSeasonTrendsEnabled = false;
+  it('renders All-Time dropdown button when enabled', () => {
     renderLayout();
 
-    const rankingsButton = screen.getAllByRole('button', { name: /Rankings/i })[0];
-    await userEvent.click(rankingsButton);
-
-    expect(screen.queryByText('Trends')).not.toBeInTheDocument();
+    const allTimeButtons = screen.getAllByRole('button', { name: /All-Time/i });
+    expect(allTimeButtons.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('hides All-Time dropdown when both allTimeEnabled and pollLeadersEnabled are false', () => {
-    mockAllTimeEnabled = false;
-    mockPollLeadersEnabled = false;
+  it('renders footer with name and social links', () => {
     renderLayout();
 
-    expect(screen.queryByRole('button', { name: /All-Time/i })).not.toBeInTheDocument();
+    expect(screen.getByText('Taylor Steinberg')).toBeInTheDocument();
+    expect(screen.getByLabelText('GitHub')).toHaveAttribute('href', 'https://github.com/taylorleprechaun');
+    expect(screen.getByLabelText('LinkedIn')).toHaveAttribute('href', 'https://www.linkedin.com/in/taylor-steinberg-a86994111/');
+    expect(screen.getByLabelText('Twitter')).toHaveAttribute('href', 'https://twitter.com/TaylorLeprechau');
   });
 
-  it('All-Time dropdown shows All-Time link when allTimeEnabled', async () => {
+  it('renders hamburger menu button', () => {
     renderLayout();
 
-    const allTimeButton = screen.getAllByRole('button', { name: /All-Time/i })[0];
-    await userEvent.click(allTimeButton);
-
-    const allTimeLinks = screen.getAllByText('All-Time');
-    // One is the button label, the others are in the dropdown
-    expect(allTimeLinks.length).toBeGreaterThanOrEqual(2);
+    const menuButton = screen.getByLabelText('Open menu');
+    expect(menuButton).toBeInTheDocument();
   });
 
-  it('hides All-Time link in dropdown when allTimeEnabled is false', async () => {
-    mockAllTimeEnabled = false;
-    mockPollLeadersEnabled = true;
+  it('renders navigation with brand and Home link', () => {
     renderLayout();
 
-    const allTimeButton = screen.getAllByRole('button', { name: /All-Time/i })[0];
-    await userEvent.click(allTimeButton);
+    expect(screen.getByText('CFB Poll')).toBeInTheDocument();
+    expect(screen.getByText('Home')).toBeInTheDocument();
+  });
 
-    // Only the button label should show, not a dropdown item link
-    const links = screen.queryAllByRole('link');
-    const allTimeLinks = links.filter(l => l.textContent === 'All-Time');
-    expect(allTimeLinks).toHaveLength(0);
+  it('renders Rankings dropdown button', () => {
+    renderLayout();
+
+    const rankingsButtons = screen.getAllByRole('button', { name: /Rankings/i });
+    expect(rankingsButtons.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('shows admin menu dropdown on unlock icon click', async () => {
+    mockIsAuthenticated = true;
+    renderLayout();
+
+    await userEvent.click(screen.getByLabelText('Admin menu'));
+
+    expect(screen.getByText('Snapshots')).toBeInTheDocument();
+    expect(screen.getByText('Predictions')).toBeInTheDocument();
+    expect(screen.getByText('Settings')).toBeInTheDocument();
+  });
+
+  it('shows admin section in mobile menu when authenticated', async () => {
+    mockIsAuthenticated = true;
+    const user = userEvent.setup();
+    renderLayout();
+
+    await user.click(screen.getByLabelText('Open menu'));
+
+    expect(screen.getByText('Snapshots')).toBeInTheDocument();
+    expect(screen.getByText('Predictions')).toBeInTheDocument();
+    expect(screen.getByText('Settings')).toBeInTheDocument();
+  });
+
+  it('shows conditional items in mobile menu', async () => {
+    const user = userEvent.setup();
+    renderLayout();
+
+    await user.click(screen.getByLabelText('Open menu'));
+
+    // Mobile should show Teams and Trends under Rankings section
+    expect(screen.getByText('Teams')).toBeInTheDocument();
+    expect(screen.getByText('Trends')).toBeInTheDocument();
   });
 
   it('shows Leaders link in All-Time dropdown when pollLeadersEnabled', async () => {
@@ -141,21 +279,13 @@ describe('Layout', () => {
     expect(screen.getByText('Leaders')).toBeInTheDocument();
   });
 
-  it('hides Leaders link when pollLeadersEnabled is false', async () => {
-    mockPollLeadersEnabled = false;
+  it('shows lock icon linking to login when not authenticated', () => {
+    mockIsAuthenticated = false;
     renderLayout();
 
-    const allTimeButton = screen.getAllByRole('button', { name: /All-Time/i })[0];
-    await userEvent.click(allTimeButton);
-
-    expect(screen.queryByText('Leaders')).not.toBeInTheDocument();
-  });
-
-  it('hides Predictions dropdown when predictionsPageEnabled is false', () => {
-    mockPredictionsPageEnabled = false;
-    renderLayout();
-
-    expect(screen.queryByRole('button', { name: /^Predictions$/i })).not.toBeInTheDocument();
+    const lockLink = screen.getByLabelText('Admin login');
+    expect(lockLink).toBeInTheDocument();
+    expect(lockLink).toHaveAttribute('href', '/login');
   });
 
   it('shows Predictions dropdown when predictionsPageEnabled is true', async () => {
@@ -169,17 +299,6 @@ describe('Layout', () => {
 
     const predictionsLink = screen.getAllByRole('link').find((l) => l.getAttribute('href') === '/predictions');
     expect(predictionsLink).toBeDefined();
-  });
-
-  it('shows Track Record link in Predictions dropdown when enabled', async () => {
-    mockPredictionsPageEnabled = true;
-    renderLayout();
-
-    const predictionsButton = screen.getByRole('button', { name: /^Predictions$/i });
-    await userEvent.click(predictionsButton);
-
-    const trackRecordLink = screen.getAllByRole('link').find((l) => l.getAttribute('href') === '/track-record');
-    expect(trackRecordLink).toBeDefined();
   });
 
   it('shows Predictions section in mobile menu when enabled', async () => {
@@ -204,27 +323,15 @@ describe('Layout', () => {
     expect(trackRecordLink).toBeDefined();
   });
 
-  it('hides Predictions section in mobile menu when disabled', async () => {
-    mockPredictionsPageEnabled = false;
-    const user = userEvent.setup();
+  it('shows Track Record link in Predictions dropdown when enabled', async () => {
+    mockPredictionsPageEnabled = true;
     renderLayout();
 
-    await user.click(screen.getByLabelText('Open menu'));
+    const predictionsButton = screen.getByRole('button', { name: /^Predictions$/i });
+    await userEvent.click(predictionsButton);
 
-    const predictionsLink = screen.queryAllByRole('link').find((l) => l.getAttribute('href') === '/predictions');
-    expect(predictionsLink).toBeUndefined();
-
-    const trackRecordLink = screen.queryAllByRole('link').find((l) => l.getAttribute('href') === '/track-record');
-    expect(trackRecordLink).toBeUndefined();
-  });
-
-  it('shows lock icon linking to login when not authenticated', () => {
-    mockIsAuthenticated = false;
-    renderLayout();
-
-    const lockLink = screen.getByLabelText('Admin login');
-    expect(lockLink).toBeInTheDocument();
-    expect(lockLink).toHaveAttribute('href', '/login');
+    const trackRecordLink = screen.getAllByRole('link').find((l) => l.getAttribute('href') === '/track-record');
+    expect(trackRecordLink).toBeDefined();
   });
 
   it('shows unlock icon as admin menu button when authenticated', () => {
@@ -234,112 +341,5 @@ describe('Layout', () => {
     const adminMenuButton = screen.getByLabelText('Admin menu');
     expect(adminMenuButton).toBeInTheDocument();
     expect(adminMenuButton.tagName).toBe('BUTTON');
-  });
-
-  it('renders hamburger menu button', () => {
-    renderLayout();
-
-    const menuButton = screen.getByLabelText('Open menu');
-    expect(menuButton).toBeInTheDocument();
-  });
-
-  it('opens mobile menu with grouped sections', async () => {
-    const user = userEvent.setup();
-    renderLayout();
-
-    await user.click(screen.getByLabelText('Open menu'));
-
-    expect(screen.getByLabelText('Close menu')).toBeInTheDocument();
-    // Mobile should have section headers
-    const homeLinks = screen.getAllByText('Home');
-    expect(homeLinks).toHaveLength(2);
-  });
-
-  it('closes mobile menu when close button is clicked', async () => {
-    const user = userEvent.setup();
-    renderLayout();
-
-    await user.click(screen.getByLabelText('Open menu'));
-    expect(screen.getByLabelText('Close menu')).toBeInTheDocument();
-
-    await user.click(screen.getByLabelText('Close menu'));
-    expect(screen.getByLabelText('Open menu')).toBeInTheDocument();
-    expect(screen.getAllByText('Home')).toHaveLength(1);
-  });
-
-  it('shows conditional items in mobile menu', async () => {
-    const user = userEvent.setup();
-    renderLayout();
-
-    await user.click(screen.getByLabelText('Open menu'));
-
-    // Mobile should show Teams and Trends under Rankings section
-    expect(screen.getByText('Teams')).toBeInTheDocument();
-    expect(screen.getByText('Trends')).toBeInTheDocument();
-  });
-
-  it('hides conditional links in mobile menu when disabled', async () => {
-    mockAllTimeEnabled = false;
-    mockPollLeadersEnabled = false;
-    mockSeasonTrendsEnabled = false;
-    const user = userEvent.setup();
-    renderLayout();
-
-    await user.click(screen.getByLabelText('Open menu'));
-
-    expect(screen.queryByText('Leaders')).not.toBeInTheDocument();
-    // Trends should be hidden
-    expect(screen.queryByText('Trends')).not.toBeInTheDocument();
-  });
-
-  it('shows admin menu dropdown on unlock icon click', async () => {
-    mockIsAuthenticated = true;
-    renderLayout();
-
-    await userEvent.click(screen.getByLabelText('Admin menu'));
-
-    expect(screen.getByText('Snapshots')).toBeInTheDocument();
-    expect(screen.getByText('Predictions')).toBeInTheDocument();
-    expect(screen.getByText('Settings')).toBeInTheDocument();
-  });
-
-  it('hides admin menu button when not authenticated', () => {
-    mockIsAuthenticated = false;
-    renderLayout();
-
-    expect(screen.queryByLabelText('Admin menu')).not.toBeInTheDocument();
-  });
-
-  it('shows admin section in mobile menu when authenticated', async () => {
-    mockIsAuthenticated = true;
-    const user = userEvent.setup();
-    renderLayout();
-
-    await user.click(screen.getByLabelText('Open menu'));
-
-    expect(screen.getByText('Snapshots')).toBeInTheDocument();
-    expect(screen.getByText('Predictions')).toBeInTheDocument();
-    expect(screen.getByText('Settings')).toBeInTheDocument();
-  });
-
-  it('hides admin section in mobile menu when not authenticated', async () => {
-    mockIsAuthenticated = false;
-    const user = userEvent.setup();
-    renderLayout();
-
-    await user.click(screen.getByLabelText('Open menu'));
-
-    expect(screen.queryByText('Snapshots')).not.toBeInTheDocument();
-    expect(screen.queryByText('Predictions')).not.toBeInTheDocument();
-    expect(screen.queryByText('Settings')).not.toBeInTheDocument();
-  });
-
-  it('renders footer with name and social links', () => {
-    renderLayout();
-
-    expect(screen.getByText('Taylor Steinberg')).toBeInTheDocument();
-    expect(screen.getByLabelText('GitHub')).toHaveAttribute('href', 'https://github.com/taylorleprechaun');
-    expect(screen.getByLabelText('LinkedIn')).toHaveAttribute('href', 'https://www.linkedin.com/in/taylor-steinberg-a86994111/');
-    expect(screen.getByLabelText('Twitter')).toHaveAttribute('href', 'https://twitter.com/TaylorLeprechau');
   });
 });

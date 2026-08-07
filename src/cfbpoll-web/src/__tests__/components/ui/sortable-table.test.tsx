@@ -34,22 +34,6 @@ const testData: TestRow[] = [
 ];
 
 describe('SortableTable', () => {
-  it('renders table skeleton when isLoading is true', () => {
-    render(
-      <SortableTable columns={stringHeaderColumns} data={[]} isLoading={true} />
-    );
-
-    expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
-  });
-
-  it('renders empty message when data is empty', () => {
-    render(
-      <SortableTable columns={stringHeaderColumns} data={[]} isLoading={false} />
-    );
-
-    expect(screen.getByText('No data available.')).toBeInTheDocument();
-  });
-
   it('renders custom empty message', () => {
     render(
       <SortableTable
@@ -63,6 +47,14 @@ describe('SortableTable', () => {
     expect(screen.getByText('Nothing here.')).toBeInTheDocument();
   });
 
+  it('renders empty message when data is empty', () => {
+    render(
+      <SortableTable columns={stringHeaderColumns} data={[]} isLoading={false} />
+    );
+
+    expect(screen.getByText('No data available.')).toBeInTheDocument();
+  });
+
   it('renders table rows with data', () => {
     render(
       <SortableTable columns={stringHeaderColumns} data={testData} isLoading={false} />
@@ -73,23 +65,12 @@ describe('SortableTable', () => {
     expect(screen.getByText('Texas')).toBeInTheDocument();
   });
 
-  it('uses header.id for aria-label when header is not a string', () => {
+  it('renders table skeleton when isLoading is true', () => {
     render(
-      <SortableTable columns={renderHeaderColumns} data={testData} isLoading={false} />
+      <SortableTable columns={stringHeaderColumns} data={[]} isLoading={true} />
     );
 
-    expect(screen.getByTestId('custom-header')).toBeInTheDocument();
-    const nameHeader = screen.getByTestId('custom-header').closest('th')!;
-    expect(nameHeader).toHaveAttribute('aria-label', 'Sort by name');
-  });
-
-  it('uses header string for aria-label when header is a string', () => {
-    render(
-      <SortableTable columns={stringHeaderColumns} data={testData} isLoading={false} />
-    );
-
-    const scoreHeader = screen.getByText('Score').closest('th')!;
-    expect(scoreHeader).toHaveAttribute('aria-label', 'Sort by Score');
+    expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
   it('shows ascending sort indicator after clicking a string column header', async () => {
@@ -125,5 +106,24 @@ describe('SortableTable', () => {
     const scoreHeader = screen.getByText('Score').closest('th')!;
     expect(scoreHeader).toHaveAttribute('aria-sort', 'none');
     expect(scoreHeader.querySelector('svg')).toBeInTheDocument();
+  });
+
+  it('uses header string for aria-label when header is a string', () => {
+    render(
+      <SortableTable columns={stringHeaderColumns} data={testData} isLoading={false} />
+    );
+
+    const scoreHeader = screen.getByText('Score').closest('th')!;
+    expect(scoreHeader).toHaveAttribute('aria-label', 'Sort by Score');
+  });
+
+  it('uses header.id for aria-label when header is not a string', () => {
+    render(
+      <SortableTable columns={renderHeaderColumns} data={testData} isLoading={false} />
+    );
+
+    expect(screen.getByTestId('custom-header')).toBeInTheDocument();
+    const nameHeader = screen.getByTestId('custom-header').closest('th')!;
+    expect(nameHeader).toHaveAttribute('aria-label', 'Sort by name');
   });
 });

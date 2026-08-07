@@ -3,17 +3,17 @@ import { describe, expect, it } from 'vitest';
 
 import { MoonIcon, SunIcon } from '../../../../components/ui/icons/theme-icon';
 
-describe('SunIcon', () => {
+describe('MoonIcon', () => {
   it('renders an svg element', () => {
-    const { container } = render(<SunIcon />);
+    const { container } = render(<MoonIcon />);
 
     expect(container.querySelector('svg')).toBeInTheDocument();
   });
 });
 
-describe('MoonIcon', () => {
+describe('SunIcon', () => {
   it('renders an svg element', () => {
-    const { container } = render(<MoonIcon />);
+    const { container } = render(<SunIcon />);
 
     expect(container.querySelector('svg')).toBeInTheDocument();
   });

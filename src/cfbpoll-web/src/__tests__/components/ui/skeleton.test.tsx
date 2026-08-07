@@ -4,15 +4,6 @@ import { describe, expect, it } from 'vitest';
 import { Skeleton } from '../../../components/ui/skeleton';
 
 describe('Skeleton', () => {
-  it('renders with animate-pulse class', () => {
-    const { container } = render(<Skeleton />);
-
-    const skeleton = container.firstChild as HTMLElement;
-    expect(skeleton).toHaveClass('animate-pulse');
-    expect(skeleton).toHaveClass('rounded');
-    expect(skeleton).toHaveClass('bg-surface-alt');
-  });
-
   it('applies custom className', () => {
     const { container } = render(<Skeleton className="h-4 w-16" />);
 
@@ -26,5 +17,14 @@ describe('Skeleton', () => {
     const { container } = render(<Skeleton />);
 
     expect(container.firstChild?.nodeName).toBe('DIV');
+  });
+
+  it('renders with animate-pulse class', () => {
+    const { container } = render(<Skeleton />);
+
+    const skeleton = container.firstChild as HTMLElement;
+    expect(skeleton).toHaveClass('animate-pulse');
+    expect(skeleton).toHaveClass('rounded');
+    expect(skeleton).toHaveClass('bg-surface-alt');
   });
 });

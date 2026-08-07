@@ -39,19 +39,19 @@ describe('ThemeToggle', () => {
     expect(mockSetTheme).toHaveBeenCalledWith('light');
   });
 
-  it('shows switch to light mode label when theme is dark', () => {
-    mockResolvedTheme = 'dark';
-
-    render(<ThemeToggle />);
-
-    expect(screen.getByRole('button')).toHaveAttribute('aria-label', 'Switch to light mode');
-  });
-
   it('shows switch to dark mode label when theme is light', () => {
     mockResolvedTheme = 'light';
 
     render(<ThemeToggle />);
 
     expect(screen.getByRole('button')).toHaveAttribute('aria-label', 'Switch to dark mode');
+  });
+
+  it('shows switch to light mode label when theme is dark', () => {
+    mockResolvedTheme = 'dark';
+
+    render(<ThemeToggle />);
+
+    expect(screen.getByRole('button')).toHaveAttribute('aria-label', 'Switch to light mode');
   });
 });

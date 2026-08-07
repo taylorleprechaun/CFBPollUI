@@ -15,16 +15,6 @@ describe('CollapsibleContent', () => {
     expect(container.querySelector('#content-1')).toBeInTheDocument();
   });
 
-  it('sets gridTemplateRows to 1fr when open', () => {
-    const { container } = render(
-      <CollapsibleContent id="content-1" isOpen={true}>
-        <p>Body content</p>
-      </CollapsibleContent>
-    );
-
-    expect(container.querySelector('#content-1')).toHaveStyle({ gridTemplateRows: '1fr' });
-  });
-
   it('sets gridTemplateRows to 0fr when closed', () => {
     const { container } = render(
       <CollapsibleContent id="content-1" isOpen={false}>
@@ -33,5 +23,15 @@ describe('CollapsibleContent', () => {
     );
 
     expect(container.querySelector('#content-1')).toHaveStyle({ gridTemplateRows: '0fr' });
+  });
+
+  it('sets gridTemplateRows to 1fr when open', () => {
+    const { container } = render(
+      <CollapsibleContent id="content-1" isOpen={true}>
+        <p>Body content</p>
+      </CollapsibleContent>
+    );
+
+    expect(container.querySelector('#content-1')).toHaveStyle({ gridTemplateRows: '1fr' });
   });
 });
