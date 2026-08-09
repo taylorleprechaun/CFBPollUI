@@ -1,15 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { ErrorAlert } from '../components/error';
-import {
-  actualRecordColumn,
-  createTeamNameColumn,
-  deltaColumn,
-  predictedRecordColumn,
-} from '../components/predictions/team-prediction-record-columns';
+import { TeamPredictionRecordsTable } from '../components/predictions/team-prediction-records-table';
 import { SeasonSelector } from '../components/rankings/season-selector';
-import { SortableTable } from '../components/ui/sortable-table';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { usePredictionSeasons } from '../hooks/use-prediction-seasons';
 import { useTeamPredictionRecords } from '../hooks/use-team-prediction-records';
@@ -54,13 +48,6 @@ export function TeamPredictionRecordsPage() {
     refetch: refetchRecords,
   } = useTeamPredictionRecords(effectiveSeason);
 
-  const columns = useMemo(
-    () => effectiveSeason !== null
-      ? [createTeamNameColumn(effectiveSeason), predictedRecordColumn, actualRecordColumn, deltaColumn]
-      : [],
-    [effectiveSeason]
-  );
-
   const error = predictionSeasonsError || recordsError;
   const handleRetry = () => {
     if (predictionSeasonsError) refetchPredictionSeasons();
@@ -91,9 +78,9 @@ export function TeamPredictionRecordsPage() {
 
       {!error && predictionSeasons.length > 0 && (
         <div className="bg-surface shadow-md rounded-xl overflow-hidden animate-fade-in">
-          <SortableTable
-            columns={columns}
-            data={recordsData?.records ?? []}
+          <TeamPredictionRecordsTable
+            records={recordsData?.records ?? []}
+            season={effectiveSeason ?? predictionSeasons[0]}
             isLoading={recordsLoading}
             emptyMessage="No graded predictions have been published for this season yet."
           />

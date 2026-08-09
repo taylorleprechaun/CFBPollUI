@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import type { TeamPredictionRecord } from '../../types';
 
+import { deltaClasses } from '../../lib/delta-classes';
 import { TeamLogo } from '../rankings/team-logo';
 
 const columnHelper = createColumnHelper<TeamPredictionRecord>();
@@ -44,6 +45,11 @@ export const deltaColumn = columnHelper.accessor((row) => row.actualWins - row.p
   header: 'Delta',
   cell: (info) => {
     const value = info.getValue();
-    return value > 0 ? `+${value}` : `${value}`;
+    const label = value > 0 ? `+${value}` : `${value}`;
+    return (
+      <span className={`inline-block px-2 py-1 rounded-lg font-semibold ${deltaClasses(value)}`}>
+        {label}
+      </span>
+    );
   },
 });

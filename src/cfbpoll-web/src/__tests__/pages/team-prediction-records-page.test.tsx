@@ -100,9 +100,9 @@ describe('TeamPredictionRecordsPage', () => {
 
     renderPage();
 
-    expect(screen.getByText('-1')).toBeInTheDocument();
-    expect(screen.getByText('+3')).toBeInTheDocument();
-    expect(screen.getByText('0')).toBeInTheDocument();
+    expect(screen.getAllByText('-1').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('+3').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('0').length).toBeGreaterThan(0);
   });
 
   it('renders an empty state when no season has published predictions', () => {
@@ -144,11 +144,11 @@ describe('TeamPredictionRecordsPage', () => {
 
     renderPage();
 
-    expect(screen.getByText('Alabama')).toBeInTheDocument();
-    expect(screen.getByText('8-2')).toBeInTheDocument();
-    expect(screen.getByText('7-3')).toBeInTheDocument();
-    expect(screen.getByText('Michigan')).toBeInTheDocument();
-    expect(screen.getAllByText('9-1').length).toBe(2);
+    expect(screen.getAllByText('Alabama').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('8-2').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('7-3').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Michigan').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('9-1').length).toBe(4);
   });
 
   it('renders the heading', () => {
