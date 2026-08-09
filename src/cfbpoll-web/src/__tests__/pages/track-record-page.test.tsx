@@ -97,6 +97,20 @@ describe('TrackRecordPage', () => {
     expect(seasonSelect.value).toBe('2024');
   });
 
+  it('renders a link to the explanation page near the heading', () => {
+    vi.mocked(useTrackRecord).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useTrackRecord>);
+
+    renderPage();
+
+    const link = screen.getByRole('link', { name: /Winner, Spread, Margin RMSE/ });
+    expect(link).toHaveAttribute('href', '/track-record/explained');
+  });
+
   it('renders an empty state when there are no graded weeks', () => {
     vi.mocked(useTrackRecord).mockReturnValue({
       data: {
@@ -115,6 +129,19 @@ describe('TrackRecordPage', () => {
     renderPage();
 
     expect(screen.getByText('No graded predictions have been published yet.')).toBeInTheDocument();
+  });
+
+  it('renders an info button for each summary card', () => {
+    vi.mocked(useTrackRecord).mockReturnValue({
+      data: mockData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useTrackRecord>);
+
+    renderPage();
+
+    expect(screen.getAllByRole('button', { name: /^About / })).toHaveLength(10);
   });
 
   it('renders error state with retry button', async () => {
