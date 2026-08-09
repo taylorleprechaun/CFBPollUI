@@ -1,7 +1,7 @@
 import type { TrackRecordStatInfo } from '../../lib/track-record-stat-info';
 
 import { InfoTooltip } from '../ui/info-tooltip';
-import { MarginValueBadge } from './margin-value-badge';
+import { ValueBadge } from '../ui/value-badge';
 
 interface MarginStatCardProps {
   classes?: string | null;
@@ -18,7 +18,7 @@ export function MarginStatCard({ classes = null, label, statInfo, value }: Margi
         {statInfo && <InfoTooltip statName={label} summary={statInfo.shortSummary} anchor={statInfo.id} />}
       </div>
       <div className="text-3xl font-bold text-text-primary">
-        <MarginValueBadge classes={classes} value={value} />
+        <ValueBadge classes={classes} value={value} />
       </div>
     </div>
   );

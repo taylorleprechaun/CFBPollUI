@@ -37,7 +37,7 @@ Last Updated 8/6/2026
 - **All-Time Rankings**: View the best teams, worst teams, and hardest schedules across all seasons with sortable tables
 - **Season Trends**: Interactive line chart showing rank progression throughout a season, with team logos as data points, CSS-driven highlighting, and custom tooltips
 - **Poll Leaders**: Scatter chart showing how frequently teams have been ranked, with team logos as data points, year range filtering, and toggleable all-weeks vs. final-only modes
-- **Track Record**: Historical accuracy of published predictions — Winner, Spread, Over/Under, Margin RMSE, and Margin Bias — viewable all-time and by season, with toggleable margin-accuracy detail and color-coded quality bands
+- **Track Record**: Historical accuracy of published predictions — Winner, Spread, Over/Under, Margin RMSE, and Margin Bias — viewable all-time and by season, with color-coded quality bands on the By-Season and weekly stats, plus toggleable margin-accuracy detail
 - **Page Visibility Controls**: Admin toggles to enable/disable the All-Time, Poll Leaders, and Season Trends pages, with deep-link blocking for disabled pages
 - **Historical Data**: Access rankings from 2002 to present
 - **Mobile-Responsive UI**: Collapsible hamburger menu navigation on small screens with viewport-aware chart tooltips
@@ -317,7 +317,7 @@ A few ordering/formatting conventions are worth calling out since they're enforc
 
 ## Testing
 
-The project includes 2,127 unit and integration tests across backend and frontend.
+The project includes 2,156 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
@@ -328,7 +328,7 @@ dotnet test
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (1,251 tests)
+# Frontend tests (1,280 tests)
 cd src/cfbpoll-web
 npm test
 ```
@@ -336,7 +336,7 @@ npm test
 ### Coverage Summary
 
 ![Backend Tests](https://img.shields.io/badge/Backend_Tests-876-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1251-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1280-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-98%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
 ![Web Coverage](https://img.shields.io/badge/Web_Coverage-100%25-brightgreen)

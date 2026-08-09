@@ -73,6 +73,60 @@ beforeEach(() => {
 });
 
 describe('TrackRecordPage', () => {
+  it('colors By-Season margin RMSE/Bias but not All-Time, even when shown', async () => {
+    const user = userEvent.setup();
+    vi.mocked(useTrackRecord).mockReturnValue({
+      data: mockData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useTrackRecord>);
+
+    renderPage();
+    await user.click(screen.getByRole('switch'));
+
+    expect(screen.getByText('6.2 pts')).not.toHaveClass('bg-green-100');
+    expect(screen.getByText('+0.8 pts')).not.toHaveClass('bg-green-100');
+    expect(screen.getByText('3.9 pts')).toHaveClass('bg-green-100');
+    expect(screen.getByText('-1.0 pts')).toHaveClass('bg-green-100');
+  });
+
+  it('colors By-Season Winner/Spread/Over-Under percentages but not All-Time', () => {
+    vi.mocked(useTrackRecord).mockReturnValue({
+      data: mockData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useTrackRecord>);
+
+    renderPage();
+
+    // All-time: 15-3=83.3%, 12-6=66.7%, 10-8-1=55.6% — plain.
+    expect(screen.getByText('83.3%')).not.toHaveClass('bg-green-100');
+    expect(screen.getByText('66.7%')).not.toHaveClass('bg-green-100');
+    expect(screen.getByText('55.6%')).not.toHaveClass('bg-green-100');
+
+    // By-season (2024 weeks summed): 9-1=90.0%, 7-3=70.0%, 5-3-1=62.5% — colored.
+    expect(screen.getByText('90.0%')).toHaveClass('bg-green-100');
+    expect(screen.getByText('70.0%')).toHaveClass('bg-green-100');
+    expect(screen.getByText('62.5%')).toHaveClass('bg-green-100');
+  });
+
+  it('colors the weekly winner/spread/O-U totals in the table regardless of the toggle', () => {
+    vi.mocked(useTrackRecord).mockReturnValue({
+      data: mockData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useTrackRecord>);
+
+    renderPage();
+
+    for (const el of screen.getAllByText('5-0')) {
+      expect(el).toHaveClass('bg-green-100');
+    }
+  });
+
   it('defaults the season dropdown to the most recent season present in the data', () => {
     vi.mocked(useTrackRecord).mockReturnValue({
       data: mockData,

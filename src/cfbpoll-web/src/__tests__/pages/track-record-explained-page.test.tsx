@@ -38,6 +38,14 @@ describe('TrackRecordExplainedPage', () => {
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
 
+  it('renders a section heading explaining the winner/spread/over-under color bands', () => {
+    renderPage();
+
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Where the Winner, Spread, and Over/Under Colors Come From' })
+    ).toBeInTheDocument();
+  });
+
   it('renders a section heading for each stat', () => {
     renderPage();
 

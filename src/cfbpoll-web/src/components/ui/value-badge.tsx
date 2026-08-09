@@ -1,9 +1,9 @@
-interface MarginValueBadgeProps {
+interface ValueBadgeProps {
   classes: string | null;
   value: string;
 }
 
-export function MarginValueBadge({ classes, value }: MarginValueBadgeProps) {
+export function ValueBadge({ classes, value }: ValueBadgeProps) {
   if (!classes) return value;
 
   return (

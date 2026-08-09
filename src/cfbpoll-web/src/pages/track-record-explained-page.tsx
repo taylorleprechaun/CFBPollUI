@@ -104,8 +104,20 @@ export function TrackRecordExplainedPage() {
           >
             The Prediction Tracker
           </a>
-          . Landing in the same range as the better systems there earns green; falling well behind the pack earns
-          red.
+          , pulled back a bit since this is meant as a personal benchmark rather than a contest against a pool of
+          professional systems. Landing at a respectable rate earns green; falling well behind earns red.
+        </p>
+      </section>
+
+      <section id="pick-accuracy-quality-bands" className="mb-8 scroll-mt-20">
+        <h2 className="text-xl font-semibold text-text-primary mb-2">
+          Where the Winner, Spread, and Over/Under Colors Come From
+        </h2>
+        <p className="text-text-secondary leading-relaxed">
+          Winner, Spread, and Over/Under get the same treatment on the By Season summary cards and in the weekly
+          breakdown: green, yellow, or red based on the pick rate, using the same real-systems field and the same
+          toned-down bar described above. All-Time stays plain, since it blends every season together and a single
+          color band across that much history wouldn&rsquo;t mean much.
         </p>
       </section>
     </div>

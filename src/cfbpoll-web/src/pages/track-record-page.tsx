@@ -12,6 +12,7 @@ import { useDocumentTitle } from '../hooks/use-document-title';
 import { useMarginStatsVisibility } from '../hooks/use-margin-stats-visibility';
 import { useTrackRecord } from '../hooks/use-track-record';
 import { marginBiasClasses, marginRMSEClasses } from '../lib/margin-quality';
+import { overUnderClasses, spreadClasses, winnerClasses } from '../lib/pick-quality';
 import { TRACK_RECORD_STAT_INFO } from '../lib/track-record-stat-info';
 import { combineMarginBias, combineMarginRMSE, formatMarginBias, formatMarginRMSE, sumTotals } from '../lib/track-record-utils';
 
@@ -109,13 +110,11 @@ export function TrackRecordPage() {
                   label="Margin RMSE"
                   value={formatMarginRMSE(data.overallMarginRMSE)}
                   statInfo={TRACK_RECORD_STAT_INFO.marginRMSE}
-                  classes={marginRMSEClasses(data.overallMarginRMSE)}
                 />
                 <MarginStatCard
                   label="Margin Bias"
                   value={formatMarginBias(data.overallMarginBias)}
                   statInfo={TRACK_RECORD_STAT_INFO.marginBias}
-                  classes={marginBiasClasses(data.overallMarginBias)}
                 />
               </div>
             )}
@@ -132,9 +131,24 @@ export function TrackRecordPage() {
               />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <OverallRecordCard label="Winner" totals={seasonOverallWinner} statInfo={TRACK_RECORD_STAT_INFO.winner} />
-              <OverallRecordCard label="Spread" totals={seasonOverallSpread} statInfo={TRACK_RECORD_STAT_INFO.spread} />
-              <OverallRecordCard label="Over/Under" totals={seasonOverallOverUnder} statInfo={TRACK_RECORD_STAT_INFO.overUnder} />
+              <OverallRecordCard
+                label="Winner"
+                totals={seasonOverallWinner}
+                statInfo={TRACK_RECORD_STAT_INFO.winner}
+                classes={winnerClasses(seasonOverallWinner)}
+              />
+              <OverallRecordCard
+                label="Spread"
+                totals={seasonOverallSpread}
+                statInfo={TRACK_RECORD_STAT_INFO.spread}
+                classes={spreadClasses(seasonOverallSpread)}
+              />
+              <OverallRecordCard
+                label="Over/Under"
+                totals={seasonOverallOverUnder}
+                statInfo={TRACK_RECORD_STAT_INFO.overUnder}
+                classes={overUnderClasses(seasonOverallOverUnder)}
+              />
             </div>
             {showMarginStats && (
               <div className="grid grid-cols-2 gap-4 mt-4">

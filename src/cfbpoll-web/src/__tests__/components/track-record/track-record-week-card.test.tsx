@@ -36,6 +36,28 @@ describe('TrackRecordWeekCard', () => {
     expect(screen.getByText('+0.5 pts')).toHaveClass('bg-green-100');
   });
 
+  it('colors the winner, spread, and over/under totals across the yellow and red bands too', () => {
+    renderCard(
+      buildWeek({
+        winner: { correct: 1, incorrect: 2, push: 0 },
+        spread: { correct: 1, incorrect: 1, push: 0 },
+        overUnder: { correct: 2, incorrect: 2, push: 0 },
+      })
+    );
+
+    expect(screen.getByText('1-2')).toHaveClass('bg-red-100');
+    expect(screen.getByText('1-1')).toHaveClass('bg-yellow-100');
+    expect(screen.getByText('2-2')).toHaveClass('bg-yellow-100');
+  });
+
+  it('colors the winner, spread, and over/under totals even when showMarginStats is false', () => {
+    renderCard(buildWeek(), false);
+
+    expect(screen.getByText('5-0')).toHaveClass('bg-green-100');
+    expect(screen.getByText('4-1')).toHaveClass('bg-green-100');
+    expect(screen.getByText('3-2')).toHaveClass('bg-green-100');
+  });
+
   it('does not render margin RMSE/Bias rows when showMarginStats is false', () => {
     renderCard(buildWeek(), false);
 

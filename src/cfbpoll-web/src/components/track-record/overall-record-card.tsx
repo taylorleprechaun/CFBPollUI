@@ -3,14 +3,16 @@ import type { TrackRecordTotals } from '../../schemas';
 
 import { formatTotals, winPercentage } from '../../lib/track-record-utils';
 import { InfoTooltip } from '../ui/info-tooltip';
+import { ValueBadge } from '../ui/value-badge';
 
 interface OverallRecordCardProps {
+  classes?: string | null;
   label: string;
   statInfo?: TrackRecordStatInfo;
   totals: TrackRecordTotals;
 }
 
-export function OverallRecordCard({ label, statInfo, totals }: OverallRecordCardProps) {
+export function OverallRecordCard({ classes = null, label, statInfo, totals }: OverallRecordCardProps) {
   const pct = winPercentage(totals);
 
   return (
@@ -21,7 +23,9 @@ export function OverallRecordCard({ label, statInfo, totals }: OverallRecordCard
       </div>
       <div className="text-3xl font-bold text-text-primary">{formatTotals(totals)}</div>
       {pct !== null && (
-        <div className="text-sm text-text-muted mt-1">{pct.toFixed(1)}%</div>
+        <div className="text-sm text-text-muted mt-1">
+          <ValueBadge classes={classes} value={`${pct.toFixed(1)}%`} />
+        </div>
       )}
     </div>
   );

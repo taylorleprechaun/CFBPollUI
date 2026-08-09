@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom';
 import type { TrackRecordWeek } from '../../schemas';
 
 import { marginBiasClasses, marginRMSEClasses } from '../../lib/margin-quality';
+import { overUnderClasses, spreadClasses, winnerClasses } from '../../lib/pick-quality';
 import { formatMarginBias, formatMarginRMSE, formatTotals } from '../../lib/track-record-utils';
 import { getWeekLabel } from '../../lib/week-utils';
 import { TableSkeleton } from '../ui/table-skeleton';
-import { MarginValueBadge } from './margin-value-badge';
+import { ValueBadge } from '../ui/value-badge';
 import { TrackRecordWeekCard } from './track-record-week-card';
 
 const COLUMN_COUNT_WITH_MARGIN_STATS = 6;
@@ -53,21 +54,21 @@ export function TrackRecordTable({ isLoading = false, showMarginStats = false, w
                   </Link>
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary text-right">
-                  {formatTotals(w.winner)}
+                  <ValueBadge classes={winnerClasses(w.winner)} value={formatTotals(w.winner)} />
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary text-right">
-                  {formatTotals(w.spread)}
+                  <ValueBadge classes={spreadClasses(w.spread)} value={formatTotals(w.spread)} />
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary text-right">
-                  {formatTotals(w.overUnder)}
+                  <ValueBadge classes={overUnderClasses(w.overUnder)} value={formatTotals(w.overUnder)} />
                 </td>
                 {showMarginStats && (
                   <>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary text-right">
-                      <MarginValueBadge classes={marginRMSEClasses(w.marginRMSE)} value={formatMarginRMSE(w.marginRMSE)} />
+                      <ValueBadge classes={marginRMSEClasses(w.marginRMSE)} value={formatMarginRMSE(w.marginRMSE)} />
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary text-right">
-                      <MarginValueBadge classes={marginBiasClasses(w.marginBias)} value={formatMarginBias(w.marginBias)} />
+                      <ValueBadge classes={marginBiasClasses(w.marginBias)} value={formatMarginBias(w.marginBias)} />
                     </td>
                   </>
                 )}

@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom';
 import type { TrackRecordWeek } from '../../schemas';
 
 import { marginBiasClasses, marginRMSEClasses } from '../../lib/margin-quality';
+import { overUnderClasses, spreadClasses, winnerClasses } from '../../lib/pick-quality';
 import { formatMarginBias, formatMarginRMSE, formatTotals } from '../../lib/track-record-utils';
 import { getWeekLabel } from '../../lib/week-utils';
 import { FactRow } from '../predictions/prediction-card';
-import { MarginValueBadge } from './margin-value-badge';
+import { ValueBadge } from '../ui/value-badge';
 
 interface TrackRecordWeekCardProps {
   showMarginStats?: boolean;
@@ -25,18 +26,18 @@ export function TrackRecordWeekCard({ showMarginStats = false, week }: TrackReco
         </Link>
       </div>
 
-      <FactRow label="Winner" value={formatTotals(week.winner)} />
-      <FactRow label="Spread" value={formatTotals(week.spread)} />
-      <FactRow label="O/U" value={formatTotals(week.overUnder)} />
+      <FactRow label="Winner" value={<ValueBadge classes={winnerClasses(week.winner)} value={formatTotals(week.winner)} />} />
+      <FactRow label="Spread" value={<ValueBadge classes={spreadClasses(week.spread)} value={formatTotals(week.spread)} />} />
+      <FactRow label="O/U" value={<ValueBadge classes={overUnderClasses(week.overUnder)} value={formatTotals(week.overUnder)} />} />
       {showMarginStats && (
         <>
           <FactRow
             label="Margin RMSE"
-            value={<MarginValueBadge classes={marginRMSEClasses(week.marginRMSE)} value={formatMarginRMSE(week.marginRMSE)} />}
+            value={<ValueBadge classes={marginRMSEClasses(week.marginRMSE)} value={formatMarginRMSE(week.marginRMSE)} />}
           />
           <FactRow
             label="Margin Bias"
-            value={<MarginValueBadge classes={marginBiasClasses(week.marginBias)} value={formatMarginBias(week.marginBias)} />}
+            value={<ValueBadge classes={marginBiasClasses(week.marginBias)} value={formatMarginBias(week.marginBias)} />}
           />
         </>
       )}
