@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TrackRecordPage } from '../../pages/track-record-page';
 
@@ -68,6 +68,10 @@ const mockData = {
   ],
 };
 
+beforeEach(() => {
+  localStorage.clear();
+});
+
 describe('TrackRecordPage', () => {
   it('defaults the season dropdown to the most recent season present in the data', () => {
     vi.mocked(useTrackRecord).mockReturnValue({
@@ -83,6 +87,21 @@ describe('TrackRecordPage', () => {
     expect(seasonSelect.value).toBe('2024');
   });
 
+  it('hides margin stats by default, showing a toggle to reveal them', () => {
+    vi.mocked(useTrackRecord).mockReturnValue({
+      data: mockData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useTrackRecord>);
+
+    renderPage();
+
+    expect(screen.queryByText('Margin RMSE')).not.toBeInTheDocument();
+    expect(screen.queryByText('Margin Bias')).not.toBeInTheDocument();
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  });
+
   it('ignores a ?season= URL param for a season with no data', () => {
     vi.mocked(useTrackRecord).mockReturnValue({
       data: mockData,
@@ -95,6 +114,24 @@ describe('TrackRecordPage', () => {
 
     const seasonSelect = screen.getByLabelText('Season:') as HTMLSelectElement;
     expect(seasonSelect.value).toBe('2024');
+  });
+
+  it('persists the revealed state across a remount', async () => {
+    const user = userEvent.setup();
+    vi.mocked(useTrackRecord).mockReturnValue({
+      data: mockData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useTrackRecord>);
+
+    const { unmount } = renderPage();
+    await user.click(screen.getByRole('switch'));
+    unmount();
+
+    renderPage();
+
+    expect(screen.getAllByText('Margin RMSE').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders a link to the explanation page near the heading', () => {
@@ -132,6 +169,7 @@ describe('TrackRecordPage', () => {
   });
 
   it('renders an info button for each summary card', () => {
+    localStorage.setItem('cfbpoll_show_margin_stats', 'true');
     vi.mocked(useTrackRecord).mockReturnValue({
       data: mockData,
       isLoading: false,
@@ -174,6 +212,7 @@ describe('TrackRecordPage', () => {
   });
 
   it('renders overall record cards for each category', () => {
+    localStorage.setItem('cfbpoll_show_margin_stats', 'true');
     vi.mocked(useTrackRecord).mockReturnValue({
       data: mockData,
       isLoading: false,
@@ -224,6 +263,23 @@ describe('TrackRecordPage', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Track Record' })).toBeInTheDocument();
   });
 
+  it('reveals margin stats in both sections when the toggle is clicked', async () => {
+    const user = userEvent.setup();
+    vi.mocked(useTrackRecord).mockReturnValue({
+      data: mockData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useTrackRecord>);
+
+    renderPage();
+    await user.click(screen.getByRole('switch'));
+
+    expect(screen.getAllByText('Margin RMSE').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('Margin Bias').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+  });
+
   it('selects the season from a ?season= URL param on load', () => {
     vi.mocked(useTrackRecord).mockReturnValue({
       data: mockData,
@@ -239,6 +295,7 @@ describe('TrackRecordPage', () => {
   });
 
   it('shows the season-overall summary for the currently selected season, summed from its weeks', () => {
+    localStorage.setItem('cfbpoll_show_margin_stats', 'true');
     vi.mocked(useTrackRecord).mockReturnValue({
       data: mockData,
       isLoading: false,
@@ -282,6 +339,7 @@ describe('TrackRecordPage', () => {
   });
 
   it('updates the table and season-overall cards when the season changes, without altering the all-time cards', async () => {
+    localStorage.setItem('cfbpoll_show_margin_stats', 'true');
     vi.mocked(useTrackRecord).mockReturnValue({
       data: mockData,
       isLoading: false,

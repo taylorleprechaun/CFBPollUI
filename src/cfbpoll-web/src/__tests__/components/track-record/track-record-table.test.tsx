@@ -7,8 +7,13 @@ import type { TrackRecordWeek } from '../../../schemas';
 import { TrackRecordTable } from '../../../components/track-record/track-record-table';
 
 vi.mock('../../../components/track-record/track-record-week-card', () => ({
-  TrackRecordWeekCard: ({ week }: { week: TrackRecordWeek }) => (
-    <div data-testid="track-record-week-card" data-season={week.season} data-week={week.week} />
+  TrackRecordWeekCard: ({ showMarginStats, week }: { showMarginStats?: boolean; week: TrackRecordWeek }) => (
+    <div
+      data-testid="track-record-week-card"
+      data-season={week.season}
+      data-week={week.week}
+      data-show-margin-stats={showMarginStats}
+    />
   ),
 }));
 
@@ -35,6 +40,20 @@ function renderTable(props: React.ComponentProps<typeof TrackRecordTable>) {
 }
 
 describe('TrackRecordTable', () => {
+  it('colors the margin RMSE and bias values when showMarginStats is true', () => {
+    renderTable({ weeks: [buildWeek({ marginRMSE: 15.0, marginBias: 0.5 })], showMarginStats: true });
+
+    expect(screen.getByText('15.0 pts')).toHaveClass('bg-green-100');
+    expect(screen.getByText('+0.5 pts')).toHaveClass('bg-green-100');
+  });
+
+  it('does not render margin RMSE/Bias columns when showMarginStats is false', () => {
+    renderTable({ weeks: [buildWeek()] });
+
+    expect(screen.queryByText('Margin RMSE')).not.toBeInTheDocument();
+    expect(screen.queryByText('Margin Bias')).not.toBeInTheDocument();
+  });
+
   it('links the week label to that week on the public predictions page', () => {
     renderTable({ weeks: [buildWeek({ season: 2023, week: 4 })] });
 
@@ -55,12 +74,10 @@ describe('TrackRecordTable', () => {
     expect(screen.getByText('Winner')).toBeInTheDocument();
     expect(screen.getByText('Spread')).toBeInTheDocument();
     expect(screen.getByText('O/U')).toBeInTheDocument();
-    expect(screen.getByText('Margin RMSE')).toBeInTheDocument();
-    expect(screen.getByText('Margin Bias')).toBeInTheDocument();
   });
 
-  it('renders formatted margin RMSE and bias per week', () => {
-    renderTable({ weeks: [buildWeek({ marginRMSE: 8.3, marginBias: -1.5 })] });
+  it('renders formatted margin RMSE and bias per week when showMarginStats is true', () => {
+    renderTable({ weeks: [buildWeek({ marginRMSE: 8.3, marginBias: -1.5 })], showMarginStats: true });
 
     expect(screen.getByText('8.3 pts')).toBeInTheDocument();
     expect(screen.getByText('-1.5 pts')).toBeInTheDocument();
@@ -74,8 +91,18 @@ describe('TrackRecordTable', () => {
     expect(screen.getByText('3-2')).toBeInTheDocument();
   });
 
-  it('renders N/A for a week with no margin data', () => {
-    renderTable({ weeks: [buildWeek({ marginBias: null, marginGameCount: 0, marginRMSE: null })] });
+  it('renders margin RMSE and margin bias headers when showMarginStats is true', () => {
+    renderTable({ weeks: [buildWeek()], showMarginStats: true });
+
+    expect(screen.getByText('Margin RMSE')).toBeInTheDocument();
+    expect(screen.getByText('Margin Bias')).toBeInTheDocument();
+  });
+
+  it('renders N/A for a week with no margin data when showMarginStats is true', () => {
+    renderTable({
+      weeks: [buildWeek({ marginBias: null, marginGameCount: 0, marginRMSE: null })],
+      showMarginStats: true,
+    });
 
     expect(screen.getAllByText('N/A')).toHaveLength(2);
   });
@@ -107,6 +134,12 @@ describe('TrackRecordTable', () => {
   });
 
   describe('mobile card list', () => {
+    it('forwards showMarginStats to TrackRecordWeekCard', () => {
+      renderTable({ weeks: [buildWeek()], showMarginStats: true });
+
+      expect(screen.getByTestId('track-record-week-card')).toHaveAttribute('data-show-margin-stats', 'true');
+    });
+
     it('renders no cards when weeks is empty', () => {
       renderTable({ weeks: [] });
 

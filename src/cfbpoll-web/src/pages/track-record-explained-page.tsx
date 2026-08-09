@@ -88,6 +88,26 @@ export function TrackRecordExplainedPage() {
           confident on average.
         </p>
       </section>
+
+      <section id="margin-quality-bands" className="mb-8 scroll-mt-20">
+        <h2 className="text-xl font-semibold text-text-primary mb-2">Where the Color Coding Comes From</h2>
+        <p className="text-text-secondary leading-relaxed">
+          When you turn on margin stats, Margin RMSE and Margin Bias get colored based on how good the number is:
+          green when it&rsquo;s strong, yellow when it&rsquo;s middling, red when it&rsquo;s rough. Those colors
+          aren&rsquo;t made-up cutoffs. They&rsquo;re based on how dozens of real, published computer rating systems
+          actually perform each season, tracked at{' '}
+          <a
+            href="https://www.thepredictiontracker.com/ncaaresults.php"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent hover:underline"
+          >
+            The Prediction Tracker
+          </a>
+          . Landing in the same range as the better systems there earns green; falling well behind the pack earns
+          red.
+        </p>
+      </section>
     </div>
   );
 }

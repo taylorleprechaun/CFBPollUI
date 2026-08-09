@@ -20,15 +20,29 @@ function buildWeek(overrides: Partial<TrackRecordWeek> = {}): TrackRecordWeek {
   };
 }
 
-function renderCard(week: TrackRecordWeek) {
+function renderCard(week: TrackRecordWeek, showMarginStats = false) {
   return render(
     <MemoryRouter>
-      <TrackRecordWeekCard week={week} />
+      <TrackRecordWeekCard week={week} showMarginStats={showMarginStats} />
     </MemoryRouter>
   );
 }
 
 describe('TrackRecordWeekCard', () => {
+  it('colors the margin RMSE and bias values when shown', () => {
+    renderCard(buildWeek({ marginRMSE: 15.0, marginBias: 0.5 }), true);
+
+    expect(screen.getByText('15.0 pts')).toHaveClass('bg-green-100');
+    expect(screen.getByText('+0.5 pts')).toHaveClass('bg-green-100');
+  });
+
+  it('does not render margin RMSE/Bias rows when showMarginStats is false', () => {
+    renderCard(buildWeek(), false);
+
+    expect(screen.queryByText('Margin RMSE')).not.toBeInTheDocument();
+    expect(screen.queryByText('Margin Bias')).not.toBeInTheDocument();
+  });
+
   it('links the week label to that week on the public predictions page', () => {
     renderCard(buildWeek({ season: 2023, week: 4 }));
 
@@ -37,13 +51,13 @@ describe('TrackRecordWeekCard', () => {
   });
 
   it('renders N/A for a week with no margin data', () => {
-    renderCard(buildWeek({ marginBias: null, marginGameCount: 0, marginRMSE: null }));
+    renderCard(buildWeek({ marginBias: null, marginGameCount: 0, marginRMSE: null }), true);
 
     expect(screen.getAllByText('N/A')).toHaveLength(2);
   });
 
   it('renders the formatted margin RMSE and bias', () => {
-    renderCard(buildWeek({ marginRMSE: 8.3, marginBias: -1.5 }));
+    renderCard(buildWeek({ marginRMSE: 8.3, marginBias: -1.5 }), true);
 
     expect(screen.getByText('8.3 pts')).toBeInTheDocument();
     expect(screen.getByText('-1.5 pts')).toBeInTheDocument();
@@ -57,8 +71,8 @@ describe('TrackRecordWeekCard', () => {
     expect(screen.getByText('3-2')).toBeInTheDocument();
   });
 
-  it('shows labeled rows for each category', () => {
-    renderCard(buildWeek());
+  it('shows labeled rows for each category when showMarginStats is true', () => {
+    renderCard(buildWeek(), true);
 
     expect(screen.getByText('Winner')).toBeInTheDocument();
     expect(screen.getByText('Spread')).toBeInTheDocument();

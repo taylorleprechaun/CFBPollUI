@@ -29,6 +29,15 @@ describe('TrackRecordExplainedPage', () => {
     expect(screen.getByRole('link', { name: /Back to Track Record/ })).toHaveAttribute('href', '/track-record');
   });
 
+  it('renders a link to the color-band data source that opens in a new tab', () => {
+    renderPage();
+
+    const link = screen.getByRole('link', { name: 'The Prediction Tracker' });
+    expect(link).toHaveAttribute('href', 'https://www.thepredictiontracker.com/ncaaresults.php');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
   it('renders a section heading for each stat', () => {
     renderPage();
 

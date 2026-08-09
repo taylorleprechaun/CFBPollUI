@@ -2,21 +2,25 @@ import { Link } from 'react-router-dom';
 
 import type { TrackRecordWeek } from '../../schemas';
 
+import { marginBiasClasses, marginRMSEClasses } from '../../lib/margin-quality';
 import { formatMarginBias, formatMarginRMSE, formatTotals } from '../../lib/track-record-utils';
 import { getWeekLabel } from '../../lib/week-utils';
 import { TableSkeleton } from '../ui/table-skeleton';
+import { MarginValueBadge } from './margin-value-badge';
 import { TrackRecordWeekCard } from './track-record-week-card';
 
-const COLUMN_COUNT = 6;
+const COLUMN_COUNT_WITH_MARGIN_STATS = 6;
+const COLUMN_COUNT_WITHOUT_MARGIN_STATS = 4;
 
 interface TrackRecordTableProps {
   isLoading?: boolean;
+  showMarginStats?: boolean;
   weeks: TrackRecordWeek[];
 }
 
-export function TrackRecordTable({ isLoading = false, weeks }: TrackRecordTableProps) {
+export function TrackRecordTable({ isLoading = false, showMarginStats = false, weeks }: TrackRecordTableProps) {
   if (isLoading) {
-    return <TableSkeleton columns={COLUMN_COUNT} />;
+    return <TableSkeleton columns={showMarginStats ? COLUMN_COUNT_WITH_MARGIN_STATS : COLUMN_COUNT_WITHOUT_MARGIN_STATS} />;
   }
 
   return (
@@ -29,8 +33,12 @@ export function TrackRecordTable({ isLoading = false, weeks }: TrackRecordTableP
               <th className="px-4 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">Winner</th>
               <th className="px-4 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">Spread</th>
               <th className="px-4 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">O/U</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">Margin RMSE</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">Margin Bias</th>
+              {showMarginStats && (
+                <>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">Margin RMSE</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-text-muted uppercase tracking-wider">Margin Bias</th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody className="bg-surface divide-y divide-border">
@@ -53,12 +61,16 @@ export function TrackRecordTable({ isLoading = false, weeks }: TrackRecordTableP
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary text-right">
                   {formatTotals(w.overUnder)}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary text-right">
-                  {formatMarginRMSE(w.marginRMSE)}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary text-right">
-                  {formatMarginBias(w.marginBias)}
-                </td>
+                {showMarginStats && (
+                  <>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary text-right">
+                      <MarginValueBadge classes={marginRMSEClasses(w.marginRMSE)} value={formatMarginRMSE(w.marginRMSE)} />
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary text-right">
+                      <MarginValueBadge classes={marginBiasClasses(w.marginBias)} value={formatMarginBias(w.marginBias)} />
+                    </td>
+                  </>
+                )}
               </tr>
             ))}
           </tbody>
@@ -67,7 +79,7 @@ export function TrackRecordTable({ isLoading = false, weeks }: TrackRecordTableP
 
       <div className="md:hidden space-y-3 p-3">
         {weeks.map((w) => (
-          <TrackRecordWeekCard key={`${w.season}-${w.week}`} week={w} />
+          <TrackRecordWeekCard key={`${w.season}-${w.week}`} week={w} showMarginStats={showMarginStats} />
         ))}
       </div>
     </>

@@ -6,6 +6,12 @@ import { MarginStatCard } from '../../../components/track-record/margin-stat-car
 import { TRACK_RECORD_STAT_INFO } from '../../../lib/track-record-stat-info';
 
 describe('MarginStatCard', () => {
+  it('colors the value when classes is provided', () => {
+    render(<MarginStatCard label="Margin RMSE" value="8.3 pts" classes="bg-green-100 text-green-800" />);
+
+    expect(screen.getByText('8.3 pts')).toHaveClass('bg-green-100');
+  });
+
   it('renders no info button when statInfo is omitted', () => {
     render(<MarginStatCard label="Margin RMSE" value="8.3 pts" />);
 
@@ -32,5 +38,11 @@ describe('MarginStatCard', () => {
     render(<MarginStatCard label="Margin Bias" value="-1.5 pts" />);
 
     expect(screen.getByText('-1.5 pts')).toBeInTheDocument();
+  });
+
+  it('renders the value uncolored when classes is omitted', () => {
+    render(<MarginStatCard label="Margin RMSE" value="8.3 pts" />);
+
+    expect(screen.getByText('8.3 pts')).not.toHaveClass('inline-block');
   });
 });
