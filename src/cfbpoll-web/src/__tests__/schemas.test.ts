@@ -397,6 +397,8 @@ describe('Zod Schemas', () => {
 
     it('validates a valid response', () => {
       const data = {
+        overallMarginBias: 0.5,
+        overallMarginRMSE: 8.3,
         overallOverUnder: { correct: 10, incorrect: 8, push: 1 },
         overallSpread: { correct: 12, incorrect: 6, push: 0 },
         overallWinner: { correct: 15, incorrect: 3, push: 0 },
@@ -435,6 +437,9 @@ describe('Zod Schemas', () => {
 
     it('validates a valid week', () => {
       const data = {
+        marginBias: 0.5,
+        marginGameCount: 5,
+        marginRMSE: 8.3,
         overUnder: { correct: 3, incorrect: 2, push: 0 },
         season: 2024,
         spread: { correct: 4, incorrect: 1, push: 0 },

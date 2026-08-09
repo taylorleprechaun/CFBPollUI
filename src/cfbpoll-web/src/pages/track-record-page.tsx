@@ -3,12 +3,13 @@ import { useSearchParams } from 'react-router-dom';
 
 import { ErrorAlert } from '../components/error';
 import { SeasonSelector } from '../components/rankings/season-selector';
+import { MarginStatCard } from '../components/track-record/margin-stat-card';
 import { OverallRecordCard } from '../components/track-record/overall-record-card';
 import { TrackRecordTable } from '../components/track-record/track-record-table';
 import { EmptyState } from '../components/ui/empty-state';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { useTrackRecord } from '../hooks/use-track-record';
-import { sumTotals } from '../lib/track-record-utils';
+import { combineMarginBias, combineMarginRMSE, formatMarginBias, formatMarginRMSE, sumTotals } from '../lib/track-record-utils';
 
 export function TrackRecordPage() {
   useDocumentTitle('Taylor Steinberg - Track Record');
@@ -61,6 +62,8 @@ export function TrackRecordPage() {
     () => sumTotals(seasonWeeksDescending.map((w) => w.overUnder)),
     [seasonWeeksDescending]
   );
+  const seasonMarginBias = useMemo(() => combineMarginBias(seasonWeeksDescending), [seasonWeeksDescending]);
+  const seasonMarginRMSE = useMemo(() => combineMarginRMSE(seasonWeeksDescending), [seasonWeeksDescending]);
 
   return (
     <div>
@@ -87,6 +90,10 @@ export function TrackRecordPage() {
               <OverallRecordCard label="Spread" totals={data.overallSpread} />
               <OverallRecordCard label="Over/Under" totals={data.overallOverUnder} />
             </div>
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <MarginStatCard label="Margin RMSE" value={formatMarginRMSE(data.overallMarginRMSE)} />
+              <MarginStatCard label="Margin Bias" value={formatMarginBias(data.overallMarginBias)} />
+            </div>
           </div>
 
           <div>
@@ -99,10 +106,14 @@ export function TrackRecordPage() {
                 isLoading={false}
               />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <OverallRecordCard label="Winner" totals={seasonOverallWinner} />
               <OverallRecordCard label="Spread" totals={seasonOverallSpread} />
               <OverallRecordCard label="Over/Under" totals={seasonOverallOverUnder} />
+            </div>
+            <div className="grid grid-cols-2 gap-4 mt-4 mb-6">
+              <MarginStatCard label="Margin RMSE" value={formatMarginRMSE(seasonMarginRMSE)} />
+              <MarginStatCard label="Margin Bias" value={formatMarginBias(seasonMarginBias)} />
             </div>
             <div className="bg-surface shadow-md rounded-xl overflow-hidden">
               <TrackRecordTable weeks={seasonWeeksDescending} />

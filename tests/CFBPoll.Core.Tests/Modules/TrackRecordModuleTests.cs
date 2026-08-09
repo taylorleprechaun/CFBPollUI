@@ -141,6 +141,55 @@ public class TrackRecordModuleTests
         Assert.Equal(0, week.Winner.Correct + week.Winner.Incorrect + week.Winner.Push);
         Assert.Equal(0, week.Spread.Correct + week.Spread.Incorrect + week.Spread.Push);
         Assert.Equal(0, week.OverUnder.Correct + week.OverUnder.Incorrect + week.OverUnder.Push);
+        Assert.Equal(0, week.MarginGameCount);
+        Assert.Null(week.MarginRMSE);
+        Assert.Null(week.MarginBias);
+    }
+
+    [Fact]
+    public async Task GetTrackRecordAsync_GradedGamesWithBothPredictedWinnerDirections_ComputesMarginRMSEAndBias()
+    {
+        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync()).ReturnsAsync(new List<PredictionsSummary>
+        {
+            new() { Season = 2024, Week = 3, IsPublished = true, IsGraded = true, ResultsPublished = true }
+        });
+
+        _mockPredictionsModule.Setup(x => x.GetAsync(2024, 3)).ReturnsAsync(new PredictionsResult
+        {
+            Season = 2024,
+            Week = 3,
+            Predictions = new List<GamePrediction>
+            {
+                new()
+                {
+                    HomeTeam = "Michigan",
+                    AwayTeam = "Ohio State",
+                    PredictedWinner = "Michigan",
+                    PredictedMargin = 7,
+                    ActualHomeScore = 24,
+                    ActualAwayScore = 17
+                },
+                new()
+                {
+                    HomeTeam = "Texas",
+                    AwayTeam = "Oklahoma",
+                    PredictedWinner = "Oklahoma",
+                    PredictedMargin = 3,
+                    ActualHomeScore = 20,
+                    ActualAwayScore = 24
+                }
+            }
+        });
+
+        var result = await _module.GetTrackRecordAsync();
+
+        var week = Assert.Single(result.Weeks);
+        Assert.Equal(2, week.MarginGameCount);
+        Assert.Equal(0.5, week.MarginBias);
+        Assert.Equal(0.7071, week.MarginRMSE!.Value, precision: 4);
+
+        Assert.Equal(0.5, result.OverallMarginBias);
+        Assert.Equal(0.7071, result.OverallMarginRMSE!.Value, precision: 4);
     }
 
     [Fact]
@@ -169,6 +218,8 @@ public class TrackRecordModuleTests
         Assert.Equal(0, result.OverallWinner.Correct);
         Assert.Equal(0, result.OverallSpread.Correct);
         Assert.Equal(0, result.OverallOverUnder.Correct);
+        Assert.Null(result.OverallMarginRMSE);
+        Assert.Null(result.OverallMarginBias);
     }
 
     [Fact]

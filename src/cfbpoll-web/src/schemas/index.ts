@@ -236,6 +236,9 @@ export const TrackRecordTotalsSchema = z.object({
 });
 
 export const TrackRecordWeekSchema = z.object({
+  marginBias: z.number().nullable(),
+  marginGameCount: z.number(),
+  marginRMSE: z.number().nullable(),
   overUnder: TrackRecordTotalsSchema,
   season: z.number(),
   spread: TrackRecordTotalsSchema,
@@ -244,6 +247,8 @@ export const TrackRecordWeekSchema = z.object({
 });
 
 export const TrackRecordResponseSchema = z.object({
+  overallMarginBias: z.number().nullable(),
+  overallMarginRMSE: z.number().nullable(),
   overallOverUnder: TrackRecordTotalsSchema,
   overallSpread: TrackRecordTotalsSchema,
   overallWinner: TrackRecordTotalsSchema,

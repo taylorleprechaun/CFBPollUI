@@ -325,6 +325,8 @@ describe('API service', () => {
         ok: true,
         json: () =>
           Promise.resolve({
+            overallMarginBias: null,
+            overallMarginRMSE: null,
             overallOverUnder: { correct: 0, incorrect: 0, push: 0 },
             overallSpread: { correct: 0, incorrect: 0, push: 0 },
             overallWinner: { correct: 0, incorrect: 0, push: 0 },

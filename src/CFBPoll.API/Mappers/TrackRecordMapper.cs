@@ -23,6 +23,9 @@ public static class TrackRecordMapper
 
         return new TrackRecordWeekDTO
         {
+            MarginBias = week.MarginBias,
+            MarginGameCount = week.MarginGameCount,
+            MarginRMSE = week.MarginRMSE,
             OverUnder = ToDTO(week.OverUnder),
             Season = week.Season,
             Spread = ToDTO(week.Spread),
@@ -37,6 +40,8 @@ public static class TrackRecordMapper
 
         return new TrackRecordResponseDTO
         {
+            OverallMarginBias = result.OverallMarginBias,
+            OverallMarginRMSE = result.OverallMarginRMSE,
             OverallOverUnder = ToDTO(result.OverallOverUnder),
             OverallSpread = ToDTO(result.OverallSpread),
             OverallWinner = ToDTO(result.OverallWinner),

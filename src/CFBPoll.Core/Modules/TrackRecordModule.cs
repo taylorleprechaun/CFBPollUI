@@ -48,6 +48,9 @@ public class TrackRecordModule : ITrackRecordModule
             .ToList();
 
         var weeks = new List<TrackRecordWeek>();
+        var overallMarginGameCount = 0;
+        var overallMarginSumResidual = 0.0;
+        var overallMarginSumSquaredError = 0.0;
         var overallOverUnder = new TrackRecordTotals();
         var overallSpread = new TrackRecordTotals();
         var overallWinner = new TrackRecordTotals();
@@ -63,6 +66,9 @@ public class TrackRecordModule : ITrackRecordModule
                 continue;
             }
 
+            var weekMarginGameCount = 0;
+            var weekMarginSumResidual = 0.0;
+            var weekMarginSumSquaredError = 0.0;
             var weekOverUnder = new TrackRecordTotals();
             var weekSpread = new TrackRecordTotals();
             var weekWinner = new TrackRecordTotals();
@@ -72,10 +78,25 @@ public class TrackRecordModule : ITrackRecordModule
                 Tally(weekOverUnder, overallOverUnder, game.OverUnderGrade);
                 Tally(weekSpread, overallSpread, game.SpreadGrade);
                 Tally(weekWinner, overallWinner, game.WinnerGrade);
+
+                if (game.ActualHomeScore.HasValue && game.ActualAwayScore.HasValue)
+                {
+                    var residual = CalculateMarginResidual(game);
+
+                    weekMarginGameCount++;
+                    weekMarginSumResidual += residual;
+                    weekMarginSumSquaredError += residual * residual;
+                    overallMarginGameCount++;
+                    overallMarginSumResidual += residual;
+                    overallMarginSumSquaredError += residual * residual;
+                }
             }
 
             weeks.Add(new TrackRecordWeek
             {
+                MarginBias = weekMarginGameCount > 0 ? weekMarginSumResidual / weekMarginGameCount : null,
+                MarginGameCount = weekMarginGameCount,
+                MarginRMSE = weekMarginGameCount > 0 ? Math.Sqrt(weekMarginSumSquaredError / weekMarginGameCount) : null,
                 OverUnder = weekOverUnder,
                 Season = summary.Season,
                 Spread = weekSpread,
@@ -86,6 +107,8 @@ public class TrackRecordModule : ITrackRecordModule
 
         var result = new TrackRecordResult
         {
+            OverallMarginBias = overallMarginGameCount > 0 ? overallMarginSumResidual / overallMarginGameCount : null,
+            OverallMarginRMSE = overallMarginGameCount > 0 ? Math.Sqrt(overallMarginSumSquaredError / overallMarginGameCount) : null,
             OverallOverUnder = overallOverUnder,
             OverallSpread = overallSpread,
             OverallWinner = overallWinner,
@@ -102,6 +125,17 @@ public class TrackRecordModule : ITrackRecordModule
     {
         var count = await _cache.RemoveByPrefixAsync(CACHE_KEY_PREFIX).ConfigureAwait(false);
         _logger.LogDebug("Invalidated {Count} track record cache entries", count);
+    }
+
+    private static double CalculateMarginResidual(GamePrediction game)
+    {
+        var scoic = StringComparison.OrdinalIgnoreCase;
+        var predictedWinnerIsHome = string.Equals(game.PredictedWinner, game.HomeTeam, scoic);
+        var actualMarginForPredictedWinner = predictedWinnerIsHome
+            ? game.ActualHomeScore!.Value - game.ActualAwayScore!.Value
+            : game.ActualAwayScore!.Value - game.ActualHomeScore!.Value;
+
+        return actualMarginForPredictedWinner - game.PredictedMargin;
     }
 
     private static void Tally(TrackRecordTotals week, TrackRecordTotals overall, PredictionGradeStatus grade)
