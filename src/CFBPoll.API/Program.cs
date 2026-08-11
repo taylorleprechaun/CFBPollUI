@@ -58,6 +58,7 @@ try
     builder.Services.AddSingleton<IPollLeadersModule, PollLeadersModule>();
     builder.Services.AddSingleton<IPredictionGradingModule, PredictionGradingModule>();
     builder.Services.AddSingleton<ISeasonTrendsModule, SeasonTrendsModule>();
+    builder.Services.AddSingleton<ITeamPredictionRecordModule, TeamPredictionRecordModule>();
     builder.Services.AddSingleton<ITeamsModule, TeamsModule>();
     builder.Services.AddSingleton<ITrackRecordModule, TrackRecordModule>();
     builder.Services.AddJwtAuthentication(builder.Configuration);

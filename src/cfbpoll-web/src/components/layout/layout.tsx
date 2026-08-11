@@ -68,6 +68,7 @@ export function Layout() {
         items: [
           { label: 'Predictions', to: '/predictions' },
           { label: 'Track Record', to: '/track-record' },
+          { label: 'Team Records', to: '/team-prediction-records' },
         ],
         label: 'Predictions',
       }

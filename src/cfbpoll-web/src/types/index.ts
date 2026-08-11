@@ -16,6 +16,8 @@ export type {
   SeasonTrendWeek,
   TeamDetailResponse,
   TeamDetails,
+  TeamPredictionRecord,
+  TeamPredictionRecordsResponse,
   TeamRecord,
   Week,
   WeeksResponse,

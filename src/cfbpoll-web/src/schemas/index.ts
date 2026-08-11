@@ -168,6 +168,22 @@ export const PredictionsPublicResponseSchema = z.object({
   week: z.number(),
 });
 
+// Team prediction record schemas
+export const TeamPredictionRecordSchema = z.object({
+  actualLosses: z.number(),
+  actualWins: z.number(),
+  gradedGameCount: z.number(),
+  logoURL: z.string(),
+  predictedLosses: z.number(),
+  predictedWins: z.number(),
+  teamName: z.string(),
+});
+
+export const TeamPredictionRecordsResponseSchema = z.object({
+  records: z.array(TeamPredictionRecordSchema),
+  season: z.number(),
+});
+
 // Poll leaders schemas
 export const PollLeaderEntrySchema = z.object({
   logoURL: z.string(),
@@ -220,6 +236,9 @@ export const TrackRecordTotalsSchema = z.object({
 });
 
 export const TrackRecordWeekSchema = z.object({
+  marginBias: z.number().nullable(),
+  marginGameCount: z.number(),
+  marginRMSE: z.number().nullable(),
   overUnder: TrackRecordTotalsSchema,
   season: z.number(),
   spread: TrackRecordTotalsSchema,
@@ -228,6 +247,8 @@ export const TrackRecordWeekSchema = z.object({
 });
 
 export const TrackRecordResponseSchema = z.object({
+  overallMarginBias: z.number().nullable(),
+  overallMarginRMSE: z.number().nullable(),
   overallOverUnder: TrackRecordTotalsSchema,
   overallSpread: TrackRecordTotalsSchema,
   overallWinner: TrackRecordTotalsSchema,
@@ -256,6 +277,8 @@ export type SeasonTrendsResponse = z.infer<typeof SeasonTrendsResponseSchema>;
 export type SeasonsResponse = z.infer<typeof SeasonsResponseSchema>;
 export type TeamDetailResponse = z.infer<typeof TeamDetailResponseSchema>;
 export type TeamDetails = z.infer<typeof TeamDetailsSchema>;
+export type TeamPredictionRecord = z.infer<typeof TeamPredictionRecordSchema>;
+export type TeamPredictionRecordsResponse = z.infer<typeof TeamPredictionRecordsResponseSchema>;
 export type TrackRecordResponse = z.infer<typeof TrackRecordResponseSchema>;
 export type TrackRecordTotals = z.infer<typeof TrackRecordTotalsSchema>;
 export type TrackRecordWeek = z.infer<typeof TrackRecordWeekSchema>;

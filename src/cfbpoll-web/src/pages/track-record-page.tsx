@@ -1,19 +1,26 @@
 import { useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 import { ErrorAlert } from '../components/error';
 import { SeasonSelector } from '../components/rankings/season-selector';
+import { MarginStatCard } from '../components/track-record/margin-stat-card';
+import { MarginStatsToggle } from '../components/track-record/margin-stats-toggle';
 import { OverallRecordCard } from '../components/track-record/overall-record-card';
 import { TrackRecordTable } from '../components/track-record/track-record-table';
 import { EmptyState } from '../components/ui/empty-state';
 import { useDocumentTitle } from '../hooks/use-document-title';
+import { useMarginStatsVisibility } from '../hooks/use-margin-stats-visibility';
 import { useTrackRecord } from '../hooks/use-track-record';
-import { sumTotals } from '../lib/track-record-utils';
+import { marginBiasClasses, marginRMSEClasses } from '../lib/margin-quality';
+import { overUnderClasses, spreadClasses, winnerClasses } from '../lib/pick-quality';
+import { TRACK_RECORD_STAT_INFO } from '../lib/track-record-stat-info';
+import { combineMarginBias, combineMarginRMSE, formatMarginBias, formatMarginRMSE, sumTotals } from '../lib/track-record-utils';
 
 export function TrackRecordPage() {
   useDocumentTitle('Taylor Steinberg - Track Record');
 
   const { data, isLoading, error, refetch } = useTrackRecord();
+  const { showMarginStats, toggleMarginStats } = useMarginStatsVisibility();
 
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -61,10 +68,18 @@ export function TrackRecordPage() {
     () => sumTotals(seasonWeeksDescending.map((w) => w.overUnder)),
     [seasonWeeksDescending]
   );
+  const seasonMarginBias = useMemo(() => combineMarginBias(seasonWeeksDescending), [seasonWeeksDescending]);
+  const seasonMarginRMSE = useMemo(() => combineMarginRMSE(seasonWeeksDescending), [seasonWeeksDescending]);
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-text-primary mb-6">Track Record</h1>
+      <h1 className="text-3xl font-bold text-text-primary mb-2">Track Record</h1>
+      <p className="text-sm text-text-muted mb-6">
+        Not sure what these numbers mean?{' '}
+        <Link to="/track-record/explained" className="font-medium text-accent hover:underline">
+          See how Winner, Spread, Margin RMSE, and the other stats are calculated
+        </Link>.
+      </p>
 
       {error && <ErrorAlert error={error} onRetry={() => refetch()} />}
 
@@ -80,13 +95,29 @@ export function TrackRecordPage() {
 
       {data && data.weeks.length > 0 && (
         <div className="space-y-6 animate-fade-in">
+          <MarginStatsToggle isVisible={showMarginStats} onToggle={toggleMarginStats} />
+
           <div>
             <h2 className="text-lg font-semibold text-text-primary mb-3">All-Time</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <OverallRecordCard label="Winner" totals={data.overallWinner} />
-              <OverallRecordCard label="Spread" totals={data.overallSpread} />
-              <OverallRecordCard label="Over/Under" totals={data.overallOverUnder} />
+              <OverallRecordCard label="Winner" totals={data.overallWinner} statInfo={TRACK_RECORD_STAT_INFO.winner} />
+              <OverallRecordCard label="Spread" totals={data.overallSpread} statInfo={TRACK_RECORD_STAT_INFO.spread} />
+              <OverallRecordCard label="Over/Under" totals={data.overallOverUnder} statInfo={TRACK_RECORD_STAT_INFO.overUnder} />
             </div>
+            {showMarginStats && (
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <MarginStatCard
+                  label="Margin RMSE"
+                  value={formatMarginRMSE(data.overallMarginRMSE)}
+                  statInfo={TRACK_RECORD_STAT_INFO.marginRMSE}
+                />
+                <MarginStatCard
+                  label="Margin Bias"
+                  value={formatMarginBias(data.overallMarginBias)}
+                  statInfo={TRACK_RECORD_STAT_INFO.marginBias}
+                />
+              </div>
+            )}
           </div>
 
           <div>
@@ -99,13 +130,44 @@ export function TrackRecordPage() {
                 isLoading={false}
               />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-              <OverallRecordCard label="Winner" totals={seasonOverallWinner} />
-              <OverallRecordCard label="Spread" totals={seasonOverallSpread} />
-              <OverallRecordCard label="Over/Under" totals={seasonOverallOverUnder} />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <OverallRecordCard
+                label="Winner"
+                totals={seasonOverallWinner}
+                statInfo={TRACK_RECORD_STAT_INFO.winner}
+                classes={winnerClasses(seasonOverallWinner)}
+              />
+              <OverallRecordCard
+                label="Spread"
+                totals={seasonOverallSpread}
+                statInfo={TRACK_RECORD_STAT_INFO.spread}
+                classes={spreadClasses(seasonOverallSpread)}
+              />
+              <OverallRecordCard
+                label="Over/Under"
+                totals={seasonOverallOverUnder}
+                statInfo={TRACK_RECORD_STAT_INFO.overUnder}
+                classes={overUnderClasses(seasonOverallOverUnder)}
+              />
             </div>
-            <div className="bg-surface shadow-md rounded-xl overflow-hidden">
-              <TrackRecordTable weeks={seasonWeeksDescending} />
+            {showMarginStats && (
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <MarginStatCard
+                  label="Margin RMSE"
+                  value={formatMarginRMSE(seasonMarginRMSE)}
+                  statInfo={TRACK_RECORD_STAT_INFO.marginRMSE}
+                  classes={marginRMSEClasses(seasonMarginRMSE)}
+                />
+                <MarginStatCard
+                  label="Margin Bias"
+                  value={formatMarginBias(seasonMarginBias)}
+                  statInfo={TRACK_RECORD_STAT_INFO.marginBias}
+                  classes={marginBiasClasses(seasonMarginBias)}
+                />
+              </div>
+            )}
+            <div className="bg-surface shadow-md rounded-xl overflow-hidden mt-6">
+              <TrackRecordTable weeks={seasonWeeksDescending} showMarginStats={showMarginStats} />
             </div>
           </div>
         </div>

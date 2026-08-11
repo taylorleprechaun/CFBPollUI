@@ -1,6 +1,82 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatTotals, sumTotals, winPercentage } from '../../lib/track-record-utils';
+import {
+  combineMarginBias,
+  combineMarginRMSE,
+  formatMarginBias,
+  formatMarginRMSE,
+  formatTotals,
+  sumTotals,
+  winPercentage,
+} from '../../lib/track-record-utils';
+
+describe('combineMarginBias', () => {
+  it('combines a count-weighted average across multiple weeks', () => {
+    expect(combineMarginBias([
+      { marginBias: 2, marginGameCount: 3 },
+      { marginBias: -1, marginGameCount: 1 },
+    ])).toBeCloseTo(1.25, 5);
+  });
+
+  it('ignores weeks with a null marginBias, since their count is 0', () => {
+    expect(combineMarginBias([
+      { marginBias: null, marginGameCount: 0 },
+      { marginBias: 4, marginGameCount: 2 },
+    ])).toBe(4);
+  });
+
+  it('returns null for an empty array', () => {
+    expect(combineMarginBias([])).toBeNull();
+  });
+});
+
+describe('combineMarginRMSE', () => {
+  it('combines a count-weighted quadratic mean across multiple weeks', () => {
+    expect(combineMarginRMSE([
+      { marginRMSE: 2, marginGameCount: 2 },
+      { marginRMSE: 4, marginGameCount: 2 },
+    ])).toBeCloseTo(3.1623, 4);
+  });
+
+  it('ignores weeks with a null marginRMSE, since their count is 0', () => {
+    expect(combineMarginRMSE([
+      { marginRMSE: null, marginGameCount: 0 },
+      { marginRMSE: 3, marginGameCount: 2 },
+    ])).toBe(3);
+  });
+
+  it('returns null for an empty array', () => {
+    expect(combineMarginRMSE([])).toBeNull();
+  });
+});
+
+describe('formatMarginBias', () => {
+  it('prefixes a plus sign for a positive value', () => {
+    expect(formatMarginBias(3.2)).toBe('+3.2 pts');
+  });
+
+  it('relies on the negative sign already present for a negative value', () => {
+    expect(formatMarginBias(-1.5)).toBe('-1.5 pts');
+  });
+
+  it('returns N/A for null', () => {
+    expect(formatMarginBias(null)).toBe('N/A');
+  });
+
+  it('shows no sign for zero', () => {
+    expect(formatMarginBias(0)).toBe('0.0 pts');
+  });
+});
+
+describe('formatMarginRMSE', () => {
+  it('formats a value to one decimal place with a pts suffix', () => {
+    expect(formatMarginRMSE(8.34)).toBe('8.3 pts');
+  });
+
+  it('returns N/A for null', () => {
+    expect(formatMarginRMSE(null)).toBe('N/A');
+  });
+});
 
 describe('formatTotals', () => {
   it('appends the push segment when push is greater than zero', () => {

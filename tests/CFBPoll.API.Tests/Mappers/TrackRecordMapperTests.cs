@@ -29,6 +29,9 @@ public class TrackRecordMapperTests
     {
         var week = new TrackRecordWeek
         {
+            MarginBias = 0.5,
+            MarginGameCount = 2,
+            MarginRMSE = 0.7071,
             OverUnder = new TrackRecordTotals { Correct = 3 },
             Season = 2024,
             Spread = new TrackRecordTotals { Incorrect = 2 },
@@ -43,6 +46,9 @@ public class TrackRecordMapperTests
         Assert.Equal(3, result.OverUnder.Correct);
         Assert.Equal(2, result.Spread.Incorrect);
         Assert.Equal(1, result.Winner.Push);
+        Assert.Equal(0.5, result.MarginBias);
+        Assert.Equal(2, result.MarginGameCount);
+        Assert.Equal(0.7071, result.MarginRMSE);
     }
 
     [Fact]
@@ -56,6 +62,8 @@ public class TrackRecordMapperTests
     {
         var result = new TrackRecordResult
         {
+            OverallMarginBias = 0.5,
+            OverallMarginRMSE = 0.7071,
             OverallOverUnder = new TrackRecordTotals { Correct = 20 },
             OverallSpread = new TrackRecordTotals { Incorrect = 15 },
             OverallWinner = new TrackRecordTotals { Correct = 30 },
@@ -72,6 +80,8 @@ public class TrackRecordMapperTests
         Assert.Equal(15, dto.OverallSpread.Incorrect);
         Assert.Equal(30, dto.OverallWinner.Correct);
         Assert.Equal(2, dto.Weeks.Count());
+        Assert.Equal(0.5, dto.OverallMarginBias);
+        Assert.Equal(0.7071, dto.OverallMarginRMSE);
     }
 
     [Fact]

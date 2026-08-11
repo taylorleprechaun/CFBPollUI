@@ -15,10 +15,24 @@ interface PredictionCardProps {
   showGrades?: boolean;
 }
 
-interface FactRowProps {
+export interface FactRowProps {
   label: string;
   secondary?: ReactNode;
   value: ReactNode;
+}
+
+export function FactRow({ label, secondary, value }: FactRowProps) {
+  return (
+    <div className="px-4 py-2">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-xs font-medium text-text-muted uppercase tracking-wider">{label}</span>
+        <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1 text-sm text-text-secondary text-right">
+          {value}
+          {secondary}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function PredictionCard({ prediction: p, rankByTeam, season = null, showGrades = false }: PredictionCardProps) {
@@ -57,20 +71,6 @@ export function PredictionCard({ prediction: p, rankByTeam, season = null, showG
           )
         }
       />
-    </div>
-  );
-}
-
-function FactRow({ label, secondary, value }: FactRowProps) {
-  return (
-    <div className="px-4 py-2">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-xs font-medium text-text-muted uppercase tracking-wider">{label}</span>
-        <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1 text-sm text-text-secondary text-right">
-          {value}
-          {secondary}
-        </div>
-      </div>
     </div>
   );
 }

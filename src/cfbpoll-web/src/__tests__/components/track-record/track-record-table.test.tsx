@@ -1,13 +1,27 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { TrackRecordWeek } from '../../../schemas';
 
 import { TrackRecordTable } from '../../../components/track-record/track-record-table';
 
+vi.mock('../../../components/track-record/track-record-week-card', () => ({
+  TrackRecordWeekCard: ({ showMarginStats, week }: { showMarginStats?: boolean; week: TrackRecordWeek }) => (
+    <div
+      data-testid="track-record-week-card"
+      data-season={week.season}
+      data-week={week.week}
+      data-show-margin-stats={showMarginStats}
+    />
+  ),
+}));
+
 function buildWeek(overrides: Partial<TrackRecordWeek> = {}): TrackRecordWeek {
   return {
+    marginBias: 0.5,
+    marginGameCount: 5,
+    marginRMSE: 8.3,
     overUnder: { correct: 3, incorrect: 2, push: 0 },
     season: 2024,
     spread: { correct: 4, incorrect: 1, push: 0 },
@@ -26,6 +40,44 @@ function renderTable(props: React.ComponentProps<typeof TrackRecordTable>) {
 }
 
 describe('TrackRecordTable', () => {
+  it('colors the margin RMSE and bias values when showMarginStats is true', () => {
+    renderTable({ weeks: [buildWeek({ marginRMSE: 15.0, marginBias: 0.5 })], showMarginStats: true });
+
+    expect(screen.getByText('15.0 pts')).toHaveClass('bg-green-100');
+    expect(screen.getByText('+0.5 pts')).toHaveClass('bg-green-100');
+  });
+
+  it('colors the winner, spread, and over/under totals across the yellow and red bands too', () => {
+    renderTable({
+      weeks: [
+        buildWeek({
+          winner: { correct: 1, incorrect: 2, push: 0 },
+          spread: { correct: 1, incorrect: 1, push: 0 },
+          overUnder: { correct: 2, incorrect: 2, push: 0 },
+        }),
+      ],
+    });
+
+    expect(screen.getByText('1-2')).toHaveClass('bg-red-100');
+    expect(screen.getByText('1-1')).toHaveClass('bg-yellow-100');
+    expect(screen.getByText('2-2')).toHaveClass('bg-yellow-100');
+  });
+
+  it('colors the winner, spread, and over/under totals even when showMarginStats is false', () => {
+    renderTable({ weeks: [buildWeek()] });
+
+    expect(screen.getByText('5-0')).toHaveClass('bg-green-100');
+    expect(screen.getByText('4-1')).toHaveClass('bg-green-100');
+    expect(screen.getByText('3-2')).toHaveClass('bg-green-100');
+  });
+
+  it('does not render margin RMSE/Bias columns when showMarginStats is false', () => {
+    renderTable({ weeks: [buildWeek()] });
+
+    expect(screen.queryByText('Margin RMSE')).not.toBeInTheDocument();
+    expect(screen.queryByText('Margin Bias')).not.toBeInTheDocument();
+  });
+
   it('links the week label to that week on the public predictions page', () => {
     renderTable({ weeks: [buildWeek({ season: 2023, week: 4 })] });
 
@@ -48,12 +100,35 @@ describe('TrackRecordTable', () => {
     expect(screen.getByText('O/U')).toBeInTheDocument();
   });
 
+  it('renders formatted margin RMSE and bias per week when showMarginStats is true', () => {
+    renderTable({ weeks: [buildWeek({ marginRMSE: 8.3, marginBias: -1.5 })], showMarginStats: true });
+
+    expect(screen.getByText('8.3 pts')).toBeInTheDocument();
+    expect(screen.getByText('-1.5 pts')).toBeInTheDocument();
+  });
+
   it('renders formatted totals per category', () => {
     renderTable({ weeks: [buildWeek()] });
 
     expect(screen.getByText('5-0')).toBeInTheDocument();
     expect(screen.getByText('4-1')).toBeInTheDocument();
     expect(screen.getByText('3-2')).toBeInTheDocument();
+  });
+
+  it('renders margin RMSE and margin bias headers when showMarginStats is true', () => {
+    renderTable({ weeks: [buildWeek()], showMarginStats: true });
+
+    expect(screen.getByText('Margin RMSE')).toBeInTheDocument();
+    expect(screen.getByText('Margin Bias')).toBeInTheDocument();
+  });
+
+  it('renders N/A for a week with no margin data when showMarginStats is true', () => {
+    renderTable({
+      weeks: [buildWeek({ marginBias: null, marginGameCount: 0, marginRMSE: null })],
+      showMarginStats: true,
+    });
+
+    expect(screen.getAllByText('N/A')).toHaveLength(2);
   });
 
   it('renders no data rows when weeks is empty', () => {
@@ -76,9 +151,35 @@ describe('TrackRecordTable', () => {
     expect(screen.getByText('2023 Week 5')).toBeInTheDocument();
   });
 
-  it('wraps the table in a horizontally scrollable container for mobile viewports', () => {
+  it('wraps the table in a container hidden below the md breakpoint', () => {
     const { container } = renderTable({ weeks: [buildWeek()] });
 
-    expect(container.querySelector('.overflow-x-auto table')).toBeInTheDocument();
+    expect(container.querySelector('.hidden.md\\:block.overflow-x-auto table')).toBeInTheDocument();
+  });
+
+  describe('mobile card list', () => {
+    it('forwards showMarginStats to TrackRecordWeekCard', () => {
+      renderTable({ weeks: [buildWeek()], showMarginStats: true });
+
+      expect(screen.getByTestId('track-record-week-card')).toHaveAttribute('data-show-margin-stats', 'true');
+    });
+
+    it('renders no cards when weeks is empty', () => {
+      renderTable({ weeks: [] });
+
+      expect(screen.queryAllByTestId('track-record-week-card')).toHaveLength(0);
+    });
+
+    it('renders one TrackRecordWeekCard per week', () => {
+      renderTable({
+        weeks: [buildWeek({ season: 2024, week: 1 }), buildWeek({ season: 2024, week: 2 })],
+      });
+
+      const cards = screen.getAllByTestId('track-record-week-card');
+      expect(cards).toHaveLength(2);
+      expect(cards[0]).toHaveAttribute('data-season', '2024');
+      expect(cards[0]).toHaveAttribute('data-week', '1');
+      expect(cards[1]).toHaveAttribute('data-week', '2');
+    });
   });
 });

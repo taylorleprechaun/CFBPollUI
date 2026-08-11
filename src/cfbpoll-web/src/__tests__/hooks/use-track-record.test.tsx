@@ -34,6 +34,8 @@ describe('useTrackRecord', () => {
 
   it('fetches track record data with the correct URL', async () => {
     const mockResponse = {
+      overallMarginBias: null,
+      overallMarginRMSE: null,
       overallOverUnder: { correct: 0, incorrect: 0, push: 0 },
       overallSpread: { correct: 0, incorrect: 0, push: 0 },
       overallWinner: { correct: 0, incorrect: 0, push: 0 },
@@ -74,11 +76,16 @@ describe('useTrackRecord', () => {
 
   it('returns track record data on success', async () => {
     const mockResponse = {
+      overallMarginBias: 0.5,
+      overallMarginRMSE: 8.3,
       overallOverUnder: { correct: 12, incorrect: 8, push: 1 },
       overallSpread: { correct: 15, incorrect: 5, push: 0 },
       overallWinner: { correct: 18, incorrect: 2, push: 0 },
       weeks: [
         {
+          marginBias: 0.5,
+          marginGameCount: 5,
+          marginRMSE: 8.3,
           overUnder: { correct: 3, incorrect: 2, push: 0 },
           season: 2024,
           spread: { correct: 4, incorrect: 1, push: 0 },
