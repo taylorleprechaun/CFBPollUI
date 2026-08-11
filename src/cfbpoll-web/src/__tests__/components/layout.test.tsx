@@ -264,6 +264,17 @@ describe('Layout', () => {
     expect(rankingsButtons.length).toBeGreaterThanOrEqual(1);
   });
 
+  it('scrolls to top when navigating to a different route', async () => {
+    const user = userEvent.setup();
+    const scrollToSpy = vi.spyOn(window, 'scrollTo');
+    renderLayout(['/rankings']);
+    scrollToSpy.mockClear();
+
+    await user.click(screen.getAllByRole('link', { name: 'Home' })[0]);
+
+    expect(scrollToSpy).toHaveBeenCalledWith(0, 0);
+  });
+
   it('shows Admin dropdown items on click when authenticated', async () => {
     mockIsAuthenticated = true;
     renderLayout();
