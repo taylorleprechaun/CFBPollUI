@@ -147,6 +147,37 @@ public class CacheDataTests
     }
 
     [Fact]
+    public async Task GetEntryAsync_PreservesUtcKind()
+    {
+        var (data, tempPath) = CreateCacheDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var expiresAt = DateTime.UtcNow.AddHours(1);
+
+            await data.SetEntryAsync(new CacheDataEntry
+            {
+                CacheKey = "utc_kind_key",
+                CachedAt = DateTime.UtcNow,
+                Data = [1],
+                ExpiresAt = expiresAt
+            });
+
+            var result = await data.GetEntryAsync("utc_kind_key");
+
+            Assert.NotNull(result);
+            Assert.Equal(DateTimeKind.Utc, result.CachedAt.Kind);
+            Assert.Equal(DateTimeKind.Utc, result.ExpiresAt.Kind);
+            Assert.Equal(expiresAt, result.ExpiresAt);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
     public async Task GetEntryAsync_ReturnsNull_WhenNotFound()
     {
         var (data, tempPath) = CreateCacheDataWithFile();
