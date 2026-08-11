@@ -1,3 +1,4 @@
+using System.Globalization;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
 using CFBPoll.Core.Options;
@@ -56,8 +57,8 @@ public class CacheData : ICacheData
         {
             CacheKey = reader.GetString(0),
             Data = (byte[])reader[1],
-            CachedAt = DateTime.Parse(reader.GetString(2)),
-            ExpiresAt = DateTime.Parse(reader.GetString(3))
+            CachedAt = DateTime.Parse(reader.GetString(2), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
+            ExpiresAt = DateTime.Parse(reader.GetString(3), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
         };
     }
 
