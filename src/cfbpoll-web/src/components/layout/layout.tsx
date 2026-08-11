@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 
 import { useAuth } from '../../hooks/use-auth';
@@ -45,6 +45,10 @@ export function Layout() {
     setPrevPathname(location.pathname);
     setIsMobileMenuOpen(false);
   }
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   const rankingsGroup: NavGroup = {
     items: [

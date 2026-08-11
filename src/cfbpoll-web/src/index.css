@@ -84,13 +84,6 @@ body {
 }
 .animate-fade-in { animation: fadeIn 0.3s ease-out; }
 
-@keyframes dotDrift {
-  0%   { transform: translate(0, 0); }
-  50%  { transform: translate(12px, 8px); }
-  100% { transform: translate(0, 0); }
-}
-.animate-dot-drift { animation: dotDrift 20s ease-in-out infinite; }
-
 @keyframes fadeSlideUp {
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -98,7 +91,7 @@ body {
 .animate-fade-slide-up { animation: fadeSlideUp 0.5s ease-out both; }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-dot-drift, .animate-fade-slide-up, .animate-fade-in { animation: none; }
+  .animate-fade-slide-up, .animate-fade-in { animation: none; }
 }
 
 select:where(:not([multiple]):not([size])) {
