@@ -1,7 +1,7 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AuthContext, type AuthContextValue } from '../hooks/use-auth';
-import { loginUser } from '../services/admin-api';
+import { loginUser } from '../services/auth-api';
 
 const TOKEN_KEY = 'cfbpoll_token';
 const EXPIRY_KEY = 'cfbpoll_token_expiry';

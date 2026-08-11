@@ -15,8 +15,6 @@ import {
   CalculateResponseSchema,
   type GradePredictionsResponse,
   GradePredictionsResponseSchema,
-  type LoginResponse,
-  LoginResponseSchema,
   PredictionsSummariesResponseSchema,
   type PredictionsSummary,
   type RefreshCacheResponse,
@@ -129,17 +127,7 @@ export async function gradePredictions(
   return parseResponse(response, GradePredictionsResponseSchema);
 }
 
-export async function loginUser(
-  username: string,
-  password: string
-): Promise<LoginResponse> {
-  const response = await safeFetch(`${API_BASE_URL}/api/v1/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
-  });
-  return parseResponse(response, LoginResponseSchema);
-}
+export { loginUser } from './auth-api';
 
 export async function publishGradedResults(
   token: string,

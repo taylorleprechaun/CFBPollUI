@@ -35,7 +35,8 @@ try
                     "https://www.taylorsteinberg.net"
                 )
                 .AllowAnyHeader()
-                .AllowAnyMethod();
+                .AllowAnyMethod()
+                .SetPreflightMaxAge(TimeSpan.FromHours(12));
         });
     });
 
