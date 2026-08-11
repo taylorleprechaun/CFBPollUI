@@ -4,6 +4,7 @@ import type { TeamPredictionRecord } from '../../types';
 
 import { deltaClasses } from '../../lib/delta-classes';
 import { TeamLogo } from '../rankings/team-logo';
+import { ValueBadge } from '../ui/value-badge';
 import { FactRow } from './prediction-card';
 
 interface TeamPredictionRecordCardProps {
@@ -31,11 +32,7 @@ export function TeamPredictionRecordCard({ record, season }: TeamPredictionRecor
 
       <FactRow
         label="Delta"
-        value={
-          <span className={`inline-block px-2 py-1 rounded-lg font-semibold ${deltaClasses(delta)}`}>
-            {deltaLabel}
-          </span>
-        }
+        value={<ValueBadge classes={deltaClasses(delta)} value={deltaLabel} />}
       />
     </div>
   );

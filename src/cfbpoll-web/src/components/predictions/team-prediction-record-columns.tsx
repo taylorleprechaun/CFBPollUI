@@ -5,6 +5,7 @@ import type { TeamPredictionRecord } from '../../types';
 
 import { deltaClasses } from '../../lib/delta-classes';
 import { TeamLogo } from '../rankings/team-logo';
+import { ValueBadge } from '../ui/value-badge';
 
 const columnHelper = createColumnHelper<TeamPredictionRecord>();
 
@@ -46,10 +47,6 @@ export const deltaColumn = columnHelper.accessor((row) => row.actualWins - row.p
   cell: (info) => {
     const value = info.getValue();
     const label = value > 0 ? `+${value}` : `${value}`;
-    return (
-      <span className={`inline-block px-2 py-1 rounded-lg font-semibold ${deltaClasses(value)}`}>
-        {label}
-      </span>
-    );
+    return <ValueBadge classes={deltaClasses(value)} value={label} />;
   },
 });

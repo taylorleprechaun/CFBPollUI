@@ -38,6 +38,7 @@ Last Updated 8/6/2026
 - **Season Trends**: Interactive line chart showing rank progression throughout a season, with team logos as data points, CSS-driven highlighting, and custom tooltips
 - **Poll Leaders**: Scatter chart showing how frequently teams have been ranked, with team logos as data points, year range filtering, and toggleable all-weeks vs. final-only modes
 - **Track Record**: Historical accuracy of published predictions — Winner, Spread, Over/Under, Margin RMSE, and Margin Bias — viewable all-time and by season, with color-coded quality bands on the By-Season and weekly stats, plus toggleable margin-accuracy detail
+- **Team Prediction Records**: Per-team predicted vs. actual win/loss record for a season, with delta badges showing over/under-performance against predictions
 - **Page Visibility Controls**: Admin toggles to enable/disable the All-Time, Poll Leaders, and Season Trends pages, with deep-link blocking for disabled pages
 - **Historical Data**: Access rankings from 2002 to present
 - **Mobile-Responsive UI**: Collapsible hamburger menu navigation on small screens with viewport-aware chart tooltips
@@ -273,6 +274,7 @@ The frontend runs at `http://localhost:5173`.
 | `GET /api/v1/page-visibility` | Returns current page visibility settings |
 | `GET /api/v1/poll-leaders?minSeason={min}&maxSeason={max}` | Returns per-team ranking appearance counts across published snapshots |
 | `GET /api/v1/predictions/seasons` | Returns seasons that have at least one published prediction week |
+| `GET /api/v1/seasons/{season}/predictions/team-records` | Returns per-team predicted vs. actual win/loss records for the specified season |
 | `GET /api/v1/seasons/{season}/weeks/{week}/predictions` | Returns published predictions for the specified season/week |
 | `GET /api/v1/seasons/{season}/trends` | Returns season trends showing rank progression across published weeks |
 | `GET /api/v1/seasons/{season}/weeks/{week}/rankings` | Returns ranked teams for the specified week |
@@ -317,12 +319,12 @@ A few ordering/formatting conventions are worth calling out since they're enforc
 
 ## Testing
 
-The project includes 2,156 unit and integration tests across backend and frontend.
+The project includes 2,182 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (876 tests)
+# Backend tests (902 tests)
 dotnet test
 
 # Run with coverage
@@ -335,7 +337,7 @@ npm test
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-876-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-902-blue)
 ![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1280-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-98%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
