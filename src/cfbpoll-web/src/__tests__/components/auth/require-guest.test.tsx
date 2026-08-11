@@ -15,25 +15,34 @@ vi.mock('../../../hooks/use-auth', () => ({
   }),
 }));
 
-function renderWithRoutes(initialRoute: string) {
+function renderWithRoutes(initialEntry: string | { pathname: string; state?: unknown }) {
   return render(
-    <MemoryRouter initialEntries={[initialRoute]}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route element={<RequireGuest />}>
           <Route path="/login" element={<div>Login Content</div>} />
         </Route>
         <Route path="/" element={<div>Home Page</div>} />
+        <Route path="/admin/snapshots" element={<div>Snapshots Page</div>} />
       </Routes>
     </MemoryRouter>
   );
 }
 
 describe('RequireGuest', () => {
-  it('redirects to home when authenticated', () => {
+  it('redirects to home when authenticated with no return path', () => {
     mockIsAuthenticated = true;
     renderWithRoutes('/login');
 
     expect(screen.getByText('Home Page')).toBeInTheDocument();
+    expect(screen.queryByText('Login Content')).not.toBeInTheDocument();
+  });
+
+  it('redirects to the return path when authenticated with state.from', () => {
+    mockIsAuthenticated = true;
+    renderWithRoutes({ pathname: '/login', state: { from: '/admin/snapshots' } });
+
+    expect(screen.getByText('Snapshots Page')).toBeInTheDocument();
     expect(screen.queryByText('Login Content')).not.toBeInTheDocument();
   });
 

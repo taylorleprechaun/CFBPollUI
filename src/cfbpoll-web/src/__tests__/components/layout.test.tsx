@@ -11,12 +11,13 @@ let mockAllTimeEnabled = true;
 let mockPollLeadersEnabled = true;
 let mockPredictionsPageEnabled = false;
 let mockSeasonTrendsEnabled = true;
+const mockLogout = vi.fn();
 
 vi.mock('../../hooks/use-auth', () => ({
   useAuth: () => ({
     isAuthenticated: mockIsAuthenticated,
     login: vi.fn(),
-    logout: vi.fn(),
+    logout: mockLogout,
     token: mockIsAuthenticated ? 'test-token' : null,
   }),
 }));
@@ -48,6 +49,7 @@ describe('Layout', () => {
     mockPollLeadersEnabled = true;
     mockPredictionsPageEnabled = false;
     mockSeasonTrendsEnabled = true;
+    mockLogout.mockClear();
   });
 
   it('All-Time dropdown shows All-Time link when allTimeEnabled', async () => {
@@ -59,6 +61,17 @@ describe('Layout', () => {
     const allTimeLinks = screen.getAllByText('All-Time');
     // One is the button label, the others are in the dropdown
     expect(allTimeLinks.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('cancels logout confirm without calling logout', async () => {
+    mockIsAuthenticated = true;
+    renderLayout();
+
+    await userEvent.click(screen.getByLabelText('Log out'));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(mockLogout).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('closes mobile menu when close button is clicked', async () => {
@@ -73,11 +86,23 @@ describe('Layout', () => {
     expect(screen.getAllByText('Home')).toHaveLength(1);
   });
 
-  it('hides admin menu button when not authenticated', () => {
+  it('confirms logout when Log Out is clicked in the confirm modal', async () => {
+    mockIsAuthenticated = true;
+    renderLayout();
+
+    await userEvent.click(screen.getByLabelText('Log out'));
+    await userEvent.click(screen.getByRole('button', { name: 'Log Out' }));
+
+    expect(mockLogout).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('hides admin dropdown and logout button when not authenticated', () => {
     mockIsAuthenticated = false;
     renderLayout();
 
-    expect(screen.queryByLabelText('Admin menu')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Admin$/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Log out')).not.toBeInTheDocument();
   });
 
   it('hides admin section in mobile menu when not authenticated', async () => {
@@ -239,11 +264,12 @@ describe('Layout', () => {
     expect(rankingsButtons.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('shows admin menu dropdown on unlock icon click', async () => {
+  it('shows Admin dropdown items on click when authenticated', async () => {
     mockIsAuthenticated = true;
     renderLayout();
 
-    await userEvent.click(screen.getByLabelText('Admin menu'));
+    const adminButton = screen.getAllByRole('button', { name: /^Admin$/i })[0];
+    await userEvent.click(adminButton);
 
     expect(screen.getByText('Snapshots')).toBeInTheDocument();
     expect(screen.getByText('Predictions')).toBeInTheDocument();
@@ -289,6 +315,16 @@ describe('Layout', () => {
     const lockLink = screen.getByLabelText('Admin login');
     expect(lockLink).toBeInTheDocument();
     expect(lockLink).toHaveAttribute('href', '/login');
+  });
+
+  it('shows logout confirm modal on unlock icon click', async () => {
+    mockIsAuthenticated = true;
+    renderLayout();
+
+    await userEvent.click(screen.getByLabelText('Log out'));
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('Are you sure you want to log out?')).toBeInTheDocument();
   });
 
   it('shows Predictions dropdown when predictionsPageEnabled is true', async () => {
@@ -348,12 +384,12 @@ describe('Layout', () => {
     expect(trackRecordLink).toBeDefined();
   });
 
-  it('shows unlock icon as admin menu button when authenticated', () => {
+  it('shows unlock icon as logout button when authenticated', () => {
     mockIsAuthenticated = true;
     renderLayout();
 
-    const adminMenuButton = screen.getByLabelText('Admin menu');
-    expect(adminMenuButton).toBeInTheDocument();
-    expect(adminMenuButton.tagName).toBe('BUTTON');
+    const logoutButton = screen.getByLabelText('Log out');
+    expect(logoutButton).toBeInTheDocument();
+    expect(logoutButton.tagName).toBe('BUTTON');
   });
 });

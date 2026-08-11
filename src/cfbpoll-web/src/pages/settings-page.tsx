@@ -3,7 +3,6 @@ import { useId } from 'react';
 
 import type { PageVisibility } from '../schemas';
 
-import { BUTTON_GHOST } from '../components/ui/button-styles';
 import { useAuth } from '../hooks/use-auth';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { usePageVisibility } from '../hooks/use-page-visibility';
@@ -19,7 +18,7 @@ interface ToggleSwitchProps {
 export function SettingsPage() {
   useDocumentTitle('Taylor Steinberg - Settings');
 
-  const { token, logout } = useAuth();
+  const { token } = useAuth();
   const { allTimeEnabled, pollLeadersEnabled, predictionsPageEnabled, seasonTrendsEnabled } = usePageVisibility();
   const queryClient = useQueryClient();
 
@@ -41,15 +40,7 @@ export function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-text-primary">Settings</h1>
-        <button
-          onClick={logout}
-          className={BUTTON_GHOST}
-        >
-          Log Out
-        </button>
-      </div>
+      <h1 className="text-2xl font-bold text-text-primary">Settings</h1>
 
       <div className="bg-surface border border-border rounded-xl p-4 sm:p-6">
         <h2 className="text-lg font-semibold text-text-primary mb-4">Page Visibility</h2>
