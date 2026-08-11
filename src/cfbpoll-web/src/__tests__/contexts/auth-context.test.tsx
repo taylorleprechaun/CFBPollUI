@@ -4,11 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from '../../contexts/auth-context';
 import { useAuth } from '../../hooks/use-auth';
 
-vi.mock('../../services/admin-api', () => ({
+vi.mock('../../services/auth-api', () => ({
   loginUser: vi.fn(),
 }));
 
-import { loginUser } from '../../services/admin-api';
+import { loginUser } from '../../services/auth-api';
 
 function TestConsumer() {
   const { isAuthenticated, token, login, logout } = useAuth();

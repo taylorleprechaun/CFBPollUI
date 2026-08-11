@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 
 import { useAuth } from '../../hooks/use-auth';
-import { useDropdown } from '../../hooks/use-dropdown';
 import { usePageVisibility } from '../../hooks/use-page-visibility';
 import { isActiveLink } from '../../lib/route-utils';
+import { ConfirmModal } from '../ui/confirm-modal';
 import { CloseIcon, GitHubIcon, LinkedInIcon, LockIcon, MenuIcon, TwitterIcon, UnlockIcon } from '../ui/icons';
 import { ThemeToggle } from '../ui/theme-toggle';
-import { DROPDOWN_LINK_ACTIVE, DROPDOWN_LINK_INACTIVE, NavDropdown, type NavItem } from './nav-dropdown';
+import { NavDropdown, type NavItem } from './nav-dropdown';
 
 const DESKTOP_LINK_BASE = 'px-4 py-1.5 rounded-full text-sm font-medium transition-colors';
 const DESKTOP_LINK_ACTIVE = `${DESKTOP_LINK_BASE} bg-nav-active text-white`;
@@ -33,11 +33,12 @@ interface NavGroup {
 }
 
 export function Layout() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
   const { allTimeEnabled, pollLeadersEnabled, predictionsPageEnabled, seasonTrendsEnabled } = usePageVisibility();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { containerRef: adminDropdownRef, isOpen: isAdminDropdownOpen, toggle: toggleAdminDropdown } = useDropdown();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const location = useLocation();
+  const currentPath = `${location.pathname}${location.search}${location.hash}`;
 
   const [prevPathname, setPrevPathname] = useState(location.pathname);
   if (location.pathname !== prevPathname) {
@@ -72,6 +73,10 @@ export function Layout() {
         ],
         label: 'Predictions',
       }
+    : null;
+
+  const adminGroup: NavGroup | null = isAuthenticated
+    ? { items: ADMIN_ITEMS, label: 'Admin' }
     : null;
 
   return (
@@ -110,39 +115,30 @@ export function Layout() {
                       label={predictionsGroup.label}
                     />
                   )}
+                  {adminGroup && (
+                    <NavDropdown
+                      isActive={isGroupActive(location.pathname, adminGroup.items)}
+                      items={adminGroup.items}
+                      label={adminGroup.label}
+                    />
+                  )}
                 </div>
               </div>
               <div className="flex items-center space-x-1">
                 <ThemeToggle />
                 {isAuthenticated ? (
-                  <div ref={adminDropdownRef} className="relative">
-                    <button
-                      type="button"
-                      onClick={toggleAdminDropdown}
-                      className="hover:bg-nav-hover p-2 rounded-md transition-colors"
-                      aria-label="Admin menu"
-                      aria-expanded={isAdminDropdownOpen}
-                      aria-haspopup="true"
-                    >
-                      <UnlockIcon />
-                    </button>
-                    {isAdminDropdownOpen && (
-                      <div className="absolute top-full right-0 mt-1 bg-nav-bg/95 backdrop-blur-md rounded-lg shadow-lg border border-white/10 py-1 z-50 min-w-36">
-                        {ADMIN_ITEMS.map((item) => (
-                          <Link
-                            key={item.to}
-                            to={item.to}
-                            className={isActiveLink(location.pathname, item.to) ? DROPDOWN_LINK_ACTIVE : DROPDOWN_LINK_INACTIVE}
-                          >
-                            {item.label}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowLogoutConfirm(true)}
+                    className="hover:bg-nav-hover p-2 rounded-md transition-colors"
+                    aria-label="Log out"
+                  >
+                    <UnlockIcon />
+                  </button>
                 ) : (
                   <Link
                     to="/login"
+                    state={{ from: currentPath }}
                     className="hover:bg-nav-hover p-2 rounded-md transition-colors"
                     aria-label="Admin login"
                   >
@@ -213,12 +209,12 @@ export function Layout() {
                   ))}
                 </>
               )}
-              {isAuthenticated && (
+              {adminGroup && (
                 <>
                   <div className="pt-2 pb-1 px-3 text-xs font-semibold text-white/50 uppercase tracking-wider">
-                    Admin
+                    {adminGroup.label}
                   </div>
-                  {ADMIN_ITEMS.map((item) => (
+                  {adminGroup.items.map((item) => (
                     <Link
                       key={item.to}
                       to={item.to}
@@ -233,6 +229,18 @@ export function Layout() {
           )}
         </nav>
       </header>
+      {showLogoutConfirm && (
+        <ConfirmModal
+          title="Log Out"
+          message="Are you sure you want to log out?"
+          confirmLabel="Log Out"
+          onConfirm={() => {
+            logout();
+            setShowLogoutConfirm(false);
+          }}
+          onCancel={() => setShowLogoutConfirm(false)}
+        />
+      )}
       <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Outlet />
       </main>

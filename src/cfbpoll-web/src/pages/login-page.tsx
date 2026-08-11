@@ -1,5 +1,4 @@
 import { type FormEvent, useId, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { BUTTON_PRIMARY } from '../components/ui/button-styles';
 import { useAuth } from '../hooks/use-auth';
@@ -12,7 +11,6 @@ export function LoginPage() {
   useDocumentTitle('Taylor Steinberg - Login');
 
   const { login } = useAuth();
-  const navigate = useNavigate();
 
   const usernameId = useId();
   const passwordId = useId();
@@ -29,7 +27,6 @@ export function LoginPage() {
 
     try {
       await login(username, password);
-      navigate('/');
     } catch (err) {
       setError(toErrorMessage(err, 'Login failed'));
     } finally {

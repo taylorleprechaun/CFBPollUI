@@ -6,14 +6,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SettingsPage } from '../../pages/settings-page';
 
-const mockLogout = vi.fn();
 let mockToken: string | null = 'test-token';
 
 vi.mock('../../hooks/use-auth', () => ({
   useAuth: () => ({
     isAuthenticated: mockToken !== null,
     login: vi.fn(),
-    logout: mockLogout,
+    logout: vi.fn(),
     token: mockToken,
   }),
 }));
@@ -61,12 +60,6 @@ describe('SettingsPage', () => {
     mockPollLeadersEnabled = true;
     mockPredictionsPageEnabled = true;
     mockSeasonTrendsEnabled = true;
-  });
-
-  it('calls logout when Log Out is clicked', async () => {
-    renderSettingsPage();
-    await userEvent.click(screen.getByText('Log Out'));
-    expect(mockLogout).toHaveBeenCalled();
   });
 
   it('calls updatePageVisibility when predictions toggle is changed', async () => {
@@ -176,10 +169,9 @@ describe('SettingsPage', () => {
     expect(seasonTrendsToggle).toHaveAttribute('aria-checked', 'false');
   });
 
-  it('renders settings page heading and logout button', () => {
+  it('renders settings page heading', () => {
     renderSettingsPage();
     expect(screen.getByText('Settings')).toBeInTheDocument();
-    expect(screen.getByText('Log Out')).toBeInTheDocument();
   });
 
   it('shows error feedback when visibility update fails', async () => {

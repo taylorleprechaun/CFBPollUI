@@ -5,17 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LoginPage } from '../../pages/login-page';
 
-const mockNavigate = vi.fn();
 const mockLogin = vi.fn();
 let mockIsAuthenticated = false;
-
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom');
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-  };
-});
 
 vi.mock('../../hooks/use-auth', () => ({
   useAuth: () => ({
@@ -50,19 +41,6 @@ describe('LoginPage', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Logging in...' })).toBeDisabled();
-    });
-  });
-
-  it('navigates to home on successful login', async () => {
-    mockLogin.mockResolvedValue(undefined);
-    renderLoginPage();
-
-    await userEvent.type(screen.getByLabelText('Username'), 'admin');
-    await userEvent.type(screen.getByLabelText('Password'), 'secret');
-    await userEvent.click(screen.getByRole('button', { name: 'Log In' }));
-
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/');
     });
   });
 
