@@ -143,7 +143,7 @@ describe('HomePage', () => {
     renderHomePage();
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'College Football Rankings'
+      'Taylor Steinberg’s College Football Rankings'
     );
   });
 

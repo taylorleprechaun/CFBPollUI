@@ -83,7 +83,7 @@ export function HomePage() {
       <section className="relative overflow-hidden bg-gradient-to-b from-accent-light to-page-bg px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <div className="relative max-w-4xl mx-auto text-center">
           <h1 className="text-2xl sm:text-3xl font-bold text-text-primary mb-8 tracking-tight">
-            College Football Rankings
+            Taylor Steinberg&rsquo;s College Football Rankings
           </h1>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
@@ -123,8 +123,8 @@ export function HomePage() {
           How It Works
         </h2>
         <p className="text-text-secondary text-center mb-12 max-w-prose mx-auto">
-          Rankings are calculated using data from the College Football Data API,
-          combining multiple factors into a single composite rating.
+          I calculate these rankings every week using data from the College Football Data API,
+          combining wins, schedule strength, and game stats into a single composite rating.
         </p>
         <div ref={featureGridRef} className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {FEATURES.map((feature, index) => (
