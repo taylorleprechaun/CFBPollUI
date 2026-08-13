@@ -9,18 +9,18 @@ public class TeamsModule : ITeamsModule
     private readonly ICFBDataService _dataService;
     private readonly ILogger<TeamsModule> _logger;
     private readonly IRankingsModule _rankingsModule;
-    private readonly IRatingModule _ratingModule;
+    private readonly IRatingAlgorithmResolver _ratingAlgorithmResolver;
     private readonly StringComparison _scoic = StringComparison.OrdinalIgnoreCase;
 
     public TeamsModule(
         ICFBDataService dataService,
         IRankingsModule rankingsModule,
-        IRatingModule ratingModule,
+        IRatingAlgorithmResolver ratingAlgorithmResolver,
         ILogger<TeamsModule> logger)
     {
         _dataService = dataService ?? throw new ArgumentNullException(nameof(dataService));
         _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
-        _ratingModule = ratingModule ?? throw new ArgumentNullException(nameof(ratingModule));
+        _ratingAlgorithmResolver = ratingAlgorithmResolver ?? throw new ArgumentNullException(nameof(ratingAlgorithmResolver));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -51,7 +51,7 @@ public class TeamsModule : ITeamsModule
 
         var fullScheduleTask = _dataService.GetFullSeasonScheduleAsync(season);
 
-        var ratings = await _ratingModule.RateTeamsAsync(seasonData).ConfigureAwait(false);
+        var ratings = await _ratingAlgorithmResolver.ResolveForSeason(season).RateTeamsAsync(seasonData).ConfigureAwait(false);
         var rankingsResult = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings).ConfigureAwait(false);
 
         var rankedTeam = rankingsResult.Rankings.FirstOrDefault(

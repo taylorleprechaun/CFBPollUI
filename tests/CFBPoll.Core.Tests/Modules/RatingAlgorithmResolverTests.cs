@@ -9,29 +9,29 @@ namespace CFBPoll.Core.Tests.Modules;
 
 public class RatingAlgorithmResolverTests
 {
-    private readonly RatingModule _legacy;
     private readonly RatingAlgorithmResolver _resolver;
+    private readonly RatingModule _v1;
+    private readonly RatingModuleV2 _v2;
 
     public RatingAlgorithmResolverTests()
     {
         var mockDataService = new Mock<ICFBDataService>();
         var options = Microsoft.Extensions.Options.Options.Create(new HistoricalDataOptions { MinimumYear = 2002 });
-        _legacy = new RatingModule(mockDataService.Object, options);
-        _resolver = new RatingAlgorithmResolver(_legacy);
+        _v1 = new RatingModule(mockDataService.Object, options);
+        _v2 = new RatingModuleV2(_v1);
+        _resolver = new RatingAlgorithmResolver(_v1, _v2);
     }
 
     [Fact]
-    public void Constructor_NullLegacy_ThrowsArgumentNullException()
+    public void Constructor_NullV1_ThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>(() => new RatingAlgorithmResolver(null!));
+        Assert.Throws<ArgumentNullException>(() => new RatingAlgorithmResolver(null!, _v2));
     }
 
     [Fact]
-    public void Resolve_WithLegacyVersion_ReturnsLegacyInstance()
+    public void Constructor_NullV2_ThrowsArgumentNullException()
     {
-        var result = _resolver.Resolve(RatingAlgorithmVersion.Legacy);
-
-        Assert.Same(_legacy, result);
+        Assert.Throws<ArgumentNullException>(() => new RatingAlgorithmResolver(_v1, null!));
     }
 
     [Fact]
@@ -41,17 +41,27 @@ public class RatingAlgorithmResolverTests
     }
 
     [Fact]
-    public void Resolve_WithV2Version_ThrowsNotSupportedException()
+    public void Resolve_WithV1Version_ReturnsV1Instance()
     {
-        Assert.Throws<NotSupportedException>(() => _resolver.Resolve(RatingAlgorithmVersion.V2));
+        var result = _resolver.Resolve(RatingAlgorithmVersion.V1);
+
+        Assert.Same(_v1, result);
     }
 
     [Fact]
-    public void ResolveForSeason_WithSeasonBelowThreshold_ReturnsLegacyInstance()
+    public void Resolve_WithV2Version_ReturnsV2Instance()
+    {
+        var result = _resolver.Resolve(RatingAlgorithmVersion.V2);
+
+        Assert.Same(_v2, result);
+    }
+
+    [Fact]
+    public void ResolveForSeason_WithSeasonBelowThreshold_ReturnsV1Instance()
     {
         var result = _resolver.ResolveForSeason(2024);
 
-        Assert.Same(_legacy, result);
+        Assert.Same(_v1, result);
     }
 
     [Fact]
@@ -63,10 +73,10 @@ public class RatingAlgorithmResolverTests
     }
 
     [Fact]
-    public void ResolveVersionForSeason_WithSeasonBelowThreshold_ReturnsLegacy()
+    public void ResolveVersionForSeason_WithSeasonBelowThreshold_ReturnsV1()
     {
         var result = _resolver.ResolveVersionForSeason(2024);
 
-        Assert.Equal(RatingAlgorithmVersion.Legacy, result);
+        Assert.Equal(RatingAlgorithmVersion.V1, result);
     }
 }

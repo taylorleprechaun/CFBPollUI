@@ -12,17 +12,17 @@ public class RankingsController : ControllerBase
     private readonly ICFBDataService _dataService;
     private readonly ILogger<RankingsController> _logger;
     private readonly IRankingsModule _rankingsModule;
-    private readonly IRatingModule _ratingModule;
+    private readonly IRatingAlgorithmResolver _ratingAlgorithmResolver;
 
     public RankingsController(
         ICFBDataService dataService,
         IRankingsModule rankingsModule,
-        IRatingModule ratingModule,
+        IRatingAlgorithmResolver ratingAlgorithmResolver,
         ILogger<RankingsController> logger)
     {
         _dataService = dataService ?? throw new ArgumentNullException(nameof(dataService));
         _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
-        _ratingModule = ratingModule ?? throw new ArgumentNullException(nameof(ratingModule));
+        _ratingAlgorithmResolver = ratingAlgorithmResolver ?? throw new ArgumentNullException(nameof(ratingAlgorithmResolver));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -47,7 +47,7 @@ public class RankingsController : ControllerBase
         }
 
         var seasonData = await _dataService.GetSeasonDataAsync(season, week);
-        var ratings = await _ratingModule.RateTeamsAsync(seasonData);
+        var ratings = await _ratingAlgorithmResolver.ResolveForSeason(season).RateTeamsAsync(seasonData);
         var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
 
         var liveDeltas = await _rankingsModule.GetRankDeltasAsync(season, week, result.Rankings);

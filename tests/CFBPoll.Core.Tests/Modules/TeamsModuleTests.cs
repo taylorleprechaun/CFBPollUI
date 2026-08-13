@@ -12,6 +12,7 @@ public class TeamsModuleTests
     private readonly Mock<ICFBDataService> _mockDataService;
     private readonly Mock<ILogger<TeamsModule>> _mockLogger;
     private readonly Mock<IRankingsModule> _mockRankingsModule;
+    private readonly Mock<IRatingAlgorithmResolver> _mockRatingAlgorithmResolver;
     private readonly Mock<IRatingModule> _mockRatingModule;
     private readonly TeamsModule _teamsModule;
 
@@ -21,11 +22,13 @@ public class TeamsModuleTests
         _mockLogger = new Mock<ILogger<TeamsModule>>();
         _mockRankingsModule = new Mock<IRankingsModule>();
         _mockRatingModule = new Mock<IRatingModule>();
+        _mockRatingAlgorithmResolver = new Mock<IRatingAlgorithmResolver>();
+        _mockRatingAlgorithmResolver.Setup(x => x.ResolveForSeason(It.IsAny<int>())).Returns(_mockRatingModule.Object);
 
         _teamsModule = new TeamsModule(
             _mockDataService.Object,
             _mockRankingsModule.Object,
-            _mockRatingModule.Object,
+            _mockRatingAlgorithmResolver.Object,
             _mockLogger.Object);
     }
 

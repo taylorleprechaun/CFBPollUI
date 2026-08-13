@@ -20,6 +20,7 @@ public class AdminModuleTests
     private readonly Mock<IPredictionGradingModule> _mockPredictionGradingModule;
     private readonly Mock<IPredictionsModule> _mockPredictionsModule;
     private readonly Mock<IRankingsModule> _mockRankingsModule;
+    private readonly Mock<IRatingAlgorithmResolver> _mockRatingAlgorithmResolver;
     private readonly Mock<IRatingModule> _mockRatingModule;
     private readonly Mock<ISeasonTrendsModule> _mockSeasonTrendsModule;
     private readonly Mock<ITeamPredictionRecordModule> _mockTeamPredictionRecordModule;
@@ -37,6 +38,8 @@ public class AdminModuleTests
         _mockPredictionsModule = new Mock<IPredictionsModule>();
         _mockRankingsModule = new Mock<IRankingsModule>();
         _mockRatingModule = new Mock<IRatingModule>();
+        _mockRatingAlgorithmResolver = new Mock<IRatingAlgorithmResolver>();
+        _mockRatingAlgorithmResolver.Setup(x => x.ResolveForSeason(It.IsAny<int>())).Returns(_mockRatingModule.Object);
         _mockSeasonTrendsModule = new Mock<ISeasonTrendsModule>();
         _mockTeamPredictionRecordModule = new Mock<ITeamPredictionRecordModule>();
         _mockTrackRecordModule = new Mock<ITrackRecordModule>();
@@ -53,7 +56,7 @@ public class AdminModuleTests
             _mockPredictionGradingModule.Object,
             _mockPredictionsModule.Object,
             _mockRankingsModule.Object,
-            _mockRatingModule.Object,
+            _mockRatingAlgorithmResolver.Object,
             _mockSeasonTrendsModule.Object,
             _mockTeamPredictionRecordModule.Object,
             _mockTrackRecordModule.Object,
@@ -501,7 +504,7 @@ public class AdminModuleTests
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
-                _mockRatingModule.Object,
+                _mockRatingAlgorithmResolver.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
@@ -521,7 +524,7 @@ public class AdminModuleTests
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
-                _mockRatingModule.Object,
+                _mockRatingAlgorithmResolver.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
@@ -541,7 +544,7 @@ public class AdminModuleTests
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
-                _mockRatingModule.Object,
+                _mockRatingAlgorithmResolver.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
@@ -561,7 +564,7 @@ public class AdminModuleTests
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
-                _mockRatingModule.Object,
+                _mockRatingAlgorithmResolver.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
@@ -581,7 +584,7 @@ public class AdminModuleTests
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
-                _mockRatingModule.Object,
+                _mockRatingAlgorithmResolver.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
@@ -601,7 +604,7 @@ public class AdminModuleTests
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
-                _mockRatingModule.Object,
+                _mockRatingAlgorithmResolver.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
@@ -621,7 +624,7 @@ public class AdminModuleTests
                 null!,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
-                _mockRatingModule.Object,
+                _mockRatingAlgorithmResolver.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
@@ -641,7 +644,7 @@ public class AdminModuleTests
                 _mockPredictionGradingModule.Object,
                 null!,
                 _mockRankingsModule.Object,
-                _mockRatingModule.Object,
+                _mockRatingAlgorithmResolver.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
@@ -661,7 +664,7 @@ public class AdminModuleTests
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 null!,
-                _mockRatingModule.Object,
+                _mockRatingAlgorithmResolver.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
@@ -669,7 +672,7 @@ public class AdminModuleTests
     }
 
     [Fact]
-    public void Constructor_NullRatingModule_ThrowsArgumentNullException()
+    public void Constructor_NullRatingAlgorithmResolver_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
             () => new AdminModule(
@@ -701,7 +704,7 @@ public class AdminModuleTests
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
-                _mockRatingModule.Object,
+                _mockRatingAlgorithmResolver.Object,
                 null!,
                 _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
@@ -721,7 +724,7 @@ public class AdminModuleTests
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
-                _mockRatingModule.Object,
+                _mockRatingAlgorithmResolver.Object,
                 _mockSeasonTrendsModule.Object,
                 null!,
                 _mockTrackRecordModule.Object,
@@ -741,7 +744,7 @@ public class AdminModuleTests
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
-                _mockRatingModule.Object,
+                _mockRatingAlgorithmResolver.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
                 null!,

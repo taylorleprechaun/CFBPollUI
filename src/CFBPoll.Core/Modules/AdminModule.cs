@@ -16,7 +16,7 @@ public class AdminModule : IAdminModule
     private readonly IPredictionGradingModule _predictionGradingModule;
     private readonly IPredictionsModule _predictionsModule;
     private readonly IRankingsModule _rankingsModule;
-    private readonly IRatingModule _ratingModule;
+    private readonly IRatingAlgorithmResolver _ratingAlgorithmResolver;
     private readonly ISeasonTrendsModule _seasonTrendsModule;
     private readonly ITeamPredictionRecordModule _teamPredictionRecordModule;
     private readonly ITrackRecordModule _trackRecordModule;
@@ -30,7 +30,7 @@ public class AdminModule : IAdminModule
         IPredictionGradingModule predictionGradingModule,
         IPredictionsModule predictionsModule,
         IRankingsModule rankingsModule,
-        IRatingModule ratingModule,
+        IRatingAlgorithmResolver ratingAlgorithmResolver,
         ISeasonTrendsModule seasonTrendsModule,
         ITeamPredictionRecordModule teamPredictionRecordModule,
         ITrackRecordModule trackRecordModule,
@@ -45,7 +45,7 @@ public class AdminModule : IAdminModule
         _predictionGradingModule = predictionGradingModule ?? throw new ArgumentNullException(nameof(predictionGradingModule));
         _predictionsModule = predictionsModule ?? throw new ArgumentNullException(nameof(predictionsModule));
         _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
-        _ratingModule = ratingModule ?? throw new ArgumentNullException(nameof(ratingModule));
+        _ratingAlgorithmResolver = ratingAlgorithmResolver ?? throw new ArgumentNullException(nameof(ratingAlgorithmResolver));
         _seasonTrendsModule = seasonTrendsModule ?? throw new ArgumentNullException(nameof(seasonTrendsModule));
         _teamPredictionRecordModule = teamPredictionRecordModule ?? throw new ArgumentNullException(nameof(teamPredictionRecordModule));
         _trackRecordModule = trackRecordModule ?? throw new ArgumentNullException(nameof(trackRecordModule));
@@ -70,7 +70,7 @@ public class AdminModule : IAdminModule
         // CFBD API serves all postseason betting lines under week 1
         var bettingLinesWeek = isPostseason ? 1 : gameWeek;
 
-        var ratingsTask = _ratingModule.RateTeamsAsync(seasonData);
+        var ratingsTask = _ratingAlgorithmResolver.ResolveForSeason(season).RateTeamsAsync(seasonData);
         var bettingLinesTask = _dataService.GetBettingLinesAsync(season, bettingLinesWeek);
         await Task.WhenAll(ratingsTask, bettingLinesTask).ConfigureAwait(false);
 
@@ -125,7 +125,7 @@ public class AdminModule : IAdminModule
         await RefreshSeasonCacheAsync(season, week).ConfigureAwait(false);
 
         var seasonData = await _dataService.GetSeasonDataAsync(season, week).ConfigureAwait(false);
-        var ratings = await _ratingModule.RateTeamsAsync(seasonData).ConfigureAwait(false);
+        var ratings = await _ratingAlgorithmResolver.ResolveForSeason(season).RateTeamsAsync(seasonData).ConfigureAwait(false);
         var rankings = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings).ConfigureAwait(false);
 
         var persisted = true;
