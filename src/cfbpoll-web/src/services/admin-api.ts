@@ -1,3 +1,5 @@
+import type { AlgorithmVersion } from '../components/admin/algorithm-versions';
+
 import { API_BASE_URL } from '../lib/config';
 import { triggerBlobDownload } from '../lib/download-utils';
 import { parseResponse } from '../lib/parse-response';
@@ -13,6 +15,8 @@ import {
   CalculatePredictionsResponseSchema,
   type CalculateResponse,
   CalculateResponseSchema,
+  type ExperimentalCalculateResponse,
+  ExperimentalCalculateResponseSchema,
   type GradePredictionsResponse,
   GradePredictionsResponseSchema,
   PredictionsSummariesResponseSchema,
@@ -22,6 +26,19 @@ import {
   type Snapshot,
   SnapshotsResponseSchema,
 } from '../schemas/admin';
+
+export async function calculateExperimental(
+  token: string,
+  season: number,
+  week: number,
+  algorithmVersion: AlgorithmVersion
+): Promise<ExperimentalCalculateResponse> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/experimental/${algorithmVersion}`,
+    withAuth(token, { method: 'POST' })
+  );
+  return parseResponse(response, ExperimentalCalculateResponseSchema);
+}
 
 export async function calculatePredictions(
   token: string,
@@ -67,6 +84,21 @@ export async function deleteSnapshot(
     `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/snapshot`,
     withAuth(token, { method: 'DELETE' })
   );
+}
+
+export async function downloadExperimentalExport(
+  token: string,
+  season: number,
+  week: number,
+  algorithmVersion: AlgorithmVersion
+): Promise<void> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/experimental/${algorithmVersion}/export`,
+    withAuth(token)
+  );
+
+  const blob = await response.blob();
+  triggerBlobDownload(blob, `Rankings_Experimental_${algorithmVersion}_${season}_Week${week}.xlsx`);
 }
 
 export async function downloadExport(

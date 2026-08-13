@@ -27,6 +27,25 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
+    /// Calculates rankings for the specified season and week and saves as a draft.
+    /// </summary>
+    [HttpPost("seasons/{season}/weeks/{week}/snapshot")]
+    public async Task<ActionResult<CalculateResponseDTO>> Calculate(int season, int week)
+    {
+        _logger.LogInformation("Admin calculating rankings for season {Season}, week {Week}",
+            season, week);
+
+        var result = await _adminModule.CalculateRankingsAsync(season, week);
+        var deltas = await _rankingsModule.GetRankDeltasAsync(season, week, result.Rankings.Rankings);
+
+        return Ok(new CalculateResponseDTO
+        {
+            IsPersisted = result.IsPersisted,
+            Rankings = RankingsMapper.ToResponseDTO(result.Rankings, deltas)
+        });
+    }
+
+    /// <summary>
     /// Calculates rankings for the specified season and week using an explicitly chosen algorithm
     /// version, without persisting or publishing anything.
     /// </summary>
@@ -43,25 +62,6 @@ public class AdminController : ControllerBase
         {
             AlgorithmVersion = result.AlgorithmVersion.ToString(),
             Rankings = RankingsMapper.ToResponseDTO(result.Rankings)
-        });
-    }
-
-    /// <summary>
-    /// Calculates rankings for the specified season and week and saves as a draft.
-    /// </summary>
-    [HttpPost("seasons/{season}/weeks/{week}/snapshot")]
-    public async Task<ActionResult<CalculateResponseDTO>> Calculate(int season, int week)
-    {
-        _logger.LogInformation("Admin calculating rankings for season {Season}, week {Week}",
-            season, week);
-
-        var result = await _adminModule.CalculateRankingsAsync(season, week);
-        var deltas = await _rankingsModule.GetRankDeltasAsync(season, week, result.Rankings.Rankings);
-
-        return Ok(new CalculateResponseDTO
-        {
-            IsPersisted = result.IsPersisted,
-            Rankings = RankingsMapper.ToResponseDTO(result.Rankings, deltas)
         });
     }
 
@@ -116,24 +116,6 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Downloads an Excel export of rankings for the specified season and week using an explicitly
-    /// chosen algorithm version, without persisting or publishing anything.
-    /// </summary>
-    [HttpGet("seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/export")]
-    public async Task<ActionResult> ExportExperimental(int season, int week, RatingAlgorithmVersion algorithmVersion)
-    {
-        _logger.LogInformation(
-            "Admin exporting experimental rankings for season {Season}, week {Week} using algorithm version {AlgorithmVersion}",
-            season, week, algorithmVersion);
-
-        var bytes = await _adminModule.ExportExperimentalAsync(season, week, algorithmVersion);
-
-        return File(bytes,
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            $"Rankings_Experimental_{algorithmVersion}_{season}_Week{week}.xlsx");
-    }
-
-    /// <summary>
     /// Downloads an Excel export of the rankings for the specified season and week.
     /// </summary>
     [HttpGet("seasons/{season}/weeks/{week}/snapshot/export")]
@@ -149,6 +131,24 @@ public class AdminController : ControllerBase
         return File(bytes,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             $"Rankings_{season}_Week{week}.xlsx");
+    }
+
+    /// <summary>
+    /// Downloads an Excel export of rankings for the specified season and week using an explicitly
+    /// chosen algorithm version, without persisting or publishing anything.
+    /// </summary>
+    [HttpGet("seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/export")]
+    public async Task<ActionResult> ExportExperimental(int season, int week, RatingAlgorithmVersion algorithmVersion)
+    {
+        _logger.LogInformation(
+            "Admin exporting experimental rankings for season {Season}, week {Week} using algorithm version {AlgorithmVersion}",
+            season, week, algorithmVersion);
+
+        var bytes = await _adminModule.ExportExperimentalAsync(season, week, algorithmVersion);
+
+        return File(bytes,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            $"Rankings_Experimental_{algorithmVersion}_{season}_Week{week}.xlsx");
     }
 
     /// <summary>

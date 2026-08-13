@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  calculateExperimental,
   calculatePredictions,
   calculateRankings,
   deletePredictions,
   deleteSnapshot,
+  downloadExperimentalExport,
   downloadExport,
   fetchPrediction,
   fetchPredictionsSummaries,
@@ -20,6 +22,43 @@ import {
 describe('Admin API service', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+  });
+
+  describe('calculateExperimental', () => {
+    it('sends POST to experimental endpoint with auth header', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            algorithmVersion: 'V2',
+            rankings: { season: 2024, week: 5, rankings: [] },
+          }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await calculateExperimental('my-token', 2024, 5, 'V2');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/experimental/V2'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+          }),
+        })
+      );
+    });
+
+    it('throws on failed calculate', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ message: 'Server error' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(calculateExperimental('token', 2024, 5, 'V1')).rejects.toThrow('Server error');
+    });
   });
 
   describe('calculatePredictions', () => {
@@ -195,6 +234,56 @@ describe('Admin API service', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await expect(deleteSnapshot('token', 2024, 5)).rejects.toThrow('Connection reset');
+    });
+  });
+
+  describe('downloadExperimentalExport', () => {
+    it('fetches experimental export with auth header and triggers download', async () => {
+      const mockBlob = new Blob(['test'], { type: 'application/octet-stream' });
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        blob: () => Promise.resolve(mockBlob),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const mockCreateObjectURL = vi.fn().mockReturnValue('blob:test-url');
+      const mockRevokeObjectURL = vi.fn();
+      vi.stubGlobal('URL', { createObjectURL: mockCreateObjectURL, revokeObjectURL: mockRevokeObjectURL });
+
+      const mockClick = vi.fn();
+      const mockAppendChild = vi.spyOn(document.body, 'appendChild').mockImplementation((node) => node);
+      const mockRemoveChild = vi.spyOn(document.body, 'removeChild').mockImplementation((node) => node);
+      vi.spyOn(document, 'createElement').mockReturnValue({
+        href: '',
+        download: '',
+        click: mockClick,
+      } as unknown as HTMLAnchorElement);
+
+      await downloadExperimentalExport('my-token', 2024, 5, 'V2');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/experimental/V2/export'),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+          }),
+        })
+      );
+      expect(mockClick).toHaveBeenCalled();
+
+      mockAppendChild.mockRestore();
+      mockRemoveChild.mockRestore();
+    });
+
+    it('throws on failed export', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: () => Promise.resolve({ message: 'Not found' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(downloadExperimentalExport('token', 2024, 5, 'V1')).rejects.toThrow('Not found');
     });
   });
 

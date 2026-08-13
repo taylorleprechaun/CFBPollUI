@@ -45,6 +45,7 @@ Last Updated 8/6/2026
 - **Interactive UI**: Sortable rankings table with team logos and colors
 - **Game Predictions**: Generate game predictions with spread and over/under picks using team ratings and betting line data
 - **Admin Dashboard**: JWT-authenticated admin panel to calculate, preview, and publish rankings and predictions with a two-step draft/publish workflow
+- **Experimental Rating Preview**: Admin-only calculation against any rating algorithm version for any season/week, without persisting or publishing — used to validate a candidate algorithm before it becomes a season's default
 - **Excel Export**: Download rankings as Excel spreadsheets with rating breakdowns
 - **SQLite Persistence**: Rankings and predictions snapshots stored in SQLite for fast retrieval without redundant API calls
 - **REST API**: Full API with Swagger documentation
@@ -298,6 +299,8 @@ The frontend runs at `http://localhost:5173`.
 | `DELETE /api/v1/admin/seasons/{season}/weeks/{week}/snapshot` | Delete a snapshot |
 | `GET /api/v1/admin/snapshots` | List all persisted snapshots |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/snapshot/export` | Download rankings as Excel |
+| `POST /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}` | Calculate rankings using an explicitly chosen algorithm version, without persisting or publishing |
+| `GET /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/export` | Download experimental rankings as Excel for a chosen algorithm version, without persisting or publishing |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Retrieve persisted predictions for a season/week without recalculating or re-grading |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Calculate predictions for a season/week and save as draft |
 | `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Update a prediction (currently supports publishing) |
@@ -319,33 +322,33 @@ A few ordering/formatting conventions are worth calling out since they're enforc
 
 ## Testing
 
-The project includes 2,196 unit and integration tests across backend and frontend.
+The project includes 2,257 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (903 tests)
+# Backend tests (921 tests)
 dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (1,293 tests)
+# Frontend tests (1,336 tests)
 cd src/cfbpoll-web
 npm test
 ```
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-903-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1293-blue)
-![Core Coverage](https://img.shields.io/badge/Core_Coverage-98%25-brightgreen)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-921-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1336-blue)
+![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
 ![Web Coverage](https://img.shields.io/badge/Web_Coverage-100%25-brightgreen)
 
 | Project | Line Coverage | Branch Coverage |
 |---------|---------------|-----------------|
-| CFBPoll.Core | 98% | 94% |
+| CFBPoll.Core | 99% | 94% |
 | CFBPoll.API | 100% | 97% |
 | cfbpoll-web | 100% | 95% |
 
