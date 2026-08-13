@@ -885,30 +885,30 @@ public class RankingsModuleTests
         var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
 
         _mockRankingsData
-            .Setup(x => x.SaveSnapshotAsync(rankings))
+            .Setup(x => x.SaveSnapshotAsync(rankings, RatingAlgorithmVersion.V1))
             .ThrowsAsync(new InvalidOperationException("Database write failed"));
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _rankingsModule.SaveSnapshotAsync(rankings));
+            () => _rankingsModule.SaveSnapshotAsync(rankings, RatingAlgorithmVersion.V1));
     }
 
     [Fact]
     public async Task SaveSnapshotAsync_DelegatesToRankingsData()
     {
         var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
-        _mockRankingsData.Setup(x => x.SaveSnapshotAsync(rankings)).ReturnsAsync(true);
+        _mockRankingsData.Setup(x => x.SaveSnapshotAsync(rankings, RatingAlgorithmVersion.V2)).ReturnsAsync(true);
 
-        var result = await _rankingsModule.SaveSnapshotAsync(rankings);
+        var result = await _rankingsModule.SaveSnapshotAsync(rankings, RatingAlgorithmVersion.V2);
 
         Assert.True(result);
-        _mockRankingsData.Verify(x => x.SaveSnapshotAsync(rankings), Times.Once);
+        _mockRankingsData.Verify(x => x.SaveSnapshotAsync(rankings, RatingAlgorithmVersion.V2), Times.Once);
     }
 
     [Fact]
     public async Task SaveSnapshotAsync_NullRankings_ThrowsArgumentNullException()
     {
         await Assert.ThrowsAsync<ArgumentNullException>(
-            () => _rankingsModule.SaveSnapshotAsync(null!));
+            () => _rankingsModule.SaveSnapshotAsync(null!, RatingAlgorithmVersion.V1));
     }
 
     private static RatingDetails CreateRatingDetails(

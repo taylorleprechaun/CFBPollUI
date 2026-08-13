@@ -40,6 +40,8 @@ public class AdminModuleTests
         _mockRatingModule = new Mock<IRatingModule>();
         _mockRatingAlgorithmResolver = new Mock<IRatingAlgorithmResolver>();
         _mockRatingAlgorithmResolver.Setup(x => x.ResolveForSeason(It.IsAny<int>())).Returns(_mockRatingModule.Object);
+        _mockRatingAlgorithmResolver.Setup(x => x.ResolveVersionForSeason(It.IsAny<int>())).Returns(RatingAlgorithmVersion.V1);
+        _mockRatingAlgorithmResolver.Setup(x => x.Resolve(It.IsAny<RatingAlgorithmVersion>())).Returns(_mockRatingModule.Object);
         _mockSeasonTrendsModule = new Mock<ISeasonTrendsModule>();
         _mockTeamPredictionRecordModule = new Mock<ITeamPredictionRecordModule>();
         _mockTrackRecordModule = new Mock<ITrackRecordModule>();
@@ -328,7 +330,7 @@ public class AdminModuleTests
         Assert.Equal(2024, result.Rankings.Season);
         Assert.Equal(5, result.Rankings.Week);
         Assert.True(result.IsPersisted);
-        _mockRankingsModule.Verify(x => x.SaveSnapshotAsync(rankings), Times.Once);
+        _mockRankingsModule.Verify(x => x.SaveSnapshotAsync(rankings, RatingAlgorithmVersion.V1), Times.Once);
     }
 
     [Fact]
@@ -418,7 +420,7 @@ public class AdminModuleTests
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
         _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
         _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankings);
-        _mockRankingsModule.Setup(x => x.SaveSnapshotAsync(It.IsAny<RankingsResult>()))
+        _mockRankingsModule.Setup(x => x.SaveSnapshotAsync(It.IsAny<RankingsResult>(), It.IsAny<RatingAlgorithmVersion>()))
             .ThrowsAsync(new InvalidOperationException("DB error"));
 
         await _adminModule.CalculateRankingsAsync(2024, 5);
@@ -437,7 +439,7 @@ public class AdminModuleTests
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
         _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
         _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankings);
-        _mockRankingsModule.Setup(x => x.SaveSnapshotAsync(It.IsAny<RankingsResult>()))
+        _mockRankingsModule.Setup(x => x.SaveSnapshotAsync(It.IsAny<RankingsResult>(), It.IsAny<RatingAlgorithmVersion>()))
             .ThrowsAsync(new InvalidOperationException("DB error"));
 
         var result = await _adminModule.CalculateRankingsAsync(2024, 5);
@@ -489,6 +491,23 @@ public class AdminModuleTests
         await _adminModule.CalculateRankingsAsync(2024, 5);
 
         _mockSeasonTrendsModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task CalculateRankingsAsync_UsesResolvedVersionForSnapshotTag()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankings);
+        _mockRatingAlgorithmResolver.Setup(x => x.ResolveVersionForSeason(2024)).Returns(RatingAlgorithmVersion.V2);
+
+        await _adminModule.CalculateRankingsAsync(2024, 5);
+
+        _mockRankingsModule.Verify(x => x.SaveSnapshotAsync(rankings, RatingAlgorithmVersion.V2), Times.Once);
     }
 
     [Fact]

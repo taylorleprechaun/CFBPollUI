@@ -125,13 +125,14 @@ public class AdminModule : IAdminModule
         await RefreshSeasonCacheAsync(season, week).ConfigureAwait(false);
 
         var seasonData = await _dataService.GetSeasonDataAsync(season, week).ConfigureAwait(false);
-        var ratings = await _ratingAlgorithmResolver.ResolveForSeason(season).RateTeamsAsync(seasonData).ConfigureAwait(false);
+        var algorithmVersion = _ratingAlgorithmResolver.ResolveVersionForSeason(season);
+        var ratings = await _ratingAlgorithmResolver.Resolve(algorithmVersion).RateTeamsAsync(seasonData).ConfigureAwait(false);
         var rankings = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings).ConfigureAwait(false);
 
         var persisted = true;
         try
         {
-            await _rankingsModule.SaveSnapshotAsync(rankings).ConfigureAwait(false);
+            await _rankingsModule.SaveSnapshotAsync(rankings, algorithmVersion).ConfigureAwait(false);
             _logger.LogInformation("Saved draft snapshot for season {Season}, week {Week}", season, week);
 
             await _pollLeadersModule.InvalidateCacheAsync().ConfigureAwait(false);

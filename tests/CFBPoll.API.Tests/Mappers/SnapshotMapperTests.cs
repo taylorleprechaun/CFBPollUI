@@ -11,6 +11,7 @@ public class SnapshotMapperTests
     {
         var summary = new SnapshotSummary
         {
+            AlgorithmVersion = RatingAlgorithmVersion.V1,
             CreatedAt = new DateTime(2024, 9, 1, 12, 0, 0, DateTimeKind.Utc),
             IsPublished = true,
             Season = 2024,
@@ -19,6 +20,7 @@ public class SnapshotMapperTests
 
         var result = SnapshotMapper.ToDTO(summary);
 
+        Assert.Equal("V1", result.AlgorithmVersion);
         Assert.Equal(new DateTime(2024, 9, 1, 12, 0, 0, DateTimeKind.Utc), result.CreatedAt);
         Assert.True(result.IsPublished);
         Assert.Equal(2024, result.Season);
@@ -36,6 +38,7 @@ public class SnapshotMapperTests
     {
         var summary = new SnapshotSummary
         {
+            AlgorithmVersion = RatingAlgorithmVersion.V1,
             CreatedAt = new DateTime(2024, 9, 8, 12, 0, 0, DateTimeKind.Utc),
             IsPublished = false,
             Season = 2024,
@@ -45,5 +48,22 @@ public class SnapshotMapperTests
         var result = SnapshotMapper.ToDTO(summary);
 
         Assert.False(result.IsPublished);
+    }
+
+    [Fact]
+    public void ToDTO_V2Snapshot_MapsAlgorithmVersionString()
+    {
+        var summary = new SnapshotSummary
+        {
+            AlgorithmVersion = RatingAlgorithmVersion.V2,
+            CreatedAt = new DateTime(2024, 9, 8, 12, 0, 0, DateTimeKind.Utc),
+            IsPublished = false,
+            Season = 2025,
+            Week = 1
+        };
+
+        var result = SnapshotMapper.ToDTO(summary);
+
+        Assert.Equal("V2", result.AlgorithmVersion);
     }
 }

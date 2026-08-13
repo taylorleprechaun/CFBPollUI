@@ -105,7 +105,7 @@ public class RankingsControllerTests
 
         await _controller.GetRankings(2023, 5);
 
-        _mockRankingsModule.Verify(x => x.SaveSnapshotAsync(It.IsAny<RankingsResult>()), Times.Never);
+        _mockRankingsModule.Verify(x => x.SaveSnapshotAsync(It.IsAny<RankingsResult>(), It.IsAny<RatingAlgorithmVersion>()), Times.Never);
         _mockRankingsModule.Verify(x => x.PublishSnapshotAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
     }
 

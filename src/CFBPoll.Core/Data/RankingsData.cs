@@ -155,7 +155,7 @@ public class RankingsData : IRankingsData
         await connection.OpenAsync().ConfigureAwait(false);
 
         await using var command = connection.CreateCommand();
-        command.CommandText = "SELECT Season, Week, Published, CreatedAt FROM RankingsSnapshot ORDER BY Season DESC, Week DESC";
+        command.CommandText = "SELECT Season, Week, Published, CreatedAt, AlgorithmVersion FROM RankingsSnapshot ORDER BY Season DESC, Week DESC";
 
         await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
         List<SnapshotSummary> results = [];
@@ -167,7 +167,8 @@ public class RankingsData : IRankingsData
                 Season = reader.GetInt32(0),
                 Week = reader.GetInt32(1),
                 IsPublished = reader.GetInt32(2) == 1,
-                CreatedAt = DateTime.Parse(reader.GetString(3))
+                CreatedAt = DateTime.Parse(reader.GetString(3)),
+                AlgorithmVersion = Enum.Parse<RatingAlgorithmVersion>(reader.GetString(4))
             });
         }
 
@@ -195,6 +196,8 @@ public class RankingsData : IRankingsData
 
         await command.ExecuteNonQueryAsync().ConfigureAwait(false);
 
+        await TryAddColumnAsync(connection, "AlgorithmVersion TEXT NOT NULL DEFAULT 'V1'").ConfigureAwait(false);
+
         _logger.LogInformation("Database initialized");
     }
 
@@ -216,7 +219,7 @@ public class RankingsData : IRankingsData
         return rowsAffected > 0;
     }
 
-    public async Task<bool> SaveSnapshotAsync(RankingsResult rankings)
+    public async Task<bool> SaveSnapshotAsync(RankingsResult rankings, RatingAlgorithmVersion algorithmVersion)
     {
         ArgumentNullException.ThrowIfNull(rankings);
 
@@ -227,13 +230,14 @@ public class RankingsData : IRankingsData
 
         await using var command = connection.CreateCommand();
         command.CommandText = """
-            INSERT OR REPLACE INTO RankingsSnapshot (Season, Week, RankingsJson, Published, CreatedAt)
-            VALUES (@Season, @Week, @RankingsJson, 0, @CreatedAt)
+            INSERT OR REPLACE INTO RankingsSnapshot (Season, Week, RankingsJson, Published, CreatedAt, AlgorithmVersion)
+            VALUES (@Season, @Week, @RankingsJson, 0, @CreatedAt, @AlgorithmVersion)
             """;
         command.Parameters.AddWithValue("@Season", rankings.Season);
         command.Parameters.AddWithValue("@Week", rankings.Week);
         command.Parameters.AddWithValue("@RankingsJson", json);
         command.Parameters.AddWithValue("@CreatedAt", DateTime.UtcNow.ToString("o"));
+        command.Parameters.AddWithValue("@AlgorithmVersion", algorithmVersion.ToString());
 
         var rowsAffected = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
 
@@ -255,6 +259,24 @@ public class RankingsData : IRankingsData
         {
             Directory.CreateDirectory(directory);
             _logger.LogInformation("Created database directory: {Directory}", directory);
+        }
+    }
+
+    /// <summary>
+    /// Adds a new column to the rankings table if it does not already exist.
+    /// This is the de facto migration mechanism for this table since it has no separate migrations folder.
+    /// </summary>
+    private static async Task TryAddColumnAsync(SqliteConnection connection, string columnDefinition)
+    {
+        try
+        {
+            await using var alterCommand = connection.CreateCommand();
+            alterCommand.CommandText = $"ALTER TABLE RankingsSnapshot ADD COLUMN {columnDefinition}";
+            await alterCommand.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
+        catch (SqliteException)
+        {
+            // Column already exists — safe to ignore
         }
     }
 }
