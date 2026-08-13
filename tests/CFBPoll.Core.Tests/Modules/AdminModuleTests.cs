@@ -66,6 +66,44 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task CalculateExperimentalAsync_BypassesSeasonDefaultVersion()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+        var mockV2 = new Mock<IRatingModule>();
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankings);
+        mockV2.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockRatingAlgorithmResolver.Setup(x => x.Resolve(RatingAlgorithmVersion.V2)).Returns(mockV2.Object);
+        _mockRatingAlgorithmResolver.Setup(x => x.ResolveVersionForSeason(2024)).Returns(RatingAlgorithmVersion.V1);
+
+        var result = await _adminModule.CalculateExperimentalAsync(2024, 5, RatingAlgorithmVersion.V2);
+
+        Assert.Equal(RatingAlgorithmVersion.V2, result.AlgorithmVersion);
+        mockV2.Verify(x => x.RateTeamsAsync(seasonData), Times.Once);
+        _mockRatingModule.Verify(x => x.RateTeamsAsync(It.IsAny<SeasonData>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalAsync_NeverPersistsSnapshot()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankings);
+
+        await _adminModule.CalculateExperimentalAsync(2024, 5, RatingAlgorithmVersion.V1);
+
+        _mockRankingsModule.Verify(
+            x => x.SaveSnapshotAsync(It.IsAny<RankingsResult>(), It.IsAny<RatingAlgorithmVersion>()), Times.Never);
+    }
+
+    [Fact]
     public async Task CalculatePredictionsAsync_CallsServicesInOrder()
     {
         var fbsTeams = new Dictionary<string, TeamInfo>
@@ -854,6 +892,42 @@ public class AdminModuleTests
         await _adminModule.DeleteSnapshotAsync(2024, 5);
 
         _mockSeasonTrendsModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExportExperimentalAsync_GeneratesWorkbookFromComputedRankings()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+        var workbookBytes = new byte[] { 1, 2, 3 };
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankings);
+        _mockExcelExportModule.Setup(x => x.GenerateRankingsWorkbook(rankings)).Returns(workbookBytes);
+
+        var result = await _adminModule.ExportExperimentalAsync(2024, 5, RatingAlgorithmVersion.V1);
+
+        Assert.Same(workbookBytes, result);
+    }
+
+    [Fact]
+    public async Task ExportExperimentalAsync_NeverPersistsSnapshot()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankings);
+        _mockExcelExportModule.Setup(x => x.GenerateRankingsWorkbook(rankings)).Returns([1]);
+
+        await _adminModule.ExportExperimentalAsync(2024, 5, RatingAlgorithmVersion.V1);
+
+        _mockRankingsModule.Verify(
+            x => x.SaveSnapshotAsync(It.IsAny<RankingsResult>(), It.IsAny<RatingAlgorithmVersion>()), Times.Never);
     }
 
     [Fact]

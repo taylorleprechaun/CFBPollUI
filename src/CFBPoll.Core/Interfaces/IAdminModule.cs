@@ -8,6 +8,13 @@ namespace CFBPoll.Core.Interfaces;
 public interface IAdminModule
 {
     /// <summary>
+    /// Calculates rankings for the given season and week using an explicitly chosen algorithm
+    /// version, without persisting or publishing anything. Intended for previewing how a candidate
+    /// algorithm would score a historical or current week before it becomes the season default.
+    /// </summary>
+    Task<ExperimentalCalculateResult> CalculateExperimentalAsync(int season, int week, RatingAlgorithmVersion algorithmVersion);
+
+    /// <summary>
     /// Calculates predictions for the given season and week and saves as a draft.
     /// </summary>
     Task<CalculatePredictionsResult> CalculatePredictionsAsync(int season, int week);
@@ -26,6 +33,12 @@ public interface IAdminModule
     /// Deletes a snapshot for the given season and week.
     /// </summary>
     Task<bool> DeleteSnapshotAsync(int season, int week);
+
+    /// <summary>
+    /// Generates an Excel export of rankings for the given season and week using an explicitly
+    /// chosen algorithm version, without persisting or publishing anything.
+    /// </summary>
+    Task<byte[]> ExportExperimentalAsync(int season, int week, RatingAlgorithmVersion algorithmVersion);
 
     /// <summary>
     /// Generates an Excel export of rankings for the given season and week.

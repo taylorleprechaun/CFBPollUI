@@ -51,6 +51,23 @@ public class AdminModule : IAdminModule
         _trackRecordModule = trackRecordModule ?? throw new ArgumentNullException(nameof(trackRecordModule));
     }
 
+    public async Task<ExperimentalCalculateResult> CalculateExperimentalAsync(int season, int week, RatingAlgorithmVersion algorithmVersion)
+    {
+        _logger.LogInformation(
+            "Calculating experimental rankings for season {Season}, week {Week} using algorithm version {AlgorithmVersion}",
+            season, week, algorithmVersion);
+
+        var seasonData = await _dataService.GetSeasonDataAsync(season, week).ConfigureAwait(false);
+        var ratings = await _ratingAlgorithmResolver.Resolve(algorithmVersion).RateTeamsAsync(seasonData).ConfigureAwait(false);
+        var rankings = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings).ConfigureAwait(false);
+
+        return new ExperimentalCalculateResult
+        {
+            AlgorithmVersion = algorithmVersion,
+            Rankings = rankings
+        };
+    }
+
     public async Task<CalculatePredictionsResult> CalculatePredictionsAsync(int season, int week)
     {
         _logger.LogInformation("Calculating predictions for season {Season}, week {Week}", season, week);
@@ -179,6 +196,17 @@ public class AdminModule : IAdminModule
         }
 
         return result;
+    }
+
+    public async Task<byte[]> ExportExperimentalAsync(int season, int week, RatingAlgorithmVersion algorithmVersion)
+    {
+        _logger.LogInformation(
+            "Exporting experimental rankings for season {Season}, week {Week} using algorithm version {AlgorithmVersion}",
+            season, week, algorithmVersion);
+
+        var result = await CalculateExperimentalAsync(season, week, algorithmVersion).ConfigureAwait(false);
+
+        return _excelExportModule.GenerateRankingsWorkbook(result.Rankings);
     }
 
     public async Task<byte[]?> ExportRankingsAsync(int season, int week)
