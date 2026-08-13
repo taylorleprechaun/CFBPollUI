@@ -11,6 +11,7 @@ public static class SnapshotMapper
 
         return new SnapshotDTO
         {
+            AlgorithmVersion = summary.AlgorithmVersion.ToString(),
             CreatedAt = summary.CreatedAt,
             IsPublished = summary.IsPublished,
             Season = summary.Season,

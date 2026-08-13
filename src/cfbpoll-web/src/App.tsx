@@ -6,6 +6,7 @@ import { Layout } from './components/layout/layout';
 import { usePageVisibility } from './hooks/use-page-visibility';
 
 const AllTimePage = lazy(() => import('./pages/all-time-page'));
+const ExperimentalPage = lazy(() => import('./pages/experimental-page'));
 const HomePage = lazy(() => import('./pages/home-page'));
 const LoginPage = lazy(() => import('./pages/login-page'));
 const PollLeadersPage = lazy(() => import('./pages/poll-leaders-page'));
@@ -82,6 +83,9 @@ function App() {
           } />
           <Route path="admin/predictions" element={
             <LazyPage><PredictionsPage /></LazyPage>
+          } />
+          <Route path="admin/experimental" element={
+            <LazyPage><ExperimentalPage /></LazyPage>
           } />
           <Route path="admin/settings" element={
             <LazyPage><SettingsPage /></LazyPage>

@@ -36,7 +36,7 @@ public class RankingsDataTests
         {
             await data.InitializeAsync();
 
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 5));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 5), RatingAlgorithmVersion.V1);
             var deleted = await data.DeleteSnapshotAsync(2024, 5);
 
             Assert.True(deleted);
@@ -76,9 +76,9 @@ public class RankingsDataTests
         {
             await data.InitializeAsync();
 
-            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 15, "Alabama"));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 15, "Alabama"), RatingAlgorithmVersion.V1);
             await data.PublishSnapshotAsync(2023, 15);
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1, "Florida"));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1, "Florida"), RatingAlgorithmVersion.V1);
             await data.PublishSnapshotAsync(2024, 1);
 
             var result = await data.GetPreviousPublishedSnapshotAsync(2024, 1);
@@ -99,7 +99,7 @@ public class RankingsDataTests
         {
             await data.InitializeAsync();
 
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1, "USC"));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1, "USC"), RatingAlgorithmVersion.V1);
             await data.PublishSnapshotAsync(2024, 1);
 
             var result = await data.GetPreviousPublishedSnapshotAsync(2024, 1);
@@ -120,7 +120,7 @@ public class RankingsDataTests
         {
             await data.InitializeAsync();
 
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1, "Notre Dame"));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1, "Notre Dame"), RatingAlgorithmVersion.V1);
 
             var result = await data.GetPreviousPublishedSnapshotAsync(2024, 2);
 
@@ -140,11 +140,11 @@ public class RankingsDataTests
         {
             await data.InitializeAsync();
 
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1, "Nebraska"));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1, "Nebraska"), RatingAlgorithmVersion.V1);
             await data.PublishSnapshotAsync(2024, 1);
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 2, "Oklahoma"));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 2, "Oklahoma"), RatingAlgorithmVersion.V1);
             await data.PublishSnapshotAsync(2024, 2);
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 3, "Texas"));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 3, "Texas"), RatingAlgorithmVersion.V1);
             await data.PublishSnapshotAsync(2024, 3);
 
             var result = await data.GetPreviousPublishedSnapshotAsync(2024, 3);
@@ -168,10 +168,10 @@ public class RankingsDataTests
         {
             await data.InitializeAsync();
 
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1, "Iowa"));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1, "Iowa"), RatingAlgorithmVersion.V1);
             await data.PublishSnapshotAsync(2024, 1);
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 2, "Michigan"));
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 3, "Ohio State"));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 2, "Michigan"), RatingAlgorithmVersion.V1);
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 3, "Ohio State"), RatingAlgorithmVersion.V1);
             await data.PublishSnapshotAsync(2024, 3);
 
             var result = await data.GetPreviousPublishedSnapshotAsync(2024, 3);
@@ -194,7 +194,7 @@ public class RankingsDataTests
         {
             await data.InitializeAsync();
 
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 5));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 5), RatingAlgorithmVersion.V1);
 
             var result = await data.GetPublishedSnapshotAsync(2024, 5);
             Assert.Null(result);
@@ -213,7 +213,7 @@ public class RankingsDataTests
         {
             await data.InitializeAsync();
 
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 5));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 5), RatingAlgorithmVersion.V1);
             await data.PublishSnapshotAsync(2024, 5);
 
             var result = await data.GetPublishedSnapshotAsync(2024, 5);
@@ -236,9 +236,9 @@ public class RankingsDataTests
         {
             await data.InitializeAsync();
 
-            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 1, "Alabama"));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 1, "Alabama"), RatingAlgorithmVersion.V1);
             await data.PublishSnapshotAsync(2023, 1);
-            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 2, "Ohio State"));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 2, "Ohio State"), RatingAlgorithmVersion.V1);
 
             var results = (await data.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2023)).ToList();
 
@@ -259,11 +259,11 @@ public class RankingsDataTests
         {
             await data.InitializeAsync();
 
-            await data.SaveSnapshotAsync(CreateRankingsResult(2021, 1, "Alabama"));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2021, 1, "Alabama"), RatingAlgorithmVersion.V1);
             await data.PublishSnapshotAsync(2021, 1);
-            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 1, "Ohio State"));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 1, "Ohio State"), RatingAlgorithmVersion.V1);
             await data.PublishSnapshotAsync(2023, 1);
-            await data.SaveSnapshotAsync(CreateRankingsResult(2025, 1, "Michigan"));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2025, 1, "Michigan"), RatingAlgorithmVersion.V1);
             await data.PublishSnapshotAsync(2025, 1);
 
             var results = (await data.GetPublishedSnapshotsBySeasonRangeAsync(2022, 2024)).ToList();
@@ -285,7 +285,7 @@ public class RankingsDataTests
         {
             await data.InitializeAsync();
 
-            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 1));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 1), RatingAlgorithmVersion.V1);
 
             var results = (await data.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2023)).ToList();
 
@@ -305,11 +305,11 @@ public class RankingsDataTests
         {
             await data.InitializeAsync();
 
-            await data.SaveSnapshotAsync(CreateRankingsResult(2022, 1, "Alabama"));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2022, 1, "Alabama"), RatingAlgorithmVersion.V1);
             await data.PublishSnapshotAsync(2022, 1);
-            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 3, "Ohio State"));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 3, "Ohio State"), RatingAlgorithmVersion.V1);
             await data.PublishSnapshotAsync(2023, 3);
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 5, "Michigan"));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 5, "Michigan"), RatingAlgorithmVersion.V1);
             await data.PublishSnapshotAsync(2024, 5);
 
             var results = (await data.GetPublishedSnapshotsBySeasonRangeAsync(2022, 2024)).ToList();
@@ -333,8 +333,8 @@ public class RankingsDataTests
         {
             await data.InitializeAsync();
 
-            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 1));
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 1), RatingAlgorithmVersion.V1);
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1), RatingAlgorithmVersion.V1);
             await data.PublishSnapshotAsync(2023, 1);
             await data.PublishSnapshotAsync(2024, 1);
 
@@ -357,9 +357,9 @@ public class RankingsDataTests
         {
             await data.InitializeAsync();
 
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1));
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 2));
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 3));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1), RatingAlgorithmVersion.V1);
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 2), RatingAlgorithmVersion.V1);
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 3), RatingAlgorithmVersion.V1);
             await data.PublishSnapshotAsync(2024, 1);
             await data.PublishSnapshotAsync(2024, 3);
 
@@ -402,9 +402,9 @@ public class RankingsDataTests
         {
             await data.InitializeAsync();
 
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1));
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 2));
-            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 5));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1), RatingAlgorithmVersion.V1);
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 2), RatingAlgorithmVersion.V1);
+            await data.SaveSnapshotAsync(CreateRankingsResult(2023, 5), RatingAlgorithmVersion.V1);
             await data.PublishSnapshotAsync(2024, 1);
 
             var weeks = (await data.GetSnapshotsAsync()).ToList();
@@ -413,6 +413,48 @@ public class RankingsDataTests
             Assert.Contains(weeks, w => w.Season == 2024 && w.Week == 1 && w.IsPublished);
             Assert.Contains(weeks, w => w.Season == 2024 && w.Week == 2 && !w.IsPublished);
             Assert.Contains(weeks, w => w.Season == 2023 && w.Week == 5 && !w.IsPublished);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetSnapshotsAsync_ReturnsCorrectAlgorithmVersion()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 1), RatingAlgorithmVersion.V1);
+            await data.SaveSnapshotAsync(CreateRankingsResult(2025, 1), RatingAlgorithmVersion.V2);
+
+            var weeks = (await data.GetSnapshotsAsync()).ToList();
+
+            Assert.Contains(weeks, w => w.Season == 2024 && w.AlgorithmVersion == RatingAlgorithmVersion.V1);
+            Assert.Contains(weeks, w => w.Season == 2025 && w.AlgorithmVersion == RatingAlgorithmVersion.V2);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task InitializeAsync_CalledTwice_DoesNotThrow()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+            await data.InitializeAsync();
+
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 5), RatingAlgorithmVersion.V1);
+            var result = await data.GetSnapshotAsync(2024, 5);
+
+            Assert.NotNull(result);
         }
         finally
         {
@@ -468,7 +510,7 @@ public class RankingsDataTests
         {
             await data.InitializeAsync();
 
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 5));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 5), RatingAlgorithmVersion.V1);
             var published = await data.PublishSnapshotAsync(2024, 5);
 
             Assert.True(published);
@@ -491,7 +533,7 @@ public class RankingsDataTests
             await data.InitializeAsync();
 
             var rankings = CreateRankingsResult(2024, 5);
-            await data.SaveSnapshotAsync(rankings);
+            await data.SaveSnapshotAsync(rankings, RatingAlgorithmVersion.V1);
 
             var result = await data.GetSnapshotAsync(2024, 5);
 
@@ -516,10 +558,10 @@ public class RankingsDataTests
             await data.InitializeAsync();
 
             var original = CreateRankingsResult(2024, 5, "Team A");
-            await data.SaveSnapshotAsync(original);
+            await data.SaveSnapshotAsync(original, RatingAlgorithmVersion.V1);
 
             var replacement = CreateRankingsResult(2024, 5, "Team B");
-            await data.SaveSnapshotAsync(replacement);
+            await data.SaveSnapshotAsync(replacement, RatingAlgorithmVersion.V1);
 
             var result = await data.GetSnapshotAsync(2024, 5);
 
@@ -540,10 +582,10 @@ public class RankingsDataTests
         {
             await data.InitializeAsync();
 
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 5));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 5), RatingAlgorithmVersion.V1);
             await data.PublishSnapshotAsync(2024, 5);
 
-            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 5));
+            await data.SaveSnapshotAsync(CreateRankingsResult(2024, 5), RatingAlgorithmVersion.V1);
 
             var published = await data.GetPublishedSnapshotAsync(2024, 5);
             Assert.Null(published);
@@ -561,7 +603,7 @@ public class RankingsDataTests
         try
         {
             await data.InitializeAsync();
-            await Assert.ThrowsAsync<ArgumentNullException>(() => data.SaveSnapshotAsync(null!));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => data.SaveSnapshotAsync(null!, RatingAlgorithmVersion.V1));
         }
         finally
         {

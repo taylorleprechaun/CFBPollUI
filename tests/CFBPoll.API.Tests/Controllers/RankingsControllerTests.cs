@@ -15,6 +15,7 @@ public class RankingsControllerTests
     private readonly Mock<ICFBDataService> _mockDataService;
     private readonly Mock<ILogger<RankingsController>> _mockLogger;
     private readonly Mock<IRankingsModule> _mockRankingsModule;
+    private readonly Mock<IRatingAlgorithmResolver> _mockRatingAlgorithmResolver;
     private readonly Mock<IRatingModule> _mockRatingModule;
 
     public RankingsControllerTests()
@@ -23,11 +24,13 @@ public class RankingsControllerTests
         _mockLogger = new Mock<ILogger<RankingsController>>();
         _mockRankingsModule = new Mock<IRankingsModule>();
         _mockRatingModule = new Mock<IRatingModule>();
+        _mockRatingAlgorithmResolver = new Mock<IRatingAlgorithmResolver>();
+        _mockRatingAlgorithmResolver.Setup(x => x.ResolveForSeason(It.IsAny<int>())).Returns(_mockRatingModule.Object);
 
         _controller = new RankingsController(
             _mockDataService.Object,
             _mockRankingsModule.Object,
-            _mockRatingModule.Object,
+            _mockRatingAlgorithmResolver.Object,
             _mockLogger.Object);
     }
 
@@ -38,7 +41,7 @@ public class RankingsControllerTests
             () => new RankingsController(
                 null!,
                 new Mock<IRankingsModule>().Object,
-                new Mock<IRatingModule>().Object,
+                new Mock<IRatingAlgorithmResolver>().Object,
                 new Mock<ILogger<RankingsController>>().Object));
     }
 
@@ -49,7 +52,7 @@ public class RankingsControllerTests
             () => new RankingsController(
                 new Mock<ICFBDataService>().Object,
                 new Mock<IRankingsModule>().Object,
-                new Mock<IRatingModule>().Object,
+                new Mock<IRatingAlgorithmResolver>().Object,
                 null!));
     }
 
@@ -60,12 +63,12 @@ public class RankingsControllerTests
             () => new RankingsController(
                 new Mock<ICFBDataService>().Object,
                 null!,
-                new Mock<IRatingModule>().Object,
+                new Mock<IRatingAlgorithmResolver>().Object,
                 new Mock<ILogger<RankingsController>>().Object));
     }
 
     [Fact]
-    public void Constructor_NullRatingModule_ThrowsArgumentNullException()
+    public void Constructor_NullRatingAlgorithmResolver_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
             () => new RankingsController(
@@ -102,7 +105,7 @@ public class RankingsControllerTests
 
         await _controller.GetRankings(2023, 5);
 
-        _mockRankingsModule.Verify(x => x.SaveSnapshotAsync(It.IsAny<RankingsResult>()), Times.Never);
+        _mockRankingsModule.Verify(x => x.SaveSnapshotAsync(It.IsAny<RankingsResult>(), It.IsAny<RatingAlgorithmVersion>()), Times.Never);
         _mockRankingsModule.Verify(x => x.PublishSnapshotAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
     }
 

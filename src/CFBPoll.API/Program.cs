@@ -45,7 +45,9 @@ try
 
     builder.Services.AddDatabase(builder.Configuration);
     builder.Services.AddCFBDataServiceWithCaching(builder.Configuration);
-    builder.Services.AddSingleton<IRatingModule, RatingModule>();
+    builder.Services.AddSingleton<RatingModule>();
+    builder.Services.AddSingleton<RatingModuleV2>();
+    builder.Services.AddSingleton<IRatingAlgorithmResolver, RatingAlgorithmResolver>();
     builder.Services.AddRankingsModule();
     builder.Services.AddSingleton<ISeasonModule, SeasonModule>();
     builder.Services.AddSingleton<IConferenceModule, ConferenceModule>();

@@ -137,11 +137,11 @@ public class RankingsModule : IRankingsModule
         return await _rankingsData.PublishSnapshotAsync(season, week).ConfigureAwait(false);
     }
 
-    public async Task<bool> SaveSnapshotAsync(RankingsResult rankings)
+    public async Task<bool> SaveSnapshotAsync(RankingsResult rankings, RatingAlgorithmVersion algorithmVersion)
     {
         ArgumentNullException.ThrowIfNull(rankings);
 
-        return await _rankingsData.SaveSnapshotAsync(rankings).ConfigureAwait(false);
+        return await _rankingsData.SaveSnapshotAsync(rankings, algorithmVersion).ConfigureAwait(false);
     }
 
     private TeamDetails CalculateTeamDetails(

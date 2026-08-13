@@ -53,7 +53,7 @@ public interface IRankingsData
     Task<bool> PublishSnapshotAsync(int season, int week);
 
     /// <summary>
-    /// Saves a rankings result as a draft snapshot.
+    /// Saves a rankings result as a draft snapshot, tagged with the algorithm version that produced it.
     /// </summary>
-    Task<bool> SaveSnapshotAsync(RankingsResult rankings);
+    Task<bool> SaveSnapshotAsync(RankingsResult rankings, RatingAlgorithmVersion algorithmVersion);
 }

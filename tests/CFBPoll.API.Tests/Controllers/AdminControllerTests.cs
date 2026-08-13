@@ -26,6 +26,30 @@ public class AdminControllerTests
     }
 
     [Fact]
+    public async Task CalculateExperimental_ReturnsRankings()
+    {
+        var rankedTeam = new RankedTeam { TeamName = "Ohio State", Rank = 1, Rating = 90, Details = new TeamDetails() };
+        var experimentalResult = new ExperimentalCalculateResult
+        {
+            AlgorithmVersion = RatingAlgorithmVersion.V2,
+            Rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [rankedTeam] }
+        };
+
+        _mockAdminModule
+            .Setup(x => x.CalculateExperimentalAsync(2024, 5, RatingAlgorithmVersion.V2))
+            .ReturnsAsync(experimentalResult);
+
+        var result = await _controller.CalculateExperimental(2024, 5, RatingAlgorithmVersion.V2);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<ExperimentalCalculateResponseDTO>(okResult.Value);
+        Assert.Equal("V2", response.AlgorithmVersion);
+        Assert.Equal(2024, response.Rankings.Season);
+        var team = Assert.Single(response.Rankings.Rankings);
+        Assert.Equal("Ohio State", team.TeamName);
+    }
+
+    [Fact]
     public async Task CalculatePredictions_ReturnsPredictions()
     {
         var calculateResult = new CalculatePredictionsResult
@@ -160,6 +184,20 @@ public class AdminControllerTests
         var result = await _controller.Delete(2024, 5);
 
         Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task ExportExperimental_ReturnsFile()
+    {
+        _mockAdminModule
+            .Setup(x => x.ExportExperimentalAsync(2024, 5, RatingAlgorithmVersion.V2))
+            .ReturnsAsync(new byte[] { 1, 2, 3 });
+
+        var result = await _controller.ExportExperimental(2024, 5, RatingAlgorithmVersion.V2);
+
+        var fileResult = Assert.IsType<FileContentResult>(result);
+        Assert.Equal("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileResult.ContentType);
+        Assert.Equal("Rankings_Experimental_V2_2024_Week5.xlsx", fileResult.FileDownloadName);
     }
 
     [Fact]
