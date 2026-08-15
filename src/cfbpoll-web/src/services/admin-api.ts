@@ -98,7 +98,7 @@ export async function downloadExperimentalExport(
   );
 
   const blob = await response.blob();
-  triggerBlobDownload(blob, `Rankings_Experimental_${algorithmVersion}_${season}_Week${week}.xlsx`);
+  triggerBlobDownload(blob, `Rankings_Experimental_${algorithmVersion}_${season}_Week${week + 1}.xlsx`);
 }
 
 export async function downloadExport(
@@ -112,7 +112,7 @@ export async function downloadExport(
   );
 
   const blob = await response.blob();
-  triggerBlobDownload(blob, `Rankings_${season}_Week${week}.xlsx`);
+  triggerBlobDownload(blob, `Rankings_${season}_Week${week + 1}.xlsx`);
 }
 
 export async function fetchPrediction(

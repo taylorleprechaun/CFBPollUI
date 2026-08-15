@@ -231,6 +231,43 @@ public class CFBDataService : ICFBDataService
         }
     }
 
+    public async Task<IEnumerable<GameTeamStats>> GetGameTeamStatsAsync(int season, string seasonType)
+    {
+        try
+        {
+            var games = await GetGamesAsync(season, seasonType);
+            var weeks = games
+                .Where(g => g.Week.HasValue)
+                .Select(g => g.Week!.Value)
+                .Distinct();
+
+            var seasonTypeEnum = seasonType.Equals("regular", _scoic)
+                ? ApiModels.SeasonType.Regular
+                : ApiModels.SeasonType.Postseason;
+
+            var results = new List<GameTeamStats>();
+            foreach (var week in weeks)
+            {
+                var response = await _client.Games.Teams.GetAsync(config =>
+                {
+                    config.QueryParameters.Year = season;
+                    config.QueryParameters.Week = week;
+                    config.QueryParameters.SeasonTypeAsSeasonType = seasonTypeEnum;
+                });
+
+                if (response is not null)
+                    results.AddRange(response.SelectMany(MapGameTeamStats));
+            }
+
+            return results;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to fetch game team stats for season {Season}, type {SeasonType}", season, seasonType);
+            return [];
+        }
+    }
+
     public async Task<int> GetMaxSeasonYearAsync()
     {
         var currentYear = DateTime.UtcNow.Year;
@@ -572,6 +609,29 @@ public class CFBDataService : ICFBDataService
         };
     }
 
+    private IEnumerable<GameTeamStats> MapGameTeamStats(ApiModels.GameTeamStats game)
+    {
+        return (game.Teams ?? [])
+            .Where(t => !string.IsNullOrEmpty(t.Team))
+            .Select(t => new GameTeamStats
+            {
+                GameID = game.Id,
+                Stats = MapGameTeamStatValues(t.Stats),
+                Team = t.Team
+            });
+    }
+
+    private IEnumerable<TeamStat> MapGameTeamStatValues(IEnumerable<ApiModels.GameTeamStatsTeamStat>? stats)
+    {
+        return (stats ?? [])
+            .Where(s => !string.IsNullOrEmpty(s.Category))
+            .Select(s => new TeamStat
+            {
+                StatName = s.Category!,
+                StatValue = ParseGameStatValue(s.Stat)
+            });
+    }
+
     private ScheduleGame MapScheduleGame(ApiModels.Game g, string seasonType)
     {
         return new ScheduleGame
@@ -611,6 +671,14 @@ public class CFBDataService : ICFBDataService
                     }
                 }),
                 StringComparer.OrdinalIgnoreCase);
+    }
+
+    private StatValue ParseGameStatValue(string? rawValue)
+    {
+        if (double.TryParse(rawValue, out var doubleValue))
+            return new StatValue { Double = doubleValue };
+
+        return new StatValue { String = rawValue };
     }
 }
 

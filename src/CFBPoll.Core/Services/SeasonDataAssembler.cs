@@ -14,6 +14,8 @@ public static class SeasonDataAssembler
         IEnumerable<Game> postseasonGames,
         IEnumerable<AdvancedGameStats> regularAdvancedStats,
         IEnumerable<AdvancedGameStats> postseasonAdvancedStats,
+        IEnumerable<GameTeamStats> regularGameTeamStats,
+        IEnumerable<GameTeamStats> postseasonGameTeamStats,
         IDictionary<string, IEnumerable<TeamStat>> seasonStats)
     {
         ArgumentNullException.ThrowIfNull(teams);
@@ -21,6 +23,8 @@ public static class SeasonDataAssembler
         ArgumentNullException.ThrowIfNull(postseasonGames);
         ArgumentNullException.ThrowIfNull(regularAdvancedStats);
         ArgumentNullException.ThrowIfNull(postseasonAdvancedStats);
+        ArgumentNullException.ThrowIfNull(regularGameTeamStats);
+        ArgumentNullException.ThrowIfNull(postseasonGameTeamStats);
         ArgumentNullException.ThrowIfNull(seasonStats);
 
         var maxRegularWeek = regularGames
@@ -30,7 +34,8 @@ public static class SeasonDataAssembler
             .Max();
 
         var filteredGames = FilterGamesToWeek(regularGames, postseasonGames, week, maxRegularWeek);
-        var gamesWithStats = AttachAdvancedStats(filteredGames, regularAdvancedStats, postseasonAdvancedStats, week, maxRegularWeek);
+        var gamesWithAdvancedStats = AttachAdvancedStats(filteredGames, regularAdvancedStats, postseasonAdvancedStats, week, maxRegularWeek);
+        var gamesWithStats = AttachGameTeamStats(gamesWithAdvancedStats, regularGameTeamStats, postseasonGameTeamStats, week, maxRegularWeek);
         var teamDict = BuildTeamDictionary(teams, gamesWithStats, seasonStats);
 
         return new SeasonData
@@ -88,6 +93,39 @@ public static class SeasonDataAssembler
         }
 
         return result;
+    }
+
+    public static IEnumerable<Game> AttachGameTeamStats(
+        IEnumerable<Game> games,
+        IEnumerable<GameTeamStats> regularGameTeamStats,
+        IEnumerable<GameTeamStats> postseasonGameTeamStats,
+        int week,
+        int maxRegularWeek)
+    {
+        var includePostseason = week > maxRegularWeek;
+
+        var gameTeamStatsLookup = regularGameTeamStats
+            .Concat(includePostseason ? postseasonGameTeamStats : [])
+            .Where(s => s.GameID.HasValue && !string.IsNullOrEmpty(s.Team))
+            .ToDictionary(s => (s.Team!, s.GameID!.Value), s => s.Stats);
+
+        foreach (var game in games)
+        {
+            if (!game.GameID.HasValue)
+                continue;
+
+            if (gameTeamStatsLookup.TryGetValue((game.HomeTeam ?? string.Empty, game.GameID.Value), out var homeStats))
+            {
+                game.HomeGameStats = homeStats;
+            }
+
+            if (gameTeamStatsLookup.TryGetValue((game.AwayTeam ?? string.Empty, game.GameID.Value), out var awayStats))
+            {
+                game.AwayGameStats = awayStats;
+            }
+        }
+
+        return games;
     }
 
     public static IDictionary<string, TeamInfo> BuildTeamDictionary(

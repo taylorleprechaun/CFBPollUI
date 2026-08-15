@@ -197,7 +197,7 @@ public class AdminControllerTests
 
         var fileResult = Assert.IsType<FileContentResult>(result);
         Assert.Equal("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileResult.ContentType);
-        Assert.Equal("Rankings_Experimental_V2_2024_Week5.xlsx", fileResult.FileDownloadName);
+        Assert.Equal("Rankings_Experimental_V2_2024_Week6.xlsx", fileResult.FileDownloadName);
     }
 
     [Fact]
@@ -211,7 +211,7 @@ public class AdminControllerTests
 
         var fileResult = Assert.IsType<FileContentResult>(result);
         Assert.Equal("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileResult.ContentType);
-        Assert.Equal("Rankings_2024_Week5.xlsx", fileResult.FileDownloadName);
+        Assert.Equal("Rankings_2024_Week6.xlsx", fileResult.FileDownloadName);
     }
 
     [Fact]

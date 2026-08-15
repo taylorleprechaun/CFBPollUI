@@ -251,13 +251,14 @@ describe('Admin API service', () => {
       vi.stubGlobal('URL', { createObjectURL: mockCreateObjectURL, revokeObjectURL: mockRevokeObjectURL });
 
       const mockClick = vi.fn();
-      const mockAppendChild = vi.spyOn(document.body, 'appendChild').mockImplementation((node) => node);
-      const mockRemoveChild = vi.spyOn(document.body, 'removeChild').mockImplementation((node) => node);
-      vi.spyOn(document, 'createElement').mockReturnValue({
+      const mockAnchor = {
         href: '',
         download: '',
         click: mockClick,
-      } as unknown as HTMLAnchorElement);
+      } as unknown as HTMLAnchorElement;
+      const mockAppendChild = vi.spyOn(document.body, 'appendChild').mockImplementation((node) => node);
+      const mockRemoveChild = vi.spyOn(document.body, 'removeChild').mockImplementation((node) => node);
+      vi.spyOn(document, 'createElement').mockReturnValue(mockAnchor);
 
       await downloadExperimentalExport('my-token', 2024, 5, 'V2');
 
@@ -270,6 +271,7 @@ describe('Admin API service', () => {
         })
       );
       expect(mockClick).toHaveBeenCalled();
+      expect(mockAnchor.download).toBe('Rankings_Experimental_V2_2024_Week6.xlsx');
 
       mockAppendChild.mockRestore();
       mockRemoveChild.mockRestore();
@@ -301,13 +303,14 @@ describe('Admin API service', () => {
       vi.stubGlobal('URL', { createObjectURL: mockCreateObjectURL, revokeObjectURL: mockRevokeObjectURL });
 
       const mockClick = vi.fn();
-      const mockAppendChild = vi.spyOn(document.body, 'appendChild').mockImplementation((node) => node);
-      const mockRemoveChild = vi.spyOn(document.body, 'removeChild').mockImplementation((node) => node);
-      vi.spyOn(document, 'createElement').mockReturnValue({
+      const mockAnchor = {
         href: '',
         download: '',
         click: mockClick,
-      } as unknown as HTMLAnchorElement);
+      } as unknown as HTMLAnchorElement;
+      const mockAppendChild = vi.spyOn(document.body, 'appendChild').mockImplementation((node) => node);
+      const mockRemoveChild = vi.spyOn(document.body, 'removeChild').mockImplementation((node) => node);
+      vi.spyOn(document, 'createElement').mockReturnValue(mockAnchor);
 
       await downloadExport('my-token', 2024, 5);
 
@@ -320,6 +323,7 @@ describe('Admin API service', () => {
         })
       );
       expect(mockClick).toHaveBeenCalled();
+      expect(mockAnchor.download).toBe('Rankings_2024_Week6.xlsx');
 
       mockAppendChild.mockRestore();
       mockRemoveChild.mockRestore();

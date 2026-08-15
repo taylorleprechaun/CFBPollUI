@@ -18,7 +18,7 @@ public class RatingAlgorithmResolverTests
         var mockDataService = new Mock<ICFBDataService>();
         var options = Microsoft.Extensions.Options.Options.Create(new HistoricalDataOptions { MinimumYear = 2002 });
         _v1 = new RatingModule(mockDataService.Object, options);
-        _v2 = new RatingModuleV2(_v1);
+        _v2 = new RatingModuleV2(mockDataService.Object, options);
         _resolver = new RatingAlgorithmResolver(_v1, _v2);
     }
 

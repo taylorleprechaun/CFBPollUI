@@ -15,6 +15,48 @@ public class ExcelExportModuleTests
     }
 
     [Fact]
+    public void GenerateRankingsWorkbook_DynamicColumnsContainNumberedGames_SortsColumnsNumerically()
+    {
+        var rankings = new RankingsResult
+        {
+            Season = 2024,
+            Week = 5,
+            Rankings =
+            [
+                new RankedTeam
+                {
+                    Rank = 1,
+                    TeamName = "Team A",
+                    Rating = 90.1234,
+                    Conference = "Big Ten",
+                    Division = "East",
+                    Wins = 10,
+                    Losses = 0,
+                    StrengthOfSchedule = 0.7,
+                    WeightedSOS = 0.8,
+                    SOSRanking = 3,
+                    RatingComponents = new Dictionary<string, double>
+                    {
+                        ["Game 10"] = 0.5,
+                        ["Game 2"] = 0.6,
+                        ["Game 1"] = 0.4
+                    },
+                    Details = new TeamDetails()
+                }
+            ]
+        };
+
+        var bytes = _module.GenerateRankingsWorkbook(rankings);
+
+        using var package = new ExcelPackage(new MemoryStream(bytes));
+        var worksheet = package.Workbook.Worksheets[0];
+
+        Assert.Equal("Game 1", worksheet.Cells[1, 12].Value?.ToString());
+        Assert.Equal("Game 2", worksheet.Cells[1, 13].Value?.ToString());
+        Assert.Equal("Game 10", worksheet.Cells[1, 14].Value?.ToString());
+    }
+
+    [Fact]
     public void GenerateRankingsWorkbook_EmptyRankings_ProducesValidWorkbookWithHeaders()
     {
         var rankings = new RankingsResult
@@ -117,6 +159,64 @@ public class ExcelExportModuleTests
 
         Assert.NotNull(result);
         Assert.True(result.Length > 0);
+    }
+
+    [Fact]
+    public void GenerateRankingsWorkbook_TeamMissingDynamicComponent_LeavesCellBlank()
+    {
+        var rankings = new RankingsResult
+        {
+            Season = 2024,
+            Week = 5,
+            Rankings =
+            [
+                new RankedTeam
+                {
+                    Rank = 1,
+                    TeamName = "Team A",
+                    Rating = 90.1234,
+                    Conference = "Big Ten",
+                    Division = "East",
+                    Wins = 2,
+                    Losses = 0,
+                    StrengthOfSchedule = 0.7,
+                    WeightedSOS = 0.8,
+                    SOSRanking = 3,
+                    RatingComponents = new Dictionary<string, double>
+                    {
+                        ["Game 1"] = 0.4,
+                        ["Game 2"] = 0.6
+                    },
+                    Details = new TeamDetails()
+                },
+                new RankedTeam
+                {
+                    Rank = 2,
+                    TeamName = "Team B",
+                    Rating = 80.0,
+                    Conference = "SEC",
+                    Division = "West",
+                    Wins = 1,
+                    Losses = 0,
+                    StrengthOfSchedule = 0.6,
+                    WeightedSOS = 0.65,
+                    SOSRanking = 20,
+                    RatingComponents = new Dictionary<string, double>
+                    {
+                        ["Game 1"] = 0.3
+                    },
+                    Details = new TeamDetails()
+                }
+            ]
+        };
+
+        var bytes = _module.GenerateRankingsWorkbook(rankings);
+
+        using var package = new ExcelPackage(new MemoryStream(bytes));
+        var worksheet = package.Workbook.Worksheets[0];
+
+        Assert.Equal(0.3, worksheet.Cells[3, 12].Value);
+        Assert.Null(worksheet.Cells[3, 13].Value);
     }
 
     [Fact]

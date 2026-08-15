@@ -24,7 +24,7 @@ public class SeasonDataAssemblerTests
         };
 
         var result = SeasonDataAssembler.Assemble(
-            2024, 16, teams, regularGames, postseasonGames, [], [], new Dictionary<string, IEnumerable<TeamStat>>());
+            2024, 16, teams, regularGames, postseasonGames, [], [], [], [], new Dictionary<string, IEnumerable<TeamStat>>());
 
         Assert.Equal(2, result.Games.Count());
     }
@@ -33,42 +33,56 @@ public class SeasonDataAssemblerTests
     public void Assemble_NullPostseasonAdvancedStats_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
-            () => SeasonDataAssembler.Assemble(2024, 5, [], [], [], [], null!, new Dictionary<string, IEnumerable<TeamStat>>()));
+            () => SeasonDataAssembler.Assemble(2024, 5, [], [], [], [], null!, [], [], new Dictionary<string, IEnumerable<TeamStat>>()));
     }
 
     [Fact]
     public void Assemble_NullPostseasonGames_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
-            () => SeasonDataAssembler.Assemble(2024, 5, [], [], null!, [], [], new Dictionary<string, IEnumerable<TeamStat>>()));
+            () => SeasonDataAssembler.Assemble(2024, 5, [], [], null!, [], [], [], [], new Dictionary<string, IEnumerable<TeamStat>>()));
+    }
+
+    [Fact]
+    public void Assemble_NullPostseasonGameTeamStats_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => SeasonDataAssembler.Assemble(2024, 5, [], [], [], [], [], [], null!, new Dictionary<string, IEnumerable<TeamStat>>()));
     }
 
     [Fact]
     public void Assemble_NullRegularAdvancedStats_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
-            () => SeasonDataAssembler.Assemble(2024, 5, [], [], [], null!, [], new Dictionary<string, IEnumerable<TeamStat>>()));
+            () => SeasonDataAssembler.Assemble(2024, 5, [], [], [], null!, [], [], [], new Dictionary<string, IEnumerable<TeamStat>>()));
     }
 
     [Fact]
     public void Assemble_NullRegularGames_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
-            () => SeasonDataAssembler.Assemble(2024, 5, [], null!, [], [], [], new Dictionary<string, IEnumerable<TeamStat>>()));
+            () => SeasonDataAssembler.Assemble(2024, 5, [], null!, [], [], [], [], [], new Dictionary<string, IEnumerable<TeamStat>>()));
+    }
+
+    [Fact]
+    public void Assemble_NullRegularGameTeamStats_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => SeasonDataAssembler.Assemble(2024, 5, [], [], [], [], [], null!, [], new Dictionary<string, IEnumerable<TeamStat>>()));
     }
 
     [Fact]
     public void Assemble_NullSeasonStats_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
-            () => SeasonDataAssembler.Assemble(2024, 5, [], [], [], [], [], null!));
+            () => SeasonDataAssembler.Assemble(2024, 5, [], [], [], [], [], [], [], null!));
     }
 
     [Fact]
     public void Assemble_NullTeams_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
-            () => SeasonDataAssembler.Assemble(2024, 5, null!, [], [], [], [], new Dictionary<string, IEnumerable<TeamStat>>()));
+            () => SeasonDataAssembler.Assemble(2024, 5, null!, [], [], [], [], [], [], new Dictionary<string, IEnumerable<TeamStat>>()));
     }
 
     [Fact]
@@ -87,11 +101,14 @@ public class SeasonDataAssemblerTests
         var postseasonGames = new List<Game>();
         var regularAdvancedStats = new List<AdvancedGameStats>();
         var postseasonAdvancedStats = new List<AdvancedGameStats>();
+        var regularGameTeamStats = new List<GameTeamStats>();
+        var postseasonGameTeamStats = new List<GameTeamStats>();
         var seasonStats = new Dictionary<string, IEnumerable<TeamStat>>();
 
         var result = SeasonDataAssembler.Assemble(
             2024, 3, teams, regularGames, postseasonGames,
-            regularAdvancedStats, postseasonAdvancedStats, seasonStats);
+            regularAdvancedStats, postseasonAdvancedStats,
+            regularGameTeamStats, postseasonGameTeamStats, seasonStats);
 
         Assert.Equal(2024, result.Season);
         Assert.Equal(3, result.Week);
@@ -169,6 +186,61 @@ public class SeasonDataAssemblerTests
         Assert.Equal(0.25, result[0].HomeAdvancedStats!.Offense!.PPA);
         Assert.NotNull(result[0].AwayAdvancedStats);
         Assert.Equal(-0.15, result[0].AwayAdvancedStats!.Defense!.PPA);
+    }
+
+    [Fact]
+    public void AttachGameTeamStats_HandlesMissingStats()
+    {
+        var games = new List<Game>
+        {
+            new Game { GameID = 100, Week = 1, HomeTeam = "Alabama", AwayTeam = "Florida", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" }
+        };
+
+        var result = SeasonDataAssembler.AttachGameTeamStats(games, [], [], 1, 15).ToList();
+
+        Assert.Single(result);
+        Assert.Null(result[0].HomeGameStats);
+        Assert.Null(result[0].AwayGameStats);
+    }
+
+    [Fact]
+    public void AttachGameTeamStats_HandlesNullGameID()
+    {
+        var games = new List<Game>
+        {
+            new Game { GameID = null, Week = 1, HomeTeam = "Alabama", AwayTeam = "Florida", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" }
+        };
+        var regularStats = new List<GameTeamStats>
+        {
+            new GameTeamStats { GameID = 100, Team = "Alabama", Stats = [new TeamStat { StatName = "totalYards", StatValue = new StatValue { Double = 400 } }] }
+        };
+
+        var result = SeasonDataAssembler.AttachGameTeamStats(games, regularStats, [], 1, 15).ToList();
+
+        Assert.Single(result);
+        Assert.Null(result[0].HomeGameStats);
+    }
+
+    [Fact]
+    public void AttachGameTeamStats_MatchesByTeamAndGameID()
+    {
+        var games = new List<Game>
+        {
+            new Game { GameID = 100, Week = 1, HomeTeam = "Iowa", AwayTeam = "Nebraska", HomePoints = 28, AwayPoints = 24, SeasonType = "regular" }
+        };
+        var regularStats = new List<GameTeamStats>
+        {
+            new GameTeamStats { GameID = 100, Team = "Iowa", Stats = [new TeamStat { StatName = "totalYards", StatValue = new StatValue { Double = 400 } }] },
+            new GameTeamStats { GameID = 100, Team = "Nebraska", Stats = [new TeamStat { StatName = "totalYards", StatValue = new StatValue { Double = 320 } }] }
+        };
+
+        var result = SeasonDataAssembler.AttachGameTeamStats(games, regularStats, [], 1, 15).ToList();
+
+        Assert.Single(result);
+        Assert.NotNull(result[0].HomeGameStats);
+        Assert.Equal(400, result[0].HomeGameStats!.Single().StatValue.Double);
+        Assert.NotNull(result[0].AwayGameStats);
+        Assert.Equal(320, result[0].AwayGameStats!.Single().StatValue.Double);
     }
 
     [Fact]

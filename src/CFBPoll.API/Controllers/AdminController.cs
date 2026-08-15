@@ -130,7 +130,7 @@ public class AdminController : ControllerBase
 
         return File(bytes,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            $"Rankings_{season}_Week{week}.xlsx");
+            $"Rankings_{season}_Week{week + 1}.xlsx");
     }
 
     /// <summary>
@@ -148,7 +148,7 @@ public class AdminController : ControllerBase
 
         return File(bytes,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            $"Rankings_Experimental_{algorithmVersion}_{season}_Week{week}.xlsx");
+            $"Rankings_Experimental_{algorithmVersion}_{season}_Week{week + 1}.xlsx");
     }
 
     /// <summary>
