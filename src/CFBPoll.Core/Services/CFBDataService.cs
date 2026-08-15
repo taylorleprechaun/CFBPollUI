@@ -38,6 +38,7 @@ public class CFBDataService : ICFBDataService
                 config.QueryParameters.SeasonTypeAsSeasonType = seasonType.Equals("regular", _scoic)
                     ? ApiModels.SeasonType.Regular
                     : ApiModels.SeasonType.Postseason;
+                config.QueryParameters.ExcludeGarbageTime = true;
             });
 
             if (response is null)
@@ -220,9 +221,11 @@ public class CFBDataService : ICFBDataService
             if (response is null)
                 return [];
 
-            return response
+            var games = response
                 .Where(g => g.HomePoints.HasValue && g.AwayPoints.HasValue)
                 .Select(g => MapGame(g, seasonType));
+
+            return DeduplicateGames(games);
         }
         catch (Exception ex)
         {
@@ -447,6 +450,23 @@ public class CFBDataService : ICFBDataService
         }
 
         return teamDict;
+    }
+
+    /// <summary>
+    /// CFBD sometimes returns the same real game twice under two different GameIDs - seen for teams
+    /// whose historical data blends a legacy schema (short numeric IDs) with the modern one (long IDs),
+    /// typically programs that transitioned into FBS. Keeps the largest GameID per (teams, week, season
+    /// type) group, since the modern-format ID is the one advanced/team stats endpoints key off of.
+    /// </summary>
+    private IEnumerable<Game> DeduplicateGames(IEnumerable<Game> games)
+    {
+        return games
+            .GroupBy(g => (
+                HomeTeam: g.HomeTeam?.ToUpperInvariant(),
+                AwayTeam: g.AwayTeam?.ToUpperInvariant(),
+                g.Week,
+                SeasonType: g.SeasonType?.ToUpperInvariant()))
+            .Select(group => group.OrderByDescending(g => g.GameID).First());
     }
 
     private async Task<(IEnumerable<ApiModels.Team>? Teams, IEnumerable<ApiModels.Game>? Games, IEnumerable<ApiModels.Game>? PostseasonGames)>
