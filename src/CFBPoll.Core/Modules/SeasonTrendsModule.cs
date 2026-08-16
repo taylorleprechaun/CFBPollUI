@@ -34,34 +34,23 @@ public class SeasonTrendsModule : ISeasonTrendsModule
         _seasonModule = seasonModule ?? throw new ArgumentNullException(nameof(seasonModule));
     }
 
-    public async Task<SeasonTrendsResult> GetSeasonTrendsAsync(int season)
+    public async Task<SeasonTrendsResult> BuildFromRankingsAsync(int season, IEnumerable<RankingsResult> weeklyRankings)
     {
-        var cacheKey = $"{CACHE_KEY_PREFIX}{season}";
-        var cached = await _cache.GetAsync<SeasonTrendsResult>(cacheKey).ConfigureAwait(false);
-
-        if (cached is not null)
-        {
-            _logger.LogDebug("Cache hit for season trends {Season}", season);
-            return cached;
-        }
-
-        _logger.LogInformation("Computing season trends for season {Season}", season);
-
-        var snapshotsTask = _rankingsModule.GetPublishedSnapshotsBySeasonRangeAsync(season, season);
-        var calendarTask = _dataService.GetCalendarAsync(season);
-        var teamsTask = _dataService.GetFBSTeamsAsync(season);
-
-        await Task.WhenAll(snapshotsTask, calendarTask, teamsTask).ConfigureAwait(false);
-
-        var snapshots = (await snapshotsTask).OrderBy(s => s.Week).ToList();
-        var calendar = await calendarTask;
-        var fbsTeams = await teamsTask;
+        var snapshots = weeklyRankings.OrderBy(s => s.Week).ToList();
 
         if (snapshots.Count == 0)
         {
-            _logger.LogInformation("No published snapshots found for season {Season}", season);
+            _logger.LogInformation("No weekly rankings supplied for season {Season}", season);
             return new SeasonTrendsResult { Season = season };
         }
+
+        var calendarTask = _dataService.GetCalendarAsync(season);
+        var teamsTask = _dataService.GetFBSTeamsAsync(season);
+
+        await Task.WhenAll(calendarTask, teamsTask).ConfigureAwait(false);
+
+        var calendar = await calendarTask;
+        var fbsTeams = await teamsTask;
 
         var weekLabels = _seasonModule.GetWeekLabels(calendar)
             .ToDictionary(w => w.WeekNumber, w => w.Label);
@@ -144,12 +133,35 @@ public class SeasonTrendsModule : ISeasonTrendsModule
             })
             .ToList();
 
-        var result = new SeasonTrendsResult
+        return new SeasonTrendsResult
         {
             Season = season,
             Teams = teams,
             Weeks = weeks
         };
+    }
+
+    public async Task<SeasonTrendsResult> GetSeasonTrendsAsync(int season)
+    {
+        var cacheKey = $"{CACHE_KEY_PREFIX}{season}";
+        var cached = await _cache.GetAsync<SeasonTrendsResult>(cacheKey).ConfigureAwait(false);
+
+        if (cached is not null)
+        {
+            _logger.LogDebug("Cache hit for season trends {Season}", season);
+            return cached;
+        }
+
+        _logger.LogInformation("Computing season trends for season {Season}", season);
+
+        var snapshots = (await _rankingsModule.GetPublishedSnapshotsBySeasonRangeAsync(season, season).ConfigureAwait(false)).ToList();
+        var result = await BuildFromRankingsAsync(season, snapshots).ConfigureAwait(false);
+
+        if (snapshots.Count == 0)
+        {
+            _logger.LogInformation("No published snapshots found for season {Season}", season);
+            return result;
+        }
 
         var expiresAt = DateTime.UtcNow.AddHours(_cacheOptions.SeasonTrendsExpirationHours);
         await _cache.SetAsync(cacheKey, result, expiresAt).ConfigureAwait(false);

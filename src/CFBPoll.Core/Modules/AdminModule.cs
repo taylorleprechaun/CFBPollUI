@@ -17,6 +17,7 @@ public class AdminModule : IAdminModule
     private readonly IPredictionsModule _predictionsModule;
     private readonly IRankingsModule _rankingsModule;
     private readonly IRatingAlgorithmResolver _ratingAlgorithmResolver;
+    private readonly ISeasonModule _seasonModule;
     private readonly ISeasonTrendsModule _seasonTrendsModule;
     private readonly ITeamPredictionRecordModule _teamPredictionRecordModule;
     private readonly ITrackRecordModule _trackRecordModule;
@@ -31,6 +32,7 @@ public class AdminModule : IAdminModule
         IPredictionsModule predictionsModule,
         IRankingsModule rankingsModule,
         IRatingAlgorithmResolver ratingAlgorithmResolver,
+        ISeasonModule seasonModule,
         ISeasonTrendsModule seasonTrendsModule,
         ITeamPredictionRecordModule teamPredictionRecordModule,
         ITrackRecordModule trackRecordModule,
@@ -46,6 +48,7 @@ public class AdminModule : IAdminModule
         _predictionsModule = predictionsModule ?? throw new ArgumentNullException(nameof(predictionsModule));
         _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
         _ratingAlgorithmResolver = ratingAlgorithmResolver ?? throw new ArgumentNullException(nameof(ratingAlgorithmResolver));
+        _seasonModule = seasonModule ?? throw new ArgumentNullException(nameof(seasonModule));
         _seasonTrendsModule = seasonTrendsModule ?? throw new ArgumentNullException(nameof(seasonTrendsModule));
         _teamPredictionRecordModule = teamPredictionRecordModule ?? throw new ArgumentNullException(nameof(teamPredictionRecordModule));
         _trackRecordModule = trackRecordModule ?? throw new ArgumentNullException(nameof(trackRecordModule));
@@ -68,6 +71,28 @@ public class AdminModule : IAdminModule
         };
     }
 
+    public async Task<SeasonTrendsResult> CalculateExperimentalSeasonTrendsAsync(int season, RatingAlgorithmVersion algorithmVersion)
+    {
+        _logger.LogInformation(
+            "Calculating experimental season trends for season {Season} using algorithm version {AlgorithmVersion}",
+            season, algorithmVersion);
+
+        var calendar = await _dataService.GetCalendarAsync(season).ConfigureAwait(false);
+        var weekNumbers = _seasonModule.GetWeekLabels(calendar).Select(w => w.WeekNumber).ToList();
+
+        var weekTasks = weekNumbers
+            .Select(week => CalculateExperimentalAsync(season, week, algorithmVersion))
+            .ToList();
+        await Task.WhenAll(weekTasks).ConfigureAwait(false);
+
+        var weeklyRankings = weekTasks
+            .Select(t => t.Result.Rankings)
+            .OrderBy(r => r.Week)
+            .ToList();
+
+        return await _seasonTrendsModule.BuildFromRankingsAsync(season, weeklyRankings).ConfigureAwait(false);
+    }
+
     public async Task<CalculatePredictionsResult> CalculatePredictionsAsync(int season, int week)
     {
         _logger.LogInformation("Calculating predictions for season {Season}, week {Week}", season, week);
@@ -87,7 +112,7 @@ public class AdminModule : IAdminModule
         // CFBD API serves all postseason betting lines under week 1
         var bettingLinesWeek = isPostseason ? 1 : gameWeek;
 
-        var ratingsTask = _ratingAlgorithmResolver.ResolveForSeason(season).RateTeamsAsync(seasonData);
+        var ratingsTask = _ratingAlgorithmResolver.ResolveForPredictions().RateTeamsAsync(seasonData);
         var bettingLinesTask = _dataService.GetBettingLinesAsync(season, bettingLinesWeek);
         await Task.WhenAll(ratingsTask, bettingLinesTask).ConfigureAwait(false);
 

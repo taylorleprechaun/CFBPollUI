@@ -7,6 +7,7 @@ public class AllTimeEntry
     public int Losses { get; set; }
     public int Rank { get; set; }
     public double Rating { get; set; }
+    public double RatingZScore { get; set; }
     public int Season { get; set; }
     public string TeamName { get; set; } = string.Empty;
     public int Week { get; set; }

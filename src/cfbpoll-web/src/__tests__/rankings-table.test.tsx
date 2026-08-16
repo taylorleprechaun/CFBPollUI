@@ -75,6 +75,8 @@ function renderTable(props: {
   rankings?: RankedTeam[];
   selectedConference?: string | null;
   selectedSeason?: number | null;
+  showRatingZScore?: boolean;
+  showWeightedSOS?: boolean;
 } = {}) {
   return render(
     <MemoryRouter>
@@ -83,6 +85,8 @@ function renderTable(props: {
         isLoading={props.isLoading ?? false}
         selectedConference={props.selectedConference ?? null}
         selectedSeason={'selectedSeason' in props ? props.selectedSeason ?? null : 2024}
+        showRatingZScore={props.showRatingZScore ?? false}
+        showWeightedSOS={props.showWeightedSOS ?? false}
       />
     </MemoryRouter>
   );
@@ -107,13 +111,13 @@ describe('RankingsTable', () => {
     });
 
     it('displays weighted SOS with 4 decimal places', () => {
-      renderTable();
+      renderTable({ showWeightedSOS: true });
 
       expect(screen.getByText('0.5820')).toBeInTheDocument();
     });
 
     it('renders all columns', () => {
-      renderTable();
+      renderTable({ showWeightedSOS: true });
 
       expect(screen.getByText('Rank')).toBeInTheDocument();
       expect(screen.getByText('Team')).toBeInTheDocument();
@@ -240,6 +244,69 @@ describe('RankingsTable', () => {
     });
   });
 
+  describe('rating z-score column', () => {
+    it('computes z-score against the full team list even when a conference filter is applied', () => {
+      const rankings = [
+        createMockTeam({ teamName: 'Team A', conference: 'Big Ten', rating: 50 }),
+        createMockTeam({ teamName: 'Team B', conference: 'Big Ten', rating: 40 }),
+        createMockTeam({ teamName: 'Team C', conference: 'SEC', rating: 45 }),
+        createMockTeam({ teamName: 'Team D', conference: 'SEC', rating: 25 }),
+      ];
+
+      renderTable({ rankings, selectedConference: 'Big Ten', showRatingZScore: true });
+
+      expect(screen.getByText('50.0000')).toBeInTheDocument();
+      expect(screen.getByText('(1.07)')).toBeInTheDocument();
+      expect(screen.getByText('40.0000')).toBeInTheDocument();
+      expect(screen.getByText('(0.00)')).toBeInTheDocument();
+      expect(screen.queryByText('Team C')).not.toBeInTheDocument();
+    });
+
+    it('renders the z-score header instead of the plain rating header', () => {
+      renderTable({ showRatingZScore: true });
+
+      expect(screen.getByText('Rating (Z-Score)')).toBeInTheDocument();
+      expect(screen.queryByText('Rating')).not.toBeInTheDocument();
+    });
+
+    it('renders the z-score in muted, smaller text', () => {
+      const rankings = [
+        createMockTeam({ teamName: 'Team A', rating: 50 }),
+        createMockTeam({ teamName: 'Team B', rating: 40 }),
+        createMockTeam({ teamName: 'Team C', rating: 30 }),
+      ];
+
+      renderTable({ rankings, showRatingZScore: true });
+
+      const zScore = screen.getByText('(1.22)');
+      expect(zScore).toHaveClass('text-text-muted', 'text-xs');
+    });
+
+    it('shows the plain rating column when showRatingZScore is false', () => {
+      renderTable();
+
+      expect(screen.getByText('Rating')).toBeInTheDocument();
+      expect(screen.queryByText('Rating (Z-Score)')).not.toBeInTheDocument();
+    });
+
+    it('shows z-score and raw rating together', () => {
+      const rankings = [
+        createMockTeam({ teamName: 'Team A', rating: 50 }),
+        createMockTeam({ teamName: 'Team B', rating: 40 }),
+        createMockTeam({ teamName: 'Team C', rating: 30 }),
+      ];
+
+      renderTable({ rankings, showRatingZScore: true });
+
+      expect(screen.getByText('50.0000')).toBeInTheDocument();
+      expect(screen.getByText('(1.22)')).toBeInTheDocument();
+      expect(screen.getByText('40.0000')).toBeInTheDocument();
+      expect(screen.getByText('(0.00)')).toBeInTheDocument();
+      expect(screen.getByText('30.0000')).toBeInTheDocument();
+      expect(screen.getByText('(-1.22)')).toBeInTheDocument();
+    });
+  });
+
   describe('sorting', () => {
     it('allows clicking column headers to sort', async () => {
       renderTable();
@@ -298,6 +365,22 @@ describe('RankingsTable', () => {
       const uscLink = screen.getByText('USC').closest('a');
       expect(uscLink).toBeInTheDocument();
       expect(uscLink).toHaveAttribute('href', '/team-details?team=USC&season=2024');
+    });
+  });
+
+  describe('weighted SOS column', () => {
+    it('hides the weighted SOS column when showWeightedSOS is false', () => {
+      renderTable();
+
+      expect(screen.queryByText('Weighted SOS')).not.toBeInTheDocument();
+      expect(screen.queryByText('0.5820')).not.toBeInTheDocument();
+    });
+
+    it('shows the weighted SOS column when showWeightedSOS is true', () => {
+      renderTable({ showWeightedSOS: true });
+
+      expect(screen.getByText('Weighted SOS')).toBeInTheDocument();
+      expect(screen.getByText('0.5820')).toBeInTheDocument();
     });
   });
 });

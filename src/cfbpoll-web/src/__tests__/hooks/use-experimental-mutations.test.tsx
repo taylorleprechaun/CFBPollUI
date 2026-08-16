@@ -4,14 +4,23 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useCalculateExperimental, useExportExperimental } from '../../hooks/use-experimental-mutations';
+import {
+  useCalculateExperimental,
+  useCalculateExperimentalSeasonTrends,
+  useExportExperimental,
+} from '../../hooks/use-experimental-mutations';
 
 vi.mock('../../services/admin-api', () => ({
   calculateExperimental: vi.fn(),
+  calculateExperimentalSeasonTrends: vi.fn(),
   downloadExperimentalExport: vi.fn(),
 }));
 
-import { calculateExperimental, downloadExperimentalExport } from '../../services/admin-api';
+import {
+  calculateExperimental,
+  calculateExperimentalSeasonTrends,
+  downloadExperimentalExport,
+} from '../../services/admin-api';
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -35,6 +44,18 @@ describe('null token guard', () => {
     ).rejects.toThrow('Authentication required');
 
     expect(calculateExperimental).not.toHaveBeenCalled();
+  });
+
+  it('useCalculateExperimentalSeasonTrends rejects with Authentication required when token is null', async () => {
+    const { result } = renderHook(() => useCalculateExperimentalSeasonTrends(null), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(
+      act(() => result.current.mutateAsync({ algorithmVersion: 'V1', season: 2024 }))
+    ).rejects.toThrow('Authentication required');
+
+    expect(calculateExperimentalSeasonTrends).not.toHaveBeenCalled();
   });
 
   it('useExportExperimental rejects with Authentication required when token is null', async () => {
@@ -77,6 +98,37 @@ describe('useCalculateExperimental', () => {
 
     await expect(
       act(() => result.current.mutateAsync({ algorithmVersion: 'V1', season: 2024, week: 5 }))
+    ).rejects.toThrow('Failed');
+  });
+});
+
+describe('useCalculateExperimentalSeasonTrends', () => {
+  beforeEach(() => vi.resetAllMocks());
+
+  it('calls calculateExperimentalSeasonTrends with token and params', async () => {
+    const mockResult = { season: 2024, teams: [], weeks: [] };
+    vi.mocked(calculateExperimentalSeasonTrends).mockResolvedValue(mockResult);
+
+    const { result } = renderHook(() => useCalculateExperimentalSeasonTrends('test-token'), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ algorithmVersion: 'V2', season: 2024 });
+    });
+
+    expect(calculateExperimentalSeasonTrends).toHaveBeenCalledWith('test-token', 2024, 'V2');
+  });
+
+  it('rejects on failure', async () => {
+    vi.mocked(calculateExperimentalSeasonTrends).mockRejectedValue(new Error('Failed'));
+
+    const { result } = renderHook(() => useCalculateExperimentalSeasonTrends('test-token'), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(
+      act(() => result.current.mutateAsync({ algorithmVersion: 'V1', season: 2024 }))
     ).rejects.toThrow('Failed');
   });
 });

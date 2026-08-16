@@ -89,6 +89,15 @@ public class CachingCFBDataService : ICFBDataService
             expiresAt).ConfigureAwait(false);
     }
 
+    public async Task<IEnumerable<GameTeamStats>> GetGameTeamStatsAsync(int season, string seasonType)
+    {
+        var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
+        return await GetOrCacheListAsync(
+            CacheKeys.GameTeamStats(season, seasonType),
+            () => _innerService.GetGameTeamStatsAsync(season, seasonType),
+            expiresAt).ConfigureAwait(false);
+    }
+
     public async Task<int> GetMaxSeasonYearAsync()
     {
         const string cacheKey = CacheKeys.MAX_SEASON_YEAR;
@@ -117,13 +126,15 @@ public class CachingCFBDataService : ICFBDataService
         var regularGamesTask = GetGamesAsync(season, "regular");
         var postseasonGamesTask = GetGamesAsync(season, "postseason");
         var regularAdvancedStatsTask = GetAdvancedGameStatsAsync(season, "regular");
+        var regularGameTeamStatsTask = GetGameTeamStatsAsync(season, "regular");
 
-        await Task.WhenAll(teamsTask, regularGamesTask, postseasonGamesTask, regularAdvancedStatsTask).ConfigureAwait(false);
+        await Task.WhenAll(teamsTask, regularGamesTask, postseasonGamesTask, regularAdvancedStatsTask, regularGameTeamStatsTask).ConfigureAwait(false);
 
         var teams = await teamsTask.ConfigureAwait(false);
         var regularGames = await regularGamesTask.ConfigureAwait(false);
         var postseasonGames = await postseasonGamesTask.ConfigureAwait(false);
         var regularAdvancedStats = await regularAdvancedStatsTask.ConfigureAwait(false);
+        var regularGameTeamStats = await regularGameTeamStatsTask.ConfigureAwait(false);
 
         var maxRegularWeek = regularGames
             .Where(g => g.Week.HasValue)
@@ -135,6 +146,9 @@ public class CachingCFBDataService : ICFBDataService
         var postseasonAdvancedStats = includePostseason
             ? await GetAdvancedGameStatsAsync(season, "postseason").ConfigureAwait(false)
             : Enumerable.Empty<AdvancedGameStats>();
+        var postseasonGameTeamStats = includePostseason
+            ? await GetGameTeamStatsAsync(season, "postseason").ConfigureAwait(false)
+            : Enumerable.Empty<GameTeamStats>();
 
         var hasPostseasonGames = includePostseason && postseasonGames.Any();
         int? endWeek = hasPostseasonGames ? null : week;
@@ -142,7 +156,8 @@ public class CachingCFBDataService : ICFBDataService
 
         return SeasonDataAssembler.Assemble(
             season, week, teams, regularGames, postseasonGames,
-            regularAdvancedStats, postseasonAdvancedStats, seasonStats);
+            regularAdvancedStats, postseasonAdvancedStats,
+            regularGameTeamStats, postseasonGameTeamStats, seasonStats);
     }
 
     public async Task<IDictionary<string, IEnumerable<TeamStat>>> GetSeasonTeamStatsAsync(int season, int? endWeek)

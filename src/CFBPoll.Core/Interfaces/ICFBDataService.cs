@@ -60,6 +60,14 @@ public interface ICFBDataService
     Task<IEnumerable<Game>> GetGamesAsync(int season, string seasonType);
 
     /// <summary>
+    /// Retrieves raw per-game team box-score statistics (e.g. total yards) for all teams in a given season.
+    /// </summary>
+    /// <param name="season">The season year.</param>
+    /// <param name="seasonType">Season type: "regular" or "postseason".</param>
+    /// <returns>Collection of per-game team box-score statistics.</returns>
+    Task<IEnumerable<GameTeamStats>> GetGameTeamStatsAsync(int season, string seasonType);
+
+    /// <summary>
     /// Determines the maximum available season year by checking calendar data.
     /// Starts from current year and decrements until valid data is found or 2000 is reached.
     /// </summary>

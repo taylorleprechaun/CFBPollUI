@@ -101,7 +101,8 @@ AdminController                    AdminModule
                                      -> IPredictionGradingModule
                                      -> IPredictionsModule
                                      -> IRankingsModule
-                                     -> IRatingModule
+                                     -> IRatingAlgorithmResolver
+                                     -> ISeasonModule
                                      -> ISeasonTrendsModule
                                      -> ITrackRecordModule
 
@@ -135,7 +136,7 @@ PredictionsController              PredictionsModule
 RankingsController                 RankingsModule
   -> ICFBDataService                 -> IRankingsData                 RankingsData
   -> IRankingsModule                                                  -> SQLite
-  -> IRatingModule
+  -> IRatingAlgorithmResolver
 
 SeasonsController
   -> ICFBDataService
@@ -152,7 +153,7 @@ SeasonTrendsController             SeasonTrendsModule
 TeamsController                    TeamsModule
   -> ITeamsModule                    -> ICFBDataService
                                      -> IRankingsModule
-                                     -> IRatingModule
+                                     -> IRatingAlgorithmResolver
 
 TrackRecordController              TrackRecordModule
   -> ITrackRecordModule              -> IPersistentCache
@@ -301,6 +302,7 @@ The frontend runs at `http://localhost:5173`.
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/snapshot/export` | Download rankings as Excel |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}` | Calculate rankings using an explicitly chosen algorithm version, without persisting or publishing |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/export` | Download experimental rankings as Excel for a chosen algorithm version, without persisting or publishing |
+| `POST /api/v1/admin/seasons/{season}/experimental/{algorithmVersion}/trends` | Calculate season trends (top-25 rank progression) live across every week of a season using an explicitly chosen algorithm version, without persisting or publishing |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Retrieve persisted predictions for a season/week without recalculating or re-grading |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Calculate predictions for a season/week and save as draft |
 | `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Update a prediction (currently supports publishing) |
@@ -322,26 +324,26 @@ A few ordering/formatting conventions are worth calling out since they're enforc
 
 ## Testing
 
-The project includes 2,257 unit and integration tests across backend and frontend.
+The project includes 2,299 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (921 tests)
+# Backend tests (933 tests)
 dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (1,336 tests)
+# Frontend tests (1,366 tests)
 cd src/cfbpoll-web
 npm test
 ```
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-921-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1336-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-933-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1366-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
 ![Web Coverage](https://img.shields.io/badge/Web_Coverage-100%25-brightgreen)
@@ -353,6 +355,6 @@ npm test
 | cfbpoll-web | 100% | 95% |
 
 **Excluded from coverage:**
-- `RatingModule` and `PredictionCalculatorModule` - Proprietary algorithms, kept in a private submodule rather than this repository. Tests are maintained privately alongside them.
+- `RatingModule`, `RatingModuleV2`, and `PredictionCalculatorModule` - Proprietary algorithms, kept in a private submodule rather than this repository. Tests are maintained privately alongside them.
 - `CFBDataService` - Makes HTTP calls to the external College Football Data API. Better suited for integration tests.
 - `Program.cs` - ASP.NET Core startup configuration code.

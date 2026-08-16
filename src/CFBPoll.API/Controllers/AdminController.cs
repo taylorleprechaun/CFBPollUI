@@ -66,6 +66,22 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
+    /// Computes season trends (top-25 rank progression) live across every week of a season using an
+    /// explicitly chosen algorithm version, without reading or requiring persisted published snapshots.
+    /// </summary>
+    [HttpPost("seasons/{season}/experimental/{algorithmVersion}/trends")]
+    public async Task<ActionResult<SeasonTrendsResponseDTO>> CalculateExperimentalSeasonTrends(int season, RatingAlgorithmVersion algorithmVersion)
+    {
+        _logger.LogInformation(
+            "Admin calculating experimental season trends for season {Season} using algorithm version {AlgorithmVersion}",
+            season, algorithmVersion);
+
+        var result = await _adminModule.CalculateExperimentalSeasonTrendsAsync(season, algorithmVersion);
+
+        return Ok(SeasonTrendsMapper.ToResponseDTO(result));
+    }
+
+    /// <summary>
     /// Generates predictions for the specified season and week and saves as a draft.
     /// </summary>
     [HttpPost("seasons/{season}/weeks/{week}/prediction")]
@@ -130,7 +146,7 @@ public class AdminController : ControllerBase
 
         return File(bytes,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            $"Rankings_{season}_Week{week}.xlsx");
+            $"Rankings_{season}_Week{week + 1}.xlsx");
     }
 
     /// <summary>
@@ -148,7 +164,7 @@ public class AdminController : ControllerBase
 
         return File(bytes,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            $"Rankings_Experimental_{algorithmVersion}_{season}_Week{week}.xlsx");
+            $"Rankings_Experimental_{algorithmVersion}_{season}_Week{week + 1}.xlsx");
     }
 
     /// <summary>

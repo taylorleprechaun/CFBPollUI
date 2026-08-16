@@ -3,10 +3,12 @@ namespace CFBPoll.Core.Models;
 public class Game
 {
     public AdvancedGameStats? AwayAdvancedStats { get; set; }
+    public IEnumerable<TeamStat>? AwayGameStats { get; set; }
     public int? AwayPoints { get; set; }
     public string? AwayTeam { get; set; }
     public long? GameID { get; set; }
     public AdvancedGameStats? HomeAdvancedStats { get; set; }
+    public IEnumerable<TeamStat>? HomeGameStats { get; set; }
     public int? HomePoints { get; set; }
     public string? HomeTeam { get; set; }
     public bool NeutralSite { get; set; }

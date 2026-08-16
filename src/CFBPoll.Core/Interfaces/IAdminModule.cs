@@ -15,6 +15,13 @@ public interface IAdminModule
     Task<ExperimentalCalculateResult> CalculateExperimentalAsync(int season, int week, RatingAlgorithmVersion algorithmVersion);
 
     /// <summary>
+    /// Computes season trends (top-25 rank progression with drop-out gaps) live across every week of
+    /// a season using an explicitly chosen algorithm version, without reading or requiring persisted
+    /// published snapshots.
+    /// </summary>
+    Task<SeasonTrendsResult> CalculateExperimentalSeasonTrendsAsync(int season, RatingAlgorithmVersion algorithmVersion);
+
+    /// <summary>
     /// Calculates predictions for the given season and week and saves as a draft.
     /// </summary>
     Task<CalculatePredictionsResult> CalculatePredictionsAsync(int season, int week);

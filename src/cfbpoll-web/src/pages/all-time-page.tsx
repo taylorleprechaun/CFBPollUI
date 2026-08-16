@@ -4,6 +4,7 @@ import {
   allTimeRankColumn,
   rankColumn,
   ratingColumn,
+  ratingZScoreColumn,
   recordColumn,
   seasonColumn,
   teamNameColumn,
@@ -29,7 +30,7 @@ export function AllTimePage() {
   usePreloadImages(allTimeLogoUrls);
 
   const defaultColumns = useMemo(
-    () => [allTimeRankColumn, teamNameColumn, seasonColumn, recordColumn, rankColumn, ratingColumn, weightedSOSColumn],
+    () => [allTimeRankColumn, teamNameColumn, seasonColumn, recordColumn, rankColumn, ratingZScoreColumn],
     []
   );
 
@@ -46,7 +47,13 @@ export function AllTimePage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-text-primary mb-6">All-Time Rankings</h1>
+      <h1 className="text-3xl font-bold text-text-primary mb-2">All-Time Rankings</h1>
+      <p className="text-text-secondary leading-relaxed mb-6">
+        This covers every season back to 2002, so ratings are shown relative to that year&rsquo;s own field (a
+        z-score) instead of a raw number. Otherwise a great team from a down year would look worse than a good team
+        from a loaded one. Even so, take cross-era comparisons with a grain of salt: both the level of competition
+        and the rating method have changed a lot since 2002.
+      </p>
 
       {error && (
         <ErrorAlert error={error} onRetry={() => refetch()} />

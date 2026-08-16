@@ -4,6 +4,7 @@ export type { AlgorithmVersion } from './algorithm-versions';
 export { CalculateSection } from './calculate-section';
 export { ExperimentalCalculateSection } from './experimental-calculate-section';
 export { ExperimentalPreviewSection } from './experimental-preview-section';
+export { ExperimentalTrendsSection } from './experimental-trends-section';
 export { PersistedItemsSection } from './persisted-items-section';
 export { PersistedPredictionsSection } from './persisted-predictions-section';
 export { PersistedSnapshotsSection } from './persisted-snapshots-section';

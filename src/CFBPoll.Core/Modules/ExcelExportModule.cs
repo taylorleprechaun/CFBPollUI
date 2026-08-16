@@ -6,6 +6,12 @@ namespace CFBPoll.Core.Modules;
 
 public class ExcelExportModule : IExcelExportModule
 {
+    /// <summary>
+    /// Sorts dynamic column names such that embedded numbers order numerically (Game 2 before Game 10) 
+    /// rather than lexicographically, while behaving like a plain alphabetical sort for columns with no digits.
+    /// </summary>
+    private static readonly IComparer<string> _naturalColumnComparer = Comparer<string>.Create(CompareColumnNamesNaturally);
+
     public ExcelExportModule()
     {
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
@@ -26,6 +32,40 @@ public class ExcelExportModule : IExcelExportModule
         FormatWorksheet(worksheet, rankedTeams.Count, dynamicColumns.Count);
 
         return package.GetAsByteArray();
+    }
+
+    private static int CompareColumnNamesNaturally(string? a, string? b)
+    {
+        a ??= string.Empty;
+        b ??= string.Empty;
+
+        var i = 0;
+        var j = 0;
+        while (i < a.Length && j < b.Length)
+        {
+            if (char.IsDigit(a[i]) && char.IsDigit(b[j]))
+            {
+                var startI = i;
+                var startJ = j;
+                while (i < a.Length && char.IsDigit(a[i])) i++;
+                while (j < b.Length && char.IsDigit(b[j])) j++;
+
+                var numberCompare = long.Parse(a[startI..i]).CompareTo(long.Parse(b[startJ..j]));
+                if (numberCompare != 0)
+                    return numberCompare;
+
+                continue;
+            }
+
+            var charCompare = a[i].CompareTo(b[j]);
+            if (charCompare != 0)
+                return charCompare;
+
+            i++;
+            j++;
+        }
+
+        return (a.Length - i).CompareTo(b.Length - j);
     }
 
     private void FormatWorksheet(ExcelWorksheet worksheet, int dataRows, int dynamicColumnCount)
@@ -68,7 +108,7 @@ public class ExcelExportModule : IExcelExportModule
             }
         }
 
-        return columns.OrderBy(c => c).ToList();
+        return columns.OrderBy(c => c, _naturalColumnComparer).ToList();
     }
 
     private void WriteData(ExcelWorksheet worksheet, IReadOnlyList<RankedTeam> teams, IReadOnlyList<string> dynamicColumns)
@@ -94,10 +134,11 @@ public class ExcelExportModule : IExcelExportModule
 
             for (var j = 0; j < dynamicColumns.Count; j++)
             {
-                var value = team.RatingComponents.TryGetValue(dynamicColumns[j], out var componentValue)
-                    ? componentValue
-                    : 0.0;
-                worksheet.Cells[row, 12 + j].Value = value;
+                //Leave the cell blank rather than defaulting to 0 when a team has no value for this component.
+                if (team.RatingComponents.TryGetValue(dynamicColumns[j], out var componentValue))
+                {
+                    worksheet.Cells[row, 12 + j].Value = componentValue;
+                }
             }
         }
     }

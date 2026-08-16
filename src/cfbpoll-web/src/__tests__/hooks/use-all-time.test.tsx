@@ -94,6 +94,7 @@ describe('useAllTime', () => {
           losses: 0,
           rank: 1,
           rating: 55.0,
+          ratingZScore: 1.5,
           record: '12-0',
           season: 2023,
           teamName: 'Florida',

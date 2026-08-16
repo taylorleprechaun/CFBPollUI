@@ -40,6 +40,82 @@ public class SeasonTrendsModuleTests
     }
 
     [Fact]
+    public async Task BuildFromRankingsAsync_EmptyWeeklyRankings_ReturnsEmptyResult()
+    {
+        var result = await _module.BuildFromRankingsAsync(2024, Enumerable.Empty<RankingsResult>());
+
+        Assert.Equal(2024, result.Season);
+        Assert.Empty(result.Teams);
+        Assert.Empty(result.Weeks);
+    }
+
+    [Fact]
+    public async Task BuildFromRankingsAsync_FiltersToTop25AndFillsGapsForDropouts_ReturnsExpectedTeams()
+    {
+        var snapshot1 = CreateSnapshot(2024, 1, new[]
+        {
+            CreateRankedTeam("Nebraska", 25, 50.0, 1, 0),
+            CreateRankedTeam("Michigan", 26, 49.0, 1, 0),
+        });
+        var snapshot2 = CreateSnapshot(2024, 2, new[]
+        {
+            CreateRankedTeam("Iowa", 1, 95.0, 2, 0),
+        });
+
+        _mockDataService.Setup(x => x.GetCalendarAsync(2024))
+            .ReturnsAsync(new[]
+            {
+                new CalendarWeek { Week = 1, SeasonType = "regular" },
+                new CalendarWeek { Week = 2, SeasonType = "regular" },
+            });
+        _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
+            .ReturnsAsync(Enumerable.Empty<FBSTeam>());
+        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>()))
+            .Returns(new[]
+            {
+                new WeekInfo { WeekNumber = 1, Label = "Week 2" },
+                new WeekInfo { WeekNumber = 2, Label = "Week 3" },
+            });
+
+        var result = await _module.BuildFromRankingsAsync(2024, new[] { snapshot1, snapshot2 });
+
+        var teamNames = result.Teams.Select(t => t.TeamName).ToList();
+        Assert.Contains("Nebraska", teamNames);
+        Assert.DoesNotContain("Michigan", teamNames);
+        Assert.Contains("Iowa", teamNames);
+
+        var nebraska = result.Teams.First(t => t.TeamName == "Nebraska");
+        Assert.Equal(2, nebraska.Rankings.Count());
+        Assert.Equal(25, nebraska.Rankings.First().Rank);
+        Assert.Null(nebraska.Rankings.Last().Rank);
+    }
+
+    [Fact]
+    public async Task BuildFromRankingsAsync_SortsTeamsAlphabetically_ReturnsExpectedOrder()
+    {
+        var snapshot = CreateSnapshot(2024, 1, new[]
+        {
+            CreateRankedTeam("USC", 1, 95.0, 1, 0),
+            CreateRankedTeam("Alabama", 2, 90.0, 1, 0),
+            CreateRankedTeam("Notre Dame", 3, 85.0, 1, 0),
+        });
+
+        _mockDataService.Setup(x => x.GetCalendarAsync(2024))
+            .ReturnsAsync(new[] { new CalendarWeek { Week = 1, SeasonType = "regular" } });
+        _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
+            .ReturnsAsync(Enumerable.Empty<FBSTeam>());
+        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>()))
+            .Returns(new[] { new WeekInfo { WeekNumber = 1, Label = "Week 2" } });
+
+        var result = await _module.BuildFromRankingsAsync(2024, new[] { snapshot });
+
+        var teamNames = result.Teams.Select(t => t.TeamName).ToList();
+        Assert.Equal("Alabama", teamNames[0]);
+        Assert.Equal("Notre Dame", teamNames[1]);
+        Assert.Equal("USC", teamNames[2]);
+    }
+
+    [Fact]
     public void Constructor_NullCacheOptions_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(

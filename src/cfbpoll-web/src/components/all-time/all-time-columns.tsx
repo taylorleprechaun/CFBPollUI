@@ -51,6 +51,19 @@ export const ratingColumn = columnHelper.accessor('rating', {
   cell: (info) => info.getValue().toFixed(4),
 });
 
+export const ratingZScoreColumn = columnHelper.accessor('ratingZScore', {
+  header: 'Rating (Z-Score)',
+  cell: (info) => {
+    const entry = info.row.original;
+    return (
+      <>
+        <span>{info.getValue().toFixed(2)}</span>
+        <span className="text-text-muted text-xs ml-1">({entry.rating.toFixed(4)})</span>
+      </>
+    );
+  },
+});
+
 export const weightedSOSColumn = columnHelper.accessor('weightedSOS', {
   header: 'Weighted SOS',
   cell: (info) => info.getValue().toFixed(4),

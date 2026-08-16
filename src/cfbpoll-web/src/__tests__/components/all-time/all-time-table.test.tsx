@@ -7,7 +7,7 @@ import type { AllTimeEntry } from '../../../types';
 import {
   allTimeRankColumn,
   rankColumn,
-  ratingColumn,
+  ratingZScoreColumn,
   recordColumn,
   seasonColumn,
   teamNameColumn,
@@ -21,7 +21,7 @@ const defaultColumns = [
   seasonColumn,
   recordColumn,
   rankColumn,
-  ratingColumn,
+  ratingZScoreColumn,
   weightedSOSColumn,
 ];
 
@@ -32,6 +32,7 @@ const mockEntries: AllTimeEntry[] = [
     losses: 0,
     rank: 1,
     rating: 55.1234,
+    ratingZScore: 1.5,
     record: '13-0',
     season: 2023,
     teamName: 'Florida',
@@ -45,6 +46,7 @@ const mockEntries: AllTimeEntry[] = [
     losses: 1,
     rank: 2,
     rating: 50.5678,
+    ratingZScore: 2.5,
     record: '12-1',
     season: 2022,
     teamName: 'Alabama',
@@ -78,6 +80,7 @@ describe('AllTimeTable', () => {
         losses: 0,
         rank: 1,
         rating: 50.0,
+        ratingZScore: 1.0,
         record: '12-0',
         season: 2023,
         teamName: 'Iowa',
@@ -96,11 +99,13 @@ describe('AllTimeTable', () => {
     );
   });
 
-  it('formats rating to 4 decimal places', () => {
+  it('formats rating z-score and raw rating together', () => {
     renderTable();
 
-    expect(screen.getByText('55.1234')).toBeInTheDocument();
-    expect(screen.getByText('50.5678')).toBeInTheDocument();
+    expect(screen.getByText('1.50')).toBeInTheDocument();
+    expect(screen.getByText('(55.1234)')).toBeInTheDocument();
+    expect(screen.getByText('2.50')).toBeInTheDocument();
+    expect(screen.getByText('(50.5678)')).toBeInTheDocument();
   });
 
   it('formats weightedSOS to 4 decimal places', () => {
@@ -139,6 +144,13 @@ describe('AllTimeTable', () => {
     expect(screen.getByText('2022')).toBeInTheDocument();
   });
 
+  it('renders raw rating in muted, smaller text', () => {
+    renderTable();
+
+    const rawRating = screen.getByText('(55.1234)');
+    expect(rawRating).toHaveClass('text-text-muted', 'text-xs');
+  });
+
   it('renders sortable column headers', () => {
     renderTable();
 
@@ -156,7 +168,7 @@ describe('AllTimeTable', () => {
     expect(screen.getByText('Season')).toBeInTheDocument();
     expect(screen.getByText('Record')).toBeInTheDocument();
     expect(screen.getByText('Final Rank')).toBeInTheDocument();
-    expect(screen.getByText('Rating')).toBeInTheDocument();
+    expect(screen.getByText('Rating (Z-Score)')).toBeInTheDocument();
     expect(screen.getByText('Weighted SOS')).toBeInTheDocument();
   });
 

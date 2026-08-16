@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   calculateExperimental,
+  calculateExperimentalSeasonTrends,
   calculatePredictions,
   calculateRankings,
   deletePredictions,
@@ -58,6 +59,44 @@ describe('Admin API service', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await expect(calculateExperimental('token', 2024, 5, 'V1')).rejects.toThrow('Server error');
+    });
+  });
+
+  describe('calculateExperimentalSeasonTrends', () => {
+    it('sends POST to experimental trends endpoint with auth header', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            season: 2024,
+            teams: [],
+            weeks: [],
+          }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await calculateExperimentalSeasonTrends('my-token', 2024, 'V2');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/seasons/2024/experimental/V2/trends'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+          }),
+        })
+      );
+    });
+
+    it('throws on failed calculate', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ message: 'Server error' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(calculateExperimentalSeasonTrends('token', 2024, 'V1')).rejects.toThrow('Server error');
     });
   });
 
@@ -251,13 +290,14 @@ describe('Admin API service', () => {
       vi.stubGlobal('URL', { createObjectURL: mockCreateObjectURL, revokeObjectURL: mockRevokeObjectURL });
 
       const mockClick = vi.fn();
-      const mockAppendChild = vi.spyOn(document.body, 'appendChild').mockImplementation((node) => node);
-      const mockRemoveChild = vi.spyOn(document.body, 'removeChild').mockImplementation((node) => node);
-      vi.spyOn(document, 'createElement').mockReturnValue({
+      const mockAnchor = {
         href: '',
         download: '',
         click: mockClick,
-      } as unknown as HTMLAnchorElement);
+      } as unknown as HTMLAnchorElement;
+      const mockAppendChild = vi.spyOn(document.body, 'appendChild').mockImplementation((node) => node);
+      const mockRemoveChild = vi.spyOn(document.body, 'removeChild').mockImplementation((node) => node);
+      vi.spyOn(document, 'createElement').mockReturnValue(mockAnchor);
 
       await downloadExperimentalExport('my-token', 2024, 5, 'V2');
 
@@ -270,6 +310,7 @@ describe('Admin API service', () => {
         })
       );
       expect(mockClick).toHaveBeenCalled();
+      expect(mockAnchor.download).toBe('Rankings_Experimental_V2_2024_Week6.xlsx');
 
       mockAppendChild.mockRestore();
       mockRemoveChild.mockRestore();
@@ -301,13 +342,14 @@ describe('Admin API service', () => {
       vi.stubGlobal('URL', { createObjectURL: mockCreateObjectURL, revokeObjectURL: mockRevokeObjectURL });
 
       const mockClick = vi.fn();
-      const mockAppendChild = vi.spyOn(document.body, 'appendChild').mockImplementation((node) => node);
-      const mockRemoveChild = vi.spyOn(document.body, 'removeChild').mockImplementation((node) => node);
-      vi.spyOn(document, 'createElement').mockReturnValue({
+      const mockAnchor = {
         href: '',
         download: '',
         click: mockClick,
-      } as unknown as HTMLAnchorElement);
+      } as unknown as HTMLAnchorElement;
+      const mockAppendChild = vi.spyOn(document.body, 'appendChild').mockImplementation((node) => node);
+      const mockRemoveChild = vi.spyOn(document.body, 'removeChild').mockImplementation((node) => node);
+      vi.spyOn(document, 'createElement').mockReturnValue(mockAnchor);
 
       await downloadExport('my-token', 2024, 5);
 
@@ -320,6 +362,7 @@ describe('Admin API service', () => {
         })
       );
       expect(mockClick).toHaveBeenCalled();
+      expect(mockAnchor.download).toBe('Rankings_2024_Week6.xlsx');
 
       mockAppendChild.mockRestore();
       mockRemoveChild.mockRestore();

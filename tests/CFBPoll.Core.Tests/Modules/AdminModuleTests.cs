@@ -22,6 +22,7 @@ public class AdminModuleTests
     private readonly Mock<IRankingsModule> _mockRankingsModule;
     private readonly Mock<IRatingAlgorithmResolver> _mockRatingAlgorithmResolver;
     private readonly Mock<IRatingModule> _mockRatingModule;
+    private readonly Mock<ISeasonModule> _mockSeasonModule;
     private readonly Mock<ISeasonTrendsModule> _mockSeasonTrendsModule;
     private readonly Mock<ITeamPredictionRecordModule> _mockTeamPredictionRecordModule;
     private readonly Mock<ITrackRecordModule> _mockTrackRecordModule;
@@ -39,9 +40,11 @@ public class AdminModuleTests
         _mockRankingsModule = new Mock<IRankingsModule>();
         _mockRatingModule = new Mock<IRatingModule>();
         _mockRatingAlgorithmResolver = new Mock<IRatingAlgorithmResolver>();
+        _mockRatingAlgorithmResolver.Setup(x => x.ResolveForPredictions()).Returns(_mockRatingModule.Object);
         _mockRatingAlgorithmResolver.Setup(x => x.ResolveForSeason(It.IsAny<int>())).Returns(_mockRatingModule.Object);
         _mockRatingAlgorithmResolver.Setup(x => x.ResolveVersionForSeason(It.IsAny<int>())).Returns(RatingAlgorithmVersion.V1);
         _mockRatingAlgorithmResolver.Setup(x => x.Resolve(It.IsAny<RatingAlgorithmVersion>())).Returns(_mockRatingModule.Object);
+        _mockSeasonModule = new Mock<ISeasonModule>();
         _mockSeasonTrendsModule = new Mock<ISeasonTrendsModule>();
         _mockTeamPredictionRecordModule = new Mock<ITeamPredictionRecordModule>();
         _mockTrackRecordModule = new Mock<ITrackRecordModule>();
@@ -59,6 +62,7 @@ public class AdminModuleTests
             _mockPredictionsModule.Object,
             _mockRankingsModule.Object,
             _mockRatingAlgorithmResolver.Object,
+            _mockSeasonModule.Object,
             _mockSeasonTrendsModule.Object,
             _mockTeamPredictionRecordModule.Object,
             _mockTrackRecordModule.Object,
@@ -101,6 +105,71 @@ public class AdminModuleTests
 
         _mockRankingsModule.Verify(
             x => x.SaveSnapshotAsync(It.IsAny<RankingsResult>(), It.IsAny<RatingAlgorithmVersion>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalSeasonTrendsAsync_CallsSeasonTrendsModuleBuildFromRankings_ReturnsResult()
+    {
+        var calendar = new[] { new CalendarWeek { Week = 1, SeasonType = "regular" } };
+        var seasonData = new SeasonData { Season = 2024, Week = 1, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var rankings = new RankingsResult { Season = 2024, Week = 1, Rankings = [] };
+        var trendsResult = new SeasonTrendsResult { Season = 2024 };
+
+        _mockDataService.Setup(x => x.GetCalendarAsync(2024)).ReturnsAsync(calendar);
+        _mockSeasonModule.Setup(x => x.GetWeekLabels(calendar))
+            .Returns(new[] { new WeekInfo { WeekNumber = 1, Label = "Week 2" } });
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 1)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankings);
+        _mockSeasonTrendsModule
+            .Setup(x => x.BuildFromRankingsAsync(2024, It.Is<IEnumerable<RankingsResult>>(r => r.Single() == rankings)))
+            .ReturnsAsync(trendsResult);
+
+        var result = await _adminModule.CalculateExperimentalSeasonTrendsAsync(2024, RatingAlgorithmVersion.V1);
+
+        Assert.Same(trendsResult, result);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalSeasonTrendsAsync_OrdersWeeklyRankingsByWeekNumber_PassesOrderedListToSeasonTrendsModule()
+    {
+        var calendar = new[]
+        {
+            new CalendarWeek { Week = 1, SeasonType = "regular" },
+            new CalendarWeek { Week = 2, SeasonType = "regular" },
+        };
+        var seasonData1 = new SeasonData { Season = 2024, Week = 1, Teams = new Dictionary<string, TeamInfo>() };
+        var seasonData2 = new SeasonData { Season = 2024, Week = 2, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var rankingsWeek1 = new RankingsResult { Season = 2024, Week = 1, Rankings = [] };
+        var rankingsWeek2 = new RankingsResult { Season = 2024, Week = 2, Rankings = [] };
+
+        _mockDataService.Setup(x => x.GetCalendarAsync(2024)).ReturnsAsync(calendar);
+        _mockSeasonModule.Setup(x => x.GetWeekLabels(calendar))
+            .Returns(new[]
+            {
+                new WeekInfo { WeekNumber = 2, Label = "Week 3" },
+                new WeekInfo { WeekNumber = 1, Label = "Week 2" },
+            });
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 1)).ReturnsAsync(seasonData1);
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 2)).ReturnsAsync(seasonData2);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData1)).ReturnsAsync(ratings);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData2)).ReturnsAsync(ratings);
+        _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData1, ratings)).ReturnsAsync(rankingsWeek1);
+        _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData2, ratings)).ReturnsAsync(rankingsWeek2);
+
+        IEnumerable<RankingsResult>? capturedRankings = null;
+        _mockSeasonTrendsModule
+            .Setup(x => x.BuildFromRankingsAsync(2024, It.IsAny<IEnumerable<RankingsResult>>()))
+            .Callback<int, IEnumerable<RankingsResult>>((_, r) => capturedRankings = r)
+            .ReturnsAsync(new SeasonTrendsResult { Season = 2024 });
+
+        await _adminModule.CalculateExperimentalSeasonTrendsAsync(2024, RatingAlgorithmVersion.V1);
+
+        Assert.NotNull(capturedRankings);
+        var orderedWeeks = capturedRankings!.Select(r => r.Week).ToList();
+        Assert.Equal(new[] { 1, 2 }, orderedWeeks);
     }
 
     [Fact]
@@ -562,6 +631,7 @@ public class AdminModuleTests
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
                 _mockRatingAlgorithmResolver.Object,
+                _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
@@ -582,6 +652,7 @@ public class AdminModuleTests
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
                 _mockRatingAlgorithmResolver.Object,
+                _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
@@ -602,6 +673,7 @@ public class AdminModuleTests
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
                 _mockRatingAlgorithmResolver.Object,
+                _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
@@ -622,6 +694,7 @@ public class AdminModuleTests
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
                 _mockRatingAlgorithmResolver.Object,
+                _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
@@ -642,6 +715,7 @@ public class AdminModuleTests
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
                 _mockRatingAlgorithmResolver.Object,
+                _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
@@ -662,6 +736,7 @@ public class AdminModuleTests
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
                 _mockRatingAlgorithmResolver.Object,
+                _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
@@ -682,6 +757,7 @@ public class AdminModuleTests
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
                 _mockRatingAlgorithmResolver.Object,
+                _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
@@ -702,6 +778,7 @@ public class AdminModuleTests
                 null!,
                 _mockRankingsModule.Object,
                 _mockRatingAlgorithmResolver.Object,
+                _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
@@ -722,6 +799,7 @@ public class AdminModuleTests
                 _mockPredictionsModule.Object,
                 null!,
                 _mockRatingAlgorithmResolver.Object,
+                _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
@@ -741,6 +819,28 @@ public class AdminModuleTests
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
+                null!,
+                _mockSeasonModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTeamPredictionRecordModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullSeasonModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionCalculatorModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingAlgorithmResolver.Object,
                 null!,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
@@ -762,6 +862,7 @@ public class AdminModuleTests
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
                 _mockRatingAlgorithmResolver.Object,
+                _mockSeasonModule.Object,
                 null!,
                 _mockTeamPredictionRecordModule.Object,
                 _mockTrackRecordModule.Object,
@@ -782,6 +883,7 @@ public class AdminModuleTests
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
                 _mockRatingAlgorithmResolver.Object,
+                _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 null!,
                 _mockTrackRecordModule.Object,
@@ -802,6 +904,7 @@ public class AdminModuleTests
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
                 _mockRatingAlgorithmResolver.Object,
+                _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
                 null!,

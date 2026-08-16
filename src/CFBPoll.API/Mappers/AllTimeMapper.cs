@@ -16,6 +16,7 @@ public static class AllTimeMapper
             Losses = entry.Losses,
             Rank = entry.Rank,
             Rating = entry.Rating,
+            RatingZScore = entry.RatingZScore,
             Record = $"{entry.Wins}-{entry.Losses}",
             Season = entry.Season,
             TeamName = entry.TeamName,
