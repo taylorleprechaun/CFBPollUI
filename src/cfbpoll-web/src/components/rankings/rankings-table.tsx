@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 
 import type { RankedTeam } from '../../types';
 
+import { calculateZScores } from '../../lib/stats-utils';
 import { SortableTable } from '../ui/sortable-table';
 import { TeamLogo } from './team-logo';
 
@@ -12,24 +13,38 @@ interface RankingsTableProps {
   rankings: RankedTeam[];
   selectedConference: string | null;
   selectedSeason: number | null;
+  showRatingZScore?: boolean;
 }
 
 interface DisplayRankedTeam extends RankedTeam {
   conferenceRank: number | null;
   conferenceSosRank: number | null;
+  ratingZScore?: number;
 }
 
 const DELTA_ARROW_PATH = "M11.96 24.231l8.344-8.49-0.893-0.916-6.801 6.897v-18.677h-1.302v18.677l-6.801-6.897-0.917 0.916z";
 
 const columnHelper = createColumnHelper<DisplayRankedTeam>();
 
-export function RankingsTable({ rankings, isLoading, selectedConference, selectedSeason }: RankingsTableProps) {
+export function RankingsTable({
+  rankings,
+  isLoading,
+  selectedConference,
+  selectedSeason,
+  showRatingZScore = false,
+}: RankingsTableProps) {
   const displayData: DisplayRankedTeam[] = useMemo(() => {
+    const zScores = showRatingZScore ? calculateZScores(rankings.map((t) => t.rating)) : null;
+    const zScoreMap = zScores
+      ? new Map(rankings.map((team, i) => [team.teamName, zScores[i]]))
+      : null;
+
     if (!selectedConference) {
       return rankings.map((team) => ({
         ...team,
         conferenceRank: null,
         conferenceSosRank: null,
+        ratingZScore: zScoreMap?.get(team.teamName),
       }));
     }
 
@@ -46,8 +61,9 @@ export function RankingsTable({ rankings, isLoading, selectedConference, selecte
       ...team,
       conferenceRank: rankMap.get(team.teamName) ?? null,
       conferenceSosRank: sosMap.get(team.teamName) ?? null,
+      ratingZScore: zScoreMap?.get(team.teamName),
     }));
-  }, [rankings, selectedConference]);
+  }, [rankings, selectedConference, showRatingZScore]);
 
   const columns = useMemo(() => [
     columnHelper.accessor('rank', {
@@ -88,10 +104,25 @@ export function RankingsTable({ rankings, isLoading, selectedConference, selecte
       header: 'Record',
       cell: (info) => info.getValue(),
     }),
-    columnHelper.accessor('rating', {
-      header: 'Rating',
-      cell: (info) => info.getValue().toFixed(4),
-    }),
+    showRatingZScore
+      ? columnHelper.accessor('ratingZScore', {
+          header: 'Rating (Z-Score)',
+          cell: (info) => {
+            const value = info.getValue();
+            const team = info.row.original;
+            if (value === undefined) return team.rating.toFixed(4);
+            return (
+              <>
+                <span>{team.rating.toFixed(4)}</span>
+                <span className="text-text-muted text-xs ml-1">({value.toFixed(2)})</span>
+              </>
+            );
+          },
+        })
+      : columnHelper.accessor('rating', {
+          header: 'Rating',
+          cell: (info) => info.getValue().toFixed(4),
+        }),
     columnHelper.accessor('weightedSOS', {
       header: 'Weighted SOS',
       cell: (info) => info.getValue().toFixed(4),
@@ -142,7 +173,7 @@ export function RankingsTable({ rankings, isLoading, selectedConference, selecte
         return a - b;
       },
     }),
-  ], [selectedSeason]);
+  ], [selectedSeason, showRatingZScore]);
 
   return (
     <SortableTable
