@@ -57,6 +57,22 @@ public class RatingAlgorithmResolverTests
     }
 
     [Fact]
+    public void ResolveForPredictions_ReturnsV1Instance()
+    {
+        var result = _resolver.ResolveForPredictions();
+
+        Assert.Same(_v1, result);
+    }
+
+    [Fact]
+    public void ResolveForSeason_WithSeasonAtThreshold_ReturnsV2Instance()
+    {
+        var result = _resolver.ResolveForSeason(2026);
+
+        Assert.Same(_v2, result);
+    }
+
+    [Fact]
     public void ResolveForSeason_WithSeasonBelowThreshold_ReturnsV1Instance()
     {
         var result = _resolver.ResolveForSeason(2024);
@@ -65,7 +81,7 @@ public class RatingAlgorithmResolverTests
     }
 
     [Fact]
-    public void ResolveVersionForSeason_WithSeasonAtThreshold_ReturnsV2()
+    public void ResolveVersionForSeason_WithSeasonAboveThreshold_ReturnsV2()
     {
         var result = _resolver.ResolveVersionForSeason(int.MaxValue);
 
@@ -73,9 +89,17 @@ public class RatingAlgorithmResolverTests
     }
 
     [Fact]
+    public void ResolveVersionForSeason_WithSeasonAtThreshold_ReturnsV2()
+    {
+        var result = _resolver.ResolveVersionForSeason(2026);
+
+        Assert.Equal(RatingAlgorithmVersion.V2, result);
+    }
+
+    [Fact]
     public void ResolveVersionForSeason_WithSeasonBelowThreshold_ReturnsV1()
     {
-        var result = _resolver.ResolveVersionForSeason(2024);
+        var result = _resolver.ResolveVersionForSeason(2025);
 
         Assert.Equal(RatingAlgorithmVersion.V1, result);
     }

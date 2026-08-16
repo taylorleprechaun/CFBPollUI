@@ -101,7 +101,7 @@ AdminController                    AdminModule
                                      -> IPredictionGradingModule
                                      -> IPredictionsModule
                                      -> IRankingsModule
-                                     -> IRatingModule
+                                     -> IRatingAlgorithmResolver
                                      -> ISeasonModule
                                      -> ISeasonTrendsModule
                                      -> ITrackRecordModule
@@ -136,7 +136,7 @@ PredictionsController              PredictionsModule
 RankingsController                 RankingsModule
   -> ICFBDataService                 -> IRankingsData                 RankingsData
   -> IRankingsModule                                                  -> SQLite
-  -> IRatingModule
+  -> IRatingAlgorithmResolver
 
 SeasonsController
   -> ICFBDataService
@@ -153,7 +153,7 @@ SeasonTrendsController             SeasonTrendsModule
 TeamsController                    TeamsModule
   -> ITeamsModule                    -> ICFBDataService
                                      -> IRankingsModule
-                                     -> IRatingModule
+                                     -> IRatingAlgorithmResolver
 
 TrackRecordController              TrackRecordModule
   -> ITrackRecordModule              -> IPersistentCache
@@ -324,12 +324,12 @@ A few ordering/formatting conventions are worth calling out since they're enforc
 
 ## Testing
 
-The project includes 2,296 unit and integration tests across backend and frontend.
+The project includes 2,299 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (930 tests)
+# Backend tests (933 tests)
 dotnet test
 
 # Run with coverage
@@ -342,7 +342,7 @@ npm test
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-930-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-933-blue)
 ![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1366-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
@@ -355,6 +355,6 @@ npm test
 | cfbpoll-web | 100% | 95% |
 
 **Excluded from coverage:**
-- `RatingModule` and `PredictionCalculatorModule` - Proprietary algorithms, kept in a private submodule rather than this repository. Tests are maintained privately alongside them.
+- `RatingModule`, `RatingModuleV2`, and `PredictionCalculatorModule` - Proprietary algorithms, kept in a private submodule rather than this repository. Tests are maintained privately alongside them.
 - `CFBDataService` - Makes HTTP calls to the external College Football Data API. Better suited for integration tests.
 - `Program.cs` - ASP.NET Core startup configuration code.

@@ -40,6 +40,7 @@ public class AdminModuleTests
         _mockRankingsModule = new Mock<IRankingsModule>();
         _mockRatingModule = new Mock<IRatingModule>();
         _mockRatingAlgorithmResolver = new Mock<IRatingAlgorithmResolver>();
+        _mockRatingAlgorithmResolver.Setup(x => x.ResolveForPredictions()).Returns(_mockRatingModule.Object);
         _mockRatingAlgorithmResolver.Setup(x => x.ResolveForSeason(It.IsAny<int>())).Returns(_mockRatingModule.Object);
         _mockRatingAlgorithmResolver.Setup(x => x.ResolveVersionForSeason(It.IsAny<int>())).Returns(RatingAlgorithmVersion.V1);
         _mockRatingAlgorithmResolver.Setup(x => x.Resolve(It.IsAny<RatingAlgorithmVersion>())).Returns(_mockRatingModule.Object);

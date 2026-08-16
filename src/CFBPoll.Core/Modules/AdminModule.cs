@@ -112,7 +112,7 @@ public class AdminModule : IAdminModule
         // CFBD API serves all postseason betting lines under week 1
         var bettingLinesWeek = isPostseason ? 1 : gameWeek;
 
-        var ratingsTask = _ratingAlgorithmResolver.ResolveForSeason(season).RateTeamsAsync(seasonData);
+        var ratingsTask = _ratingAlgorithmResolver.ResolveForPredictions().RateTeamsAsync(seasonData);
         var bettingLinesTask = _dataService.GetBettingLinesAsync(season, bettingLinesWeek);
         await Task.WhenAll(ratingsTask, bettingLinesTask).ConfigureAwait(false);
 

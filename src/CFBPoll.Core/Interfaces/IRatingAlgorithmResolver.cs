@@ -15,6 +15,13 @@ public interface IRatingAlgorithmResolver
     IRatingModule Resolve(RatingAlgorithmVersion version);
 
     /// <summary>
+    /// Returns the rating module implementation predictions should use, independent of the season-based
+    /// rankings cutover.
+    /// </summary>
+    /// <returns>The rating module predictions are currently pinned to.</returns>
+    IRatingModule ResolveForPredictions();
+
+    /// <summary>
     /// Returns the rating module implementation authoritative for the given season.
     /// </summary>
     /// <param name="season">The season to resolve the algorithm version for.</param>

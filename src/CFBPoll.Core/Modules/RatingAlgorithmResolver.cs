@@ -5,9 +5,12 @@ namespace CFBPoll.Core.Modules;
 
 public class RatingAlgorithmResolver : IRatingAlgorithmResolver
 {
-    // Placeholder far-future cutover: every season resolves to V1 until this is deliberately
-    // lowered once the V2 algorithm's real logic exists (see RatingModuleV2).
-    private const int NEW_ALGORITHM_START_SEASON = int.MaxValue;
+    private const int NEW_ALGORITHM_START_SEASON = 2026;
+    /// <summary>
+    /// Predictions stay on this version regardless of <see cref="NEW_ALGORITHM_START_SEASON"/> until
+    /// <see cref="RatingModuleV2"/>'s rating scale is accounted for in the prediction math.
+    /// </summary>
+    private const RatingAlgorithmVersion PREDICTIONS_PINNED_VERSION = RatingAlgorithmVersion.V1;
 
     private readonly RatingModule _v1;
     private readonly RatingModuleV2 _v2;
@@ -26,6 +29,11 @@ public class RatingAlgorithmResolver : IRatingAlgorithmResolver
             RatingAlgorithmVersion.V2 => _v2,
             _ => throw new ArgumentOutOfRangeException(nameof(version), version, "Unknown rating algorithm version.")
         };
+    }
+
+    public IRatingModule ResolveForPredictions()
+    {
+        return Resolve(PREDICTIONS_PINNED_VERSION);
     }
 
     public IRatingModule ResolveForSeason(int season)
