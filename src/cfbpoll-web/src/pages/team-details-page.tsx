@@ -217,10 +217,6 @@ export function TeamDetailsPage() {
                     <span className="opacity-70">SOS Rank</span>
                     <p className="text-xl font-bold">#{teamDetail.sosRanking}</p>
                   </div>
-                  <div>
-                    <span className="opacity-70">Weighted SOS</span>
-                    <p className="text-xl font-bold">{teamDetail.weightedSOS.toFixed(4)}</p>
-                  </div>
                 </div>
               </div>
             </div>

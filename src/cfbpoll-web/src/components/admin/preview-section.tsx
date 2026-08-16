@@ -75,6 +75,7 @@ export function PreviewSection({
           isLoading={false}
           selectedConference={null}
           selectedSeason={previewRankings.season}
+          showWeightedSOS
         />
       </CollapsibleContent>
     </div>

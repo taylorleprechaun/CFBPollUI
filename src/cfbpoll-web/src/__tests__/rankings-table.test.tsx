@@ -76,6 +76,7 @@ function renderTable(props: {
   selectedConference?: string | null;
   selectedSeason?: number | null;
   showRatingZScore?: boolean;
+  showWeightedSOS?: boolean;
 } = {}) {
   return render(
     <MemoryRouter>
@@ -85,6 +86,7 @@ function renderTable(props: {
         selectedConference={props.selectedConference ?? null}
         selectedSeason={'selectedSeason' in props ? props.selectedSeason ?? null : 2024}
         showRatingZScore={props.showRatingZScore ?? false}
+        showWeightedSOS={props.showWeightedSOS ?? false}
       />
     </MemoryRouter>
   );
@@ -109,13 +111,13 @@ describe('RankingsTable', () => {
     });
 
     it('displays weighted SOS with 4 decimal places', () => {
-      renderTable();
+      renderTable({ showWeightedSOS: true });
 
       expect(screen.getByText('0.5820')).toBeInTheDocument();
     });
 
     it('renders all columns', () => {
-      renderTable();
+      renderTable({ showWeightedSOS: true });
 
       expect(screen.getByText('Rank')).toBeInTheDocument();
       expect(screen.getByText('Team')).toBeInTheDocument();
@@ -363,6 +365,22 @@ describe('RankingsTable', () => {
       const uscLink = screen.getByText('USC').closest('a');
       expect(uscLink).toBeInTheDocument();
       expect(uscLink).toHaveAttribute('href', '/team-details?team=USC&season=2024');
+    });
+  });
+
+  describe('weighted SOS column', () => {
+    it('hides the weighted SOS column when showWeightedSOS is false', () => {
+      renderTable();
+
+      expect(screen.queryByText('Weighted SOS')).not.toBeInTheDocument();
+      expect(screen.queryByText('0.5820')).not.toBeInTheDocument();
+    });
+
+    it('shows the weighted SOS column when showWeightedSOS is true', () => {
+      renderTable({ showWeightedSOS: true });
+
+      expect(screen.getByText('Weighted SOS')).toBeInTheDocument();
+      expect(screen.getByText('0.5820')).toBeInTheDocument();
     });
   });
 });

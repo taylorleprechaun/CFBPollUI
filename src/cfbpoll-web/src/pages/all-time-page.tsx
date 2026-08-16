@@ -30,7 +30,7 @@ export function AllTimePage() {
   usePreloadImages(allTimeLogoUrls);
 
   const defaultColumns = useMemo(
-    () => [allTimeRankColumn, teamNameColumn, seasonColumn, recordColumn, rankColumn, ratingZScoreColumn, weightedSOSColumn],
+    () => [allTimeRankColumn, teamNameColumn, seasonColumn, recordColumn, rankColumn, ratingZScoreColumn],
     []
   );
 

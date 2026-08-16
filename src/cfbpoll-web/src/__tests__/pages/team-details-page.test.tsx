@@ -716,12 +716,11 @@ describe('TeamDetailsPage', () => {
       expect(screen.getByText('11-0')).toBeInTheDocument();
     });
 
-    it('renders SOS ranking and weighted SOS', () => {
+    it('renders SOS ranking', () => {
       setupMocks({ teamDetailData: mockTeamDetail });
       renderPage('/team-details?team=USC&season=2024&week=12');
 
       expect(screen.getByText('#15')).toBeInTheDocument();
-      expect(screen.getByText('0.5820')).toBeInTheDocument();
     });
 
     it('renders team logo with border classes', () => {

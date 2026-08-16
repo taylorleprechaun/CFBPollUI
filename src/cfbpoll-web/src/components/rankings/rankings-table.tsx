@@ -14,6 +14,7 @@ interface RankingsTableProps {
   selectedConference: string | null;
   selectedSeason: number | null;
   showRatingZScore?: boolean;
+  showWeightedSOS?: boolean;
 }
 
 interface DisplayRankedTeam extends RankedTeam {
@@ -32,6 +33,7 @@ export function RankingsTable({
   selectedConference,
   selectedSeason,
   showRatingZScore = false,
+  showWeightedSOS = false,
 }: RankingsTableProps) {
   const displayData: DisplayRankedTeam[] = useMemo(() => {
     const zScores = showRatingZScore ? calculateZScores(rankings.map((t) => t.rating)) : null;
@@ -123,10 +125,14 @@ export function RankingsTable({
           header: 'Rating',
           cell: (info) => info.getValue().toFixed(4),
         }),
-    columnHelper.accessor('weightedSOS', {
-      header: 'Weighted SOS',
-      cell: (info) => info.getValue().toFixed(4),
-    }),
+    ...(showWeightedSOS
+      ? [
+          columnHelper.accessor('weightedSOS', {
+            header: 'Weighted SOS',
+            cell: (info) => info.getValue().toFixed(4),
+          }),
+        ]
+      : []),
     columnHelper.accessor('sosRanking', {
       header: 'SOS Rank',
       cell: (info) => {
@@ -173,7 +179,7 @@ export function RankingsTable({
         return a - b;
       },
     }),
-  ], [selectedSeason, showRatingZScore]);
+  ], [selectedSeason, showRatingZScore, showWeightedSOS]);
 
   return (
     <SortableTable

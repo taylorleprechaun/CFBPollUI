@@ -52,6 +52,7 @@ export function ExperimentalPreviewSection({
           selectedConference={null}
           selectedSeason={previewRankings.season}
           showRatingZScore
+          showWeightedSOS
         />
       </CollapsibleContent>
     </div>
