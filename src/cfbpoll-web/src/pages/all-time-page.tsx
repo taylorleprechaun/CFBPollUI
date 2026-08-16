@@ -4,6 +4,7 @@ import {
   allTimeRankColumn,
   rankColumn,
   ratingColumn,
+  ratingZScoreColumn,
   recordColumn,
   seasonColumn,
   teamNameColumn,
@@ -29,7 +30,7 @@ export function AllTimePage() {
   usePreloadImages(allTimeLogoUrls);
 
   const defaultColumns = useMemo(
-    () => [allTimeRankColumn, teamNameColumn, seasonColumn, recordColumn, rankColumn, ratingColumn, weightedSOSColumn],
+    () => [allTimeRankColumn, teamNameColumn, seasonColumn, recordColumn, rankColumn, ratingZScoreColumn, weightedSOSColumn],
     []
   );
 

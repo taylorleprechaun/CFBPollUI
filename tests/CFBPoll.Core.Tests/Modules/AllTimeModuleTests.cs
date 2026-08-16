@@ -56,54 +56,6 @@ public class AllTimeModuleTests
                 new Mock<ILogger<AllTimeModule>>().Object));
     }
 
-    [Theory]
-    [InlineData(24, true)]
-    [InlineData(25, false)]
-    [InlineData(26, false)]
-    public async Task GetAllTimeRankingsAsync_BestTeamsCandidateCount_FallbackBehaviorAtListSizeBoundary(
-        int candidateCount, bool fallbackIncludesLowRatedTeam)
-    {
-        var teams = Enumerable.Range(1, candidateCount)
-            .Select(i => CreateTeam($"Good {i}", 40.0 + i, 10, 0, i, 0.8))
-            .ToList();
-        teams.Add(CreateTeam("Low Team", 35.0, 5, 5, candidateCount + 1, 0.4));
-
-        SetupSingleSeason(2023, "postseason", teams.ToArray());
-
-        var result = await _module.GetAllTimeRankingsAsync();
-
-        if (fallbackIncludesLowRatedTeam)
-            Assert.Contains(result.BestTeams, e => e.TeamName == "Low Team");
-        else
-            Assert.DoesNotContain(result.BestTeams, e => e.TeamName == "Low Team");
-    }
-
-    [Theory]
-    [InlineData(39.9, false)]
-    [InlineData(40.0, true)]
-    [InlineData(40.1, true)]
-    public async Task GetAllTimeRankingsAsync_BestTeamsThresholdBoundary_IncludesOrExcludesCorrectly(
-        double boundaryRating, bool shouldBeIncluded)
-    {
-        // 24 teams above threshold + 1 filler just below threshold + boundary team = 26 total
-        // When boundary >= 40.0: 25 candidates, threshold path, all 25 returned, boundary included
-        // When boundary < 40.0: 24 candidates, fallback top 25, filler pushes boundary out
-        var teams = Enumerable.Range(1, 24)
-            .Select(i => CreateTeam($"Good {i}", 40.0 + i, 10, 0, i, 0.8))
-            .ToList();
-        teams.Add(CreateTeam("Filler", 39.95, 7, 3, 25, 0.4));
-        teams.Add(CreateTeam("Boundary Team", boundaryRating, 8, 2, 26, 0.5));
-
-        SetupSingleSeason(2023, "postseason", teams.ToArray());
-
-        var result = await _module.GetAllTimeRankingsAsync();
-
-        if (shouldBeIncluded)
-            Assert.Contains(result.BestTeams, e => e.TeamName == "Boundary Team");
-        else
-            Assert.DoesNotContain(result.BestTeams, e => e.TeamName == "Boundary Team");
-    }
-
     [Fact]
     public async Task GetAllTimeRankingsAsync_BestTeams_AssignsSequentialRanks()
     {
@@ -125,37 +77,24 @@ public class AllTimeModuleTests
     }
 
     [Fact]
-    public async Task GetAllTimeRankingsAsync_BestTeams_FallsBackToTop25WhenBelowThreshold()
+    public async Task GetAllTimeRankingsAsync_BestTeams_ComputesZScorePerSeasonMeanAndStdDev()
     {
+        // Ratings 50/40/30 -> mean 40.0, population stddev = sqrt(((10^2)+(0^2)+(-10^2))/3) = 8.164966
         var teams = new List<RankedTeam>
         {
-            CreateTeam("Team A", 35.0, 8, 2, 1, 0.6),
-            CreateTeam("Team B", 30.0, 7, 3, 2, 0.5),
-            CreateTeam("Team C", 25.0, 6, 4, 3, 0.4)
+            CreateTeam("Alabama", 50.0, 11, 1, 1, 0.8),
+            CreateTeam("Florida", 40.0, 8, 4, 2, 0.6),
+            CreateTeam("USC", 30.0, 5, 7, 3, 0.4)
         };
 
         SetupSingleSeason(2023, "postseason", teams.ToArray());
 
         var result = await _module.GetAllTimeRankingsAsync();
 
-        Assert.Equal(3, result.BestTeams.Count());
-        Assert.Equal("Team A", result.BestTeams.First().TeamName);
-    }
-
-    [Fact]
-    public async Task GetAllTimeRankingsAsync_BestTeams_FiltersByThreshold()
-    {
-        var teams = Enumerable.Range(1, 26)
-            .Select(i => CreateTeam($"Good {i}", 40.0 + i, 10, 0, i, 0.8))
-            .ToList();
-        teams.Add(CreateTeam("Low Team", 20.0, 5, 5, 50, 0.3));
-
-        SetupSingleSeason(2023, "postseason", teams.ToArray());
-
-        var result = await _module.GetAllTimeRankingsAsync();
-
-        Assert.Equal(25, result.BestTeams.Count());
-        Assert.DoesNotContain(result.BestTeams, e => e.TeamName == "Low Team");
+        var bestTeams = result.BestTeams.ToList();
+        Assert.Equal(1.2247, bestTeams.Single(e => e.TeamName == "Alabama").RatingZScore, precision: 4);
+        Assert.Equal(0.0, bestTeams.Single(e => e.TeamName == "Florida").RatingZScore, precision: 4);
+        Assert.Equal(-1.2247, bestTeams.Single(e => e.TeamName == "USC").RatingZScore, precision: 4);
     }
 
     [Fact]
@@ -173,7 +112,7 @@ public class AllTimeModuleTests
     }
 
     [Fact]
-    public async Task GetAllTimeRankingsAsync_BestTeams_SortedByRatingDescending()
+    public async Task GetAllTimeRankingsAsync_BestTeams_SortedByRatingZScoreDescending()
     {
         var teams = new List<RankedTeam>
         {
@@ -190,6 +129,87 @@ public class AllTimeModuleTests
         Assert.Equal("Higher", bestTeams[0].TeamName);
         Assert.Equal("Middle", bestTeams[1].TeamName);
         Assert.Equal("Lower", bestTeams[2].TeamName);
+    }
+
+    [Fact]
+    public async Task GetAllTimeRankingsAsync_BestTeams_ZeroStdDevSeason_DefaultsZScoreToZero()
+    {
+        var teams = new List<RankedTeam>
+        {
+            CreateTeam("Iowa", 40.0, 7, 5, 1, 0.5),
+            CreateTeam("Nebraska", 40.0, 7, 5, 2, 0.5),
+            CreateTeam("Michigan", 40.0, 7, 5, 3, 0.5)
+        };
+
+        SetupSingleSeason(2023, "postseason", teams.ToArray());
+
+        var result = await _module.GetAllTimeRankingsAsync();
+
+        Assert.All(result.BestTeams, e => Assert.Equal(0.0, e.RatingZScore));
+    }
+
+    [Fact]
+    public async Task GetAllTimeRankingsAsync_BestTeams_ZScoreSortDivergesFromRawRatingSortAcrossSeasons_SortsByZScore()
+    {
+        // Season 2022: ratings 60/58/56 -> mean 58, stddev 1.632993 -> "Ohio State" z = 2/1.632993 = 1.224745
+        // Season 2023: ratings 45/20/10 -> mean 25, stddev 14.719601 -> "Iowa" z = 20/14.719601 = 1.358732
+        // "Iowa" has a lower raw rating (45) than "Ohio State" (60), but Iowa's season was far less
+        // spread out relative to its mean, so Iowa's z-score is higher -> Iowa should rank first.
+        _mockRankingsModule
+            .Setup(x => x.GetSnapshotsAsync())
+            .ReturnsAsync(new List<SnapshotSummary>
+            {
+                new() { Season = 2022, Week = 5, IsPublished = true },
+                new() { Season = 2023, Week = 6, IsPublished = true }
+            });
+
+        _mockDataService
+            .Setup(x => x.GetCalendarAsync(2022))
+            .ReturnsAsync(new List<CalendarWeek>
+            {
+                new() { Week = 5, SeasonType = "postseason" }
+            });
+
+        _mockDataService
+            .Setup(x => x.GetCalendarAsync(2023))
+            .ReturnsAsync(new List<CalendarWeek>
+            {
+                new() { Week = 6, SeasonType = "postseason" }
+            });
+
+        _mockRankingsModule
+            .Setup(x => x.GetPublishedSnapshotAsync(2022, 5))
+            .ReturnsAsync(new RankingsResult
+            {
+                Season = 2022,
+                Week = 5,
+                Rankings = new List<RankedTeam>
+                {
+                    CreateTeam("Ohio State", 60.0, 13, 0, 1, 0.9),
+                    CreateTeam("Michigan", 58.0, 12, 1, 2, 0.85),
+                    CreateTeam("Notre Dame", 56.0, 11, 1, 3, 0.8)
+                }
+            });
+
+        _mockRankingsModule
+            .Setup(x => x.GetPublishedSnapshotAsync(2023, 6))
+            .ReturnsAsync(new RankingsResult
+            {
+                Season = 2023,
+                Week = 6,
+                Rankings = new List<RankedTeam>
+                {
+                    CreateTeam("Iowa", 45.0, 10, 3, 1, 0.6),
+                    CreateTeam("Nebraska", 20.0, 5, 7, 2, 0.4),
+                    CreateTeam("Texas", 10.0, 3, 9, 3, 0.3)
+                }
+            });
+
+        var result = await _module.GetAllTimeRankingsAsync();
+
+        var bestTeams = result.BestTeams.ToList();
+        Assert.Equal("Iowa", bestTeams[0].TeamName);
+        Assert.Equal("Ohio State", bestTeams[1].TeamName);
     }
 
     [Fact]
@@ -437,6 +457,9 @@ public class AllTimeModuleTests
     [Fact]
     public async Task GetAllTimeRankingsAsync_MultipleSeasons_CombinesData()
     {
+        // 2022: ratings 50/48/20 -> mean 39.333, stddev 13.696 -> "Ohio State" z = 10.667/13.696 = 0.7788
+        // 2023: ratings 55/54/53 -> mean 54.0, stddev 0.8165 -> "Michigan" z = 1/0.8165 = 1.2247
+        // "Texas" (2022, rating 20) is the outlier furthest below its season's mean -> lowest z-score overall.
         _mockRankingsModule
             .Setup(x => x.GetSnapshotsAsync())
             .ReturnsAsync(new List<SnapshotSummary>
@@ -467,7 +490,9 @@ public class AllTimeModuleTests
                 Week = 5,
                 Rankings = new List<RankedTeam>
                 {
-                    CreateTeam("Team 2022", 50.0, 10, 0, 1, 0.8)
+                    CreateTeam("Ohio State", 50.0, 10, 0, 1, 0.8),
+                    CreateTeam("Oklahoma", 48.0, 9, 1, 2, 0.75),
+                    CreateTeam("Texas", 20.0, 4, 6, 3, 0.4)
                 }
             });
 
@@ -479,17 +504,20 @@ public class AllTimeModuleTests
                 Week = 6,
                 Rankings = new List<RankedTeam>
                 {
-                    CreateTeam("Team 2023", 55.0, 11, 0, 1, 0.9)
+                    CreateTeam("Michigan", 55.0, 11, 0, 1, 0.9),
+                    CreateTeam("Notre Dame", 54.0, 11, 1, 2, 0.85),
+                    CreateTeam("Nebraska", 53.0, 10, 2, 3, 0.8)
                 }
             });
 
         var result = await _module.GetAllTimeRankingsAsync();
 
-        Assert.Equal(2, result.BestTeams.Count());
-        Assert.Equal("Team 2023", result.BestTeams.First().TeamName);
-        Assert.Equal(2023, result.BestTeams.First().Season);
-        Assert.Equal("Team 2022", result.BestTeams.Last().TeamName);
-        Assert.Equal(2022, result.BestTeams.Last().Season);
+        var bestTeams = result.BestTeams.ToList();
+        Assert.Equal(6, bestTeams.Count);
+        Assert.Equal("Michigan", bestTeams.First().TeamName);
+        Assert.Equal(2023, bestTeams.First().Season);
+        Assert.Equal("Texas", bestTeams.Last().TeamName);
+        Assert.Equal(2022, bestTeams.Last().Season);
     }
 
     [Fact]
@@ -587,30 +615,26 @@ public class AllTimeModuleTests
         Assert.Equal("Team A", result.BestTeams.First().TeamName);
     }
 
-    [Theory]
-    [InlineData(15.9, true)]
-    [InlineData(16.0, true)]
-    [InlineData(16.1, false)]
-    public async Task GetAllTimeRankingsAsync_WorstTeamsThresholdBoundary_IncludesOrExcludesCorrectly(
-        double boundaryRating, bool shouldBeIncluded)
+    [Fact]
+    public async Task GetAllTimeRankingsAsync_WorstTeams_ComputesZScorePerSeasonMeanAndStdDev()
     {
-        // 24 teams below threshold + 1 filler just above threshold + boundary team = 26 total
-        // When boundary <= 16.0: 25 candidates, threshold path, all 25 returned, boundary included
-        // When boundary > 16.0: 24 candidates, fallback bottom 25, filler pushes boundary out
-        var teams = Enumerable.Range(1, 24)
-            .Select(i => CreateTeam($"Bad {i}", i * 0.5, 1, 9, 130 - i, 0.2))
-            .ToList();
-        teams.Add(CreateTeam("Filler", 16.05, 3, 7, 100, 0.3));
-        teams.Add(CreateTeam("Boundary Team", boundaryRating, 2, 8, 99, 0.3));
+        // Ratings 10/20/30 -> mean 20.0, population stddev = sqrt(((-10^2)+(0^2)+(10^2))/3) = 8.164966
+        var teams = new List<RankedTeam>
+        {
+            CreateTeam("Texas", 10.0, 2, 8, 128, 0.2),
+            CreateTeam("Nebraska", 20.0, 3, 7, 100, 0.3),
+            CreateTeam("Oklahoma", 30.0, 4, 6, 75, 0.4)
+        };
 
         SetupSingleSeason(2023, "postseason", teams.ToArray());
 
         var result = await _module.GetAllTimeRankingsAsync();
 
-        if (shouldBeIncluded)
-            Assert.Contains(result.WorstTeams, e => e.TeamName == "Boundary Team");
-        else
-            Assert.DoesNotContain(result.WorstTeams, e => e.TeamName == "Boundary Team");
+        var worstTeams = result.WorstTeams.ToList();
+        Assert.Equal(-1.2247, worstTeams.Single(e => e.TeamName == "Texas").RatingZScore, precision: 4);
+        Assert.Equal(0.0, worstTeams.Single(e => e.TeamName == "Nebraska").RatingZScore, precision: 4);
+        Assert.Equal(1.2247, worstTeams.Single(e => e.TeamName == "Oklahoma").RatingZScore, precision: 4);
+        Assert.Equal("Texas", worstTeams[0].TeamName);
     }
 
     [Fact]
@@ -633,40 +657,6 @@ public class AllTimeModuleTests
     }
 
     [Fact]
-    public async Task GetAllTimeRankingsAsync_WorstTeams_FallsBackToBottom25WhenAboveThreshold()
-    {
-        var teams = new List<RankedTeam>
-        {
-            CreateTeam("Team A", 20.0, 5, 5, 80, 0.4),
-            CreateTeam("Team B", 25.0, 6, 4, 70, 0.45),
-            CreateTeam("Team C", 30.0, 7, 3, 60, 0.5)
-        };
-
-        SetupSingleSeason(2023, "postseason", teams.ToArray());
-
-        var result = await _module.GetAllTimeRankingsAsync();
-
-        Assert.Equal(3, result.WorstTeams.Count());
-        Assert.Equal("Team A", result.WorstTeams.First().TeamName);
-    }
-
-    [Fact]
-    public async Task GetAllTimeRankingsAsync_WorstTeams_FiltersByThreshold()
-    {
-        var teams = Enumerable.Range(1, 26)
-            .Select(i => CreateTeam($"Bad {i}", i * 0.5, 0, 10, 130 - i, 0.2))
-            .ToList();
-        teams.Add(CreateTeam("Good Team", 50.0, 10, 0, 1, 0.8));
-
-        SetupSingleSeason(2023, "postseason", teams.ToArray());
-
-        var result = await _module.GetAllTimeRankingsAsync();
-
-        Assert.Equal(25, result.WorstTeams.Count());
-        Assert.DoesNotContain(result.WorstTeams, e => e.TeamName == "Good Team");
-    }
-
-    [Fact]
     public async Task GetAllTimeRankingsAsync_WorstTeams_LimitedTo25()
     {
         var teams = Enumerable.Range(1, 30)
@@ -681,7 +671,7 @@ public class AllTimeModuleTests
     }
 
     [Fact]
-    public async Task GetAllTimeRankingsAsync_WorstTeams_SortedByRatingAscending()
+    public async Task GetAllTimeRankingsAsync_WorstTeams_SortedByRatingZScoreAscending()
     {
         var teams = new List<RankedTeam>
         {

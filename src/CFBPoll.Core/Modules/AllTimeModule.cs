@@ -6,9 +6,7 @@ namespace CFBPoll.Core.Modules;
 
 public class AllTimeModule : IAllTimeModule
 {
-    private const double BEST_TEAMS_THRESHOLD = 40.0;
     private const int LIST_SIZE = 25;
-    private const double WORST_TEAMS_THRESHOLD = 16.0;
 
     private readonly ICFBDataService _dataService;
     private readonly ILogger<AllTimeModule> _logger;
@@ -30,18 +28,26 @@ public class AllTimeModule : IAllTimeModule
         var postseasonSnapshots = await GetPostseasonSnapshotsAsync().ConfigureAwait(false);
 
         var allEntries = postseasonSnapshots
-            .SelectMany(snapshot => snapshot.Rankings.Select(team => new AllTimeEntry
+            .SelectMany(snapshot =>
             {
-                LogoURL = team.LogoURL,
-                Losses = team.Losses,
-                Rank = team.Rank,
-                Rating = team.Rating,
-                Season = snapshot.Season,
-                TeamName = team.TeamName,
-                WeightedSOS = team.WeightedSOS,
-                Week = snapshot.Week,
-                Wins = team.Wins
-            }))
+                var seasonRatings = snapshot.Rankings.Select(t => t.Rating).ToList();
+                var mean = CalculateMean(seasonRatings);
+                var stdDev = CalculatePopulationStandardDeviation(seasonRatings, mean);
+
+                return snapshot.Rankings.Select(team => new AllTimeEntry
+                {
+                    LogoURL = team.LogoURL,
+                    Losses = team.Losses,
+                    Rank = team.Rank,
+                    Rating = team.Rating,
+                    RatingZScore = CalculateZScore(team.Rating, mean, stdDev),
+                    Season = snapshot.Season,
+                    TeamName = team.TeamName,
+                    WeightedSOS = team.WeightedSOS,
+                    Week = snapshot.Week,
+                    Wins = team.Wins
+                });
+            })
             .ToList();
 
         return new AllTimeResult
@@ -61,6 +67,7 @@ public class AllTimeModule : IAllTimeModule
             Losses = e.Losses,
             Rank = e.Rank,
             Rating = e.Rating,
+            RatingZScore = e.RatingZScore,
             Season = e.Season,
             TeamName = e.TeamName,
             WeightedSOS = e.WeightedSOS,
@@ -69,49 +76,48 @@ public class AllTimeModule : IAllTimeModule
         }).ToList();
     }
 
-    private IReadOnlyList<AllTimeEntry> BuildBestTeams(IReadOnlyList<AllTimeEntry> allEntries)
+    private static IReadOnlyList<AllTimeEntry> BuildBestTeams(IReadOnlyList<AllTimeEntry> allEntries)
     {
-        var candidates = allEntries
-            .Where(e => e.Rating >= BEST_TEAMS_THRESHOLD)
-            .OrderByDescending(e => e.Rating)
-            .ToList();
-
-        if (candidates.Count < LIST_SIZE)
-        {
-            return AssignRanks(allEntries
-                .OrderByDescending(e => e.Rating)
-                .Take(LIST_SIZE));
-        }
-
-        return AssignRanks(candidates.Take(LIST_SIZE));
+        return AssignRanks(allEntries
+            .OrderByDescending(e => e.RatingZScore)
+            .Take(LIST_SIZE));
     }
 
-    private IReadOnlyList<AllTimeEntry> BuildHardestSchedules(IReadOnlyList<AllTimeEntry> allEntries)
+    private static IReadOnlyList<AllTimeEntry> BuildHardestSchedules(IReadOnlyList<AllTimeEntry> allEntries)
     {
         return AssignRanks(allEntries
             .OrderByDescending(e => e.WeightedSOS)
             .Take(LIST_SIZE));
     }
 
-    private IReadOnlyList<AllTimeEntry> BuildWorstTeams(IReadOnlyList<AllTimeEntry> allEntries)
+    private static IReadOnlyList<AllTimeEntry> BuildWorstTeams(IReadOnlyList<AllTimeEntry> allEntries)
     {
-        var eligible = allEntries
+        return AssignRanks(allEntries
             .Where(e => e.Wins + e.Losses > 0)
-            .ToList();
+            .OrderBy(e => e.RatingZScore)
+            .Take(LIST_SIZE));
+    }
 
-        var candidates = eligible
-            .Where(e => e.Rating <= WORST_TEAMS_THRESHOLD)
-            .OrderBy(e => e.Rating)
-            .ToList();
+    private static double CalculateMean(IReadOnlyList<double> values)
+    {
+        if (values.Count == 0) return 0.0;
 
-        if (candidates.Count < LIST_SIZE)
-        {
-            return AssignRanks(eligible
-                .OrderBy(e => e.Rating)
-                .Take(LIST_SIZE));
-        }
+        return values.Average();
+    }
 
-        return AssignRanks(candidates.Take(LIST_SIZE));
+    private static double CalculatePopulationStandardDeviation(IReadOnlyList<double> values, double mean)
+    {
+        if (values.Count == 0) return 0.0;
+
+        var sumOfSquaredDeviations = values.Sum(v => Math.Pow(v - mean, 2));
+        return Math.Sqrt(sumOfSquaredDeviations / values.Count);
+    }
+
+    private static double CalculateZScore(double rating, double mean, double stdDev)
+    {
+        if (stdDev == 0) return 0.0;
+
+        return (rating - mean) / stdDev;
     }
 
     private async Task<IReadOnlyList<RankingsResult>> GetPostseasonSnapshotsAsync()

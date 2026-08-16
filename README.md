@@ -324,12 +324,12 @@ A few ordering/formatting conventions are worth calling out since they're enforc
 
 ## Testing
 
-The project includes 2,294 unit and integration tests across backend and frontend.
+The project includes 2,285 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (939 tests)
+# Backend tests (930 tests)
 dotnet test
 
 # Run with coverage
@@ -342,15 +342,15 @@ npm test
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-939-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-930-blue)
 ![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1355-blue)
-![Core Coverage](https://img.shields.io/badge/Core_Coverage-98%25-brightgreen)
+![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
 ![Web Coverage](https://img.shields.io/badge/Web_Coverage-100%25-brightgreen)
 
 | Project | Line Coverage | Branch Coverage |
 |---------|---------------|-----------------|
-| CFBPoll.Core | 98% | 94% |
+| CFBPoll.Core | 99% | 94% |
 | CFBPoll.API | 100% | 97% |
 | cfbpoll-web | 100% | 95% |
 

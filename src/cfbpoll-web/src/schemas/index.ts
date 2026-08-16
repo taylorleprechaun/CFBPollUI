@@ -112,6 +112,7 @@ export const AllTimeEntrySchema = z.object({
   losses: z.number(),
   rank: z.number(),
   rating: z.number(),
+  ratingZScore: z.number(),
   record: z.string(),
   season: z.number(),
   teamName: z.string(),
