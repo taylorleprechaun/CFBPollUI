@@ -102,6 +102,7 @@ AdminController                    AdminModule
                                      -> IPredictionsModule
                                      -> IRankingsModule
                                      -> IRatingModule
+                                     -> ISeasonModule
                                      -> ISeasonTrendsModule
                                      -> ITrackRecordModule
 
@@ -301,6 +302,7 @@ The frontend runs at `http://localhost:5173`.
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/snapshot/export` | Download rankings as Excel |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}` | Calculate rankings using an explicitly chosen algorithm version, without persisting or publishing |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/export` | Download experimental rankings as Excel for a chosen algorithm version, without persisting or publishing |
+| `POST /api/v1/admin/seasons/{season}/experimental/{algorithmVersion}/trends` | Calculate season trends (top-25 rank progression) live across every week of a season using an explicitly chosen algorithm version, without persisting or publishing |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Retrieve persisted predictions for a season/week without recalculating or re-grading |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Calculate predictions for a season/week and save as draft |
 | `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Update a prediction (currently supports publishing) |
@@ -322,33 +324,33 @@ A few ordering/formatting conventions are worth calling out since they're enforc
 
 ## Testing
 
-The project includes 2,257 unit and integration tests across backend and frontend.
+The project includes 2,294 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (921 tests)
+# Backend tests (939 tests)
 dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (1,336 tests)
+# Frontend tests (1,355 tests)
 cd src/cfbpoll-web
 npm test
 ```
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-921-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1336-blue)
-![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-939-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1355-blue)
+![Core Coverage](https://img.shields.io/badge/Core_Coverage-98%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
 ![Web Coverage](https://img.shields.io/badge/Web_Coverage-100%25-brightgreen)
 
 | Project | Line Coverage | Branch Coverage |
 |---------|---------------|-----------------|
-| CFBPoll.Core | 99% | 94% |
+| CFBPoll.Core | 98% | 94% |
 | CFBPoll.API | 100% | 97% |
 | cfbpoll-web | 100% | 95% |
 

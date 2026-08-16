@@ -50,6 +50,36 @@ public class AdminControllerTests
     }
 
     [Fact]
+    public async Task CalculateExperimentalSeasonTrends_ReturnsSeasonTrendsResponseDTO()
+    {
+        var trendsResult = new SeasonTrendsResult
+        {
+            Season = 2024,
+            Teams =
+            [
+                new SeasonTrendTeam
+                {
+                    TeamName = "Ohio State",
+                    Rankings = [new SeasonTrendRanking { WeekNumber = 1, Rank = 1, Rating = 90, Record = "1-0" }]
+                }
+            ],
+            Weeks = [new SeasonTrendWeek { WeekNumber = 1, Label = "Week 2" }]
+        };
+
+        _mockAdminModule
+            .Setup(x => x.CalculateExperimentalSeasonTrendsAsync(2024, RatingAlgorithmVersion.V1))
+            .ReturnsAsync(trendsResult);
+
+        var result = await _controller.CalculateExperimentalSeasonTrends(2024, RatingAlgorithmVersion.V1);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<SeasonTrendsResponseDTO>(okResult.Value);
+        Assert.Equal(2024, response.Season);
+        var team = Assert.Single(response.Teams);
+        Assert.Equal("Ohio State", team.TeamName);
+    }
+
+    [Fact]
     public async Task CalculatePredictions_ReturnsPredictions()
     {
         var calculateResult = new CalculatePredictionsResult

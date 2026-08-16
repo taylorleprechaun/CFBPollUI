@@ -8,6 +8,12 @@ namespace CFBPoll.Core.Interfaces;
 public interface ISeasonTrendsModule
 {
     /// <summary>
+    /// Builds season trends data (top-25 progression with drop-out gaps) from an already-computed
+    /// set of weekly rankings, without reading persisted published snapshots.
+    /// </summary>
+    Task<SeasonTrendsResult> BuildFromRankingsAsync(int season, IEnumerable<RankingsResult> weeklyRankings);
+
+    /// <summary>
     /// Retrieves season trends data for the specified season, including per-team
     /// rank progression across all published weeks.
     /// </summary>
