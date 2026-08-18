@@ -75,13 +75,16 @@ public class TrackRecordModule : ITrackRecordModule
 
             foreach (var game in predictions.Predictions)
             {
-                Tally(weekOverUnder, overallOverUnder, game.OverUnderGrade);
-                Tally(weekSpread, overallSpread, game.SpreadGrade);
-                Tally(weekWinner, overallWinner, game.WinnerGrade);
+                PredictionRecordSummarizer.Tally(weekOverUnder, game.OverUnderGrade);
+                PredictionRecordSummarizer.Tally(overallOverUnder, game.OverUnderGrade);
+                PredictionRecordSummarizer.Tally(weekSpread, game.SpreadGrade);
+                PredictionRecordSummarizer.Tally(overallSpread, game.SpreadGrade);
+                PredictionRecordSummarizer.Tally(weekWinner, game.WinnerGrade);
+                PredictionRecordSummarizer.Tally(overallWinner, game.WinnerGrade);
 
                 if (game.ActualHomeScore.HasValue && game.ActualAwayScore.HasValue)
                 {
-                    var residual = CalculateMarginResidual(game);
+                    var residual = PredictionRecordSummarizer.CalculateMarginResidual(game);
 
                     weekMarginGameCount++;
                     weekMarginSumResidual += residual;
@@ -127,33 +130,4 @@ public class TrackRecordModule : ITrackRecordModule
         _logger.LogDebug("Invalidated {Count} track record cache entries", count);
     }
 
-    private static double CalculateMarginResidual(GamePrediction game)
-    {
-        var scoic = StringComparison.OrdinalIgnoreCase;
-        var predictedWinnerIsHome = string.Equals(game.PredictedWinner, game.HomeTeam, scoic);
-        var actualMarginForPredictedWinner = predictedWinnerIsHome
-            ? game.ActualHomeScore!.Value - game.ActualAwayScore!.Value
-            : game.ActualAwayScore!.Value - game.ActualHomeScore!.Value;
-
-        return actualMarginForPredictedWinner - game.PredictedMargin;
-    }
-
-    private static void Tally(TrackRecordTotals week, TrackRecordTotals overall, PredictionGradeStatus grade)
-    {
-        switch (grade)
-        {
-            case PredictionGradeStatus.Correct:
-                week.Correct++;
-                overall.Correct++;
-                break;
-            case PredictionGradeStatus.Incorrect:
-                week.Incorrect++;
-                overall.Incorrect++;
-                break;
-            case PredictionGradeStatus.Push:
-                week.Push++;
-                overall.Push++;
-                break;
-        }
-    }
 }

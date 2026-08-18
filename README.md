@@ -303,6 +303,7 @@ The frontend runs at `http://localhost:5173`.
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}` | Calculate rankings using an explicitly chosen algorithm version, without persisting or publishing |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/export` | Download experimental rankings as Excel for a chosen algorithm version, without persisting or publishing |
 | `POST /api/v1/admin/seasons/{season}/experimental/{algorithmVersion}/trends` | Calculate season trends (top-25 rank progression) live across every week of a season using an explicitly chosen algorithm version, without persisting or publishing |
+| `POST /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/prediction` | Calculate predictions for a season/week using an explicitly chosen algorithm version and grade them against actual final scores when available, without persisting anything |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Retrieve persisted predictions for a season/week without recalculating or re-grading |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Calculate predictions for a season/week and save as draft |
 | `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Update a prediction (currently supports publishing) |
@@ -324,37 +325,37 @@ A few ordering/formatting conventions are worth calling out since they're enforc
 
 ## Testing
 
-The project includes 2,299 unit and integration tests across backend and frontend.
+The project includes 2,368 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (933 tests)
+# Backend tests (970 tests)
 dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (1,366 tests)
+# Frontend tests (1,398 tests)
 cd src/cfbpoll-web
 npm test
 ```
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-933-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1366-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-970-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1398-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
 ![Web Coverage](https://img.shields.io/badge/Web_Coverage-100%25-brightgreen)
 
 | Project | Line Coverage | Branch Coverage |
 |---------|---------------|-----------------|
-| CFBPoll.Core | 99% | 94% |
+| CFBPoll.Core | 99% | 93% |
 | CFBPoll.API | 100% | 97% |
 | cfbpoll-web | 100% | 95% |
 
 **Excluded from coverage:**
-- `RatingModule`, `RatingModuleV2`, and `PredictionCalculatorModule` - Proprietary algorithms, kept in a private submodule rather than this repository. Tests are maintained privately alongside them.
+- The proprietary submodule (rating and prediction algorithms) - kept in a private repo, tested there.
 - `CFBDataService` - Makes HTTP calls to the external College Football Data API. Better suited for integration tests.
 - `Program.cs` - ASP.NET Core startup configuration code.

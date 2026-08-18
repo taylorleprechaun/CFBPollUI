@@ -12,7 +12,7 @@ public class AdminModule : IAdminModule
     private readonly IExcelExportModule _excelExportModule;
     private readonly ILogger<AdminModule> _logger;
     private readonly IPollLeadersModule _pollLeadersModule;
-    private readonly IPredictionCalculatorModule _predictionCalculatorModule;
+    private readonly IPredictionAlgorithmResolver _predictionAlgorithmResolver;
     private readonly IPredictionGradingModule _predictionGradingModule;
     private readonly IPredictionsModule _predictionsModule;
     private readonly IRankingsModule _rankingsModule;
@@ -27,7 +27,7 @@ public class AdminModule : IAdminModule
         IExcelExportModule excelExportModule,
         IPersistentCache cache,
         IPollLeadersModule pollLeadersModule,
-        IPredictionCalculatorModule predictionCalculatorModule,
+        IPredictionAlgorithmResolver predictionAlgorithmResolver,
         IPredictionGradingModule predictionGradingModule,
         IPredictionsModule predictionsModule,
         IRankingsModule rankingsModule,
@@ -43,7 +43,7 @@ public class AdminModule : IAdminModule
         _excelExportModule = excelExportModule ?? throw new ArgumentNullException(nameof(excelExportModule));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _pollLeadersModule = pollLeadersModule ?? throw new ArgumentNullException(nameof(pollLeadersModule));
-        _predictionCalculatorModule = predictionCalculatorModule ?? throw new ArgumentNullException(nameof(predictionCalculatorModule));
+        _predictionAlgorithmResolver = predictionAlgorithmResolver ?? throw new ArgumentNullException(nameof(predictionAlgorithmResolver));
         _predictionGradingModule = predictionGradingModule ?? throw new ArgumentNullException(nameof(predictionGradingModule));
         _predictionsModule = predictionsModule ?? throw new ArgumentNullException(nameof(predictionsModule));
         _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
@@ -68,6 +68,69 @@ public class AdminModule : IAdminModule
         {
             AlgorithmVersion = algorithmVersion,
             Rankings = rankings
+        };
+    }
+
+    public async Task<ExperimentalPredictionsResult> CalculateExperimentalPredictionsAsync(int season, int week, RatingAlgorithmVersion algorithmVersion)
+    {
+        _logger.LogInformation(
+            "Calculating experimental predictions for season {Season}, week {Week} using algorithm version {AlgorithmVersion}",
+            season, week, algorithmVersion);
+
+        var seasonDataTask = _dataService.GetSeasonDataAsync(season, week);
+        var fullScheduleTask = _dataService.GetFullSeasonScheduleAsync(season);
+        await Task.WhenAll(seasonDataTask, fullScheduleTask).ConfigureAwait(false);
+
+        var seasonData = seasonDataTask.Result;
+        var fullSchedule = fullScheduleTask.Result;
+        var (gameWeek, isPostseason) = GameWeekResolver.Resolve(week, fullSchedule);
+        var fbsTeamNames = new HashSet<string>(seasonData.Teams.Keys, StringComparer.OrdinalIgnoreCase);
+        var scoic = StringComparison.OrdinalIgnoreCase;
+
+        // CFBD API serves all postseason betting lines under week 1
+        var bettingLinesWeek = isPostseason ? 1 : gameWeek;
+
+        var ratingsTask = _ratingAlgorithmResolver.ResolveForPredictions().RateTeamsAsync(seasonData);
+        var bettingLinesTask = _dataService.GetBettingLinesAsync(season, bettingLinesWeek);
+        var completedGamesTask = _dataService.GetGamesAsync(season, isPostseason ? "postseason" : "regular");
+        await Task.WhenAll(ratingsTask, bettingLinesTask, completedGamesTask).ConfigureAwait(false);
+
+        var ratings = ratingsTask.Result;
+        var bettingLines = bettingLinesTask.Result;
+        var completedGames = isPostseason
+            ? completedGamesTask.Result
+            : completedGamesTask.Result.Where(g => g.Week == gameWeek);
+
+        var upcomingGames = fullSchedule
+            .Where(g => g.HomeTeam is not null && fbsTeamNames.Contains(g.HomeTeam)
+                && g.AwayTeam is not null && fbsTeamNames.Contains(g.AwayTeam)
+                && (isPostseason
+                    ? g.SeasonType is not null && g.SeasonType.Equals("postseason", scoic)
+                    : g.Week == gameWeek))
+            .ToList();
+
+        var gamePredictions = await _predictionAlgorithmResolver
+            .Resolve(algorithmVersion)
+            .GeneratePredictionsAsync(seasonData, ratings, upcomingGames, bettingLines)
+            .ConfigureAwait(false);
+        var predictions = gamePredictions.ToList();
+
+        var resultsByGame = completedGames
+            .Where(g => g.HomeTeam is not null && g.AwayTeam is not null && g.HomePoints.HasValue && g.AwayPoints.HasValue)
+            .GroupBy(g => PredictionGrader.BuildMatchKey(g.HomeTeam!, g.AwayTeam!))
+            .ToDictionary(g => g.Key, g => g.First());
+
+        foreach (var prediction in predictions)
+        {
+            if (resultsByGame.TryGetValue(PredictionGrader.BuildMatchKey(prediction.HomeTeam, prediction.AwayTeam), out var game))
+                PredictionGrader.Grade(prediction, game.HomePoints!.Value, game.AwayPoints!.Value);
+        }
+
+        return new ExperimentalPredictionsResult
+        {
+            AlgorithmVersion = algorithmVersion,
+            Predictions = predictions,
+            Summary = PredictionRecordSummarizer.Summarize(predictions)
         };
     }
 
@@ -130,7 +193,8 @@ public class AdminModule : IAdminModule
         _logger.LogDebug("Found {GameCount} FBS vs FBS games for season {Season}, week {Week}",
             upcomingGames.Count, season, week);
 
-        var gamePredictions = await _predictionCalculatorModule
+        var gamePredictions = await _predictionAlgorithmResolver
+            .ResolveForSeason(season)
             .GeneratePredictionsAsync(seasonData, ratings, upcomingGames, bettingLines)
             .ConfigureAwait(false);
 

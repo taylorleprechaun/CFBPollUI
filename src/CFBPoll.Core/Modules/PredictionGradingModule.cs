@@ -6,10 +6,6 @@ namespace CFBPoll.Core.Modules;
 
 public class PredictionGradingModule : IPredictionGradingModule
 {
-    private const string OVER_RESULT = "Over";
-    private const string PUSH_RESULT = "Push";
-    private const string UNDER_RESULT = "Under";
-
     private readonly ICFBDataService _dataService;
     private readonly ILogger<PredictionGradingModule> _logger;
     private readonly IPredictionsModule _predictionsModule;
@@ -41,20 +37,20 @@ public class PredictionGradingModule : IPredictionGradingModule
 
         var resultsByGame = completedGames
             .Where(g => g.HomeTeam is not null && g.AwayTeam is not null && g.HomePoints.HasValue && g.AwayPoints.HasValue)
-            .GroupBy(g => BuildMatchKey(g.HomeTeam!, g.AwayTeam!))
+            .GroupBy(g => PredictionGrader.BuildMatchKey(g.HomeTeam!, g.AwayTeam!))
             .ToDictionary(g => g.Key, g => g.First());
 
         var unmatchedCount = 0;
 
         foreach (var prediction in stored.Predictions)
         {
-            if (!resultsByGame.TryGetValue(BuildMatchKey(prediction.HomeTeam, prediction.AwayTeam), out var game))
+            if (!resultsByGame.TryGetValue(PredictionGrader.BuildMatchKey(prediction.HomeTeam, prediction.AwayTeam), out var game))
             {
                 unmatchedCount++;
                 continue;
             }
 
-            GradePrediction(prediction, game.HomePoints!.Value, game.AwayPoints!.Value);
+            PredictionGrader.Grade(prediction, game.HomePoints!.Value, game.AwayPoints!.Value);
         }
 
         var gradedResult = new PredictionsResult
@@ -96,73 +92,5 @@ public class PredictionGradingModule : IPredictionGradingModule
             Predictions = gradedResult,
             UnmatchedGameCount = unmatchedCount
         };
-    }
-
-    private static string BuildMatchKey(string homeTeam, string awayTeam) =>
-        $"{homeTeam}|{awayTeam}".ToUpperInvariant();
-
-    private static void GradePrediction(GamePrediction prediction, int actualHomeScore, int actualAwayScore)
-    {
-        var scoic = StringComparison.OrdinalIgnoreCase;
-
-        prediction.ActualHomeScore = actualHomeScore;
-        prediction.ActualAwayScore = actualAwayScore;
-
-        if (actualHomeScore == actualAwayScore)
-        {
-            prediction.ActualWinner = null;
-            prediction.WinnerGrade = PredictionGradeStatus.NotApplicable;
-        }
-        else
-        {
-            prediction.ActualWinner = actualHomeScore > actualAwayScore ? prediction.HomeTeam : prediction.AwayTeam;
-            prediction.WinnerGrade = string.Equals(prediction.PredictedWinner, prediction.ActualWinner, scoic)
-                ? PredictionGradeStatus.Correct
-                : PredictionGradeStatus.Incorrect;
-        }
-
-        if (!prediction.BettingSpread.HasValue)
-        {
-            prediction.ActualSpreadCoveringTeam = null;
-            prediction.SpreadGrade = PredictionGradeStatus.NotApplicable;
-        }
-        else
-        {
-            var homeAdjusted = actualHomeScore + prediction.BettingSpread.Value;
-
-            prediction.ActualSpreadCoveringTeam = homeAdjusted > actualAwayScore
-                ? prediction.HomeTeam
-                : homeAdjusted < actualAwayScore
-                    ? prediction.AwayTeam
-                    : PUSH_RESULT;
-
-            prediction.SpreadGrade = prediction.ActualSpreadCoveringTeam == PUSH_RESULT
-                ? PredictionGradeStatus.Push
-                : string.Equals(prediction.MySpreadPick, prediction.ActualSpreadCoveringTeam, scoic)
-                    ? PredictionGradeStatus.Correct
-                    : PredictionGradeStatus.Incorrect;
-        }
-
-        if (!prediction.BettingOverUnder.HasValue)
-        {
-            prediction.ActualOverUnderResult = null;
-            prediction.OverUnderGrade = PredictionGradeStatus.NotApplicable;
-        }
-        else
-        {
-            var actualTotal = actualHomeScore + actualAwayScore;
-
-            prediction.ActualOverUnderResult = actualTotal > prediction.BettingOverUnder.Value
-                ? OVER_RESULT
-                : actualTotal < prediction.BettingOverUnder.Value
-                    ? UNDER_RESULT
-                    : PUSH_RESULT;
-
-            prediction.OverUnderGrade = prediction.ActualOverUnderResult == PUSH_RESULT
-                ? PredictionGradeStatus.Push
-                : string.Equals(prediction.MyOverUnderPick, prediction.ActualOverUnderResult, scoic)
-                    ? PredictionGradeStatus.Correct
-                    : PredictionGradeStatus.Incorrect;
-        }
     }
 }

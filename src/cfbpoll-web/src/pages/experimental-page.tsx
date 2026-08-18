@@ -2,15 +2,25 @@ import { useState } from 'react';
 
 import type { AlgorithmVersion } from '../components/admin';
 
-import { ExperimentalCalculateSection, ExperimentalPreviewSection, ExperimentalTrendsSection } from '../components/admin';
+import {
+  ExperimentalCalculateSection,
+  ExperimentalPredictionsCalculateSection,
+  ExperimentalPredictionsPreviewSection,
+  ExperimentalPreviewSection,
+  ExperimentalTrendsSection,
+} from '../components/admin';
 import { ErrorAlert, ErrorBoundary } from '../components/error';
+import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '../components/ui/button-styles';
 import { useAuth } from '../hooks/use-auth';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { useExperimentalPageState } from '../hooks/use-experimental-page-state';
+import { useExperimentalPredictionsState } from '../hooks/use-experimental-predictions-state';
 import { useExperimentalSeasonTrendsState } from '../hooks/use-experimental-season-trends-state';
 import { useSeason } from '../hooks/use-season';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
+
+type ExperimentalMode = 'predictions' | 'ratings';
 
 export function ExperimentalPage() {
   useDocumentTitle('Taylor Steinberg - Experimental');
@@ -28,6 +38,7 @@ export function ExperimentalPage() {
   const { selectedWeek, setSelectedWeek } = useWeekSelection(weeksData?.weeks);
 
   const [algorithmVersion, setAlgorithmVersion] = useState<AlgorithmVersion>('V1');
+  const [mode, setMode] = useState<ExperimentalMode>('ratings');
 
   const {
     calculatedResult,
@@ -43,48 +54,100 @@ export function ExperimentalPage() {
     token,
   });
 
+  const predictionsState = useExperimentalPredictionsState({ algorithmVersion, selectedSeason, selectedWeek, token });
+
   const trendsState = useExperimentalSeasonTrendsState({ algorithmVersion, selectedSeason, token });
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-text-primary">Experimental</h1>
 
-      {error && <ErrorAlert error={error} />}
-      {trendsState.error && <ErrorAlert error={trendsState.error} />}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setMode('ratings')}
+          className={mode === 'ratings' ? BUTTON_PRIMARY : BUTTON_SECONDARY}
+        >
+          Ratings
+        </button>
+        <button
+          onClick={() => setMode('predictions')}
+          className={mode === 'predictions' ? BUTTON_PRIMARY : BUTTON_SECONDARY}
+        >
+          Predictions
+        </button>
+      </div>
 
-      <ExperimentalCalculateSection
-        algorithmVersion={algorithmVersion}
-        isCalculating={isCalculating}
-        onAlgorithmVersionChange={setAlgorithmVersion}
-        onCalculate={handleCalculate}
-        onSeasonChange={setSelectedSeason}
-        onWeekChange={setSelectedWeek}
-        seasons={seasons}
-        seasonsLoading={seasonsLoading}
-        selectedSeason={selectedSeason}
-        selectedWeek={selectedWeek}
-        weeks={weeksData?.weeks ?? []}
-        weeksLoading={weeksLoading}
-      />
+      {mode === 'ratings' && (
+        <>
+          {error && <ErrorAlert error={error} />}
+          {trendsState.error && <ErrorAlert error={trendsState.error} />}
 
-      <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render experimental preview')} />}>
-        {calculatedResult && (
-          <ExperimentalPreviewSection
-            calculatedResult={calculatedResult}
-            isExporting={isExporting}
-            onExport={handleExport}
+          <ExperimentalCalculateSection
+            algorithmVersion={algorithmVersion}
+            isCalculating={isCalculating}
+            onAlgorithmVersionChange={setAlgorithmVersion}
+            onCalculate={handleCalculate}
+            onSeasonChange={setSelectedSeason}
+            onWeekChange={setSelectedWeek}
+            seasons={seasons}
+            seasonsLoading={seasonsLoading}
+            selectedSeason={selectedSeason}
+            selectedWeek={selectedWeek}
+            weeks={weeksData?.weeks ?? []}
+            weeksLoading={weeksLoading}
           />
-        )}
-      </ErrorBoundary>
 
-      <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render experimental season trend')} />}>
-        <ExperimentalTrendsSection
-          isCalculating={trendsState.isCalculating}
-          onCalculate={trendsState.handleCalculate}
-          result={trendsState.result}
-          selectedSeason={selectedSeason}
-        />
-      </ErrorBoundary>
+          <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render experimental preview')} />}>
+            {calculatedResult && (
+              <ExperimentalPreviewSection
+                calculatedResult={calculatedResult}
+                isExporting={isExporting}
+                onExport={handleExport}
+              />
+            )}
+          </ErrorBoundary>
+
+          <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render experimental season trend')} />}>
+            <ExperimentalTrendsSection
+              isCalculating={trendsState.isCalculating}
+              onCalculate={trendsState.handleCalculate}
+              result={trendsState.result}
+              selectedSeason={selectedSeason}
+            />
+          </ErrorBoundary>
+        </>
+      )}
+
+      {mode === 'predictions' && (
+        <>
+          {predictionsState.error && <ErrorAlert error={predictionsState.error} />}
+
+          <ExperimentalPredictionsCalculateSection
+            algorithmVersion={algorithmVersion}
+            isCalculating={predictionsState.isCalculating}
+            onAlgorithmVersionChange={setAlgorithmVersion}
+            onCalculate={predictionsState.handleCalculate}
+            onSeasonChange={setSelectedSeason}
+            onWeekChange={setSelectedWeek}
+            seasons={seasons}
+            seasonsLoading={seasonsLoading}
+            selectedSeason={selectedSeason}
+            selectedWeek={selectedWeek}
+            weeks={weeksData?.weeks ?? []}
+            weeksLoading={weeksLoading}
+          />
+
+          <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render experimental predictions preview')} />}>
+            {predictionsState.calculatedResult && selectedSeason !== null && selectedWeek !== null && (
+              <ExperimentalPredictionsPreviewSection
+                calculatedResult={predictionsState.calculatedResult}
+                season={selectedSeason}
+                week={selectedWeek}
+              />
+            )}
+          </ErrorBoundary>
+        </>
+      )}
     </div>
   );
 }

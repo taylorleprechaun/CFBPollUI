@@ -16,6 +16,18 @@ public static class PredictionsMapper
         };
     }
 
+    public static ExperimentalPredictionsResponseDTO ToExperimentalResponseDTO(ExperimentalPredictionsResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        return new ExperimentalPredictionsResponseDTO
+        {
+            AlgorithmVersion = result.AlgorithmVersion.ToString(),
+            Predictions = result.Predictions.Select(p => ToDTO(p)),
+            Summary = ToDTO(result.Summary)
+        };
+    }
+
     public static GamePredictionDTO ToDTO(GamePrediction prediction, bool includeGradeDetails = true)
     {
         ArgumentNullException.ThrowIfNull(prediction);
@@ -43,6 +55,22 @@ public static class PredictionsMapper
             PredictedWinner = prediction.PredictedWinner,
             SpreadGrade = (includeGradeDetails ? prediction.SpreadGrade : PredictionGradeStatus.Ungraded).ToString(),
             WinnerGrade = (includeGradeDetails ? prediction.WinnerGrade : PredictionGradeStatus.Ungraded).ToString()
+        };
+    }
+
+    public static PredictionRecordSummaryDTO ToDTO(PredictionRecordSummary summary)
+    {
+        ArgumentNullException.ThrowIfNull(summary);
+
+        return new PredictionRecordSummaryDTO
+        {
+            GradedGameCount = summary.GradedGameCount,
+            MarginBias = summary.MarginBias,
+            MarginMAE = summary.MarginMAE,
+            MarginRMSE = summary.MarginRMSE,
+            OverUnder = TrackRecordMapper.ToDTO(summary.OverUnder),
+            Spread = TrackRecordMapper.ToDTO(summary.Spread),
+            Winner = TrackRecordMapper.ToDTO(summary.Winner)
         };
     }
 

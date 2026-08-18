@@ -16,6 +16,7 @@ public class AdminModuleTests
     private readonly Mock<IExcelExportModule> _mockExcelExportModule;
     private readonly Mock<ILogger<AdminModule>> _mockLogger;
     private readonly Mock<IPollLeadersModule> _mockPollLeadersModule;
+    private readonly Mock<IPredictionAlgorithmResolver> _mockPredictionAlgorithmResolver;
     private readonly Mock<IPredictionCalculatorModule> _mockPredictionCalculatorModule;
     private readonly Mock<IPredictionGradingModule> _mockPredictionGradingModule;
     private readonly Mock<IPredictionsModule> _mockPredictionsModule;
@@ -35,6 +36,10 @@ public class AdminModuleTests
         _mockLogger = new Mock<ILogger<AdminModule>>();
         _mockPollLeadersModule = new Mock<IPollLeadersModule>();
         _mockPredictionCalculatorModule = new Mock<IPredictionCalculatorModule>();
+        _mockPredictionAlgorithmResolver = new Mock<IPredictionAlgorithmResolver>();
+        _mockPredictionAlgorithmResolver.Setup(x => x.ResolveForSeason(It.IsAny<int>())).Returns(_mockPredictionCalculatorModule.Object);
+        _mockPredictionAlgorithmResolver.Setup(x => x.Resolve(It.IsAny<RatingAlgorithmVersion>())).Returns(_mockPredictionCalculatorModule.Object);
+        _mockPredictionAlgorithmResolver.Setup(x => x.ResolveVersionForSeason(It.IsAny<int>())).Returns(RatingAlgorithmVersion.V1);
         _mockPredictionGradingModule = new Mock<IPredictionGradingModule>();
         _mockPredictionsModule = new Mock<IPredictionsModule>();
         _mockRankingsModule = new Mock<IRankingsModule>();
@@ -57,7 +62,7 @@ public class AdminModuleTests
             _mockExcelExportModule.Object,
             _mockCache.Object,
             _mockPollLeadersModule.Object,
-            _mockPredictionCalculatorModule.Object,
+            _mockPredictionAlgorithmResolver.Object,
             _mockPredictionGradingModule.Object,
             _mockPredictionsModule.Object,
             _mockRankingsModule.Object,
@@ -105,6 +110,123 @@ public class AdminModuleTests
 
         _mockRankingsModule.Verify(
             x => x.SaveSnapshotAsync(It.IsAny<RankingsResult>(), It.IsAny<RatingAlgorithmVersion>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalPredictionsAsync_GradesAgainstActualScores_ReturnsSummary()
+    {
+        var fbsTeams = new Dictionary<string, TeamInfo>
+        {
+            ["Texas"] = new(),
+            ["Oklahoma"] = new()
+        };
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = fbsTeams };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var schedule = new List<ScheduleGame>
+        {
+            new() { Week = 6, SeasonType = "regular", HomeTeam = "Texas", AwayTeam = "Oklahoma" }
+        };
+        var predictions = new List<GamePrediction>
+        {
+            new() { HomeTeam = "Texas", AwayTeam = "Oklahoma", PredictedWinner = "Texas", PredictedMargin = 7 }
+        };
+        var completedGames = new List<Game>
+        {
+            new() { Week = 6, SeasonType = "regular", HomeTeam = "Texas", AwayTeam = "Oklahoma", HomePoints = 30, AwayPoints = 20 }
+        };
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(schedule);
+        _mockDataService.Setup(x => x.GetGamesAsync(2024, "regular")).ReturnsAsync(completedGames);
+        _mockPredictionAlgorithmResolver.Setup(x => x.Resolve(RatingAlgorithmVersion.V2)).Returns(_mockPredictionCalculatorModule.Object);
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(predictions);
+
+        var result = await _adminModule.CalculateExperimentalPredictionsAsync(2024, 5, RatingAlgorithmVersion.V2);
+
+        Assert.Equal(RatingAlgorithmVersion.V2, result.AlgorithmVersion);
+        Assert.Equal(1, result.Summary.GradedGameCount);
+        Assert.Equal(1, result.Summary.Winner.Correct);
+        var graded = Assert.Single(result.Predictions);
+        Assert.Equal(30, graded.ActualHomeScore);
+        Assert.Equal(20, graded.ActualAwayScore);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalPredictionsAsync_NeverPersistsAnything()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(new List<ScheduleGame>());
+        _mockDataService.Setup(x => x.GetGamesAsync(2024, "regular")).ReturnsAsync(new List<Game>());
+        _mockPredictionAlgorithmResolver.Setup(x => x.Resolve(RatingAlgorithmVersion.V1)).Returns(_mockPredictionCalculatorModule.Object);
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(new List<GamePrediction>());
+
+        await _adminModule.CalculateExperimentalPredictionsAsync(2024, 5, RatingAlgorithmVersion.V1);
+
+        _mockPredictionsModule.Verify(x => x.SaveAsync(It.IsAny<PredictionsResult>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalPredictionsAsync_NoCompletedGames_ReturnsZeroGradedGameCount()
+    {
+        var fbsTeams = new Dictionary<string, TeamInfo>
+        {
+            ["Iowa"] = new(),
+            ["Nebraska"] = new()
+        };
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = fbsTeams };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var schedule = new List<ScheduleGame>
+        {
+            new() { Week = 6, SeasonType = "regular", HomeTeam = "Iowa", AwayTeam = "Nebraska" }
+        };
+        var predictions = new List<GamePrediction>
+        {
+            new() { HomeTeam = "Iowa", AwayTeam = "Nebraska", PredictedWinner = "Iowa" }
+        };
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(schedule);
+        _mockDataService.Setup(x => x.GetGamesAsync(2024, "regular")).ReturnsAsync(new List<Game>());
+        _mockPredictionAlgorithmResolver.Setup(x => x.Resolve(RatingAlgorithmVersion.V2)).Returns(_mockPredictionCalculatorModule.Object);
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(predictions);
+
+        var result = await _adminModule.CalculateExperimentalPredictionsAsync(2024, 5, RatingAlgorithmVersion.V2);
+
+        Assert.Equal(0, result.Summary.GradedGameCount);
+        Assert.Null(result.Predictions.Single().ActualHomeScore);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalPredictionsAsync_UsesExplicitlyRequestedAlgorithmVersion()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(new List<ScheduleGame>());
+        _mockDataService.Setup(x => x.GetGamesAsync(2024, "regular")).ReturnsAsync(new List<Game>());
+        _mockPredictionAlgorithmResolver.Setup(x => x.Resolve(RatingAlgorithmVersion.V2)).Returns(_mockPredictionCalculatorModule.Object);
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(new List<GamePrediction>());
+
+        await _adminModule.CalculateExperimentalPredictionsAsync(2024, 5, RatingAlgorithmVersion.V2);
+
+        _mockPredictionAlgorithmResolver.Verify(x => x.Resolve(RatingAlgorithmVersion.V2), Times.Once);
+        _mockPredictionAlgorithmResolver.Verify(x => x.ResolveForSeason(It.IsAny<int>()), Times.Never);
     }
 
     [Fact]
@@ -626,7 +748,7 @@ public class AdminModuleTests
                 _mockExcelExportModule.Object,
                 null!,
                 _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
+                _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -647,7 +769,7 @@ public class AdminModuleTests
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
+                _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -668,7 +790,7 @@ public class AdminModuleTests
                 null!,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
+                _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -689,7 +811,7 @@ public class AdminModuleTests
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
+                _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -710,7 +832,7 @@ public class AdminModuleTests
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
                 null!,
-                _mockPredictionCalculatorModule.Object,
+                _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -723,7 +845,7 @@ public class AdminModuleTests
     }
 
     [Fact]
-    public void Constructor_NullPredictionCalculatorModule_ThrowsArgumentNullException()
+    public void Constructor_NullPredictionAlgorithmResolver_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
             () => new AdminModule(
@@ -752,7 +874,7 @@ public class AdminModuleTests
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
+                _mockPredictionAlgorithmResolver.Object,
                 null!,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -773,7 +895,7 @@ public class AdminModuleTests
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
+                _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
                 null!,
                 _mockRankingsModule.Object,
@@ -794,7 +916,7 @@ public class AdminModuleTests
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
+                _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 null!,
@@ -815,7 +937,7 @@ public class AdminModuleTests
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
+                _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -836,7 +958,7 @@ public class AdminModuleTests
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
+                _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -857,7 +979,7 @@ public class AdminModuleTests
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
+                _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -878,7 +1000,7 @@ public class AdminModuleTests
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
+                _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -899,7 +1021,7 @@ public class AdminModuleTests
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
-                _mockPredictionCalculatorModule.Object,
+                _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,

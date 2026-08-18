@@ -50,6 +50,51 @@ public class AdminControllerTests
     }
 
     [Fact]
+    public async Task CalculateExperimentalPredictions_ReturnsGradedPredictionsWithSummary()
+    {
+        var experimentalResult = new ExperimentalPredictionsResult
+        {
+            AlgorithmVersion = RatingAlgorithmVersion.V2,
+            Predictions =
+            [
+                new GamePrediction
+                {
+                    AwayTeam = "Michigan",
+                    HomeTeam = "Ohio State",
+                    PredictedWinner = "Ohio State",
+                    PredictedMargin = 10.5,
+                    ActualHomeScore = 28,
+                    ActualAwayScore = 17,
+                    WinnerGrade = PredictionGradeStatus.Correct
+                }
+            ],
+            Summary = new PredictionRecordSummary
+            {
+                GradedGameCount = 1,
+                MarginBias = -3.5,
+                MarginMAE = 3.5,
+                MarginRMSE = 3.5,
+                Winner = new TrackRecordTotals { Correct = 1 }
+            }
+        };
+
+        _mockAdminModule
+            .Setup(x => x.CalculateExperimentalPredictionsAsync(2024, 5, RatingAlgorithmVersion.V2))
+            .ReturnsAsync(experimentalResult);
+
+        var result = await _controller.CalculateExperimentalPredictions(2024, 5, RatingAlgorithmVersion.V2);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<ExperimentalPredictionsResponseDTO>(okResult.Value);
+        Assert.Equal("V2", response.AlgorithmVersion);
+        Assert.Equal(1, response.Summary.GradedGameCount);
+        Assert.Equal(1, response.Summary.Winner.Correct);
+        var prediction = Assert.Single(response.Predictions);
+        Assert.Equal("Ohio State", prediction.PredictedWinner);
+        Assert.Equal(28, prediction.ActualHomeScore);
+    }
+
+    [Fact]
     public async Task CalculateExperimentalSeasonTrends_ReturnsSeasonTrendsResponseDTO()
     {
         var trendsResult = new SeasonTrendsResult
