@@ -3,10 +3,11 @@ import { useState } from 'react';
 import type { AlgorithmVersion } from '../components/admin';
 
 import {
+  DEFAULT_ALGORITHM_VERSIONS,
   ExperimentalCalculateSection,
   ExperimentalPredictionsCalculateSection,
   ExperimentalPredictionsPreviewSection,
-  ExperimentalPreviewSection,
+  RatingsComparisonSection,
 } from '../components/admin';
 import { ErrorAlert, ErrorBoundary } from '../components/error';
 import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '../components/ui/button-styles';
@@ -36,17 +37,10 @@ export function ExperimentalPage() {
   const { selectedWeek, setSelectedWeek } = useWeekSelection(weeksData?.weeks);
 
   const [algorithmVersion, setAlgorithmVersion] = useState<AlgorithmVersion>('V1');
+  const [ratingsSelectedVersions, setRatingsSelectedVersions] = useState<AlgorithmVersion[]>(DEFAULT_ALGORITHM_VERSIONS);
   const [mode, setMode] = useState<ExperimentalMode>('ratings');
 
-  const {
-    calculatedResult,
-    error,
-    handleCalculate,
-    handleExport,
-    isCalculating,
-    isExporting,
-  } = useExperimentalPageState({
-    algorithmVersion,
+  const { handleRun, isRunning, runState } = useExperimentalPageState({
     selectedSeason,
     selectedWeek,
     token,
@@ -75,31 +69,29 @@ export function ExperimentalPage() {
 
       {mode === 'ratings' && (
         <>
-          {error && <ErrorAlert error={error} />}
-
           <ExperimentalCalculateSection
-            algorithmVersion={algorithmVersion}
-            isCalculating={isCalculating}
-            onAlgorithmVersionChange={setAlgorithmVersion}
-            onCalculate={handleCalculate}
+            isRunning={isRunning}
+            onRun={() => handleRun(ratingsSelectedVersions)}
             onSeasonChange={setSelectedSeason}
+            onSelectedVersionsChange={setRatingsSelectedVersions}
             onWeekChange={setSelectedWeek}
             seasons={seasons}
             seasonsLoading={seasonsLoading}
             selectedSeason={selectedSeason}
+            selectedVersions={ratingsSelectedVersions}
             selectedWeek={selectedWeek}
             weeks={weeksData?.weeks ?? []}
             weeksLoading={weeksLoading}
           />
 
-          <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render experimental preview')} />}>
-            {calculatedResult && (
-              <ExperimentalPreviewSection
-                calculatedResult={calculatedResult}
-                isExporting={isExporting}
-                onExport={handleExport}
-              />
-            )}
+          <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render experimental comparison')} />}>
+            <RatingsComparisonSection
+              runState={runState}
+              season={selectedSeason}
+              selectedVersions={ratingsSelectedVersions}
+              token={token}
+              week={selectedWeek}
+            />
           </ErrorBoundary>
         </>
       )}

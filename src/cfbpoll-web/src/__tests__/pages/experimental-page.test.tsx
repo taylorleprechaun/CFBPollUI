@@ -79,17 +79,17 @@ describe('ExperimentalPage', () => {
     mockToken = 'test-token';
   });
 
-  it('calls calculateExperimental with the selected algorithm version on calculate', async () => {
-    mockCalculateMutateAsync.mockResolvedValue({
-      algorithmVersion: 'V2',
-      rankings: { season: 2024, week: 5, rankings: [] },
-    });
+  it('calls calculateExperimental once per selected algorithm version on calculate', async () => {
+    mockCalculateMutateAsync.mockImplementation(({ algorithmVersion }: { algorithmVersion: string }) =>
+      Promise.resolve({ algorithmVersion, rankings: { season: 2024, week: 5, rankings: [] } })
+    );
 
     renderExperimentalPage();
-    await userEvent.selectOptions(screen.getByLabelText('Algorithm Version'), 'V2');
+    await userEvent.click(screen.getByRole('button', { name: 'V1' }));
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
+      expect(mockCalculateMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V1', season: 2024, week: 5 });
       expect(mockCalculateMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V2', season: 2024, week: 5 });
     });
   });
@@ -121,7 +121,7 @@ describe('ExperimentalPage', () => {
 
   it('calls downloadExperimentalExport when Download Excel is clicked', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
-      algorithmVersion: 'V1',
+      algorithmVersion: 'V2',
       rankings: { season: 2024, week: 5, rankings: [] },
     });
     mockExportMutateAsync.mockResolvedValue(undefined);
@@ -130,13 +130,13 @@ describe('ExperimentalPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Preview \(V1\)/)).toBeInTheDocument();
+      expect(screen.getByText('Comparison: 2024 Week 6')).toBeInTheDocument();
     });
 
     await userEvent.click(screen.getByText('Download Excel'));
 
     await waitFor(() => {
-      expect(mockExportMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V1', season: 2024, week: 5 });
+      expect(mockExportMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V2', season: 2024, week: 5 });
     });
   });
 
@@ -158,15 +158,15 @@ describe('ExperimentalPage', () => {
     expect((weekSelect as HTMLSelectElement).value).toBe('1');
   });
 
+  it('does not render a comparison before calculating', () => {
+    renderExperimentalPage();
+
+    expect(screen.queryByText(/Comparison/)).not.toBeInTheDocument();
+  });
+
   it('does not render a predictions preview before calculating', async () => {
     renderExperimentalPage();
     await userEvent.click(screen.getByRole('button', { name: 'Predictions' }));
-
-    expect(screen.queryByText(/Preview/)).not.toBeInTheDocument();
-  });
-
-  it('does not render a preview before calculating', () => {
-    renderExperimentalPage();
 
     expect(screen.queryByText(/Preview/)).not.toBeInTheDocument();
   });
@@ -195,7 +195,21 @@ describe('ExperimentalPage', () => {
 
     expect(screen.getByLabelText('Season')).toBeInTheDocument();
     expect(screen.getByLabelText('Week')).toBeInTheDocument();
-    expect(screen.getByLabelText('Algorithm Version')).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Algorithm Version' })).toBeInTheDocument();
+  });
+
+  it('shows a comparison table after a successful calculation', async () => {
+    mockCalculateMutateAsync.mockResolvedValue({
+      algorithmVersion: 'V2',
+      rankings: { season: 2024, week: 5, rankings: [] },
+    });
+
+    renderExperimentalPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Comparison: 2024 Week 6')).toBeInTheDocument();
+    });
   });
 
   it('shows error when calculation fails', async () => {
@@ -211,7 +225,7 @@ describe('ExperimentalPage', () => {
 
   it('shows error when export fails', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
-      algorithmVersion: 'V1',
+      algorithmVersion: 'V2',
       rankings: { season: 2024, week: 5, rankings: [] },
     });
     mockExportMutateAsync.mockRejectedValue(new Error('Export failed'));
@@ -239,20 +253,6 @@ describe('ExperimentalPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Predictions calculation failed')).toBeInTheDocument();
-    });
-  });
-
-  it('shows preview after successful calculation', async () => {
-    mockCalculateMutateAsync.mockResolvedValue({
-      algorithmVersion: 'V2',
-      rankings: { season: 2024, week: 5, rankings: [] },
-    });
-
-    renderExperimentalPage();
-    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/Preview \(V2\): 2024 Week 6/)).toBeInTheDocument();
     });
   });
 
