@@ -4,57 +4,124 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useExperimentalPredictionsState } from '../../hooks/use-experimental-predictions-state';
 
 const mockCalculateMutateAsync = vi.fn();
-let mockCalculateIsPending = false;
 
 vi.mock('../../hooks/use-experimental-mutations', () => ({
   useCalculateExperimentalPredictions: () => ({
     mutateAsync: mockCalculateMutateAsync,
-    isPending: mockCalculateIsPending,
   }),
 }));
 
 describe('useExperimentalPredictionsState', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCalculateIsPending = false;
   });
 
-  it('does not call calculateExperimentalPredictions when season is null', async () => {
+  it('does not call the calculate mutation when no versions are selected', async () => {
     const { result } = renderHook(() =>
-      useExperimentalPredictionsState({ algorithmVersion: 'V1', selectedSeason: null, selectedWeek: 5, token: 'test-token' })
+      useExperimentalPredictionsState({ selectedSeason: 2024, selectedWeek: 5, token: 'test-token' })
     );
 
     await act(async () => {
-      await result.current.handleCalculate();
+      await result.current.handleRun([]);
     });
 
     expect(mockCalculateMutateAsync).not.toHaveBeenCalled();
   });
 
-  it('does not call calculateExperimentalPredictions when week is null', async () => {
+  it('does not call the calculate mutation when season is null', async () => {
     const { result } = renderHook(() =>
-      useExperimentalPredictionsState({ algorithmVersion: 'V1', selectedSeason: 2024, selectedWeek: null, token: 'test-token' })
+      useExperimentalPredictionsState({ selectedSeason: null, selectedWeek: 5, token: 'test-token' })
     );
 
     await act(async () => {
-      await result.current.handleCalculate();
+      await result.current.handleRun(['V1']);
     });
 
     expect(mockCalculateMutateAsync).not.toHaveBeenCalled();
   });
 
-  it('reflects calculate mutation pending state', () => {
-    mockCalculateIsPending = true;
+  it('does not call the calculate mutation when week is null', async () => {
     const { result } = renderHook(() =>
-      useExperimentalPredictionsState({ algorithmVersion: 'V1', selectedSeason: 2024, selectedWeek: 5, token: 'test-token' })
+      useExperimentalPredictionsState({ selectedSeason: 2024, selectedWeek: null, token: 'test-token' })
     );
 
-    expect(result.current.isCalculating).toBe(true);
+    await act(async () => {
+      await result.current.handleRun(['V1']);
+    });
+
+    expect(mockCalculateMutateAsync).not.toHaveBeenCalled();
   });
 
-  it('sets calculatedResult on successful calculate', async () => {
-    const mockResult = {
-      algorithmVersion: 'V2',
+  it('marks a version as error and keeps the other version successful on partial failure', async () => {
+    mockCalculateMutateAsync.mockImplementation(({ algorithmVersion }: { algorithmVersion: string }) =>
+      algorithmVersion === 'V1'
+        ? Promise.resolve({
+            algorithmVersion: 'V1',
+            predictions: [],
+            summary: {
+              gradedGameCount: 0,
+              marginBias: null,
+              marginMAE: null,
+              marginRMSE: null,
+              overUnder: { correct: 0, incorrect: 0, push: 0 },
+              spread: { correct: 0, incorrect: 0, push: 0 },
+              winner: { correct: 0, incorrect: 0, push: 0 },
+            },
+          })
+        : Promise.reject(new Error('V2 boom'))
+    );
+
+    const { result } = renderHook(() =>
+      useExperimentalPredictionsState({ selectedSeason: 2024, selectedWeek: 5, token: 'test-token' })
+    );
+
+    await act(async () => {
+      await result.current.handleRun(['V1', 'V2']);
+    });
+
+    expect(result.current.runState.V1.status).toBe('success');
+    expect(result.current.runState.V2.status).toBe('error');
+    expect(result.current.runState.V2.error?.message).toBe('V2 boom');
+  });
+
+  it('reflects pending status as isRunning while a run is in flight', async () => {
+    let resolveCalculate: (value: unknown) => void = () => {};
+    mockCalculateMutateAsync.mockReturnValue(new Promise((resolve) => { resolveCalculate = resolve; }));
+
+    const { result } = renderHook(() =>
+      useExperimentalPredictionsState({ selectedSeason: 2024, selectedWeek: 5, token: 'test-token' })
+    );
+
+    let runPromise!: Promise<void>;
+    act(() => {
+      runPromise = result.current.handleRun(['V1']);
+    });
+
+    expect(result.current.isRunning).toBe(true);
+
+    await act(async () => {
+      resolveCalculate({
+        algorithmVersion: 'V1',
+        predictions: [],
+        summary: {
+          gradedGameCount: 0,
+          marginBias: null,
+          marginMAE: null,
+          marginRMSE: null,
+          overUnder: { correct: 0, incorrect: 0, push: 0 },
+          spread: { correct: 0, incorrect: 0, push: 0 },
+          winner: { correct: 0, incorrect: 0, push: 0 },
+        },
+      });
+      await runPromise;
+    });
+
+    expect(result.current.isRunning).toBe(false);
+  });
+
+  it('resets every entry back to idle', async () => {
+    mockCalculateMutateAsync.mockResolvedValue({
+      algorithmVersion: 'V1',
       predictions: [],
       summary: {
         gradedGameCount: 0,
@@ -65,33 +132,52 @@ describe('useExperimentalPredictionsState', () => {
         spread: { correct: 0, incorrect: 0, push: 0 },
         winner: { correct: 0, incorrect: 0, push: 0 },
       },
-    };
-    mockCalculateMutateAsync.mockResolvedValue(mockResult);
+    });
 
     const { result } = renderHook(() =>
-      useExperimentalPredictionsState({ algorithmVersion: 'V2', selectedSeason: 2024, selectedWeek: 5, token: 'test-token' })
+      useExperimentalPredictionsState({ selectedSeason: 2024, selectedWeek: 5, token: 'test-token' })
     );
 
     await act(async () => {
-      await result.current.handleCalculate();
+      await result.current.handleRun(['V1']);
+    });
+    expect(result.current.runState.V1.status).toBe('success');
+
+    act(() => {
+      result.current.reset();
     });
 
-    expect(mockCalculateMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V2', season: 2024, week: 5 });
-    expect(result.current.calculatedResult).toEqual(mockResult);
+    expect(result.current.runState.V1.status).toBe('idle');
   });
 
-  it('sets error and clears calculatedResult on calculate failure', async () => {
-    mockCalculateMutateAsync.mockRejectedValue(new Error('Calculation failed'));
+  it('sets every selected version to success on a successful run', async () => {
+    mockCalculateMutateAsync.mockImplementation(({ algorithmVersion }: { algorithmVersion: string }) =>
+      Promise.resolve({
+        algorithmVersion,
+        predictions: [],
+        summary: {
+          gradedGameCount: 0,
+          marginBias: null,
+          marginMAE: null,
+          marginRMSE: null,
+          overUnder: { correct: 0, incorrect: 0, push: 0 },
+          spread: { correct: 0, incorrect: 0, push: 0 },
+          winner: { correct: 0, incorrect: 0, push: 0 },
+        },
+      })
+    );
 
     const { result } = renderHook(() =>
-      useExperimentalPredictionsState({ algorithmVersion: 'V1', selectedSeason: 2024, selectedWeek: 5, token: 'test-token' })
+      useExperimentalPredictionsState({ selectedSeason: 2024, selectedWeek: 5, token: 'test-token' })
     );
 
     await act(async () => {
-      await result.current.handleCalculate();
+      await result.current.handleRun(['V1', 'V2']);
     });
 
-    expect(result.current.error?.message).toBe('Calculation failed');
-    expect(result.current.calculatedResult).toBeNull();
+    expect(mockCalculateMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V1', season: 2024, week: 5 });
+    expect(mockCalculateMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V2', season: 2024, week: 5 });
+    expect(result.current.runState.V1.status).toBe('success');
+    expect(result.current.runState.V2.status).toBe('success');
   });
 });

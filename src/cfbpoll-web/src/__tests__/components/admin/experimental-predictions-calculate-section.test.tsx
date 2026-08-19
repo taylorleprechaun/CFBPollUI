@@ -2,18 +2,20 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { AlgorithmVersion } from '../../../components/admin';
+
 import { ExperimentalPredictionsCalculateSection } from '../../../components/admin';
 
 const defaultProps = {
-  algorithmVersion: 'V1' as const,
-  isCalculating: false,
-  onAlgorithmVersionChange: vi.fn(),
-  onCalculate: vi.fn(),
+  isRunning: false,
+  onRun: vi.fn(),
   onSeasonChange: vi.fn(),
+  onSelectedVersionsChange: vi.fn(),
   onWeekChange: vi.fn(),
   seasons: [2024, 2023],
   seasonsLoading: false,
   selectedSeason: 2024,
+  selectedVersions: ['V1'] as AlgorithmVersion[],
   selectedWeek: 5,
   weeks: [
     { weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: true },
@@ -23,22 +25,13 @@ const defaultProps = {
 };
 
 describe('ExperimentalPredictionsCalculateSection', () => {
-  it('calls onAlgorithmVersionChange when algorithm version changes', async () => {
-    const onAlgorithmVersionChange = vi.fn();
-    render(<ExperimentalPredictionsCalculateSection {...defaultProps} onAlgorithmVersionChange={onAlgorithmVersionChange} />);
-
-    await userEvent.selectOptions(screen.getByLabelText('Algorithm Version'), 'V2');
-
-    expect(onAlgorithmVersionChange).toHaveBeenCalledWith('V2');
-  });
-
-  it('calls onCalculate when button is clicked', async () => {
-    const onCalculate = vi.fn();
-    render(<ExperimentalPredictionsCalculateSection {...defaultProps} onCalculate={onCalculate} />);
+  it('calls onRun when the Calculate Predictions button is clicked', async () => {
+    const onRun = vi.fn();
+    render(<ExperimentalPredictionsCalculateSection {...defaultProps} onRun={onRun} />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Calculate Predictions' }));
 
-    expect(onCalculate).toHaveBeenCalled();
+    expect(onRun).toHaveBeenCalled();
   });
 
   it('calls onSeasonChange and onWeekChange when season changes', async () => {
@@ -52,6 +45,15 @@ describe('ExperimentalPredictionsCalculateSection', () => {
     expect(onWeekChange).toHaveBeenCalledWith(null);
   });
 
+  it('calls onSelectedVersionsChange when an algorithm version is toggled', async () => {
+    const onSelectedVersionsChange = vi.fn();
+    render(<ExperimentalPredictionsCalculateSection {...defaultProps} onSelectedVersionsChange={onSelectedVersionsChange} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'V2' }));
+
+    expect(onSelectedVersionsChange).toHaveBeenCalledWith(['V1', 'V2']);
+  });
+
   it('calls onWeekChange when week changes', async () => {
     const onWeekChange = vi.fn();
     render(<ExperimentalPredictionsCalculateSection {...defaultProps} onWeekChange={onWeekChange} />);
@@ -61,13 +63,19 @@ describe('ExperimentalPredictionsCalculateSection', () => {
     expect(onWeekChange).toHaveBeenCalledWith(1);
   });
 
-  it('disables button when season is null', () => {
+  it('disables the button when no algorithm versions are selected', () => {
+    render(<ExperimentalPredictionsCalculateSection {...defaultProps} selectedVersions={[]} />);
+
+    expect(screen.getByRole('button', { name: 'Calculate Predictions' })).toBeDisabled();
+  });
+
+  it('disables the button when season is null', () => {
     render(<ExperimentalPredictionsCalculateSection {...defaultProps} selectedSeason={null} />);
 
     expect(screen.getByRole('button', { name: 'Calculate Predictions' })).toBeDisabled();
   });
 
-  it('disables button when week is null', () => {
+  it('disables the button when week is null', () => {
     render(<ExperimentalPredictionsCalculateSection {...defaultProps} selectedWeek={null} />);
 
     expect(screen.getByRole('button', { name: 'Calculate Predictions' })).toBeDisabled();
@@ -84,11 +92,11 @@ describe('ExperimentalPredictionsCalculateSection', () => {
 
     expect(screen.getByLabelText('Season')).toBeInTheDocument();
     expect(screen.getByLabelText('Week')).toBeInTheDocument();
-    expect(screen.getByLabelText('Algorithm Version')).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Algorithm Version' })).toBeInTheDocument();
   });
 
-  it('shows Calculating... text when isCalculating is true', () => {
-    render(<ExperimentalPredictionsCalculateSection {...defaultProps} isCalculating={true} />);
+  it('shows Calculating... text when isRunning is true', () => {
+    render(<ExperimentalPredictionsCalculateSection {...defaultProps} isRunning={true} />);
 
     expect(screen.getByRole('button', { name: 'Calculating...' })).toBeDisabled();
   });

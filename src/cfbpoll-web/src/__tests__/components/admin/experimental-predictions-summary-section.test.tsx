@@ -24,7 +24,14 @@ const ungradedSummary = {
 };
 
 describe('ExperimentalPredictionsSummarySection', () => {
-  it('renders margin bias, MAE, and RMSE stat cards', () => {
+  it('colors the winner percentage badge using the same quality thresholds as the track record page', () => {
+    render(<ExperimentalPredictionsSummarySection summary={gradedSummary} />);
+
+    const badge = screen.getByText('75.0%');
+    expect(badge.className).toContain('bg-green-100');
+  });
+
+  it('renders margin bias, MAE, and RMSE rows', () => {
     render(<ExperimentalPredictionsSummarySection summary={gradedSummary} />);
 
     expect(screen.getByText('Margin Bias')).toBeInTheDocument();
@@ -35,13 +42,13 @@ describe('ExperimentalPredictionsSummarySection', () => {
     expect(screen.getByText('7.5 pts')).toBeInTheDocument();
   });
 
-  it('renders record cards for winner, spread, and over/under totals', () => {
+  it('renders record rows for winner, spread, and over/under totals', () => {
     render(<ExperimentalPredictionsSummarySection summary={gradedSummary} />);
 
     expect(screen.getByText('Winner')).toBeInTheDocument();
     expect(screen.getByText('3-1')).toBeInTheDocument();
     expect(screen.getByText('Spread')).toBeInTheDocument();
-    expect(screen.getByText('Over/Under')).toBeInTheDocument();
+    expect(screen.getByText('O/U')).toBeInTheDocument();
     expect(screen.getByText('2-1-1')).toBeInTheDocument();
   });
 

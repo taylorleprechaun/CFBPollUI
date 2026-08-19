@@ -204,7 +204,7 @@ describe('PredictionsTable', () => {
       expect(spreadPick!.closest('div')?.className).toContain('bg-gray-100');
     });
 
-    it('highlights an incorrect over/under pick in red and shows the actual result', () => {
+    it('highlights an incorrect over/under pick in red with no actual-result caption', () => {
       const prediction = buildPrediction({
         actualOverUnderResult: 'Under',
         overUnderGrade: 'Incorrect',
@@ -212,10 +212,10 @@ describe('PredictionsTable', () => {
 
       render(<PredictionsTable predictions={[prediction]} showGrades={true} />);
 
-      expect(screen.getByText('Correct: Under')).toBeInTheDocument();
+      expect(screen.queryByText(/Correct:/)).not.toBeInTheDocument();
     });
 
-    it('highlights an incorrect spread pick in red and shows the covering team', () => {
+    it('highlights an incorrect spread pick in red with no covering-team caption', () => {
       const prediction = buildPrediction({
         actualSpreadCoveringTeam: 'Michigan',
         spreadGrade: 'Incorrect',
@@ -223,10 +223,10 @@ describe('PredictionsTable', () => {
 
       render(<PredictionsTable predictions={[prediction]} showGrades={true} />);
 
-      expect(screen.getByText('Correct: Michigan')).toBeInTheDocument();
+      expect(screen.queryByText(/Correct:/)).not.toBeInTheDocument();
     });
 
-    it('highlights an incorrect winner pick in red and shows the actual winner', () => {
+    it('highlights an incorrect winner pick in red with no actual-winner caption', () => {
       const prediction = buildPrediction({
         actualWinner: 'Michigan',
         winnerGrade: 'Incorrect',
@@ -236,7 +236,7 @@ describe('PredictionsTable', () => {
 
       const winner = screen.getByText('Ohio State', { selector: 'span.rounded-lg' });
       expect(winner.className).toContain('bg-red-100');
-      expect(screen.getByText('Actual: Michigan')).toBeInTheDocument();
+      expect(screen.queryByText(/Actual:/)).not.toBeInTheDocument();
     });
 
     it('shows the final score when showGrades is true', () => {

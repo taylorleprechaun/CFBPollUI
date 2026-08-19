@@ -5,7 +5,6 @@ import type { GamePredictionPublic } from '../../schemas';
 import { formatOverUnder, formatPick, formatSpread } from '../../lib/prediction-format-utils';
 import { GradedPick } from './graded-pick';
 import { PredictionScoreBlock } from './prediction-score-block';
-import { WinnerActualCaption } from './winner-actual-caption';
 import { WinnerPill } from './winner-pill';
 
 interface PredictionCardProps {
@@ -45,7 +44,6 @@ export function PredictionCard({ prediction: p, rankByTeam, season = null, showG
       <FactRow
         label="Winner"
         value={<WinnerPill prediction={p} rankByTeam={rankByTeam} season={season} showGrades={showGrades} />}
-        secondary={<WinnerActualCaption prediction={p} showGrades={showGrades} />}
       />
 
       <FactRow
@@ -53,7 +51,7 @@ export function PredictionCard({ prediction: p, rankByTeam, season = null, showG
         value={formatSpread(p)}
         secondary={
           showGrades ? (
-            <GradedPick actualValue={p.actualSpreadCoveringTeam} grade={p.spreadGrade} pick={p.mySpreadPick} />
+            <GradedPick grade={p.spreadGrade} pick={p.mySpreadPick} />
           ) : (
             <span>Pick: {formatPick(p.mySpreadPick)}</span>
           )
@@ -65,7 +63,7 @@ export function PredictionCard({ prediction: p, rankByTeam, season = null, showG
         value={formatOverUnder(p.bettingOverUnder)}
         secondary={
           showGrades ? (
-            <GradedPick actualValue={p.actualOverUnderResult} grade={p.overUnderGrade} pick={p.myOverUnderPick} />
+            <GradedPick grade={p.overUnderGrade} pick={p.myOverUnderPick} />
           ) : (
             <span>Pick: {formatPick(p.myOverUnderPick)}</span>
           )

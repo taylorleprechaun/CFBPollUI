@@ -6,7 +6,7 @@ import {
   DEFAULT_ALGORITHM_VERSIONS,
   ExperimentalCalculateSection,
   ExperimentalPredictionsCalculateSection,
-  ExperimentalPredictionsPreviewSection,
+  PredictionsComparisonSection,
   RatingsComparisonSection,
 } from '../components/admin';
 import { ErrorAlert, ErrorBoundary } from '../components/error';
@@ -36,8 +36,8 @@ export function ExperimentalPage() {
   const { data: weeksData, isLoading: weeksLoading } = useWeeks(selectedSeason);
   const { selectedWeek, setSelectedWeek } = useWeekSelection(weeksData?.weeks);
 
-  const [algorithmVersion, setAlgorithmVersion] = useState<AlgorithmVersion>('V1');
   const [ratingsSelectedVersions, setRatingsSelectedVersions] = useState<AlgorithmVersion[]>(DEFAULT_ALGORITHM_VERSIONS);
+  const [predictionsSelectedVersions, setPredictionsSelectedVersions] = useState<AlgorithmVersion[]>(DEFAULT_ALGORITHM_VERSIONS);
   const [mode, setMode] = useState<ExperimentalMode>('ratings');
 
   const { handleRun, isRunning, runState } = useExperimentalPageState({
@@ -46,7 +46,7 @@ export function ExperimentalPage() {
     token,
   });
 
-  const predictionsState = useExperimentalPredictionsState({ algorithmVersion, selectedSeason, selectedWeek, token });
+  const predictionsState = useExperimentalPredictionsState({ selectedSeason, selectedWeek, token });
 
   return (
     <div className="space-y-6">
@@ -98,31 +98,28 @@ export function ExperimentalPage() {
 
       {mode === 'predictions' && (
         <>
-          {predictionsState.error && <ErrorAlert error={predictionsState.error} />}
-
           <ExperimentalPredictionsCalculateSection
-            algorithmVersion={algorithmVersion}
-            isCalculating={predictionsState.isCalculating}
-            onAlgorithmVersionChange={setAlgorithmVersion}
-            onCalculate={predictionsState.handleCalculate}
+            isRunning={predictionsState.isRunning}
+            onRun={() => predictionsState.handleRun(predictionsSelectedVersions)}
             onSeasonChange={setSelectedSeason}
+            onSelectedVersionsChange={setPredictionsSelectedVersions}
             onWeekChange={setSelectedWeek}
             seasons={seasons}
             seasonsLoading={seasonsLoading}
             selectedSeason={selectedSeason}
+            selectedVersions={predictionsSelectedVersions}
             selectedWeek={selectedWeek}
             weeks={weeksData?.weeks ?? []}
             weeksLoading={weeksLoading}
           />
 
-          <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render experimental predictions preview')} />}>
-            {predictionsState.calculatedResult && selectedSeason !== null && selectedWeek !== null && (
-              <ExperimentalPredictionsPreviewSection
-                calculatedResult={predictionsState.calculatedResult}
-                season={selectedSeason}
-                week={selectedWeek}
-              />
-            )}
+          <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render experimental predictions comparison')} />}>
+            <PredictionsComparisonSection
+              runState={predictionsState.runState}
+              season={selectedSeason}
+              selectedVersions={predictionsSelectedVersions}
+              week={selectedWeek}
+            />
           </ErrorBoundary>
         </>
       )}

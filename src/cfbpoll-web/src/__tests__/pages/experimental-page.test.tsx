@@ -94,27 +94,30 @@ describe('ExperimentalPage', () => {
     });
   });
 
-  it('calls calculateExperimentalPredictions with the selected algorithm version on calculate', async () => {
-    mockCalculatePredictionsMutateAsync.mockResolvedValue({
-      algorithmVersion: 'V2',
-      predictions: [],
-      summary: {
-        gradedGameCount: 0,
-        marginBias: null,
-        marginMAE: null,
-        marginRMSE: null,
-        overUnder: { correct: 0, incorrect: 0, push: 0 },
-        spread: { correct: 0, incorrect: 0, push: 0 },
-        winner: { correct: 0, incorrect: 0, push: 0 },
-      },
-    });
+  it('calls calculateExperimentalPredictions once per selected algorithm version on calculate', async () => {
+    mockCalculatePredictionsMutateAsync.mockImplementation(({ algorithmVersion }: { algorithmVersion: string }) =>
+      Promise.resolve({
+        algorithmVersion,
+        predictions: [],
+        summary: {
+          gradedGameCount: 0,
+          marginBias: null,
+          marginMAE: null,
+          marginRMSE: null,
+          overUnder: { correct: 0, incorrect: 0, push: 0 },
+          spread: { correct: 0, incorrect: 0, push: 0 },
+          winner: { correct: 0, incorrect: 0, push: 0 },
+        },
+      })
+    );
 
     renderExperimentalPage();
     await userEvent.click(screen.getByRole('button', { name: 'Predictions' }));
-    await userEvent.selectOptions(screen.getByLabelText('Algorithm Version'), 'V2');
+    await userEvent.click(screen.getByRole('button', { name: 'V1' }));
     await userEvent.click(screen.getByRole('button', { name: 'Calculate Predictions' }));
 
     await waitFor(() => {
+      expect(mockCalculatePredictionsMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V1', season: 2024, week: 5 });
       expect(mockCalculatePredictionsMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V2', season: 2024, week: 5 });
     });
   });
@@ -164,11 +167,11 @@ describe('ExperimentalPage', () => {
     expect(screen.queryByText(/Comparison/)).not.toBeInTheDocument();
   });
 
-  it('does not render a predictions preview before calculating', async () => {
+  it('does not render a predictions comparison before calculating', async () => {
     renderExperimentalPage();
     await userEvent.click(screen.getByRole('button', { name: 'Predictions' }));
 
-    expect(screen.queryByText(/Preview/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Comparison/)).not.toBeInTheDocument();
   });
 
   it('renders experimental page heading', () => {
@@ -210,6 +213,31 @@ describe('ExperimentalPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Comparison: 2024 Week 6')).toBeInTheDocument();
     });
+  });
+
+  it('shows a comparison with summary cards after a successful predictions calculation', async () => {
+    mockCalculatePredictionsMutateAsync.mockResolvedValue({
+      algorithmVersion: 'V2',
+      predictions: [],
+      summary: {
+        gradedGameCount: 1,
+        marginBias: -3.5,
+        marginMAE: 3.5,
+        marginRMSE: 3.5,
+        overUnder: { correct: 0, incorrect: 1, push: 0 },
+        spread: { correct: 0, incorrect: 0, push: 1 },
+        winner: { correct: 1, incorrect: 0, push: 0 },
+      },
+    });
+
+    renderExperimentalPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Predictions' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate Predictions' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Comparison: 2024 Week 6')).toBeInTheDocument();
+    });
+    expect(screen.getByText('1-0')).toBeInTheDocument();
   });
 
   it('shows error when calculation fails', async () => {
@@ -254,31 +282,6 @@ describe('ExperimentalPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Predictions calculation failed')).toBeInTheDocument();
     });
-  });
-
-  it('shows summary and preview after successful predictions calculation', async () => {
-    mockCalculatePredictionsMutateAsync.mockResolvedValue({
-      algorithmVersion: 'V2',
-      predictions: [],
-      summary: {
-        gradedGameCount: 1,
-        marginBias: -3.5,
-        marginMAE: 3.5,
-        marginRMSE: 3.5,
-        overUnder: { correct: 0, incorrect: 1, push: 0 },
-        spread: { correct: 0, incorrect: 0, push: 1 },
-        winner: { correct: 1, incorrect: 0, push: 0 },
-      },
-    });
-
-    renderExperimentalPage();
-    await userEvent.click(screen.getByRole('button', { name: 'Predictions' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Calculate Predictions' }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/Preview \(V2\): 2024 Week 6/)).toBeInTheDocument();
-    });
-    expect(screen.getByText('1-0')).toBeInTheDocument();
   });
 
   it('switches back to ratings mode when Ratings button is clicked', async () => {
