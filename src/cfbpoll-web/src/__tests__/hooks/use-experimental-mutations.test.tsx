@@ -6,18 +6,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   useCalculateExperimental,
+  useCalculateExperimentalPredictions,
   useCalculateExperimentalSeasonTrends,
   useExportExperimental,
 } from '../../hooks/use-experimental-mutations';
 
 vi.mock('../../services/admin-api', () => ({
   calculateExperimental: vi.fn(),
+  calculateExperimentalPredictions: vi.fn(),
   calculateExperimentalSeasonTrends: vi.fn(),
   downloadExperimentalExport: vi.fn(),
 }));
 
 import {
   calculateExperimental,
+  calculateExperimentalPredictions,
   calculateExperimentalSeasonTrends,
   downloadExperimentalExport,
 } from '../../services/admin-api';
@@ -44,6 +47,18 @@ describe('null token guard', () => {
     ).rejects.toThrow('Authentication required');
 
     expect(calculateExperimental).not.toHaveBeenCalled();
+  });
+
+  it('useCalculateExperimentalPredictions rejects with Authentication required when token is null', async () => {
+    const { result } = renderHook(() => useCalculateExperimentalPredictions(null), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(
+      act(() => result.current.mutateAsync({ algorithmVersion: 'V1', season: 2024, week: 5 }))
+    ).rejects.toThrow('Authentication required');
+
+    expect(calculateExperimentalPredictions).not.toHaveBeenCalled();
   });
 
   it('useCalculateExperimentalSeasonTrends rejects with Authentication required when token is null', async () => {
@@ -93,6 +108,49 @@ describe('useCalculateExperimental', () => {
     vi.mocked(calculateExperimental).mockRejectedValue(new Error('Failed'));
 
     const { result } = renderHook(() => useCalculateExperimental('test-token'), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(
+      act(() => result.current.mutateAsync({ algorithmVersion: 'V1', season: 2024, week: 5 }))
+    ).rejects.toThrow('Failed');
+  });
+});
+
+describe('useCalculateExperimentalPredictions', () => {
+  beforeEach(() => vi.resetAllMocks());
+
+  it('calls calculateExperimentalPredictions with token and params', async () => {
+    const mockResult = {
+      algorithmVersion: 'V2',
+      predictions: [],
+      summary: {
+        gradedGameCount: 0,
+        marginBias: null,
+        marginMAE: null,
+        marginRMSE: null,
+        overUnder: { correct: 0, incorrect: 0, push: 0 },
+        spread: { correct: 0, incorrect: 0, push: 0 },
+        winner: { correct: 0, incorrect: 0, push: 0 },
+      },
+    };
+    vi.mocked(calculateExperimentalPredictions).mockResolvedValue(mockResult);
+
+    const { result } = renderHook(() => useCalculateExperimentalPredictions('test-token'), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ algorithmVersion: 'V2', season: 2024, week: 5 });
+    });
+
+    expect(calculateExperimentalPredictions).toHaveBeenCalledWith('test-token', 2024, 5, 'V2');
+  });
+
+  it('rejects on failure', async () => {
+    vi.mocked(calculateExperimentalPredictions).mockRejectedValue(new Error('Failed'));
+
+    const { result } = renderHook(() => useCalculateExperimentalPredictions('test-token'), {
       wrapper: createWrapper(),
     });
 

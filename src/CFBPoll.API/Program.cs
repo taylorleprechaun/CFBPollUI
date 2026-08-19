@@ -51,7 +51,9 @@ try
     builder.Services.AddRankingsModule();
     builder.Services.AddSingleton<ISeasonModule, SeasonModule>();
     builder.Services.AddSingleton<IConferenceModule, ConferenceModule>();
-    builder.Services.AddSingleton<IPredictionCalculatorModule, PredictionCalculatorModule>();
+    builder.Services.AddSingleton<PredictionCalculatorModule>();
+    builder.Services.AddSingleton<PredictionCalculatorModuleV2>();
+    builder.Services.AddSingleton<IPredictionAlgorithmResolver, PredictionAlgorithmResolver>();
     builder.Services.AddSingleton<IPredictionsModule, PredictionsModule>();
     builder.Services.AddSingleton<IAdminModule, AdminModule>();
     builder.Services.AddSingleton<IAllTimeModule, AllTimeModule>();
