@@ -19,8 +19,6 @@ import {
   ExperimentalCalculateResponseSchema,
   type ExperimentalPredictionsResponse,
   ExperimentalPredictionsResponseSchema,
-  type ExperimentalSeasonTrendsResponse,
-  ExperimentalSeasonTrendsResponseSchema,
   type GradePredictionsResponse,
   GradePredictionsResponseSchema,
   PredictionsSummariesResponseSchema,
@@ -55,18 +53,6 @@ export async function calculateExperimentalPredictions(
     withAuth(token, { method: 'POST' })
   );
   return parseResponse(response, ExperimentalPredictionsResponseSchema);
-}
-
-export async function calculateExperimentalSeasonTrends(
-  token: string,
-  season: number,
-  algorithmVersion: AlgorithmVersion
-): Promise<ExperimentalSeasonTrendsResponse> {
-  const response = await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/seasons/${season}/experimental/${algorithmVersion}/trends`,
-    withAuth(token, { method: 'POST' })
-  );
-  return parseResponse(response, ExperimentalSeasonTrendsResponseSchema);
 }
 
 export async function calculatePredictions(

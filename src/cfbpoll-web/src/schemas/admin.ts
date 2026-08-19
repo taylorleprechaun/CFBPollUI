@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { GamePredictionPublicSchema, RankingsResponseSchema, SeasonTrendsResponseSchema, TrackRecordTotalsSchema } from './index';
+import { GamePredictionPublicSchema, RankingsResponseSchema, TrackRecordTotalsSchema } from './index';
 
 export const LoginResponseSchema = z.object({
   expiresIn: z.number(),
@@ -32,8 +32,6 @@ export const ExperimentalPredictionsResponseSchema = z.object({
   predictions: z.array(GamePredictionPublicSchema),
   summary: PredictionRecordSummarySchema,
 });
-
-export const ExperimentalSeasonTrendsResponseSchema = SeasonTrendsResponseSchema;
 
 export const SnapshotSchema = z.object({
   createdAt: z.string(),
@@ -96,7 +94,6 @@ export type CalculatePredictionsResponse = z.infer<typeof CalculatePredictionsRe
 export type CalculateResponse = z.infer<typeof CalculateResponseSchema>;
 export type ExperimentalCalculateResponse = z.infer<typeof ExperimentalCalculateResponseSchema>;
 export type ExperimentalPredictionsResponse = z.infer<typeof ExperimentalPredictionsResponseSchema>;
-export type ExperimentalSeasonTrendsResponse = z.infer<typeof ExperimentalSeasonTrendsResponseSchema>;
 export type GamePrediction = z.infer<typeof GamePredictionSchema>;
 export type GradePredictionsResponse = z.infer<typeof GradePredictionsResponseSchema>;
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;

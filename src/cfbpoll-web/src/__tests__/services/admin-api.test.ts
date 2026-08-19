@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   calculateExperimental,
   calculateExperimentalPredictions,
-  calculateExperimentalSeasonTrends,
   calculatePredictions,
   calculateRankings,
   deletePredictions,
@@ -106,44 +105,6 @@ describe('Admin API service', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await expect(calculateExperimentalPredictions('token', 2024, 5, 'V1')).rejects.toThrow('Server error');
-    });
-  });
-
-  describe('calculateExperimentalSeasonTrends', () => {
-    it('sends POST to experimental trends endpoint with auth header', async () => {
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            season: 2024,
-            teams: [],
-            weeks: [],
-          }),
-      });
-      vi.stubGlobal('fetch', mockFetch);
-
-      await calculateExperimentalSeasonTrends('my-token', 2024, 'V2');
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/admin/seasons/2024/experimental/V2/trends'),
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({
-            Authorization: 'Bearer my-token',
-          }),
-        })
-      );
-    });
-
-    it('throws on failed calculate', async () => {
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 500,
-        json: () => Promise.resolve({ message: 'Server error' }),
-      });
-      vi.stubGlobal('fetch', mockFetch);
-
-      await expect(calculateExperimentalSeasonTrends('token', 2024, 'V1')).rejects.toThrow('Server error');
     });
   });
 

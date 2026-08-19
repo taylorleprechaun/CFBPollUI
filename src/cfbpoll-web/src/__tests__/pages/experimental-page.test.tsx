@@ -3,10 +3,6 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { rechartsMock } from '../mocks/recharts';
-
-vi.mock('recharts', () => rechartsMock);
-
 vi.mock('../../hooks/use-theme', () => ({
   useTheme: () => ({ resolvedTheme: 'light' }),
 }));
@@ -53,7 +49,6 @@ vi.mock('../../hooks/use-weeks', () => ({
 const mockCalculateMutateAsync = vi.fn();
 const mockCalculatePredictionsMutateAsync = vi.fn();
 const mockExportMutateAsync = vi.fn();
-const mockCalculateTrendsMutateAsync = vi.fn();
 
 vi.mock('../../hooks/use-experimental-mutations', () => ({
   useCalculateExperimental: () => ({
@@ -62,10 +57,6 @@ vi.mock('../../hooks/use-experimental-mutations', () => ({
   }),
   useCalculateExperimentalPredictions: () => ({
     mutateAsync: mockCalculatePredictionsMutateAsync,
-    isPending: false,
-  }),
-  useCalculateExperimentalSeasonTrends: () => ({
-    mutateAsync: mockCalculateTrendsMutateAsync,
     isPending: false,
   }),
   useExportExperimental: () => ({
@@ -125,18 +116,6 @@ describe('ExperimentalPage', () => {
 
     await waitFor(() => {
       expect(mockCalculatePredictionsMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V2', season: 2024, week: 5 });
-    });
-  });
-
-  it('calls calculateExperimentalSeasonTrends with the selected algorithm version on Calculate Season Trend', async () => {
-    mockCalculateTrendsMutateAsync.mockResolvedValue({ season: 2024, teams: [], weeks: [] });
-
-    renderExperimentalPage();
-    await userEvent.selectOptions(screen.getByLabelText('Algorithm Version'), 'V2');
-    await userEvent.click(screen.getByRole('button', { name: 'Calculate Season Trend' }));
-
-    await waitFor(() => {
-      expect(mockCalculateTrendsMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V2', season: 2024 });
     });
   });
 
@@ -219,12 +198,6 @@ describe('ExperimentalPage', () => {
     expect(screen.getByLabelText('Algorithm Version')).toBeInTheDocument();
   });
 
-  it('renders the season trend section heading', () => {
-    renderExperimentalPage();
-
-    expect(screen.getByText('Season Trend (Top 25)')).toBeInTheDocument();
-  });
-
   it('shows error when calculation fails', async () => {
     mockCalculateMutateAsync.mockRejectedValue(new Error('Calculation failed'));
 
@@ -269,17 +242,6 @@ describe('ExperimentalPage', () => {
     });
   });
 
-  it('shows error when season trend calculation fails', async () => {
-    mockCalculateTrendsMutateAsync.mockRejectedValue(new Error('Season trend calculation failed'));
-
-    renderExperimentalPage();
-    await userEvent.click(screen.getByRole('button', { name: 'Calculate Season Trend' }));
-
-    await waitFor(() => {
-      expect(screen.getByText('Season trend calculation failed')).toBeInTheDocument();
-    });
-  });
-
   it('shows preview after successful calculation', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
       algorithmVersion: 'V2',
@@ -291,17 +253,6 @@ describe('ExperimentalPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Preview \(V2\): 2024 Week 6/)).toBeInTheDocument();
-    });
-  });
-
-  it('shows season trend chart after successful season trend calculation', async () => {
-    mockCalculateTrendsMutateAsync.mockResolvedValue({ season: 2024, teams: [], weeks: [] });
-
-    renderExperimentalPage();
-    await userEvent.click(screen.getByRole('button', { name: 'Calculate Season Trend' }));
-
-    await waitFor(() => {
-      expect(screen.getByText('2024 Trend')).toBeInTheDocument();
     });
   });
 

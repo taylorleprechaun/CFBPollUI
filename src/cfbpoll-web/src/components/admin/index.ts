@@ -7,7 +7,6 @@ export { ExperimentalPredictionsCalculateSection } from './experimental-predicti
 export { ExperimentalPredictionsPreviewSection } from './experimental-predictions-preview-section';
 export { ExperimentalPredictionsSummarySection } from './experimental-predictions-summary-section';
 export { ExperimentalPreviewSection } from './experimental-preview-section';
-export { ExperimentalTrendsSection } from './experimental-trends-section';
 export { PersistedItemsSection } from './persisted-items-section';
 export { PersistedPredictionsSection } from './persisted-predictions-section';
 export { PersistedSnapshotsSection } from './persisted-snapshots-section';
