@@ -33,15 +33,17 @@ vi.mock('../../hooks/use-season', () => ({
   }),
 }));
 
+let mockWeeksData: { season: number; weeks: { label: string; weekNumber: number }[] } | undefined = {
+  season: 2024,
+  weeks: [
+    { weekNumber: 1, label: 'Week 2' },
+    { weekNumber: 5, label: 'Week 6' },
+  ],
+};
+
 vi.mock('../../hooks/use-weeks', () => ({
   useWeeks: () => ({
-    data: {
-      season: 2024,
-      weeks: [
-        { weekNumber: 1, label: 'Week 2' },
-        { weekNumber: 5, label: 'Week 6' },
-      ],
-    },
+    data: mockWeeksData,
     isLoading: false,
   }),
 }));
@@ -77,6 +79,13 @@ describe('ExperimentalPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockToken = 'test-token';
+    mockWeeksData = {
+      season: 2024,
+      weeks: [
+        { weekNumber: 1, label: 'Week 2' },
+        { weekNumber: 5, label: 'Week 6' },
+      ],
+    };
   });
 
   it('calls calculateExperimental once per selected algorithm version on calculate', async () => {
@@ -179,6 +188,16 @@ describe('ExperimentalPage', () => {
 
     expect(screen.getByText('Experimental')).toBeInTheDocument();
     expect(screen.getByText('Experimental Calculation')).toBeInTheDocument();
+  });
+
+  it('renders no week options in either mode when week data has not loaded yet', async () => {
+    mockWeeksData = undefined;
+
+    renderExperimentalPage();
+    expect(screen.getByLabelText('Week')).toBeEmptyDOMElement();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Predictions' }));
+    expect(screen.getByLabelText('Week')).toBeEmptyDOMElement();
   });
 
   it('renders predictions calculate section after switching to predictions mode', async () => {

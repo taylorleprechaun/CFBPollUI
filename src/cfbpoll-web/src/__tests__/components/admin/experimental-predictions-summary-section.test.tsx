@@ -31,6 +31,23 @@ describe('ExperimentalPredictionsSummarySection', () => {
     expect(badge.className).toContain('bg-green-100');
   });
 
+  it('does not render a percentage badge for a category with no decided picks', () => {
+    const allPushSummary = {
+      gradedGameCount: 3,
+      marginBias: 0,
+      marginMAE: 0,
+      marginRMSE: 0,
+      overUnder: { correct: 0, incorrect: 0, push: 2 },
+      spread: { correct: 2, incorrect: 1, push: 0 },
+      winner: { correct: 0, incorrect: 0, push: 3 },
+    };
+    render(<ExperimentalPredictionsSummarySection summary={allPushSummary} />);
+
+    expect(screen.getByText('0-0-3')).toBeInTheDocument();
+    expect(screen.getByText('0-0-2')).toBeInTheDocument();
+    expect(screen.queryByText('0.0%')).not.toBeInTheDocument();
+  });
+
   it('renders margin bias, MAE, and RMSE rows', () => {
     render(<ExperimentalPredictionsSummarySection summary={gradedSummary} />);
 

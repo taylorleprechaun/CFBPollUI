@@ -41,6 +41,18 @@ describe('useAlgorithmRunState', () => {
     expect(result.current[0].V1).toEqual({ error: null, result: null, status: 'pending' });
   });
 
+  it('returns the same state for an unrecognized action type', () => {
+    const { result } = renderHook(() => useAlgorithmRunState<string>());
+    const stateBefore = result.current[0];
+
+    act(() => {
+      // Actions are exhaustively typed; only reachable via an invalid runtime dispatch.
+      result.current[1]({ type: 'unknown-action' } as unknown as Parameters<typeof result.current[1]>[0]);
+    });
+
+    expect(result.current[0]).toBe(stateBefore);
+  });
+
   it('sets an entry to error status on run-error', () => {
     const { result } = renderHook(() => useAlgorithmRunState<string>());
     const error = new Error('boom');

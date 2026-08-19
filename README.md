@@ -45,7 +45,7 @@ Last Updated 8/6/2026
 - **Interactive UI**: Sortable rankings table with team logos and colors
 - **Game Predictions**: Generate game predictions with spread and over/under picks using team ratings and betting line data
 - **Admin Dashboard**: JWT-authenticated admin panel to calculate, preview, and publish rankings and predictions with a two-step draft/publish workflow
-- **Experimental Rating Preview**: Admin-only calculation against any rating algorithm version for any season/week, without persisting or publishing — used to validate a candidate algorithm before it becomes a season's default
+- **Experimental Rating & Prediction Comparison**: Admin-only calculation of rankings and predictions against multiple algorithm versions at once for any season/week, compared side-by-side, without persisting or publishing — used to validate a candidate algorithm against the current one before it becomes a season's default
 - **Excel Export**: Download rankings as Excel spreadsheets with rating breakdowns
 - **SQLite Persistence**: Rankings and predictions snapshots stored in SQLite for fast retrieval without redundant API calls
 - **REST API**: Full API with Swagger documentation
@@ -325,7 +325,7 @@ A few ordering/formatting conventions are worth calling out since they're enforc
 
 ## Testing
 
-The project includes 2,368 unit and integration tests across backend and frontend.
+The project includes 2,397 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
@@ -336,7 +336,7 @@ dotnet test
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (1,398 tests)
+# Frontend tests (1,427 tests)
 cd src/cfbpoll-web
 npm test
 ```
@@ -344,7 +344,7 @@ npm test
 ### Coverage Summary
 
 ![Backend Tests](https://img.shields.io/badge/Backend_Tests-970-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1398-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1427-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
 ![Web Coverage](https://img.shields.io/badge/Web_Coverage-100%25-brightgreen)
