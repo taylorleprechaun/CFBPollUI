@@ -16,15 +16,14 @@ public static class PredictionsMapper
         };
     }
 
-    public static ExperimentalPredictionsResponseDTO ToExperimentalResponseDTO(ExperimentalPredictionsResult result)
+    public static SeasonExperimentalPredictionsWeekDTO ToDTO(SeasonExperimentalPredictionsWeek week)
     {
-        ArgumentNullException.ThrowIfNull(result);
+        ArgumentNullException.ThrowIfNull(week);
 
-        return new ExperimentalPredictionsResponseDTO
+        return new SeasonExperimentalPredictionsWeekDTO
         {
-            AlgorithmVersion = result.AlgorithmVersion.ToString(),
-            Predictions = result.Predictions.Select(p => ToDTO(p)),
-            Summary = ToDTO(result.Summary)
+            Summary = ToDTO(week.Summary),
+            Week = week.Week
         };
     }
 
@@ -74,6 +73,17 @@ public static class PredictionsMapper
         };
     }
 
+    public static ExperimentalPredictionsResponseDTO ToExperimentalResponseDTO(ExperimentalPredictionsResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        return new ExperimentalPredictionsResponseDTO
+        {
+            AlgorithmVersion = result.AlgorithmVersion.ToString(),
+            Predictions = result.Predictions.Select(p => ToDTO(p)),
+            Summary = ToDTO(result.Summary)
+        };
+    }
     public static GradePredictionsResponseDTO ToGradeResponseDTO(GradePredictionsResult result)
     {
         ArgumentNullException.ThrowIfNull(result);
@@ -100,6 +110,18 @@ public static class PredictionsMapper
         };
     }
 
+    public static SeasonExperimentalPredictionsResponseDTO ToSeasonExperimentalResponseDTO(SeasonExperimentalPredictionsResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        return new SeasonExperimentalPredictionsResponseDTO
+        {
+            AlgorithmVersion = result.AlgorithmVersion.ToString(),
+            OverallSummary = ToDTO(result.OverallSummary),
+            Season = result.Season,
+            Weeks = result.Weeks.Select(ToDTO)
+        };
+    }
     public static PredictionsSummaryDTO ToSummaryDTO(PredictionsSummary summary)
     {
         ArgumentNullException.ThrowIfNull(summary);

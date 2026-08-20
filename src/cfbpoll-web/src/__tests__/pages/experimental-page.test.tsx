@@ -50,6 +50,7 @@ vi.mock('../../hooks/use-weeks', () => ({
 
 const mockCalculateMutateAsync = vi.fn();
 const mockCalculatePredictionsMutateAsync = vi.fn();
+const mockCalculateSeasonPredictionsMutateAsync = vi.fn();
 const mockExportMutateAsync = vi.fn();
 
 vi.mock('../../hooks/use-experimental-mutations', () => ({
@@ -59,6 +60,10 @@ vi.mock('../../hooks/use-experimental-mutations', () => ({
   }),
   useCalculateExperimentalPredictions: () => ({
     mutateAsync: mockCalculatePredictionsMutateAsync,
+    isPending: false,
+  }),
+  useCalculateExperimentalSeasonPredictions: () => ({
+    mutateAsync: mockCalculateSeasonPredictionsMutateAsync,
     isPending: false,
   }),
   useExportExperimental: () => ({
@@ -131,6 +136,36 @@ describe('ExperimentalPage', () => {
     });
   });
 
+  it('calls calculateExperimentalSeasonPredictions once per selected algorithm version when Compare Season is confirmed', async () => {
+    mockCalculateSeasonPredictionsMutateAsync.mockImplementation(({ algorithmVersion }: { algorithmVersion: string }) =>
+      Promise.resolve({
+        algorithmVersion,
+        overallSummary: {
+          gradedGameCount: 0,
+          marginBias: null,
+          marginMAE: null,
+          marginRMSE: null,
+          overUnder: { correct: 0, incorrect: 0, push: 0 },
+          spread: { correct: 0, incorrect: 0, push: 0 },
+          winner: { correct: 0, incorrect: 0, push: 0 },
+        },
+        season: 2024,
+        weeks: [],
+      })
+    );
+
+    renderExperimentalPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Predictions' }));
+    await userEvent.click(screen.getByRole('button', { name: 'V1' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Compare Season' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Compare' }));
+
+    await waitFor(() => {
+      expect(mockCalculateSeasonPredictionsMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V1', season: 2024, weeks: [1, 5] });
+      expect(mockCalculateSeasonPredictionsMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V2', season: 2024, weeks: [1, 5] });
+    });
+  });
+
   it('calls downloadExperimentalExport when Download Excel is clicked', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
       algorithmVersion: 'V2',
@@ -170,6 +205,17 @@ describe('ExperimentalPage', () => {
     expect((weekSelect as HTMLSelectElement).value).toBe('1');
   });
 
+  it('closes the compare season modal without running when Cancel is clicked', async () => {
+    renderExperimentalPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Predictions' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Compare Season' }));
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(mockCalculateSeasonPredictionsMutateAsync).not.toHaveBeenCalled();
+  });
+
   it('does not render a comparison before calculating', () => {
     renderExperimentalPage();
 
@@ -181,6 +227,16 @@ describe('ExperimentalPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Predictions' }));
 
     expect(screen.queryByText(/Comparison/)).not.toBeInTheDocument();
+  });
+
+  it('opens the compare season modal when Compare Season is clicked', async () => {
+    renderExperimentalPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Predictions' }));
+
+    await userEvent.click(screen.getByRole('button', { name: 'Compare Season' }));
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('Compare Season 2024')).toBeInTheDocument();
   });
 
   it('renders experimental page heading', () => {
@@ -300,6 +356,32 @@ describe('ExperimentalPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Predictions calculation failed')).toBeInTheDocument();
+    });
+  });
+
+  it('shows the season comparison section after confirming Compare Season', async () => {
+    mockCalculateSeasonPredictionsMutateAsync.mockResolvedValue({
+      algorithmVersion: 'V2',
+      overallSummary: {
+        gradedGameCount: 0,
+        marginBias: null,
+        marginMAE: null,
+        marginRMSE: null,
+        overUnder: { correct: 0, incorrect: 0, push: 0 },
+        spread: { correct: 0, incorrect: 0, push: 0 },
+        winner: { correct: 0, incorrect: 0, push: 0 },
+      },
+      season: 2024,
+      weeks: [],
+    });
+
+    renderExperimentalPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Predictions' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Compare Season' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Compare' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Season Comparison: 2024')).toBeInTheDocument();
     });
   });
 

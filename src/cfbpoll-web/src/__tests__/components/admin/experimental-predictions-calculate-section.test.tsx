@@ -8,6 +8,7 @@ import { ExperimentalPredictionsCalculateSection } from '../../../components/adm
 
 const defaultProps = {
   isRunning: false,
+  onCompareSeasonClick: vi.fn(),
   onRun: vi.fn(),
   onSeasonChange: vi.fn(),
   onSelectedVersionsChange: vi.fn(),
@@ -25,6 +26,15 @@ const defaultProps = {
 };
 
 describe('ExperimentalPredictionsCalculateSection', () => {
+  it('calls onCompareSeasonClick when the Compare Season button is clicked', async () => {
+    const onCompareSeasonClick = vi.fn();
+    render(<ExperimentalPredictionsCalculateSection {...defaultProps} onCompareSeasonClick={onCompareSeasonClick} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Compare Season' }));
+
+    expect(onCompareSeasonClick).toHaveBeenCalled();
+  });
+
   it('calls onRun when the Calculate Predictions button is clicked', async () => {
     const onRun = vi.fn();
     render(<ExperimentalPredictionsCalculateSection {...defaultProps} onRun={onRun} />);
@@ -79,6 +89,18 @@ describe('ExperimentalPredictionsCalculateSection', () => {
     render(<ExperimentalPredictionsCalculateSection {...defaultProps} selectedWeek={null} />);
 
     expect(screen.getByRole('button', { name: 'Calculate Predictions' })).toBeDisabled();
+  });
+
+  it('disables the Compare Season button when no weeks are loaded', () => {
+    render(<ExperimentalPredictionsCalculateSection {...defaultProps} weeks={[]} />);
+
+    expect(screen.getByRole('button', { name: 'Compare Season' })).toBeDisabled();
+  });
+
+  it('disables the Compare Season button when season is null', () => {
+    render(<ExperimentalPredictionsCalculateSection {...defaultProps} selectedSeason={null} />);
+
+    expect(screen.getByRole('button', { name: 'Compare Season' })).toBeDisabled();
   });
 
   it('renders heading', () => {

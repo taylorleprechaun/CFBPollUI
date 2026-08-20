@@ -3,11 +3,12 @@ import { useId } from 'react';
 import type { Week } from '../../types';
 import type { AlgorithmVersion } from './algorithm-versions';
 
-import { BUTTON_PRIMARY, SELECT_BASE } from '../ui/button-styles';
+import { BUTTON_PRIMARY, BUTTON_SECONDARY, SELECT_BASE } from '../ui/button-styles';
 import { AlgorithmVersionPicker } from './algorithm-version-picker';
 
 interface ExperimentalPredictionsCalculateSectionProps {
   isRunning: boolean;
+  onCompareSeasonClick: () => void;
   onRun: () => void;
   onSeasonChange: (season: number) => void;
   onSelectedVersionsChange: (versions: AlgorithmVersion[]) => void;
@@ -23,6 +24,7 @@ interface ExperimentalPredictionsCalculateSectionProps {
 
 export function ExperimentalPredictionsCalculateSection({
   isRunning,
+  onCompareSeasonClick,
   onRun,
   onSeasonChange,
   onSelectedVersionsChange,
@@ -86,6 +88,13 @@ export function ExperimentalPredictionsCalculateSection({
           className={BUTTON_PRIMARY}
         >
           {isRunning ? 'Calculating...' : 'Calculate Predictions'}
+        </button>
+        <button
+          onClick={onCompareSeasonClick}
+          disabled={isRunning || selectedSeason === null || weeksLoading || weeks.length === 0 || selectedVersions.length === 0}
+          className={BUTTON_SECONDARY}
+        >
+          Compare Season
         </button>
       </div>
     </div>

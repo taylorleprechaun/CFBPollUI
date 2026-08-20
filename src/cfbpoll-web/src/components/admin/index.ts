@@ -4,6 +4,7 @@ export { AlgorithmVersionPicker } from './algorithm-version-picker';
 export { ALGORITHM_VERSIONS, DEFAULT_ALGORITHM_VERSIONS } from './algorithm-versions';
 export type { AlgorithmVersion } from './algorithm-versions';
 export { CalculateSection } from './calculate-section';
+export { CompareSeasonWeeksModal } from './compare-season-weeks-modal';
 export { ExperimentalCalculateSection } from './experimental-calculate-section';
 export { ExperimentalPredictionsCalculateSection } from './experimental-predictions-calculate-section';
 export { ExperimentalPredictionsSummarySection } from './experimental-predictions-summary-section';
@@ -19,5 +20,9 @@ export { RatingsComparisonColumnHeader } from './ratings-comparison-column-heade
 export { RatingsComparisonSection } from './ratings-comparison-section';
 export type { RatingsComparisonEntry } from './ratings-comparison-table';
 export { RatingsComparisonTable } from './ratings-comparison-table';
+export { SeasonPredictionsComparisonSection } from './season-predictions-comparison-section';
+export type { SeasonPredictionsComparisonEntry } from './season-predictions-comparison-table';
+export { SeasonPredictionsComparisonTable } from './season-predictions-comparison-table';
+export { SeasonPredictionsWeekTable } from './season-predictions-week-table';
 export { SuccessCheckmark } from './success-checkmark';
 export type { ActionFeedback } from './types';

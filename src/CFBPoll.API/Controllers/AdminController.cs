@@ -82,6 +82,26 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
+    /// Calculates predictions for an explicit subset of weeks within a season using an explicitly
+    /// chosen algorithm version, grades each week against actual results where available, and returns
+    /// a season-overall summary plus a per-week breakdown, without persisting anything.
+    /// </summary>
+    [HttpPost("seasons/{season}/experimental/{algorithmVersion}/predictions")]
+    public async Task<ActionResult<SeasonExperimentalPredictionsResponseDTO>> CalculateExperimentalSeasonPredictions(
+        int season, RatingAlgorithmVersion algorithmVersion, [FromBody] CalculateExperimentalSeasonPredictionsRequestDTO request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        _logger.LogInformation(
+            "Admin calculating experimental season predictions for season {Season} using algorithm version {AlgorithmVersion}",
+            season, algorithmVersion);
+
+        var result = await _adminModule.CalculateExperimentalSeasonPredictionsAsync(season, request.Weeks, algorithmVersion);
+
+        return Ok(PredictionsMapper.ToSeasonExperimentalResponseDTO(result));
+    }
+
+    /// <summary>
     /// Computes season trends (top-25 rank progression) live across every week of a season using an
     /// explicitly chosen algorithm version, without reading or requiring persisted published snapshots.
     /// </summary>

@@ -230,6 +230,168 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task CalculateExperimentalSeasonPredictionsAsync_EmptyWeeksList_ReturnsEmptyWeeksAndZeroGradedGameCount()
+    {
+        var result = await _adminModule.CalculateExperimentalSeasonPredictionsAsync(2024, [], RatingAlgorithmVersion.V1);
+
+        Assert.Empty(result.Weeks);
+        Assert.Equal(0, result.OverallSummary.GradedGameCount);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalSeasonPredictionsAsync_MultipleWeeks_AggregatesOverallSummaryAcrossAllWeeks()
+    {
+        var fbsTeams = new Dictionary<string, TeamInfo>
+        {
+            ["Ohio State"] = new(),
+            ["Michigan"] = new(),
+            ["Notre Dame"] = new(),
+            ["USC"] = new()
+        };
+        var weekFiveSeasonData = new SeasonData { Season = 2024, Week = 5, Teams = fbsTeams };
+        var weekSixSeasonData = new SeasonData { Season = 2024, Week = 6, Teams = fbsTeams };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var schedule = new List<ScheduleGame>
+        {
+            new() { Week = 6, SeasonType = "regular", HomeTeam = "Ohio State", AwayTeam = "Michigan" },
+            new() { Week = 7, SeasonType = "regular", HomeTeam = "Notre Dame", AwayTeam = "USC" }
+        };
+        var weekFivePredictions = new List<GamePrediction>
+        {
+            new() { HomeTeam = "Ohio State", AwayTeam = "Michigan", PredictedWinner = "Ohio State", PredictedMargin = 7 }
+        };
+        var weekSixPredictions = new List<GamePrediction>
+        {
+            new() { HomeTeam = "Notre Dame", AwayTeam = "USC", PredictedWinner = "Notre Dame", PredictedMargin = 3 }
+        };
+        var completedGames = new List<Game>
+        {
+            new() { Week = 6, SeasonType = "regular", HomeTeam = "Ohio State", AwayTeam = "Michigan", HomePoints = 28, AwayPoints = 14 },
+            new() { Week = 7, SeasonType = "regular", HomeTeam = "Notre Dame", AwayTeam = "USC", HomePoints = 24, AwayPoints = 21 }
+        };
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(weekFiveSeasonData);
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 6)).ReturnsAsync(weekSixSeasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(It.IsAny<SeasonData>())).ReturnsAsync(ratings);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(schedule);
+        _mockDataService.Setup(x => x.GetGamesAsync(2024, "regular")).ReturnsAsync(completedGames);
+        _mockPredictionAlgorithmResolver.Setup(x => x.Resolve(RatingAlgorithmVersion.V2)).Returns(_mockPredictionCalculatorModule.Object);
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(weekFiveSeasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(weekFivePredictions);
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(weekSixSeasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(weekSixPredictions);
+
+        var result = await _adminModule.CalculateExperimentalSeasonPredictionsAsync(2024, [5, 6], RatingAlgorithmVersion.V2);
+
+        Assert.Equal(2, result.OverallSummary.GradedGameCount);
+        Assert.Equal(2, result.OverallSummary.Winner.Correct);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalSeasonPredictionsAsync_MultipleWeeks_WarmsSeasonLevelCachesBeforeFanningOutPerWeek()
+    {
+        var fbsTeams = new Dictionary<string, TeamInfo>
+        {
+            ["Iowa"] = new(),
+            ["Nebraska"] = new()
+        };
+        var weekFiveSeasonData = new SeasonData { Season = 2024, Week = 5, Teams = fbsTeams };
+        var weekSixSeasonData = new SeasonData { Season = 2024, Week = 6, Teams = fbsTeams };
+        var ratings = new Dictionary<string, RatingDetails>();
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(weekFiveSeasonData);
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 6)).ReturnsAsync(weekSixSeasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(It.IsAny<SeasonData>())).ReturnsAsync(ratings);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(new List<ScheduleGame>());
+        _mockDataService.Setup(x => x.GetGamesAsync(2024, "regular")).ReturnsAsync(new List<Game>());
+        _mockPredictionAlgorithmResolver.Setup(x => x.Resolve(RatingAlgorithmVersion.V1)).Returns(_mockPredictionCalculatorModule.Object);
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(It.IsAny<SeasonData>(), ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(new List<GamePrediction>());
+
+        await _adminModule.CalculateExperimentalSeasonPredictionsAsync(2024, [5, 6], RatingAlgorithmVersion.V1);
+
+        _mockDataService.Verify(x => x.GetFullSeasonScheduleAsync(2024), Times.AtLeastOnce);
+        _mockDataService.Verify(x => x.GetSeasonDataAsync(2024, 5), Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalSeasonPredictionsAsync_NeverPersistsAnything()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(new List<ScheduleGame>());
+        _mockDataService.Setup(x => x.GetGamesAsync(2024, "regular")).ReturnsAsync(new List<Game>());
+        _mockPredictionAlgorithmResolver.Setup(x => x.Resolve(RatingAlgorithmVersion.V1)).Returns(_mockPredictionCalculatorModule.Object);
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(new List<GamePrediction>());
+
+        await _adminModule.CalculateExperimentalSeasonPredictionsAsync(2024, [5], RatingAlgorithmVersion.V1);
+
+        _mockPredictionsModule.Verify(x => x.SaveAsync(It.IsAny<PredictionsResult>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalSeasonPredictionsAsync_NullWeeks_ThrowsArgumentNullException()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => _adminModule.CalculateExperimentalSeasonPredictionsAsync(2024, null!, RatingAlgorithmVersion.V1));
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalSeasonPredictionsAsync_ReturnsPerWeekBreakdownOrderedByWeekRegardlessOfInputOrder()
+    {
+        var fbsTeams = new Dictionary<string, TeamInfo>
+        {
+            ["Alabama"] = new(),
+            ["Florida"] = new()
+        };
+        var weekFiveSeasonData = new SeasonData { Season = 2024, Week = 5, Teams = fbsTeams };
+        var weekSixSeasonData = new SeasonData { Season = 2024, Week = 6, Teams = fbsTeams };
+        var ratings = new Dictionary<string, RatingDetails>();
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(weekFiveSeasonData);
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 6)).ReturnsAsync(weekSixSeasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(It.IsAny<SeasonData>())).ReturnsAsync(ratings);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(new List<ScheduleGame>());
+        _mockDataService.Setup(x => x.GetGamesAsync(2024, "regular")).ReturnsAsync(new List<Game>());
+        _mockPredictionAlgorithmResolver.Setup(x => x.Resolve(RatingAlgorithmVersion.V1)).Returns(_mockPredictionCalculatorModule.Object);
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(It.IsAny<SeasonData>(), ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(new List<GamePrediction>());
+
+        var result = await _adminModule.CalculateExperimentalSeasonPredictionsAsync(2024, [6, 5], RatingAlgorithmVersion.V1);
+
+        Assert.Equal([5, 6], result.Weeks.Select(w => w.Week));
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalSeasonPredictionsAsync_UsesExplicitlyRequestedAlgorithmVersion()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(new List<ScheduleGame>());
+        _mockDataService.Setup(x => x.GetGamesAsync(2024, "regular")).ReturnsAsync(new List<Game>());
+        _mockPredictionAlgorithmResolver.Setup(x => x.Resolve(RatingAlgorithmVersion.V2)).Returns(_mockPredictionCalculatorModule.Object);
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(new List<GamePrediction>());
+
+        await _adminModule.CalculateExperimentalSeasonPredictionsAsync(2024, [5], RatingAlgorithmVersion.V2);
+
+        _mockPredictionAlgorithmResolver.Verify(x => x.Resolve(RatingAlgorithmVersion.V2), Times.Once);
+    }
+
+    [Fact]
     public async Task CalculateExperimentalSeasonTrendsAsync_CallsSeasonTrendsModuleBuildFromRankings_ReturnsResult()
     {
         var calendar = new[] { new CalendarWeek { Week = 1, SeasonType = "regular" } };

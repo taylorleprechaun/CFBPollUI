@@ -33,6 +33,18 @@ export const ExperimentalPredictionsResponseSchema = z.object({
   summary: PredictionRecordSummarySchema,
 });
 
+export const SeasonExperimentalPredictionsWeekSchema = z.object({
+  summary: PredictionRecordSummarySchema,
+  week: z.number(),
+});
+
+export const SeasonExperimentalPredictionsResponseSchema = z.object({
+  algorithmVersion: z.string(),
+  overallSummary: PredictionRecordSummarySchema,
+  season: z.number(),
+  weeks: z.array(SeasonExperimentalPredictionsWeekSchema),
+});
+
 export const SnapshotSchema = z.object({
   createdAt: z.string(),
   isPublished: z.boolean(),
@@ -101,4 +113,6 @@ export type PredictionRecordSummary = z.infer<typeof PredictionRecordSummarySche
 export type PredictionsResponse = z.infer<typeof PredictionsResponseSchema>;
 export type PredictionsSummary = z.infer<typeof PredictionsSummarySchema>;
 export type RefreshCacheResponse = z.infer<typeof RefreshCacheResponseSchema>;
+export type SeasonExperimentalPredictionsResponse = z.infer<typeof SeasonExperimentalPredictionsResponseSchema>;
+export type SeasonExperimentalPredictionsWeek = z.infer<typeof SeasonExperimentalPredictionsWeekSchema>;
 export type Snapshot = z.infer<typeof SnapshotSchema>;
