@@ -326,24 +326,25 @@ A few ordering/formatting conventions are worth calling out since they're enforc
 
 ## Testing
 
-The project includes 2,468 unit and integration tests across backend and frontend.
+The project includes a broad suite of unit and integration tests across backend and frontend — see the badges below for current counts.
 
 ### Running Tests
 
 ```bash
-# Backend tests (984 tests)
+# Backend tests
 dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (1,484 tests)
+# Frontend tests
 cd src/cfbpoll-web
 npm test
 ```
 
 ### Coverage Summary
 
+<!-- coverage:start -->
 ![Backend Tests](https://img.shields.io/badge/Backend_Tests-984-blue)
 ![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1484-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
@@ -355,6 +356,7 @@ npm test
 | CFBPoll.Core | 99% | 93% |
 | CFBPoll.API | 100% | 97% |
 | cfbpoll-web | 100% | 95% |
+<!-- coverage:end -->
 
 **Excluded from coverage:**
 - The proprietary submodule (rating and prediction algorithms) - kept in a private repo, tested there.

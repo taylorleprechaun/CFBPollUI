@@ -9,6 +9,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Configure deploy key for private submodule
         uses: webfactory/ssh-agent@v0.10.0
@@ -31,7 +33,12 @@ jobs:
           dotnet-version: "10.0.x"
 
       - name: Run backend tests
+        if: "!(github.ref == 'refs/heads/main' && github.event_name == 'push')"
         run: dotnet test --configuration Release
+
+      - name: Run backend tests with coverage
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: dotnet test --configuration Release --collect:"XPlat Code Coverage" --logger trx
 
       - name: Setup Node
         uses: actions/setup-node@v7
@@ -43,12 +50,36 @@ jobs:
         working-directory: src/cfbpoll-web
 
       - name: Run frontend tests
+        if: "!(github.ref == 'refs/heads/main' && github.event_name == 'push')"
         run: npx vitest run
+        working-directory: src/cfbpoll-web
+
+      - name: Run frontend tests with coverage
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: npx vitest run --coverage --reporter=default --reporter=json --outputFile.json=coverage/test-report.json
         working-directory: src/cfbpoll-web
 
       - name: Lint frontend
         run: npx eslint .
         working-directory: src/cfbpoll-web
+
+      - name: Update README coverage block
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        shell: pwsh
+        run: ./.github/scripts/Update-ReadmeCoverage.ps1
+
+      - name: Commit README if changed
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          if git diff --quiet -- README.md; then
+            echo "No README changes to commit."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add README.md
+            git commit -m "docs: update test counts and coverage in README [skip ci]"
+            git push
+          fi
 
   deploy:
     needs: test
