@@ -76,6 +76,35 @@ describe('SeasonTrendsChart', () => {
     expect(container.querySelector('style')).toBeNull();
   });
 
+  it('does not crash when a dot index falls outside the current chartData bounds', () => {
+    const originalLine = rechartsMock.Line;
+    rechartsMock.Line = ({ dataKey, dot }) => {
+      if (typeof dot !== 'function') return null;
+      return <g data-testid={`line-${dataKey}`}>{dot({ cx: 100, cy: 200, index: 5, value: 5 })}</g>;
+    };
+
+    const singleWeekData: SeasonTrendsResponse = {
+      season: 2024,
+      teams: [
+        {
+          altColor: '#FFFFFF',
+          color: '#F00000',
+          conference: 'SEC',
+          logoURL: 'https://example.com/alabama.png',
+          rankings: [{ rank: 1, rating: 98.0, record: '9-0', weekNumber: 1 }],
+          teamName: 'Alabama',
+        },
+      ],
+      weeks: [{ label: 'Week 2', weekNumber: 1 }],
+    };
+
+    try {
+      expect(() => render(<SeasonTrendsChart data={singleWeekData} />)).not.toThrow();
+    } finally {
+      rechartsMock.Line = originalLine;
+    }
+  });
+
   it('does not inject highlight CSS when no team is active', () => {
     const { container } = render(<SeasonTrendsChart data={mockData} />);
 

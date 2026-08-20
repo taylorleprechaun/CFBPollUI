@@ -7,6 +7,13 @@ namespace CFBPoll.Core.Modules;
 
 public class AdminModule : IAdminModule
 {
+    /// <summary>
+    /// Caps how many weeks <see cref="CalculateExperimentalSeasonPredictionsAsync"/> calculates concurrently.
+    /// Each week loads a full <see cref="SeasonData"/> into memory, so an unbounded fan-out scales memory
+    /// linearly with the number of weeks requested.
+    /// </summary>
+    private const int MAX_CONCURRENT_SEASON_WEEK_CALCULATIONS = 4;
+
     private readonly IPersistentCache _cache;
     private readonly ICFBDataService _dataService;
     private readonly IExcelExportModule _excelExportModule;
@@ -154,8 +161,9 @@ public class AdminModule : IAdminModule
             await _dataService.GetSeasonDataAsync(season, weekNumbers[0]).ConfigureAwait(false);
         }
 
+        using var throttle = new SemaphoreSlim(MAX_CONCURRENT_SEASON_WEEK_CALCULATIONS);
         var weekTasks = weekNumbers
-            .Select(week => CalculateExperimentalPredictionsAsync(season, week, algorithmVersion))
+            .Select(week => CalculateThrottledExperimentalPredictionsAsync(season, week, algorithmVersion, throttle))
             .ToList();
         await Task.WhenAll(weekTasks).ConfigureAwait(false);
 
@@ -438,5 +446,19 @@ public class AdminModule : IAdminModule
 
         _logger.LogInformation("Removed {Count} cached entries for season {Season}, week {Week}", removed, season, week);
         return removed;
+    }
+
+    private async Task<ExperimentalPredictionsResult> CalculateThrottledExperimentalPredictionsAsync(
+        int season, int week, RatingAlgorithmVersion algorithmVersion, SemaphoreSlim throttle)
+    {
+        await throttle.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            return await CalculateExperimentalPredictionsAsync(season, week, algorithmVersion).ConfigureAwait(false);
+        }
+        finally
+        {
+            throttle.Release();
+        }
     }
 }

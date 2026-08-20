@@ -37,8 +37,8 @@ const TeamDot = memo(function TeamDot({ chartData, cx, cy, index, logoURL, onCli
     return null;
   }
 
-  const prevRanked = index > 0 && chartData[index - 1][teamName] !== null;
-  const nextRanked = index < chartData.length - 1 && chartData[index + 1][teamName] !== null;
+  const prevRanked = index > 0 && chartData[index - 1]?.[teamName] !== null;
+  const nextRanked = index < chartData.length - 1 && chartData[index + 1]?.[teamName] !== null;
   const isEndpoint = !prevRanked || !nextRanked;
   const size = isEndpoint ? 28 : 14;
   const hitSize = 30;
