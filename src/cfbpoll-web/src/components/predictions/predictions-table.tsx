@@ -5,7 +5,6 @@ import { TableSkeleton } from '../ui/table-skeleton';
 import { GradedPick } from './graded-pick';
 import { PredictionCard } from './prediction-card';
 import { PredictionScoreBlock } from './prediction-score-block';
-import { WinnerActualCaption } from './winner-actual-caption';
 import { WinnerPill } from './winner-pill';
 
 const COLUMN_COUNT = 6;
@@ -44,17 +43,14 @@ export function PredictionsTable({ isLoading = false, predictions, rankByTeam, s
                   <PredictionScoreBlock prediction={p} rankByTeam={rankByTeam} season={season} showGrades={showGrades} />
                 </td>
                 <td className="px-4 py-3 text-sm font-medium text-text-primary align-middle">
-                  <div className="flex flex-col gap-1">
-                    <WinnerPill prediction={p} rankByTeam={rankByTeam} season={season} showGrades={showGrades} />
-                    <WinnerActualCaption prediction={p} showGrades={showGrades} />
-                  </div>
+                  <WinnerPill prediction={p} rankByTeam={rankByTeam} season={season} showGrades={showGrades} />
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary align-middle">
                   {formatSpread(p)}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary align-middle">
                   {showGrades ? (
-                    <GradedPick actualValue={p.actualSpreadCoveringTeam} grade={p.spreadGrade} pick={p.mySpreadPick} />
+                    <GradedPick grade={p.spreadGrade} pick={p.mySpreadPick} />
                   ) : (
                     formatPick(p.mySpreadPick)
                   )}
@@ -64,7 +60,7 @@ export function PredictionsTable({ isLoading = false, predictions, rankByTeam, s
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary align-middle">
                   {showGrades ? (
-                    <GradedPick actualValue={p.actualOverUnderResult} grade={p.overUnderGrade} pick={p.myOverUnderPick} />
+                    <GradedPick grade={p.overUnderGrade} pick={p.myOverUnderPick} />
                   ) : (
                     formatPick(p.myOverUnderPick)
                   )}

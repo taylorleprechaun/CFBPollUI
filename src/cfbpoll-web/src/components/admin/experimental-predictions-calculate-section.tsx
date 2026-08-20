@@ -3,41 +3,42 @@ import { useId } from 'react';
 import type { Week } from '../../types';
 import type { AlgorithmVersion } from './algorithm-versions';
 
-import { BUTTON_PRIMARY, SELECT_BASE } from '../ui/button-styles';
-import { ALGORITHM_VERSIONS } from './algorithm-versions';
+import { BUTTON_PRIMARY, BUTTON_SECONDARY, SELECT_BASE } from '../ui/button-styles';
+import { AlgorithmVersionPicker } from './algorithm-version-picker';
 
 interface ExperimentalPredictionsCalculateSectionProps {
-  algorithmVersion: AlgorithmVersion;
-  isCalculating: boolean;
-  onAlgorithmVersionChange: (version: AlgorithmVersion) => void;
-  onCalculate: () => void;
+  isRunning: boolean;
+  onCompareSeasonClick: () => void;
+  onRun: () => void;
   onSeasonChange: (season: number) => void;
+  onSelectedVersionsChange: (versions: AlgorithmVersion[]) => void;
   onWeekChange: (week: number | null) => void;
   seasons: number[];
   seasonsLoading: boolean;
   selectedSeason: number | null;
+  selectedVersions: AlgorithmVersion[];
   selectedWeek: number | null;
   weeks: Week[];
   weeksLoading: boolean;
 }
 
 export function ExperimentalPredictionsCalculateSection({
-  algorithmVersion,
-  isCalculating,
-  onAlgorithmVersionChange,
-  onCalculate,
+  isRunning,
+  onCompareSeasonClick,
+  onRun,
   onSeasonChange,
+  onSelectedVersionsChange,
   onWeekChange,
   seasons,
   seasonsLoading,
   selectedSeason,
+  selectedVersions,
   selectedWeek,
   weeks,
   weeksLoading,
 }: ExperimentalPredictionsCalculateSectionProps) {
   const seasonId = useId();
   const weekId = useId();
-  const algorithmVersionId = useId();
 
   return (
     <div className="bg-surface border border-border rounded-xl p-4 sm:p-6">
@@ -80,27 +81,20 @@ export function ExperimentalPredictionsCalculateSection({
             ))}
           </select>
         </div>
-        <div>
-          <label htmlFor={algorithmVersionId} className="block text-sm font-medium text-text-secondary mb-1">
-            Algorithm Version
-          </label>
-          <select
-            id={algorithmVersionId}
-            value={algorithmVersion}
-            onChange={(e) => onAlgorithmVersionChange(e.target.value as AlgorithmVersion)}
-            className={`px-3 py-2 ${SELECT_BASE}`}
-          >
-            {ALGORITHM_VERSIONS.map((v) => (
-              <option key={v} value={v}>{v}</option>
-            ))}
-          </select>
-        </div>
+        <AlgorithmVersionPicker onChange={onSelectedVersionsChange} selectedVersions={selectedVersions} />
         <button
-          onClick={onCalculate}
-          disabled={isCalculating || selectedSeason === null || selectedWeek === null}
+          onClick={onRun}
+          disabled={isRunning || selectedSeason === null || selectedWeek === null || selectedVersions.length === 0}
           className={BUTTON_PRIMARY}
         >
-          {isCalculating ? 'Calculating...' : 'Calculate Predictions'}
+          {isRunning ? 'Calculating...' : 'Calculate Predictions'}
+        </button>
+        <button
+          onClick={onCompareSeasonClick}
+          disabled={isRunning || selectedSeason === null || weeksLoading || weeks.length === 0 || selectedVersions.length === 0}
+          className={BUTTON_SECONDARY}
+        >
+          Compare Season
         </button>
       </div>
     </div>

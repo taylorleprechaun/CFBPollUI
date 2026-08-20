@@ -1,50 +1,50 @@
-import { useState } from 'react';
-
 import type { AlgorithmVersion } from '../components/admin/algorithm-versions';
 import type { ExperimentalPredictionsResponse } from '../schemas/admin';
 
 import { toError } from '../lib/error-utils';
+import { useAlgorithmRunState } from './use-algorithm-run-state';
 import { useCalculateExperimentalPredictions } from './use-experimental-mutations';
 
 interface UseExperimentalPredictionsStateOptions {
-  algorithmVersion: AlgorithmVersion;
   selectedSeason: number | null;
   selectedWeek: number | null;
   token: string | null;
 }
 
 export function useExperimentalPredictionsState({
-  algorithmVersion,
   selectedSeason,
   selectedWeek,
   token,
 }: UseExperimentalPredictionsStateOptions) {
-  const [calculatedResult, setCalculatedResult] = useState<ExperimentalPredictionsResponse | null>(null);
-  const [error, setError] = useState<Error | null>(null);
+  const [runState, dispatch] = useAlgorithmRunState<ExperimentalPredictionsResponse>();
 
   const calculateMutation = useCalculateExperimentalPredictions(token);
 
-  const handleCalculate = async () => {
-    if (selectedSeason === null || selectedWeek === null) return;
-    setError(null);
-    setCalculatedResult(null);
+  const handleRun = async (versions: AlgorithmVersion[]) => {
+    if (selectedSeason === null || selectedWeek === null || versions.length === 0) return;
 
-    try {
-      const result = await calculateMutation.mutateAsync({
-        algorithmVersion,
-        season: selectedSeason,
-        week: selectedWeek,
-      });
-      setCalculatedResult(result);
-    } catch (err) {
-      setError(toError(err, 'Calculation failed'));
-    }
+    dispatch({ type: 'run-start', versions });
+
+    await Promise.allSettled(
+      versions.map(async (version) => {
+        try {
+          const result = await calculateMutation.mutateAsync({
+            algorithmVersion: version,
+            season: selectedSeason,
+            week: selectedWeek,
+          });
+          dispatch({ result, type: 'run-success', version });
+        } catch (err) {
+          dispatch({ error: toError(err, `${version} calculation failed`), type: 'run-error', version });
+        }
+      })
+    );
   };
 
   return {
-    calculatedResult,
-    error,
-    handleCalculate,
-    isCalculating: calculateMutation.isPending,
+    handleRun,
+    isRunning: Object.values(runState).some((entry) => entry.status === 'pending'),
+    reset: () => dispatch({ type: 'reset' }),
+    runState,
   };
 }

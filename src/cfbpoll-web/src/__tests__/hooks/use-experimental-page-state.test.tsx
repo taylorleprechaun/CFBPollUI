@@ -4,126 +4,132 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useExperimentalPageState } from '../../hooks/use-experimental-page-state';
 
 const mockCalculateMutateAsync = vi.fn();
-const mockExportMutateAsync = vi.fn();
-let mockCalculateIsPending = false;
-let mockExportIsPending = false;
 
 vi.mock('../../hooks/use-experimental-mutations', () => ({
   useCalculateExperimental: () => ({
     mutateAsync: mockCalculateMutateAsync,
-    isPending: mockCalculateIsPending,
-  }),
-  useExportExperimental: () => ({
-    mutateAsync: mockExportMutateAsync,
-    isPending: mockExportIsPending,
   }),
 }));
 
 describe('useExperimentalPageState', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCalculateIsPending = false;
-    mockExportIsPending = false;
   });
 
-  it('calls downloadExperimentalExport with algorithm version, season, and week on export', async () => {
-    mockExportMutateAsync.mockResolvedValue(undefined);
-
+  it('does not call the calculate mutation when no versions are selected', async () => {
     const { result } = renderHook(() =>
-      useExperimentalPageState({ algorithmVersion: 'V2', selectedSeason: 2024, selectedWeek: 5, token: 'test-token' })
+      useExperimentalPageState({ selectedSeason: 2024, selectedWeek: 5, token: 'test-token' })
     );
 
     await act(async () => {
-      await result.current.handleExport();
-    });
-
-    expect(mockExportMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V2', season: 2024, week: 5 });
-  });
-
-  it('does not call calculateExperimental when season is null', async () => {
-    const { result } = renderHook(() =>
-      useExperimentalPageState({ algorithmVersion: 'V1', selectedSeason: null, selectedWeek: 5, token: 'test-token' })
-    );
-
-    await act(async () => {
-      await result.current.handleCalculate();
+      await result.current.handleRun([]);
     });
 
     expect(mockCalculateMutateAsync).not.toHaveBeenCalled();
   });
 
-  it('does not call downloadExperimentalExport when week is null', async () => {
+  it('does not call the calculate mutation when season is null', async () => {
     const { result } = renderHook(() =>
-      useExperimentalPageState({ algorithmVersion: 'V1', selectedSeason: 2024, selectedWeek: null, token: 'test-token' })
+      useExperimentalPageState({ selectedSeason: null, selectedWeek: 5, token: 'test-token' })
     );
 
     await act(async () => {
-      await result.current.handleExport();
+      await result.current.handleRun(['V1']);
     });
 
-    expect(mockExportMutateAsync).not.toHaveBeenCalled();
+    expect(mockCalculateMutateAsync).not.toHaveBeenCalled();
   });
 
-  it('reflects calculate mutation pending state', () => {
-    mockCalculateIsPending = true;
+  it('does not call the calculate mutation when week is null', async () => {
     const { result } = renderHook(() =>
-      useExperimentalPageState({ algorithmVersion: 'V1', selectedSeason: 2024, selectedWeek: 5, token: 'test-token' })
-    );
-
-    expect(result.current.isCalculating).toBe(true);
-  });
-
-  it('reflects export mutation pending state', () => {
-    mockExportIsPending = true;
-    const { result } = renderHook(() =>
-      useExperimentalPageState({ algorithmVersion: 'V1', selectedSeason: 2024, selectedWeek: 5, token: 'test-token' })
-    );
-
-    expect(result.current.isExporting).toBe(true);
-  });
-
-  it('sets calculatedResult on successful calculate', async () => {
-    const mockResult = { algorithmVersion: 'V2', rankings: { season: 2024, week: 5, rankings: [] } };
-    mockCalculateMutateAsync.mockResolvedValue(mockResult);
-
-    const { result } = renderHook(() =>
-      useExperimentalPageState({ algorithmVersion: 'V2', selectedSeason: 2024, selectedWeek: 5, token: 'test-token' })
+      useExperimentalPageState({ selectedSeason: 2024, selectedWeek: null, token: 'test-token' })
     );
 
     await act(async () => {
-      await result.current.handleCalculate();
+      await result.current.handleRun(['V1']);
     });
 
+    expect(mockCalculateMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('marks a version as error and keeps the other version successful on partial failure', async () => {
+    mockCalculateMutateAsync.mockImplementation(({ algorithmVersion }: { algorithmVersion: string }) =>
+      algorithmVersion === 'V1'
+        ? Promise.resolve({ algorithmVersion: 'V1', rankings: { season: 2024, week: 5, rankings: [] } })
+        : Promise.reject(new Error('V2 boom'))
+    );
+
+    const { result } = renderHook(() =>
+      useExperimentalPageState({ selectedSeason: 2024, selectedWeek: 5, token: 'test-token' })
+    );
+
+    await act(async () => {
+      await result.current.handleRun(['V1', 'V2']);
+    });
+
+    expect(result.current.runState.V1.status).toBe('success');
+    expect(result.current.runState.V2.status).toBe('error');
+    expect(result.current.runState.V2.error?.message).toBe('V2 boom');
+  });
+
+  it('reflects pending status as isRunning while a run is in flight', async () => {
+    let resolveCalculate: (value: unknown) => void = () => {};
+    mockCalculateMutateAsync.mockReturnValue(new Promise((resolve) => { resolveCalculate = resolve; }));
+
+    const { result } = renderHook(() =>
+      useExperimentalPageState({ selectedSeason: 2024, selectedWeek: 5, token: 'test-token' })
+    );
+
+    let runPromise!: Promise<void>;
+    act(() => {
+      runPromise = result.current.handleRun(['V1']);
+    });
+
+    expect(result.current.isRunning).toBe(true);
+
+    await act(async () => {
+      resolveCalculate({ algorithmVersion: 'V1', rankings: { season: 2024, week: 5, rankings: [] } });
+      await runPromise;
+    });
+
+    expect(result.current.isRunning).toBe(false);
+  });
+
+  it('resets every entry back to idle', async () => {
+    mockCalculateMutateAsync.mockResolvedValue({ algorithmVersion: 'V1', rankings: { season: 2024, week: 5, rankings: [] } });
+
+    const { result } = renderHook(() =>
+      useExperimentalPageState({ selectedSeason: 2024, selectedWeek: 5, token: 'test-token' })
+    );
+
+    await act(async () => {
+      await result.current.handleRun(['V1']);
+    });
+    expect(result.current.runState.V1.status).toBe('success');
+
+    act(() => {
+      result.current.reset();
+    });
+
+    expect(result.current.runState.V1.status).toBe('idle');
+  });
+
+  it('sets every selected version to success on a successful run', async () => {
+    mockCalculateMutateAsync.mockImplementation(({ algorithmVersion }: { algorithmVersion: string }) =>
+      Promise.resolve({ algorithmVersion, rankings: { season: 2024, week: 5, rankings: [] } })
+    );
+
+    const { result } = renderHook(() =>
+      useExperimentalPageState({ selectedSeason: 2024, selectedWeek: 5, token: 'test-token' })
+    );
+
+    await act(async () => {
+      await result.current.handleRun(['V1', 'V2']);
+    });
+
+    expect(mockCalculateMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V1', season: 2024, week: 5 });
     expect(mockCalculateMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V2', season: 2024, week: 5 });
-    expect(result.current.calculatedResult).toEqual(mockResult);
-  });
-
-  it('sets error and clears calculatedResult on calculate failure', async () => {
-    mockCalculateMutateAsync.mockRejectedValue(new Error('Calculation failed'));
-
-    const { result } = renderHook(() =>
-      useExperimentalPageState({ algorithmVersion: 'V1', selectedSeason: 2024, selectedWeek: 5, token: 'test-token' })
-    );
-
-    await act(async () => {
-      await result.current.handleCalculate();
-    });
-
-    expect(result.current.error?.message).toBe('Calculation failed');
-    expect(result.current.calculatedResult).toBeNull();
-  });
-
-  it('sets error on export failure', async () => {
-    mockExportMutateAsync.mockRejectedValue(new Error('Export failed'));
-
-    const { result } = renderHook(() =>
-      useExperimentalPageState({ algorithmVersion: 'V1', selectedSeason: 2024, selectedWeek: 5, token: 'test-token' })
-    );
-
-    await act(async () => {
-      await result.current.handleExport();
-    });
-
-    expect(result.current.error?.message).toBe('Export failed');
+    expect(result.current.runState.V1.status).toBe('success');
+    expect(result.current.runState.V2.status).toBe('success');
   });
 });

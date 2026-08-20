@@ -19,14 +19,14 @@ import {
   ExperimentalCalculateResponseSchema,
   type ExperimentalPredictionsResponse,
   ExperimentalPredictionsResponseSchema,
-  type ExperimentalSeasonTrendsResponse,
-  ExperimentalSeasonTrendsResponseSchema,
   type GradePredictionsResponse,
   GradePredictionsResponseSchema,
   PredictionsSummariesResponseSchema,
   type PredictionsSummary,
   type RefreshCacheResponse,
   RefreshCacheResponseSchema,
+  type SeasonExperimentalPredictionsResponse,
+  SeasonExperimentalPredictionsResponseSchema,
   type Snapshot,
   SnapshotsResponseSchema,
 } from '../schemas/admin';
@@ -57,16 +57,21 @@ export async function calculateExperimentalPredictions(
   return parseResponse(response, ExperimentalPredictionsResponseSchema);
 }
 
-export async function calculateExperimentalSeasonTrends(
+export async function calculateExperimentalSeasonPredictions(
   token: string,
   season: number,
+  weeks: number[],
   algorithmVersion: AlgorithmVersion
-): Promise<ExperimentalSeasonTrendsResponse> {
+): Promise<SeasonExperimentalPredictionsResponse> {
   const response = await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/seasons/${season}/experimental/${algorithmVersion}/trends`,
-    withAuth(token, { method: 'POST' })
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/experimental/${algorithmVersion}/predictions`,
+    withAuth(token, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ weeks }),
+    })
   );
-  return parseResponse(response, ExperimentalSeasonTrendsResponseSchema);
+  return parseResponse(response, SeasonExperimentalPredictionsResponseSchema);
 }
 
 export async function calculatePredictions(

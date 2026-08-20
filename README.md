@@ -45,7 +45,7 @@ Last Updated 8/6/2026
 - **Interactive UI**: Sortable rankings table with team logos and colors
 - **Game Predictions**: Generate game predictions with spread and over/under picks using team ratings and betting line data
 - **Admin Dashboard**: JWT-authenticated admin panel to calculate, preview, and publish rankings and predictions with a two-step draft/publish workflow
-- **Experimental Rating Preview**: Admin-only calculation against any rating algorithm version for any season/week, without persisting or publishing — used to validate a candidate algorithm before it becomes a season's default
+- **Experimental Rating & Prediction Comparison**: Admin-only calculation of rankings and predictions against multiple algorithm versions at once for any season/week, compared side-by-side, without persisting or publishing — used to validate a candidate algorithm against the current one before it becomes a season's default. A "Compare Season" mode extends this to predictions across an admin-selected subset of a season's weeks at once, showing a season-overall summary plus a per-week breakdown per algorithm version
 - **Excel Export**: Download rankings as Excel spreadsheets with rating breakdowns
 - **SQLite Persistence**: Rankings and predictions snapshots stored in SQLite for fast retrieval without redundant API calls
 - **REST API**: Full API with Swagger documentation
@@ -276,12 +276,12 @@ The frontend runs at `http://localhost:5173`.
 | `GET /api/v1/page-visibility` | Returns current page visibility settings |
 | `GET /api/v1/poll-leaders?minSeason={min}&maxSeason={max}` | Returns per-team ranking appearance counts across published snapshots |
 | `GET /api/v1/predictions/seasons` | Returns seasons that have at least one published prediction week |
-| `GET /api/v1/seasons/{season}/predictions/team-records` | Returns per-team predicted vs. actual win/loss records for the specified season |
-| `GET /api/v1/seasons/{season}/weeks/{week}/predictions` | Returns published predictions for the specified season/week |
-| `GET /api/v1/seasons/{season}/trends` | Returns season trends showing rank progression across published weeks |
-| `GET /api/v1/seasons/{season}/weeks/{week}/rankings` | Returns ranked teams for the specified week |
 | `GET /api/v1/seasons` | Returns available seasons (2002 to present) |
+| `GET /api/v1/seasons/{season}/predictions/team-records` | Returns per-team predicted vs. actual win/loss records for the specified season |
+| `GET /api/v1/seasons/{season}/trends` | Returns season trends showing rank progression across published weeks |
 | `GET /api/v1/seasons/{season}/weeks` | Returns all weeks for a season with rankings and predictions publication status |
+| `GET /api/v1/seasons/{season}/weeks/{week}/predictions` | Returns published predictions for the specified season/week |
+| `GET /api/v1/seasons/{season}/weeks/{week}/rankings` | Returns ranked teams for the specified week |
 | `GET /api/v1/teams/{teamName}?season={s}&week={w}` | Returns team details including schedule and record breakdowns |
 | `GET /api/v1/track-record` | Returns the all-time prediction track record (right/wrong/push per pick category, overall and by graded week) |
 
@@ -295,23 +295,24 @@ The frontend runs at `http://localhost:5173`.
 
 | Endpoint | Description |
 |----------|-------------|
-| `POST /api/v1/admin/seasons/{season}/weeks/{week}/snapshot` | Calculate rankings for a season/week and save as draft |
-| `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/snapshot` | Update a snapshot (currently supports publishing) |
-| `DELETE /api/v1/admin/seasons/{season}/weeks/{week}/snapshot` | Delete a snapshot |
-| `GET /api/v1/admin/snapshots` | List all persisted snapshots |
-| `GET /api/v1/admin/seasons/{season}/weeks/{week}/snapshot/export` | Download rankings as Excel |
-| `POST /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}` | Calculate rankings using an explicitly chosen algorithm version, without persisting or publishing |
-| `GET /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/export` | Download experimental rankings as Excel for a chosen algorithm version, without persisting or publishing |
-| `POST /api/v1/admin/seasons/{season}/experimental/{algorithmVersion}/trends` | Calculate season trends (top-25 rank progression) live across every week of a season using an explicitly chosen algorithm version, without persisting or publishing |
-| `POST /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/prediction` | Calculate predictions for a season/week using an explicitly chosen algorithm version and grade them against actual final scores when available, without persisting anything |
-| `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Retrieve persisted predictions for a season/week without recalculating or re-grading |
-| `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Calculate predictions for a season/week and save as draft |
-| `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Update a prediction (currently supports publishing) |
 | `DELETE /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Delete a prediction |
+| `DELETE /api/v1/admin/seasons/{season}/weeks/{week}/snapshot` | Delete a snapshot |
 | `GET /api/v1/admin/predictions` | List all persisted prediction summaries |
-| `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction/grade` | Grade predictions against actual final scores and save as draft |
+| `GET /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/export` | Download experimental rankings as Excel for a chosen algorithm version, without persisting or publishing |
+| `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Retrieve persisted predictions for a season/week without recalculating or re-grading |
+| `GET /api/v1/admin/seasons/{season}/weeks/{week}/snapshot/export` | Download rankings as Excel |
+| `GET /api/v1/admin/snapshots` | List all persisted snapshots |
+| `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Update a prediction (currently supports publishing) |
 | `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/prediction/results` | Publish graded results, making them visible on the public predictions page |
+| `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/snapshot` | Update a snapshot (currently supports publishing) |
+| `POST /api/v1/admin/seasons/{season}/experimental/{algorithmVersion}/predictions` | Calculate predictions for an explicit subset of weeks within a season using an explicitly chosen algorithm version, grading each week and returning a season-overall summary plus a per-week breakdown, without persisting anything |
+| `POST /api/v1/admin/seasons/{season}/experimental/{algorithmVersion}/trends` | Calculate season trends (top-25 rank progression) live across every week of a season using an explicitly chosen algorithm version, without persisting or publishing |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/cache` | Clear cached CollegeFootballData API responses for a season/week without recalculating |
+| `POST /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}` | Calculate rankings using an explicitly chosen algorithm version, without persisting or publishing |
+| `POST /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/prediction` | Calculate predictions for a season/week using an explicitly chosen algorithm version and grade them against actual final scores when available, without persisting anything |
+| `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Calculate predictions for a season/week and save as draft |
+| `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction/grade` | Grade predictions against actual final scores and save as draft |
+| `POST /api/v1/admin/seasons/{season}/weeks/{week}/snapshot` | Calculate rankings for a season/week and save as draft |
 | `PUT /api/v1/page-visibility` | Update page visibility settings |
 
 ## Code Conventions
@@ -325,26 +326,26 @@ A few ordering/formatting conventions are worth calling out since they're enforc
 
 ## Testing
 
-The project includes 2,368 unit and integration tests across backend and frontend.
+The project includes 2,466 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (970 tests)
+# Backend tests (983 tests)
 dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (1,398 tests)
+# Frontend tests (1,483 tests)
 cd src/cfbpoll-web
 npm test
 ```
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-970-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1398-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-983-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1483-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
 ![Web Coverage](https://img.shields.io/badge/Web_Coverage-100%25-brightgreen)

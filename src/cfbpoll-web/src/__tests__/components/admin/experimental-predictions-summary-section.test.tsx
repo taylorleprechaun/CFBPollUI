@@ -24,7 +24,31 @@ const ungradedSummary = {
 };
 
 describe('ExperimentalPredictionsSummarySection', () => {
-  it('renders margin bias, MAE, and RMSE stat cards', () => {
+  it('colors the winner percentage badge using the same quality thresholds as the track record page', () => {
+    render(<ExperimentalPredictionsSummarySection summary={gradedSummary} />);
+
+    const badge = screen.getByText('75.0%');
+    expect(badge.className).toContain('bg-green-100');
+  });
+
+  it('does not render a percentage badge for a category with no decided picks', () => {
+    const allPushSummary = {
+      gradedGameCount: 3,
+      marginBias: 0,
+      marginMAE: 0,
+      marginRMSE: 0,
+      overUnder: { correct: 0, incorrect: 0, push: 2 },
+      spread: { correct: 2, incorrect: 1, push: 0 },
+      winner: { correct: 0, incorrect: 0, push: 3 },
+    };
+    render(<ExperimentalPredictionsSummarySection summary={allPushSummary} />);
+
+    expect(screen.getByText('0-0-3')).toBeInTheDocument();
+    expect(screen.getByText('0-0-2')).toBeInTheDocument();
+    expect(screen.queryByText('0.0%')).not.toBeInTheDocument();
+  });
+
+  it('renders margin bias, MAE, and RMSE rows', () => {
     render(<ExperimentalPredictionsSummarySection summary={gradedSummary} />);
 
     expect(screen.getByText('Margin Bias')).toBeInTheDocument();
@@ -35,13 +59,13 @@ describe('ExperimentalPredictionsSummarySection', () => {
     expect(screen.getByText('7.5 pts')).toBeInTheDocument();
   });
 
-  it('renders record cards for winner, spread, and over/under totals', () => {
+  it('renders record rows for winner, spread, and over/under totals', () => {
     render(<ExperimentalPredictionsSummarySection summary={gradedSummary} />);
 
     expect(screen.getByText('Winner')).toBeInTheDocument();
     expect(screen.getByText('3-1')).toBeInTheDocument();
     expect(screen.getByText('Spread')).toBeInTheDocument();
-    expect(screen.getByText('Over/Under')).toBeInTheDocument();
+    expect(screen.getByText('O/U')).toBeInTheDocument();
     expect(screen.getByText('2-1-1')).toBeInTheDocument();
   });
 

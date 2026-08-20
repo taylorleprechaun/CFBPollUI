@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   calculateExperimental,
   calculateExperimentalPredictions,
-  calculateExperimentalSeasonTrends,
+  calculateExperimentalSeasonPredictions,
   calculatePredictions,
   calculateRankings,
   deletePredictions,
@@ -109,27 +109,38 @@ describe('Admin API service', () => {
     });
   });
 
-  describe('calculateExperimentalSeasonTrends', () => {
-    it('sends POST to experimental trends endpoint with auth header', async () => {
+  describe('calculateExperimentalSeasonPredictions', () => {
+    it('sends POST to season experimental predictions endpoint with weeks body and auth header', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () =>
           Promise.resolve({
+            algorithmVersion: 'V2',
+            overallSummary: {
+              gradedGameCount: 0,
+              marginBias: null,
+              marginMAE: null,
+              marginRMSE: null,
+              overUnder: { correct: 0, incorrect: 0, push: 0 },
+              spread: { correct: 0, incorrect: 0, push: 0 },
+              winner: { correct: 0, incorrect: 0, push: 0 },
+            },
             season: 2024,
-            teams: [],
             weeks: [],
           }),
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      await calculateExperimentalSeasonTrends('my-token', 2024, 'V2');
+      await calculateExperimentalSeasonPredictions('my-token', 2024, [5, 6], 'V2');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/admin/seasons/2024/experimental/V2/trends'),
+        expect.stringContaining('/api/v1/admin/seasons/2024/experimental/V2/predictions'),
         expect.objectContaining({
           method: 'POST',
+          body: JSON.stringify({ weeks: [5, 6] }),
           headers: expect.objectContaining({
             Authorization: 'Bearer my-token',
+            'Content-Type': 'application/json',
           }),
         })
       );
@@ -143,7 +154,7 @@ describe('Admin API service', () => {
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      await expect(calculateExperimentalSeasonTrends('token', 2024, 'V1')).rejects.toThrow('Server error');
+      await expect(calculateExperimentalSeasonPredictions('token', 2024, [5], 'V1')).rejects.toThrow('Server error');
     });
   });
 

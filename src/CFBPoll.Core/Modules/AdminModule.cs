@@ -134,6 +134,46 @@ public class AdminModule : IAdminModule
         };
     }
 
+    public async Task<SeasonExperimentalPredictionsResult> CalculateExperimentalSeasonPredictionsAsync(int season, IEnumerable<int> weeks, RatingAlgorithmVersion algorithmVersion)
+    {
+        ArgumentNullException.ThrowIfNull(weeks);
+
+        var weekNumbers = weeks.ToList();
+
+        _logger.LogInformation(
+            "Calculating experimental season predictions for season {Season}, weeks {Weeks} using algorithm version {AlgorithmVersion}",
+            season, string.Join(",", weekNumbers), algorithmVersion);
+
+        if (weekNumbers.Count > 0)
+        {
+            // Warm the season-scoped caches (full schedule, teams, games, advanced stats) with one
+            // sequential call before fanning out per week below. Without this, every week misses the
+            // same season-level cache keys at once and stampedes the underlying data provider with
+            // duplicate live requests, which can trip its rate limit on a season nothing has cached yet.
+            await _dataService.GetFullSeasonScheduleAsync(season).ConfigureAwait(false);
+            await _dataService.GetSeasonDataAsync(season, weekNumbers[0]).ConfigureAwait(false);
+        }
+
+        var weekTasks = weekNumbers
+            .Select(week => CalculateExperimentalPredictionsAsync(season, week, algorithmVersion))
+            .ToList();
+        await Task.WhenAll(weekTasks).ConfigureAwait(false);
+
+        var weeklyResults = weekNumbers
+            .Zip(weekTasks, (week, task) => new SeasonExperimentalPredictionsWeek { Summary = task.Result.Summary, Week = week })
+            .OrderBy(w => w.Week)
+            .ToList();
+        var allPredictions = weekTasks.SelectMany(t => t.Result.Predictions);
+
+        return new SeasonExperimentalPredictionsResult
+        {
+            AlgorithmVersion = algorithmVersion,
+            OverallSummary = PredictionRecordSummarizer.Summarize(allPredictions),
+            Season = season,
+            Weeks = weeklyResults
+        };
+    }
+
     public async Task<SeasonTrendsResult> CalculateExperimentalSeasonTrendsAsync(int season, RatingAlgorithmVersion algorithmVersion)
     {
         _logger.LogInformation(

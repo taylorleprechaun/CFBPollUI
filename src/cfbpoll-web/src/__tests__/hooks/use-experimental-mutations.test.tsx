@@ -7,21 +7,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   useCalculateExperimental,
   useCalculateExperimentalPredictions,
-  useCalculateExperimentalSeasonTrends,
+  useCalculateExperimentalSeasonPredictions,
   useExportExperimental,
 } from '../../hooks/use-experimental-mutations';
 
 vi.mock('../../services/admin-api', () => ({
   calculateExperimental: vi.fn(),
   calculateExperimentalPredictions: vi.fn(),
-  calculateExperimentalSeasonTrends: vi.fn(),
+  calculateExperimentalSeasonPredictions: vi.fn(),
   downloadExperimentalExport: vi.fn(),
 }));
 
 import {
   calculateExperimental,
   calculateExperimentalPredictions,
-  calculateExperimentalSeasonTrends,
+  calculateExperimentalSeasonPredictions,
   downloadExperimentalExport,
 } from '../../services/admin-api';
 
@@ -61,16 +61,16 @@ describe('null token guard', () => {
     expect(calculateExperimentalPredictions).not.toHaveBeenCalled();
   });
 
-  it('useCalculateExperimentalSeasonTrends rejects with Authentication required when token is null', async () => {
-    const { result } = renderHook(() => useCalculateExperimentalSeasonTrends(null), {
+  it('useCalculateExperimentalSeasonPredictions rejects with Authentication required when token is null', async () => {
+    const { result } = renderHook(() => useCalculateExperimentalSeasonPredictions(null), {
       wrapper: createWrapper(),
     });
 
     await expect(
-      act(() => result.current.mutateAsync({ algorithmVersion: 'V1', season: 2024 }))
+      act(() => result.current.mutateAsync({ algorithmVersion: 'V1', season: 2024, weeks: [5, 6] }))
     ).rejects.toThrow('Authentication required');
 
-    expect(calculateExperimentalSeasonTrends).not.toHaveBeenCalled();
+    expect(calculateExperimentalSeasonPredictions).not.toHaveBeenCalled();
   });
 
   it('useExportExperimental rejects with Authentication required when token is null', async () => {
@@ -160,33 +160,46 @@ describe('useCalculateExperimentalPredictions', () => {
   });
 });
 
-describe('useCalculateExperimentalSeasonTrends', () => {
+describe('useCalculateExperimentalSeasonPredictions', () => {
   beforeEach(() => vi.resetAllMocks());
 
-  it('calls calculateExperimentalSeasonTrends with token and params', async () => {
-    const mockResult = { season: 2024, teams: [], weeks: [] };
-    vi.mocked(calculateExperimentalSeasonTrends).mockResolvedValue(mockResult);
+  it('calls calculateExperimentalSeasonPredictions with token and params', async () => {
+    const mockResult = {
+      algorithmVersion: 'V2',
+      overallSummary: {
+        gradedGameCount: 0,
+        marginBias: null,
+        marginMAE: null,
+        marginRMSE: null,
+        overUnder: { correct: 0, incorrect: 0, push: 0 },
+        spread: { correct: 0, incorrect: 0, push: 0 },
+        winner: { correct: 0, incorrect: 0, push: 0 },
+      },
+      season: 2024,
+      weeks: [],
+    };
+    vi.mocked(calculateExperimentalSeasonPredictions).mockResolvedValue(mockResult);
 
-    const { result } = renderHook(() => useCalculateExperimentalSeasonTrends('test-token'), {
+    const { result } = renderHook(() => useCalculateExperimentalSeasonPredictions('test-token'), {
       wrapper: createWrapper(),
     });
 
     await act(async () => {
-      await result.current.mutateAsync({ algorithmVersion: 'V2', season: 2024 });
+      await result.current.mutateAsync({ algorithmVersion: 'V2', season: 2024, weeks: [5, 6] });
     });
 
-    expect(calculateExperimentalSeasonTrends).toHaveBeenCalledWith('test-token', 2024, 'V2');
+    expect(calculateExperimentalSeasonPredictions).toHaveBeenCalledWith('test-token', 2024, [5, 6], 'V2');
   });
 
   it('rejects on failure', async () => {
-    vi.mocked(calculateExperimentalSeasonTrends).mockRejectedValue(new Error('Failed'));
+    vi.mocked(calculateExperimentalSeasonPredictions).mockRejectedValue(new Error('Failed'));
 
-    const { result } = renderHook(() => useCalculateExperimentalSeasonTrends('test-token'), {
+    const { result } = renderHook(() => useCalculateExperimentalSeasonPredictions('test-token'), {
       wrapper: createWrapper(),
     });
 
     await expect(
-      act(() => result.current.mutateAsync({ algorithmVersion: 'V1', season: 2024 }))
+      act(() => result.current.mutateAsync({ algorithmVersion: 'V1', season: 2024, weeks: [5] }))
     ).rejects.toThrow('Failed');
   });
 });

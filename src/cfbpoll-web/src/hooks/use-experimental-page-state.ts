@@ -1,68 +1,50 @@
-import { useState } from 'react';
-
 import type { AlgorithmVersion } from '../components/admin/algorithm-versions';
 import type { ExperimentalCalculateResponse } from '../schemas/admin';
 
 import { toError } from '../lib/error-utils';
-import { useCalculateExperimental, useExportExperimental } from './use-experimental-mutations';
+import { useAlgorithmRunState } from './use-algorithm-run-state';
+import { useCalculateExperimental } from './use-experimental-mutations';
 
 interface UseExperimentalPageStateOptions {
-  algorithmVersion: AlgorithmVersion;
   selectedSeason: number | null;
   selectedWeek: number | null;
   token: string | null;
 }
 
 export function useExperimentalPageState({
-  algorithmVersion,
   selectedSeason,
   selectedWeek,
   token,
 }: UseExperimentalPageStateOptions) {
-  const [calculatedResult, setCalculatedResult] = useState<ExperimentalCalculateResponse | null>(null);
-  const [error, setError] = useState<Error | null>(null);
+  const [runState, dispatch] = useAlgorithmRunState<ExperimentalCalculateResponse>();
 
   const calculateMutation = useCalculateExperimental(token);
-  const exportMutation = useExportExperimental(token);
 
-  const handleCalculate = async () => {
-    if (selectedSeason === null || selectedWeek === null) return;
-    setError(null);
-    setCalculatedResult(null);
+  const handleRun = async (versions: AlgorithmVersion[]) => {
+    if (selectedSeason === null || selectedWeek === null || versions.length === 0) return;
 
-    try {
-      const result = await calculateMutation.mutateAsync({
-        algorithmVersion,
-        season: selectedSeason,
-        week: selectedWeek,
-      });
-      setCalculatedResult(result);
-    } catch (err) {
-      setError(toError(err, 'Calculation failed'));
-    }
-  };
+    dispatch({ type: 'run-start', versions });
 
-  const handleExport = async () => {
-    if (selectedSeason === null || selectedWeek === null) return;
-    setError(null);
-
-    try {
-      await exportMutation.mutateAsync({
-        algorithmVersion,
-        season: selectedSeason,
-        week: selectedWeek,
-      });
-    } catch (err) {
-      setError(toError(err, 'Export failed'));
-    }
+    await Promise.allSettled(
+      versions.map(async (version) => {
+        try {
+          const result = await calculateMutation.mutateAsync({
+            algorithmVersion: version,
+            season: selectedSeason,
+            week: selectedWeek,
+          });
+          dispatch({ result, type: 'run-success', version });
+        } catch (err) {
+          dispatch({ error: toError(err, `${version} calculation failed`), type: 'run-error', version });
+        }
+      })
+    );
   };
 
   return {
-    calculatedResult,
-    error,
-    handleCalculate,
-    handleExport,
-    isCalculating: calculateMutation.isPending,
-    isExporting: exportMutation.isPending,
+    handleRun,
+    isRunning: Object.values(runState).some((entry) => entry.status === 'pending'),
+    reset: () => dispatch({ type: 'reset' }),
+    runState,
   };
 }

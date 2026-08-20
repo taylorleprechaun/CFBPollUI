@@ -3,11 +3,13 @@ import { useState } from 'react';
 import type { AlgorithmVersion } from '../components/admin';
 
 import {
+  CompareSeasonWeeksModal,
+  DEFAULT_ALGORITHM_VERSIONS,
   ExperimentalCalculateSection,
   ExperimentalPredictionsCalculateSection,
-  ExperimentalPredictionsPreviewSection,
-  ExperimentalPreviewSection,
-  ExperimentalTrendsSection,
+  PredictionsComparisonSection,
+  RatingsComparisonSection,
+  SeasonPredictionsComparisonSection,
 } from '../components/admin';
 import { ErrorAlert, ErrorBoundary } from '../components/error';
 import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '../components/ui/button-styles';
@@ -15,7 +17,7 @@ import { useAuth } from '../hooks/use-auth';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { useExperimentalPageState } from '../hooks/use-experimental-page-state';
 import { useExperimentalPredictionsState } from '../hooks/use-experimental-predictions-state';
-import { useExperimentalSeasonTrendsState } from '../hooks/use-experimental-season-trends-state';
+import { useExperimentalSeasonPredictionsState } from '../hooks/use-experimental-season-predictions-state';
 import { useSeason } from '../hooks/use-season';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
@@ -37,26 +39,26 @@ export function ExperimentalPage() {
   const { data: weeksData, isLoading: weeksLoading } = useWeeks(selectedSeason);
   const { selectedWeek, setSelectedWeek } = useWeekSelection(weeksData?.weeks);
 
-  const [algorithmVersion, setAlgorithmVersion] = useState<AlgorithmVersion>('V1');
+  const [ratingsSelectedVersions, setRatingsSelectedVersions] = useState<AlgorithmVersion[]>(DEFAULT_ALGORITHM_VERSIONS);
+  const [predictionsSelectedVersions, setPredictionsSelectedVersions] = useState<AlgorithmVersion[]>(DEFAULT_ALGORITHM_VERSIONS);
   const [mode, setMode] = useState<ExperimentalMode>('ratings');
+  const [isCompareSeasonModalOpen, setIsCompareSeasonModalOpen] = useState(false);
+  const [compareSeasonWeeks, setCompareSeasonWeeks] = useState<number[]>([]);
 
-  const {
-    calculatedResult,
-    error,
-    handleCalculate,
-    handleExport,
-    isCalculating,
-    isExporting,
-  } = useExperimentalPageState({
-    algorithmVersion,
+  const { handleRun, isRunning, runState } = useExperimentalPageState({
     selectedSeason,
     selectedWeek,
     token,
   });
 
-  const predictionsState = useExperimentalPredictionsState({ algorithmVersion, selectedSeason, selectedWeek, token });
+  const predictionsState = useExperimentalPredictionsState({ selectedSeason, selectedWeek, token });
+  const seasonPredictionsState = useExperimentalSeasonPredictionsState({ selectedSeason, token });
 
-  const trendsState = useExperimentalSeasonTrendsState({ algorithmVersion, selectedSeason, token });
+  function handleCompareSeasonConfirm(weeks: number[]) {
+    setCompareSeasonWeeks(weeks);
+    setIsCompareSeasonModalOpen(false);
+    seasonPredictionsState.handleRun(predictionsSelectedVersions, weeks);
+  }
 
   return (
     <div className="space-y-6">
@@ -79,40 +81,28 @@ export function ExperimentalPage() {
 
       {mode === 'ratings' && (
         <>
-          {error && <ErrorAlert error={error} />}
-          {trendsState.error && <ErrorAlert error={trendsState.error} />}
-
           <ExperimentalCalculateSection
-            algorithmVersion={algorithmVersion}
-            isCalculating={isCalculating}
-            onAlgorithmVersionChange={setAlgorithmVersion}
-            onCalculate={handleCalculate}
+            isRunning={isRunning}
+            onRun={() => handleRun(ratingsSelectedVersions)}
             onSeasonChange={setSelectedSeason}
+            onSelectedVersionsChange={setRatingsSelectedVersions}
             onWeekChange={setSelectedWeek}
             seasons={seasons}
             seasonsLoading={seasonsLoading}
             selectedSeason={selectedSeason}
+            selectedVersions={ratingsSelectedVersions}
             selectedWeek={selectedWeek}
             weeks={weeksData?.weeks ?? []}
             weeksLoading={weeksLoading}
           />
 
-          <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render experimental preview')} />}>
-            {calculatedResult && (
-              <ExperimentalPreviewSection
-                calculatedResult={calculatedResult}
-                isExporting={isExporting}
-                onExport={handleExport}
-              />
-            )}
-          </ErrorBoundary>
-
-          <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render experimental season trend')} />}>
-            <ExperimentalTrendsSection
-              isCalculating={trendsState.isCalculating}
-              onCalculate={trendsState.handleCalculate}
-              result={trendsState.result}
-              selectedSeason={selectedSeason}
+          <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render experimental comparison')} />}>
+            <RatingsComparisonSection
+              runState={runState}
+              season={selectedSeason}
+              selectedVersions={ratingsSelectedVersions}
+              token={token}
+              week={selectedWeek}
             />
           </ErrorBoundary>
         </>
@@ -120,32 +110,48 @@ export function ExperimentalPage() {
 
       {mode === 'predictions' && (
         <>
-          {predictionsState.error && <ErrorAlert error={predictionsState.error} />}
-
           <ExperimentalPredictionsCalculateSection
-            algorithmVersion={algorithmVersion}
-            isCalculating={predictionsState.isCalculating}
-            onAlgorithmVersionChange={setAlgorithmVersion}
-            onCalculate={predictionsState.handleCalculate}
+            isRunning={predictionsState.isRunning}
+            onCompareSeasonClick={() => setIsCompareSeasonModalOpen(true)}
+            onRun={() => predictionsState.handleRun(predictionsSelectedVersions)}
             onSeasonChange={setSelectedSeason}
+            onSelectedVersionsChange={setPredictionsSelectedVersions}
             onWeekChange={setSelectedWeek}
             seasons={seasons}
             seasonsLoading={seasonsLoading}
             selectedSeason={selectedSeason}
+            selectedVersions={predictionsSelectedVersions}
             selectedWeek={selectedWeek}
             weeks={weeksData?.weeks ?? []}
             weeksLoading={weeksLoading}
           />
 
-          <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render experimental predictions preview')} />}>
-            {predictionsState.calculatedResult && selectedSeason !== null && selectedWeek !== null && (
-              <ExperimentalPredictionsPreviewSection
-                calculatedResult={predictionsState.calculatedResult}
-                season={selectedSeason}
-                week={selectedWeek}
-              />
-            )}
+          <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render experimental predictions comparison')} />}>
+            <PredictionsComparisonSection
+              runState={predictionsState.runState}
+              season={selectedSeason}
+              selectedVersions={predictionsSelectedVersions}
+              week={selectedWeek}
+            />
           </ErrorBoundary>
+
+          <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render season comparison')} />}>
+            <SeasonPredictionsComparisonSection
+              runState={seasonPredictionsState.runState}
+              season={selectedSeason}
+              selectedVersions={predictionsSelectedVersions}
+              weeks={compareSeasonWeeks}
+            />
+          </ErrorBoundary>
+
+          {isCompareSeasonModalOpen && selectedSeason !== null && (
+            <CompareSeasonWeeksModal
+              onCancel={() => setIsCompareSeasonModalOpen(false)}
+              onConfirm={handleCompareSeasonConfirm}
+              season={selectedSeason}
+              weeks={weeksData?.weeks ?? []}
+            />
+          )}
         </>
       )}
     </div>

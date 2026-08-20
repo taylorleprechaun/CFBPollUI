@@ -191,6 +191,27 @@ public class PredictionsMapperTests
     }
 
     [Fact]
+    public void ToDTO_SeasonExperimentalPredictionsWeek_NullWeek_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => PredictionsMapper.ToDTO((SeasonExperimentalPredictionsWeek)null!));
+    }
+
+    [Fact]
+    public void ToDTO_SeasonExperimentalPredictionsWeek_ValidWeek_MapsAllFields()
+    {
+        var week = new SeasonExperimentalPredictionsWeek
+        {
+            Summary = new PredictionRecordSummary { GradedGameCount = 12 },
+            Week = 6
+        };
+
+        var result = PredictionsMapper.ToDTO(week);
+
+        Assert.Equal(6, result.Week);
+        Assert.Equal(12, result.Summary.GradedGameCount);
+    }
+
+    [Fact]
     public void ToDTO_UngradedGame_MapsNullsAndUngraded()
     {
         var prediction = new GamePrediction
@@ -344,6 +365,35 @@ public class PredictionsMapperTests
     public void ToResponseDTO_NullInput_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(() => PredictionsMapper.ToResponseDTO(null!, resultsPublished: true, isGraded: true));
+    }
+
+    [Fact]
+    public void ToSeasonExperimentalResponseDTO_MapsAllFields()
+    {
+        var result = new SeasonExperimentalPredictionsResult
+        {
+            AlgorithmVersion = RatingAlgorithmVersion.V2,
+            OverallSummary = new PredictionRecordSummary { GradedGameCount = 24 },
+            Season = 2024,
+            Weeks =
+            [
+                new SeasonExperimentalPredictionsWeek { Summary = new PredictionRecordSummary { GradedGameCount = 12 }, Week = 5 },
+                new SeasonExperimentalPredictionsWeek { Summary = new PredictionRecordSummary { GradedGameCount = 12 }, Week = 6 }
+            ]
+        };
+
+        var dto = PredictionsMapper.ToSeasonExperimentalResponseDTO(result);
+
+        Assert.Equal("V2", dto.AlgorithmVersion);
+        Assert.Equal(2024, dto.Season);
+        Assert.Equal(24, dto.OverallSummary.GradedGameCount);
+        Assert.Equal(2, dto.Weeks.Count());
+    }
+
+    [Fact]
+    public void ToSeasonExperimentalResponseDTO_NullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => PredictionsMapper.ToSeasonExperimentalResponseDTO(null!));
     }
 
     [Fact]

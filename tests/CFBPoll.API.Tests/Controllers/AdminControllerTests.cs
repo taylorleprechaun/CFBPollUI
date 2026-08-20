@@ -26,6 +26,41 @@ public class AdminControllerTests
     }
 
     [Fact]
+    public async Task Calculate_ReturnsRankingsWithDeltas()
+    {
+        var rankedTeam = new RankedTeam { TeamName = "Ohio State", Rank = 1, Rating = 90, Details = new TeamDetails() };
+        var calculateResult = new CalculateRankingsResult
+        {
+            IsPersisted = true,
+            Rankings = new RankingsResult
+            {
+                Season = 2024,
+                Week = 5,
+                Rankings = [rankedTeam]
+            }
+        };
+
+        var deltas = new Dictionary<string, int?> { { "Ohio State", 2 } };
+
+        _mockAdminModule
+            .Setup(x => x.CalculateRankingsAsync(2024, 5))
+            .ReturnsAsync(calculateResult);
+
+        _mockRankingsModule
+            .Setup(x => x.GetRankDeltasAsync(2024, 5, It.IsAny<IEnumerable<RankedTeam>>()))
+            .ReturnsAsync(deltas);
+
+        var result = await _controller.Calculate(2024, 5);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<CalculateResponseDTO>(okResult.Value);
+        Assert.True(response.IsPersisted);
+        Assert.Equal(2024, response.Rankings.Season);
+        var team = Assert.Single(response.Rankings.Rankings);
+        Assert.Equal(2, team.RankDelta);
+    }
+
+    [Fact]
     public async Task CalculateExperimental_ReturnsRankings()
     {
         var rankedTeam = new RankedTeam { TeamName = "Ohio State", Rank = 1, Rating = 90, Details = new TeamDetails() };
@@ -92,6 +127,43 @@ public class AdminControllerTests
         var prediction = Assert.Single(response.Predictions);
         Assert.Equal("Ohio State", prediction.PredictedWinner);
         Assert.Equal(28, prediction.ActualHomeScore);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalSeasonPredictions_NullRequestBody_ThrowsArgumentNullException()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => _controller.CalculateExperimentalSeasonPredictions(2024, RatingAlgorithmVersion.V1, null!));
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalSeasonPredictions_ValidRequest_ReturnsOkWithMappedResponse()
+    {
+        var seasonResult = new SeasonExperimentalPredictionsResult
+        {
+            AlgorithmVersion = RatingAlgorithmVersion.V2,
+            OverallSummary = new PredictionRecordSummary { GradedGameCount = 2, Winner = new TrackRecordTotals { Correct = 2 } },
+            Season = 2024,
+            Weeks =
+            [
+                new SeasonExperimentalPredictionsWeek { Summary = new PredictionRecordSummary { GradedGameCount = 1 }, Week = 5 },
+                new SeasonExperimentalPredictionsWeek { Summary = new PredictionRecordSummary { GradedGameCount = 1 }, Week = 6 }
+            ]
+        };
+        var request = new CalculateExperimentalSeasonPredictionsRequestDTO { Weeks = [5, 6] };
+
+        _mockAdminModule
+            .Setup(x => x.CalculateExperimentalSeasonPredictionsAsync(2024, request.Weeks, RatingAlgorithmVersion.V2))
+            .ReturnsAsync(seasonResult);
+
+        var result = await _controller.CalculateExperimentalSeasonPredictions(2024, RatingAlgorithmVersion.V2, request);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<SeasonExperimentalPredictionsResponseDTO>(okResult.Value);
+        Assert.Equal("V2", response.AlgorithmVersion);
+        Assert.Equal(2024, response.Season);
+        Assert.Equal(2, response.OverallSummary.GradedGameCount);
+        Assert.Equal(2, response.Weeks.Count());
     }
 
     [Fact]
@@ -164,42 +236,6 @@ public class AdminControllerTests
         var prediction = Assert.Single(response.Predictions.Predictions);
         Assert.Equal("Ohio State", prediction.PredictedWinner);
     }
-
-    [Fact]
-    public async Task Calculate_ReturnsRankingsWithDeltas()
-    {
-        var rankedTeam = new RankedTeam { TeamName = "Ohio State", Rank = 1, Rating = 90, Details = new TeamDetails() };
-        var calculateResult = new CalculateRankingsResult
-        {
-            IsPersisted = true,
-            Rankings = new RankingsResult
-            {
-                Season = 2024,
-                Week = 5,
-                Rankings = [rankedTeam]
-            }
-        };
-
-        var deltas = new Dictionary<string, int?> { { "Ohio State", 2 } };
-
-        _mockAdminModule
-            .Setup(x => x.CalculateRankingsAsync(2024, 5))
-            .ReturnsAsync(calculateResult);
-
-        _mockRankingsModule
-            .Setup(x => x.GetRankDeltasAsync(2024, 5, It.IsAny<IEnumerable<RankedTeam>>()))
-            .ReturnsAsync(deltas);
-
-        var result = await _controller.Calculate(2024, 5);
-
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var response = Assert.IsType<CalculateResponseDTO>(okResult.Value);
-        Assert.True(response.IsPersisted);
-        Assert.Equal(2024, response.Rankings.Season);
-        var team = Assert.Single(response.Rankings.Rankings);
-        Assert.Equal(2, team.RankDelta);
-    }
-
     [Fact]
     public void Constructor_NullAdminModule_ThrowsArgumentNullException()
     {
@@ -219,26 +255,6 @@ public class AdminControllerTests
     {
         Assert.Throws<ArgumentNullException>(
             () => new AdminController(new Mock<IAdminModule>().Object, new Mock<ILogger<AdminController>>().Object, null!));
-    }
-
-    [Fact]
-    public async Task DeletePrediction_Found_ReturnsOk()
-    {
-        _mockAdminModule.Setup(x => x.DeletePredictionsAsync(2024, 5)).ReturnsAsync(true);
-
-        var result = await _controller.DeletePrediction(2024, 5);
-
-        Assert.IsType<OkResult>(result);
-    }
-
-    [Fact]
-    public async Task DeletePrediction_NotFound_ReturnsNotFound()
-    {
-        _mockAdminModule.Setup(x => x.DeletePredictionsAsync(2024, 5)).ReturnsAsync(false);
-
-        var result = await _controller.DeletePrediction(2024, 5);
-
-        Assert.IsType<NotFoundObjectResult>(result);
     }
 
     [Fact]
@@ -262,19 +278,24 @@ public class AdminControllerTests
     }
 
     [Fact]
-    public async Task ExportExperimental_ReturnsFile()
+    public async Task DeletePrediction_Found_ReturnsOk()
     {
-        _mockAdminModule
-            .Setup(x => x.ExportExperimentalAsync(2024, 5, RatingAlgorithmVersion.V2))
-            .ReturnsAsync(new byte[] { 1, 2, 3 });
+        _mockAdminModule.Setup(x => x.DeletePredictionsAsync(2024, 5)).ReturnsAsync(true);
 
-        var result = await _controller.ExportExperimental(2024, 5, RatingAlgorithmVersion.V2);
+        var result = await _controller.DeletePrediction(2024, 5);
 
-        var fileResult = Assert.IsType<FileContentResult>(result);
-        Assert.Equal("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileResult.ContentType);
-        Assert.Equal("Rankings_Experimental_V2_2024_Week6.xlsx", fileResult.FileDownloadName);
+        Assert.IsType<OkResult>(result);
     }
 
+    [Fact]
+    public async Task DeletePrediction_NotFound_ReturnsNotFound()
+    {
+        _mockAdminModule.Setup(x => x.DeletePredictionsAsync(2024, 5)).ReturnsAsync(false);
+
+        var result = await _controller.DeletePrediction(2024, 5);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
     [Fact]
     public async Task Export_Found_ReturnsFile()
     {
@@ -301,6 +322,19 @@ public class AdminControllerTests
         Assert.IsType<NotFoundObjectResult>(result);
     }
 
+    [Fact]
+    public async Task ExportExperimental_ReturnsFile()
+    {
+        _mockAdminModule
+            .Setup(x => x.ExportExperimentalAsync(2024, 5, RatingAlgorithmVersion.V2))
+            .ReturnsAsync(new byte[] { 1, 2, 3 });
+
+        var result = await _controller.ExportExperimental(2024, 5, RatingAlgorithmVersion.V2);
+
+        var fileResult = Assert.IsType<FileContentResult>(result);
+        Assert.Equal("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileResult.ContentType);
+        Assert.Equal("Rankings_Experimental_V2_2024_Week6.xlsx", fileResult.FileDownloadName);
+    }
     [Fact]
     public async Task GetPrediction_NullResult_ReturnsNotFound()
     {

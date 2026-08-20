@@ -11,6 +11,7 @@ import {
   PredictionsSummariesResponseSchema,
   PredictionsSummarySchema,
   RefreshCacheResponseSchema,
+  SeasonExperimentalPredictionsResponseSchema,
   SnapshotSchema,
   SnapshotsResponseSchema,
 } from '../../schemas/admin';
@@ -447,6 +448,44 @@ describe('Admin schemas', () => {
     it('validates a zero removedCount', () => {
       const data = { removedCount: 0, season: 2024, week: 5 };
       const result = RefreshCacheResponseSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('SeasonExperimentalPredictionsResponseSchema', () => {
+    const validSummary = {
+      gradedGameCount: 12,
+      marginBias: -1.5,
+      marginMAE: 8.2,
+      marginRMSE: 10.1,
+      overUnder: { correct: 6, incorrect: 5, push: 1 },
+      spread: { correct: 7, incorrect: 5, push: 0 },
+      winner: { correct: 9, incorrect: 3, push: 0 },
+    };
+
+    it('rejects missing weeks field', () => {
+      const data = { algorithmVersion: 'V2', overallSummary: validSummary, season: 2024 };
+      const result = SeasonExperimentalPredictionsResponseSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
+    it('validates a valid season experimental predictions response', () => {
+      const data = {
+        algorithmVersion: 'V2',
+        overallSummary: validSummary,
+        season: 2024,
+        weeks: [
+          { summary: validSummary, week: 5 },
+          { summary: validSummary, week: 6 },
+        ],
+      };
+      const result = SeasonExperimentalPredictionsResponseSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('validates an empty weeks array', () => {
+      const data = { algorithmVersion: 'V2', overallSummary: validSummary, season: 2024, weeks: [] };
+      const result = SeasonExperimentalPredictionsResponseSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
   });
