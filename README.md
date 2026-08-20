@@ -353,8 +353,8 @@ npm test
 
 | Project | Line Coverage | Branch Coverage |
 |---------|---------------|-----------------|
-| CFBPoll.Core | 99% | 93% |
-| CFBPoll.API | 100% | 97% |
+| CFBPoll.Core | 99% | 94% |
+| CFBPoll.API | 100% | 98% |
 | cfbpoll-web | 100% | 95% |
 <!-- coverage:end -->
 
