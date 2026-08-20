@@ -326,26 +326,26 @@ A few ordering/formatting conventions are worth calling out since they're enforc
 
 ## Testing
 
-The project includes 2,466 unit and integration tests across backend and frontend.
+The project includes 2,468 unit and integration tests across backend and frontend.
 
 ### Running Tests
 
 ```bash
-# Backend tests (983 tests)
+# Backend tests (984 tests)
 dotnet test
 
 # Run with coverage
 dotnet test --collect:"XPlat Code Coverage"
 
-# Frontend tests (1,483 tests)
+# Frontend tests (1,484 tests)
 cd src/cfbpoll-web
 npm test
 ```
 
 ### Coverage Summary
 
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-983-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1483-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-984-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1484-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
 ![Web Coverage](https://img.shields.io/badge/Web_Coverage-100%25-brightgreen)

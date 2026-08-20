@@ -239,6 +239,55 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task CalculateExperimentalSeasonPredictionsAsync_ManyWeeks_LimitsConcurrentCalculations()
+    {
+        var fbsTeams = new Dictionary<string, TeamInfo>
+        {
+            ["Michigan"] = new(),
+            ["Nebraska"] = new()
+        };
+        var weekNumbers = new[] { 1, 2, 3, 4, 5, 6 };
+        var concurrentCalls = 0;
+        var maxObservedConcurrency = 0;
+        var gate = new object();
+
+        foreach (var week in weekNumbers)
+        {
+            _mockDataService
+                .Setup(x => x.GetSeasonDataAsync(2024, week))
+                .Returns(async () =>
+                {
+                    lock (gate)
+                    {
+                        concurrentCalls++;
+                        maxObservedConcurrency = Math.Max(maxObservedConcurrency, concurrentCalls);
+                    }
+
+                    await Task.Delay(50);
+
+                    lock (gate)
+                    {
+                        concurrentCalls--;
+                    }
+
+                    return new SeasonData { Season = 2024, Week = week, Teams = fbsTeams };
+                });
+        }
+
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(It.IsAny<SeasonData>())).ReturnsAsync(new Dictionary<string, RatingDetails>());
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(new List<ScheduleGame>());
+        _mockDataService.Setup(x => x.GetGamesAsync(2024, "regular")).ReturnsAsync(new List<Game>());
+        _mockPredictionAlgorithmResolver.Setup(x => x.Resolve(RatingAlgorithmVersion.V1)).Returns(_mockPredictionCalculatorModule.Object);
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(It.IsAny<SeasonData>(), It.IsAny<IDictionary<string, RatingDetails>>(), It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(new List<GamePrediction>());
+
+        await _adminModule.CalculateExperimentalSeasonPredictionsAsync(2024, weekNumbers, RatingAlgorithmVersion.V1);
+
+        Assert.True(maxObservedConcurrency <= 4, $"Expected at most 4 concurrent week calculations, but observed {maxObservedConcurrency}.");
+    }
+
+    [Fact]
     public async Task CalculateExperimentalSeasonPredictionsAsync_MultipleWeeks_AggregatesOverallSummaryAcrossAllWeeks()
     {
         var fbsTeams = new Dictionary<string, TeamInfo>
