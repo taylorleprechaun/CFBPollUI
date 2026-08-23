@@ -13,6 +13,12 @@ public interface ICacheData
     Task<int> DeleteExpiredAsync(DateTime utcNow);
 
     /// <summary>
+    /// Retrieves metadata (key, size, cached/expiration timestamps) for every cache entry, without
+    /// loading the underlying compressed data.
+    /// </summary>
+    Task<IEnumerable<CacheEntryMetadata>> GetAllEntriesMetadataAsync();
+
+    /// <summary>
     /// Retrieves a cache entry by key.
     /// </summary>
     Task<CacheDataEntry?> GetEntryAsync(string key);
@@ -31,6 +37,11 @@ public interface ICacheData
     /// Removes all cache entries whose key starts with the given prefix.
     /// </summary>
     Task<int> RemoveByPrefixAsync(string prefix);
+
+    /// <summary>
+    /// Removes all cache entries matching any of the given keys.
+    /// </summary>
+    Task<int> RemoveManyAsync(IEnumerable<string> keys);
 
     /// <summary>
     /// Inserts or replaces a cache entry.

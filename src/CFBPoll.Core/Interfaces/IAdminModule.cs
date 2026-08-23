@@ -67,6 +67,19 @@ public interface IAdminModule
     Task<byte[]?> ExportRankingsAsync(int season, int week);
 
     /// <summary>
+    /// Retrieves every persistent cache entry, grouped into a display-friendly family/season/detail
+    /// summary for the admin cache management page.
+    /// </summary>
+    Task<IEnumerable<CacheEntrySummary>> GetCacheEntriesAsync();
+
+    /// <summary>
+    /// Retrieves the site's CollegeFootballData.com API account status: quota, tier, and recent usage.
+    /// </summary>
+    /// <param name="forceRefresh">Whether to bypass any cached value and fetch live data.</param>
+    /// <returns>The current CFBD API usage snapshot.</returns>
+    Task<CFBDUsage> GetCFBDUsageAsync(bool forceRefresh = false);
+
+    /// <summary>
     /// Retrieves the persisted predictions for the given season and week without recalculating or
     /// re-grading, along with publish/grade status flags. Returns null if no predictions exist for
     /// the week.
@@ -111,4 +124,16 @@ public interface IAdminModule
     /// </summary>
     /// <returns>The number of cache entries actually removed.</returns>
     Task<int> RefreshSeasonCacheAsync(int season, int week);
+
+    /// <summary>
+    /// Removes the persistent cache entries matching the given keys.
+    /// </summary>
+    /// <returns>The number of cache entries actually removed.</returns>
+    Task<int> RemoveCacheEntriesAsync(IEnumerable<string> keys);
+
+    /// <summary>
+    /// Removes a single persistent cache entry by key.
+    /// </summary>
+    /// <returns>True if an entry was removed; otherwise false.</returns>
+    Task<bool> RemoveCacheEntryAsync(string key);
 }

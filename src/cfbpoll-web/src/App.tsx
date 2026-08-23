@@ -6,6 +6,7 @@ import { Layout } from './components/layout/layout';
 import { usePageVisibility } from './hooks/use-page-visibility';
 
 const AllTimePage = lazy(() => import('./pages/all-time-page'));
+const CachePage = lazy(() => import('./pages/cache-page'));
 const ExperimentalPage = lazy(() => import('./pages/experimental-page'));
 const HomePage = lazy(() => import('./pages/home-page'));
 const LoginPage = lazy(() => import('./pages/login-page'));
@@ -89,6 +90,9 @@ function App() {
           } />
           <Route path="admin/settings" element={
             <LazyPage><SettingsPage /></LazyPage>
+          } />
+          <Route path="admin/cache" element={
+            <LazyPage><CachePage /></LazyPage>
           } />
         </Route>
       </Route>

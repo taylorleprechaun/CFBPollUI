@@ -3,7 +3,9 @@ export { AlgorithmRunStatusBadge } from './algorithm-run-status-badge';
 export { AlgorithmVersionPicker } from './algorithm-version-picker';
 export { ALGORITHM_VERSIONS, DEFAULT_ALGORITHM_VERSIONS } from './algorithm-versions';
 export type { AlgorithmVersion } from './algorithm-versions';
+export { CacheEntriesSection } from './cache-entries-section';
 export { CalculateSection } from './calculate-section';
+export { CfbdUsageSection } from './cfbd-usage-section';
 export { CompareSeasonWeeksModal } from './compare-season-weeks-modal';
 export { ExperimentalCalculateSection } from './experimental-calculate-section';
 export { ExperimentalPredictionsCalculateSection } from './experimental-predictions-calculate-section';
@@ -26,3 +28,4 @@ export { SeasonPredictionsComparisonTable } from './season-predictions-compariso
 export { SeasonPredictionsWeekTable } from './season-predictions-week-table';
 export { SuccessCheckmark } from './success-checkmark';
 export type { ActionFeedback } from './types';
+export { WeekSelect } from './week-select';

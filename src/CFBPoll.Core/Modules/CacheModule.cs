@@ -25,6 +25,11 @@ public class CacheModule : IPersistentCache
         return count;
     }
 
+    public async Task<IEnumerable<CacheEntryMetadata>> GetAllEntriesMetadataAsync()
+    {
+        return await _cacheData.GetAllEntriesMetadataAsync().ConfigureAwait(false);
+    }
+
     public async Task<T?> GetAsync<T>(string key) where T : class
     {
         if (string.IsNullOrWhiteSpace(key))
@@ -70,6 +75,21 @@ public class CacheModule : IPersistentCache
 
         var count = await _cacheData.RemoveByPrefixAsync(prefix).ConfigureAwait(false);
         _logger.LogDebug("Removed {Count} cache entries with prefix: {Prefix}", count, prefix);
+        return count;
+    }
+
+    public async Task<int> RemoveManyAsync(IEnumerable<string> keys)
+    {
+        ArgumentNullException.ThrowIfNull(keys);
+
+        var keyList = keys.ToList();
+        if (keyList.Count == 0)
+        {
+            return 0;
+        }
+
+        var count = await _cacheData.RemoveManyAsync(keyList).ConfigureAwait(false);
+        _logger.LogDebug("Removed {Count} cache entries by key list", count);
         return count;
     }
 

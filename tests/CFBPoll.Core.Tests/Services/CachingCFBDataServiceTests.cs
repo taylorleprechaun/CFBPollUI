@@ -303,6 +303,71 @@ public class CachingCFBDataServiceTests
     }
 
     [Fact]
+    public async Task GetCFBDUsageAsync_BypassesCache_WhenForceRefreshIsTrue()
+    {
+        var cachedUsage = new CFBDUsage { RemainingCalls = 100 };
+        var freshUsage = new CFBDUsage { RemainingCalls = 50 };
+
+        _mockCache.Setup(x => x.GetAsync<CFBDUsage>("cfbdUsage"))
+            .ReturnsAsync(cachedUsage);
+        _mockInnerService.Setup(x => x.GetCFBDUsageAsync(true))
+            .ReturnsAsync(freshUsage);
+
+        var result = await _service.GetCFBDUsageAsync(forceRefresh: true);
+
+        Assert.Equal(50, result.RemainingCalls);
+        _mockCache.Verify(x => x.GetAsync<CFBDUsage>("cfbdUsage"), Times.Never);
+        _mockInnerService.Verify(x => x.GetCFBDUsageAsync(true), Times.Once);
+        _mockCache.Verify(x => x.SetAsync("cfbdUsage", freshUsage, It.IsAny<DateTime>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetCFBDUsageAsync_FetchesFromInnerService_WhenCacheMiss()
+    {
+        var freshUsage = new CFBDUsage
+        {
+            MonthlyLimit = 1000,
+            RemainingCalls = 75,
+            ResetAt = new DateTime(2026, 9, 1),
+            TierName = "Patron",
+            TopEndpoints = [new CFBDTopEndpoint { Endpoint = "/games", RequestCount = 42 }],
+            TotalRequestsInWindow = 925,
+            UsedCalls = 925
+        };
+
+        _mockInnerService.Setup(x => x.GetCFBDUsageAsync(false))
+            .ReturnsAsync(freshUsage);
+
+        var result = await _service.GetCFBDUsageAsync();
+
+        Assert.Equal(1000, result.MonthlyLimit);
+        Assert.Equal(75, result.RemainingCalls);
+        Assert.Equal(new DateTime(2026, 9, 1), result.ResetAt);
+        Assert.Equal("Patron", result.TierName);
+        Assert.Equal(925, result.TotalRequestsInWindow);
+        Assert.Equal(925, result.UsedCalls);
+        var endpoint = Assert.Single(result.TopEndpoints);
+        Assert.Equal("/games", endpoint.Endpoint);
+        Assert.Equal(42, endpoint.RequestCount);
+        _mockInnerService.Verify(x => x.GetCFBDUsageAsync(false), Times.Once);
+        _mockCache.Verify(x => x.SetAsync("cfbdUsage", freshUsage, It.IsAny<DateTime>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetCFBDUsageAsync_ReturnsCachedData_WhenCacheHit()
+    {
+        var cachedUsage = new CFBDUsage { RemainingCalls = 100 };
+
+        _mockCache.Setup(x => x.GetAsync<CFBDUsage>("cfbdUsage"))
+            .ReturnsAsync(cachedUsage);
+
+        var result = await _service.GetCFBDUsageAsync();
+
+        Assert.Equal(100, result.RemainingCalls);
+        _mockInnerService.Verify(x => x.GetCFBDUsageAsync(It.IsAny<bool>()), Times.Never);
+    }
+
+    [Fact]
     public async Task GetConferencesAsync_FetchesFromInnerService_WhenCacheMiss()
     {
         var apiData = new List<Conference>

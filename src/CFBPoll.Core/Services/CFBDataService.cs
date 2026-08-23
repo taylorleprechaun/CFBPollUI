@@ -135,6 +135,15 @@ public class CFBDataService : ICFBDataService
         return weeks.OrderBy(w => w.Week);
     }
 
+    public async Task<CFBDUsage> GetCFBDUsageAsync(bool forceRefresh = false)
+    {
+        var infoTask = _client.Info.GetAsync();
+        var usageTask = _client.Info.Usage.GetAsync();
+        await Task.WhenAll(infoTask, usageTask).ConfigureAwait(false);
+
+        return MapCFBDUsage(await infoTask, await usageTask);
+    }
+
     public async Task<IEnumerable<Conference>> GetConferencesAsync()
     {
         var conferencesResponse = await _client.Conferences.GetAsync();
@@ -611,6 +620,24 @@ public class CFBDataService : ICFBDataService
                 ?? g.Lines?.FirstOrDefault(l => l.OverUnderOpen.HasValue)?.OverUnderOpen,
             SpreadOpen = preferredLine?.SpreadOpen
                 ?? g.Lines?.FirstOrDefault(l => l.SpreadOpen.HasValue)?.SpreadOpen
+        };
+    }
+
+    private CFBDUsage MapCFBDUsage(ApiModels.UserInfo? info, ApiModels.UserUsage? usage)
+    {
+        return new CFBDUsage
+        {
+            MonthlyLimit = (int)(info?.MonthlyLimit ?? 0),
+            RemainingCalls = (int)(info?.RemainingCalls ?? 0),
+            ResetAt = DateTime.TryParse(info?.ResetAt, out var resetAt) ? resetAt : DateTime.MinValue,
+            TierName = info?.TierName ?? string.Empty,
+            TopEndpoints = usage?.TopEndpoints?.Select(e => new CFBDTopEndpoint
+            {
+                Endpoint = e.Endpoint ?? string.Empty,
+                RequestCount = (int)(e.Requests ?? 0)
+            }) ?? [],
+            TotalRequestsInWindow = (int)(usage?.Totals?.Requests ?? 0),
+            UsedCalls = (int)(info?.UsedCalls ?? 0)
         };
     }
 

@@ -95,15 +95,49 @@ export const PredictionsSummarySchema = z.object({
 
 export const PredictionsSummariesResponseSchema = z.array(PredictionsSummarySchema);
 
+export const CfbdTopEndpointSchema = z.object({
+  endpoint: z.string(),
+  requestCount: z.number(),
+});
+
+export const CfbdUsageSchema = z.object({
+  monthlyLimit: z.number(),
+  remainingCalls: z.number(),
+  resetAt: z.string(),
+  tierName: z.string(),
+  topEndpoints: z.array(CfbdTopEndpointSchema),
+  totalRequestsInWindow: z.number(),
+  usedCalls: z.number(),
+});
+
 export const RefreshCacheResponseSchema = z.object({
   removedCount: z.number(),
   season: z.number(),
   week: z.number(),
 });
 
+export const CacheEntrySchema = z.object({
+  cachedAt: z.string(),
+  cacheKey: z.string(),
+  detail: z.string(),
+  expiresAt: z.string(),
+  family: z.string(),
+  season: z.number().nullable(),
+  sizeBytes: z.number(),
+});
+
+export const CacheEntriesResponseSchema = z.array(CacheEntrySchema);
+
+export const RemoveCacheEntriesResponseSchema = z.object({
+  removedCount: z.number(),
+});
+
 export type AdminPredictionsResponse = z.infer<typeof AdminPredictionsResponseSchema>;
+export type CacheEntry = z.infer<typeof CacheEntrySchema>;
 export type CalculatePredictionsResponse = z.infer<typeof CalculatePredictionsResponseSchema>;
 export type CalculateResponse = z.infer<typeof CalculateResponseSchema>;
+export type CfbdTopEndpoint = z.infer<typeof CfbdTopEndpointSchema>;
+export type CfbdUsage = z.infer<typeof CfbdUsageSchema>;
 export type ExperimentalCalculateResponse = z.infer<typeof ExperimentalCalculateResponseSchema>;
 export type ExperimentalPredictionsResponse = z.infer<typeof ExperimentalPredictionsResponseSchema>;
 export type GamePrediction = z.infer<typeof GamePredictionSchema>;
@@ -113,6 +147,7 @@ export type PredictionRecordSummary = z.infer<typeof PredictionRecordSummarySche
 export type PredictionsResponse = z.infer<typeof PredictionsResponseSchema>;
 export type PredictionsSummary = z.infer<typeof PredictionsSummarySchema>;
 export type RefreshCacheResponse = z.infer<typeof RefreshCacheResponseSchema>;
+export type RemoveCacheEntriesResponse = z.infer<typeof RemoveCacheEntriesResponseSchema>;
 export type SeasonExperimentalPredictionsResponse = z.infer<typeof SeasonExperimentalPredictionsResponseSchema>;
 export type SeasonExperimentalPredictionsWeek = z.infer<typeof SeasonExperimentalPredictionsWeekSchema>;
 export type Snapshot = z.infer<typeof SnapshotSchema>;

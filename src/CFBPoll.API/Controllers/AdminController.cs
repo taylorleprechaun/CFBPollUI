@@ -12,6 +12,7 @@ namespace CFBPoll.API.Controllers;
 [Route("api/v1/[controller]")]
 public class AdminController : ControllerBase
 {
+    private const string CACHE_ENTRY_NOT_FOUND = "Cache entry not found";
     private const string PREDICTION_NOT_FOUND = "Prediction not found";
     private const string SNAPSHOT_NOT_FOUND = "Snapshot not found";
 
@@ -152,6 +153,38 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
+    /// Removes the persistent cache entries matching the given keys.
+    /// </summary>
+    [HttpDelete("cache")]
+    public async Task<ActionResult<RemoveCacheEntriesResponseDTO>> DeleteCacheEntries([FromBody] IEnumerable<string> keys)
+    {
+        if (keys is null || !keys.Any())
+            return BadRequest(new ErrorResponseDTO { Message = "At least one cache key is required", StatusCode = 400 });
+
+        _logger.LogInformation("Admin removing cache entries by key list");
+
+        var removedCount = await _adminModule.RemoveCacheEntriesAsync(keys);
+
+        return Ok(new RemoveCacheEntriesResponseDTO { RemovedCount = removedCount });
+    }
+
+    /// <summary>
+    /// Removes a single persistent cache entry by key.
+    /// </summary>
+    [HttpDelete("cache/{key}")]
+    public async Task<ActionResult> DeleteCacheEntry(string key)
+    {
+        _logger.LogInformation("Admin removing cache entry {CacheKey}", key);
+
+        var deleted = await _adminModule.RemoveCacheEntryAsync(key);
+
+        if (!deleted)
+            return NotFound(new ErrorResponseDTO { Message = CACHE_ENTRY_NOT_FOUND, StatusCode = 404 });
+
+        return Ok();
+    }
+
+    /// <summary>
     /// Deletes predictions for the specified season and week.
     /// </summary>
     [HttpDelete("seasons/{season}/weeks/{week}/prediction")]
@@ -201,6 +234,30 @@ public class AdminController : ControllerBase
         return File(bytes,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             $"Rankings_Experimental_{algorithmVersion}_{season}_Week{week + 1}.xlsx");
+    }
+
+    /// <summary>
+    /// Retrieves every persistent cache entry, grouped into a display-friendly family/season/detail
+    /// summary for the admin cache management page.
+    /// </summary>
+    [HttpGet("cache")]
+    public async Task<ActionResult<IEnumerable<CacheEntryDTO>>> GetCacheEntries()
+    {
+        var entries = await _adminModule.GetCacheEntriesAsync();
+
+        return Ok(entries.Select(CacheEntryMapper.ToDTO));
+    }
+
+    /// <summary>
+    /// Retrieves the site's CollegeFootballData.com API account status (remaining/used calls, tier,
+    /// reset date, request totals), cached server-side to avoid burning API quota on every page load.
+    /// </summary>
+    [HttpGet("cfbd-usage")]
+    public async Task<ActionResult<CFBDUsageDTO>> GetCFBDUsage([FromQuery] bool forceRefresh = false)
+    {
+        var usage = await _adminModule.GetCFBDUsageAsync(forceRefresh);
+
+        return Ok(CFBDUsageMapper.ToDTO(usage));
     }
 
     /// <summary>

@@ -1412,6 +1412,38 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task GetCacheEntriesAsync_MapsEachEntryToASummary()
+    {
+        var metadata = new List<CacheEntryMetadata>
+        {
+            new() { CacheKey = "teams_2024", CachedAt = DateTime.UtcNow, ExpiresAt = DateTime.UtcNow.AddHours(1), SizeBytes = 100 },
+            new() { CacheKey = "conferences", CachedAt = DateTime.UtcNow, ExpiresAt = DateTime.UtcNow.AddHours(1), SizeBytes = 50 }
+        };
+        _mockCache.Setup(x => x.GetAllEntriesMetadataAsync()).ReturnsAsync(metadata);
+
+        var result = (await _adminModule.GetCacheEntriesAsync()).ToList();
+
+        Assert.Equal(2, result.Count);
+        Assert.Equal("Teams", result[0].Family);
+        Assert.Equal(2024, result[0].Season);
+        Assert.Equal("Conferences", result[1].Family);
+        Assert.Null(result[1].Season);
+    }
+
+    [Fact]
+    public async Task GetCFBDUsageAsync_DelegatesToDataService_WithForceRefreshFlag()
+    {
+        var usage = new CFBDUsage { RemainingCalls = 42 };
+
+        _mockDataService.Setup(x => x.GetCFBDUsageAsync(true)).ReturnsAsync(usage);
+
+        var result = await _adminModule.GetCFBDUsageAsync(forceRefresh: true);
+
+        Assert.Equal(42, result.RemainingCalls);
+        _mockDataService.Verify(x => x.GetCFBDUsageAsync(true), Times.Once);
+    }
+
+    [Fact]
     public async Task GetPredictionsAsync_CallsBothPredictionsModuleMethods()
     {
         _mockPredictionsModule.Setup(x => x.GetAsync(2024, 5))
@@ -1672,5 +1704,27 @@ public class AdminModuleTests
         var result = await _adminModule.RefreshSeasonCacheAsync(2024, 5);
 
         Assert.Equal(2, result);
+    }
+
+    [Fact]
+    public async Task RemoveCacheEntriesAsync_DelegatesToCache()
+    {
+        _mockCache.Setup(x => x.RemoveManyAsync(It.IsAny<IEnumerable<string>>())).ReturnsAsync(2);
+
+        var result = await _adminModule.RemoveCacheEntriesAsync(["teams_2024", "conferences"]);
+
+        Assert.Equal(2, result);
+        _mockCache.Verify(x => x.RemoveManyAsync(It.IsAny<IEnumerable<string>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RemoveCacheEntryAsync_DelegatesToCache()
+    {
+        _mockCache.Setup(x => x.RemoveAsync("teams_2024")).ReturnsAsync(true);
+
+        var result = await _adminModule.RemoveCacheEntryAsync("teams_2024");
+
+        Assert.True(result);
+        _mockCache.Verify(x => x.RemoveAsync("teams_2024"), Times.Once);
     }
 }

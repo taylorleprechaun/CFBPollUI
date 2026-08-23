@@ -5,6 +5,7 @@ import type { AlgorithmVersion } from './algorithm-versions';
 
 import { BUTTON_PRIMARY, SELECT_BASE } from '../ui/button-styles';
 import { AlgorithmVersionPicker } from './algorithm-version-picker';
+import { WeekSelect } from './week-select';
 
 interface ExperimentalCalculateSectionProps {
   isRunning: boolean;
@@ -36,7 +37,6 @@ export function ExperimentalCalculateSection({
   weeksLoading,
 }: ExperimentalCalculateSectionProps) {
   const seasonId = useId();
-  const weekId = useId();
 
   return (
     <div className="bg-surface border border-border rounded-xl p-4 sm:p-6">
@@ -63,22 +63,7 @@ export function ExperimentalCalculateSection({
             ))}
           </select>
         </div>
-        <div>
-          <label htmlFor={weekId} className="block text-sm font-medium text-text-secondary mb-1">
-            Week
-          </label>
-          <select
-            id={weekId}
-            value={selectedWeek ?? ''}
-            onChange={(e) => onWeekChange(Number(e.target.value))}
-            disabled={weeksLoading}
-            className={`px-3 py-2 ${SELECT_BASE}`}
-          >
-            {weeks.map((w) => (
-              <option key={w.weekNumber} value={w.weekNumber}>{w.label}</option>
-            ))}
-          </select>
-        </div>
+        <WeekSelect onWeekChange={onWeekChange} selectedWeek={selectedWeek} weeks={weeks} weeksLoading={weeksLoading} />
         <AlgorithmVersionPicker onChange={onSelectedVersionsChange} selectedVersions={selectedVersions} />
         <button
           onClick={onRun}

@@ -36,6 +36,31 @@ public class CacheData : ICacheData
         return rowsAffected;
     }
 
+    public async Task<IEnumerable<CacheEntryMetadata>> GetAllEntriesMetadataAsync()
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT CacheKey, CachedAt, ExpiresAt, length(Data) AS SizeBytes FROM CacheEntry ORDER BY CacheKey";
+
+        await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
+
+        var entries = new List<CacheEntryMetadata>();
+        while (await reader.ReadAsync().ConfigureAwait(false))
+        {
+            entries.Add(new CacheEntryMetadata
+            {
+                CacheKey = reader.GetString(0),
+                CachedAt = DateTime.Parse(reader.GetString(1), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
+                ExpiresAt = DateTime.Parse(reader.GetString(2), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
+                SizeBytes = reader.GetInt64(3)
+            });
+        }
+
+        return entries;
+    }
+
     public async Task<CacheDataEntry?> GetEntryAsync(string key)
     {
         await using var connection = new SqliteConnection(_connectionString);
@@ -118,6 +143,34 @@ public class CacheData : ICacheData
         var rowsAffected = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
 
         _logger.LogDebug("Removed {Count} cache entries with prefix {Prefix}", rowsAffected, prefix);
+
+        return rowsAffected;
+    }
+
+    public async Task<int> RemoveManyAsync(IEnumerable<string> keys)
+    {
+        ArgumentNullException.ThrowIfNull(keys);
+
+        var keyList = keys.ToList();
+        if (keyList.Count == 0)
+            return 0;
+
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
+        await using var command = connection.CreateCommand();
+        var parameterNames = new string[keyList.Count];
+        for (var i = 0; i < keyList.Count; i++)
+        {
+            var parameterName = $"@p{i}";
+            parameterNames[i] = parameterName;
+            command.Parameters.AddWithValue(parameterName, keyList[i]);
+        }
+        command.CommandText = $"DELETE FROM CacheEntry WHERE CacheKey IN ({string.Join(", ", parameterNames)})";
+
+        var rowsAffected = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
+
+        _logger.LogDebug("Removed {Count} cache entries by key list", rowsAffected);
 
         return rowsAffected;
     }

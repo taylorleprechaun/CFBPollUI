@@ -358,6 +358,17 @@ public class AdminModule : IAdminModule
         return _excelExportModule.GenerateRankingsWorkbook(snapshot);
     }
 
+    public async Task<IEnumerable<CacheEntrySummary>> GetCacheEntriesAsync()
+    {
+        var entries = await _cache.GetAllEntriesMetadataAsync().ConfigureAwait(false);
+        return entries.Select(CacheKeyDescriptor.Describe);
+    }
+
+    public async Task<CFBDUsage> GetCFBDUsageAsync(bool forceRefresh = false)
+    {
+        return await _dataService.GetCFBDUsageAsync(forceRefresh).ConfigureAwait(false);
+    }
+
     public async Task<GetPredictionsResult?> GetPredictionsAsync(int season, int week)
     {
         var predictionsTask = _predictionsModule.GetAsync(season, week);
@@ -446,6 +457,16 @@ public class AdminModule : IAdminModule
 
         _logger.LogInformation("Removed {Count} cached entries for season {Season}, week {Week}", removed, season, week);
         return removed;
+    }
+
+    public async Task<int> RemoveCacheEntriesAsync(IEnumerable<string> keys)
+    {
+        return await _cache.RemoveManyAsync(keys).ConfigureAwait(false);
+    }
+
+    public async Task<bool> RemoveCacheEntryAsync(string key)
+    {
+        return await _cache.RemoveAsync(key).ConfigureAwait(false);
     }
 
     private async Task<ExperimentalPredictionsResult> CalculateThrottledExperimentalPredictionsAsync(

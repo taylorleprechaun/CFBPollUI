@@ -3,6 +3,7 @@ import { useId } from 'react';
 
 import type { PageVisibility } from '../schemas';
 
+import { CfbdUsageSection } from '../components/admin';
 import { useAuth } from '../hooks/use-auth';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { usePageVisibility } from '../hooks/use-page-visibility';
@@ -92,6 +93,8 @@ export function SettingsPage() {
           <p className="mt-3 text-sm text-red-600">Failed to update page visibility</p>
         )}
       </div>
+
+      <CfbdUsageSection token={token} />
     </div>
   );
 }

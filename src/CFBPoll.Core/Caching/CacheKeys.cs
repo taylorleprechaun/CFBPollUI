@@ -2,6 +2,7 @@ namespace CFBPoll.Core.Caching;
 
 public static class CacheKeys
 {
+    public const string CFBD_USAGE = "cfbdUsage";
     public const string CONFERENCES = "conferences";
     public const string MAX_SEASON_YEAR = "maxSeasonYear";
 

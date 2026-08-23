@@ -26,6 +26,7 @@ const ADMIN_ITEMS: NavItem[] = [
   { label: 'Predictions', to: '/admin/predictions' },
   { label: 'Experimental', to: '/admin/experimental' },
   { label: 'Settings', to: '/admin/settings' },
+  { label: 'Cache', to: '/admin/cache' },
 ];
 
 interface NavGroup {

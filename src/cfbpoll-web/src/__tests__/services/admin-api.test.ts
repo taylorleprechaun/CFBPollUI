@@ -6,10 +6,14 @@ import {
   calculateExperimentalSeasonPredictions,
   calculatePredictions,
   calculateRankings,
+  deleteCacheEntries,
+  deleteCacheEntry,
   deletePredictions,
   deleteSnapshot,
   downloadExperimentalExport,
   downloadExport,
+  fetchCacheEntries,
+  fetchCfbdUsage,
   fetchPrediction,
   fetchPredictionsSummaries,
   fetchSnapshots,
@@ -259,6 +263,86 @@ describe('Admin API service', () => {
     });
   });
 
+  describe('deleteCacheEntries', () => {
+    it('returns removedCount from the response', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ removedCount: 2 }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await deleteCacheEntries('my-token', ['teams_2024', 'conferences']);
+
+      expect(result).toBe(2);
+    });
+
+    it('sends DELETE with a JSON body of keys and auth header', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ removedCount: 2 }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await deleteCacheEntries('my-token', ['teams_2024', 'conferences']);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/cache'),
+        expect.objectContaining({
+          method: 'DELETE',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+            'Content-Type': 'application/json',
+          }),
+          body: JSON.stringify(['teams_2024', 'conferences']),
+        })
+      );
+    });
+
+    it('throws on failed delete', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: () => Promise.resolve({ message: 'At least one cache key is required' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(deleteCacheEntries('token', [])).rejects.toThrow('At least one cache key is required');
+    });
+  });
+
+  describe('deleteCacheEntry', () => {
+    it('sends DELETE to the cache entry endpoint with the key encoded and auth header', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({}),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await deleteCacheEntry('my-token', 'teams_2024');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/cache/teams_2024'),
+        expect.objectContaining({
+          method: 'DELETE',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+          }),
+        })
+      );
+    });
+
+    it('throws on failed delete', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: () => Promise.resolve({ message: 'Cache entry not found' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(deleteCacheEntry('token', 'teams_2024')).rejects.toThrow('Cache entry not found');
+    });
+  });
+
   describe('deletePredictions', () => {
     it('sends DELETE to prediction endpoint with auth header', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
@@ -435,6 +519,117 @@ describe('Admin API service', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await expect(downloadExport('token', 2024, 5)).rejects.toThrow('Not found');
+    });
+  });
+
+  describe('fetchCacheEntries', () => {
+    it('returns the parsed list of cache entries', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve([
+            {
+              cachedAt: '2026-08-01T00:00:00Z',
+              cacheKey: 'teams_2024',
+              detail: '',
+              expiresAt: '9999-12-31T23:59:59.9999999Z',
+              family: 'Teams',
+              season: 2024,
+              sizeBytes: 100,
+            },
+          ]),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchCacheEntries('my-token');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].cacheKey).toBe('teams_2024');
+    });
+
+    it('sends GET to the cache endpoint with auth header', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve([]),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await fetchCacheEntries('my-token');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/cache'),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+          }),
+        })
+      );
+    });
+  });
+
+  describe('fetchCfbdUsage', () => {
+    it('appends forceRefresh query param when requested', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            monthlyLimit: 1000,
+            remainingCalls: 850,
+            resetAt: '2026-09-01T00:00:00Z',
+            tierName: 'Patron',
+            topEndpoints: [],
+            totalRequestsInWindow: 150,
+            usedCalls: 150,
+          }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await fetchCfbdUsage('my-token', true);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/cfbd-usage?forceRefresh=true'),
+        expect.anything()
+      );
+    });
+
+    it('sends GET to cfbd-usage with auth header and no forceRefresh param by default', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            monthlyLimit: 1000,
+            remainingCalls: 900,
+            resetAt: '2026-09-01T00:00:00Z',
+            tierName: 'Patron',
+            topEndpoints: [],
+            totalRequestsInWindow: 100,
+            usedCalls: 100,
+          }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchCfbdUsage('my-token');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringMatching(/\/api\/v1\/admin\/cfbd-usage$/),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+          }),
+        })
+      );
+      expect(result.remainingCalls).toBe(900);
+    });
+
+    it('throws on failed fetch', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ message: 'CFBD unreachable' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(fetchCfbdUsage('token')).rejects.toThrow('CFBD unreachable');
     });
   });
 

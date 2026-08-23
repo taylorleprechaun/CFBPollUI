@@ -31,6 +31,13 @@ public interface ICFBDataService
     Task<IEnumerable<CalendarWeek>> GetCalendarAsync(int year);
 
     /// <summary>
+    /// Retrieves the site's CollegeFootballData.com API account status: quota, tier, and recent usage.
+    /// </summary>
+    /// <param name="forceRefresh">Whether to bypass any cached value and fetch live data.</param>
+    /// <returns>The current CFBD API usage snapshot.</returns>
+    Task<CFBDUsage> GetCFBDUsageAsync(bool forceRefresh = false);
+
+    /// <summary>
     /// Retrieves all FBS conferences.
     /// </summary>
     /// <returns>Collection of FBS conferences.</returns>

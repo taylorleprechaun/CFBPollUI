@@ -2,7 +2,9 @@ import { useEffect, useId, useRef, useState } from 'react';
 
 import type { Week } from '../../types';
 
+import { WEEK_GAP_TOOLTIP_SUMMARY } from '../../lib/week-gap-tooltip';
 import { BUTTON_GHOST, BUTTON_PRIMARY, BUTTON_SECONDARY } from '../ui/button-styles';
+import { InfoTooltip } from '../ui/info-tooltip';
 
 interface CompareSeasonWeeksModalProps {
   onCancel: () => void;
@@ -88,9 +90,12 @@ export function CompareSeasonWeeksModal({ onCancel, onConfirm, season, weeks }: 
         className="bg-surface rounded-xl shadow-xl max-w-md w-full mx-4 p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="compare-season-weeks-title" className="text-lg font-semibold text-text-primary mb-4">
-          Compare Season {season}
-        </h2>
+        <div className="flex items-center gap-1.5 mb-4">
+          <h2 id="compare-season-weeks-title" className="text-lg font-semibold text-text-primary">
+            Compare Season {season}
+          </h2>
+          <InfoTooltip statName="Week scheduling gap" summary={WEEK_GAP_TOOLTIP_SUMMARY} />
+        </div>
 
         <fieldset className="mb-4">
           <legend className="sr-only">Weeks to include</legend>
