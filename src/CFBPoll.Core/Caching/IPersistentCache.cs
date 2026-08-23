@@ -1,3 +1,5 @@
+using CFBPoll.Core.Models;
+
 namespace CFBPoll.Core.Caching;
 
 /// <summary>
@@ -10,6 +12,12 @@ public interface IPersistentCache
     /// </summary>
     /// <returns>The number of expired entries that were removed.</returns>
     Task<int> CleanupExpiredAsync();
+
+    /// <summary>
+    /// Retrieves metadata (key, size, cached/expiration timestamps) for every cache entry, without
+    /// loading the underlying compressed data.
+    /// </summary>
+    Task<IEnumerable<CacheEntryMetadata>> GetAllEntriesMetadataAsync();
 
     /// <summary>
     /// Retrieves a cached item by key.
@@ -32,6 +40,13 @@ public interface IPersistentCache
     /// <param name="prefix">The key prefix to match.</param>
     /// <returns>The number of entries removed.</returns>
     Task<int> RemoveByPrefixAsync(string prefix);
+
+    /// <summary>
+    /// Removes all cached items matching any of the given keys.
+    /// </summary>
+    /// <param name="keys">The cache keys to remove.</param>
+    /// <returns>The number of entries removed.</returns>
+    Task<int> RemoveManyAsync(IEnumerable<string> keys);
 
     /// <summary>
     /// Stores an item in the cache with the specified expiration.

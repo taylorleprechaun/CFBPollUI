@@ -47,6 +47,21 @@ public class CacheModuleTests
     }
 
     [Fact]
+    public async Task GetAllEntriesMetadataAsync_DelegatesToCacheData()
+    {
+        var metadata = new List<CacheEntryMetadata>
+        {
+            new() { CacheKey = "teams_2024", CachedAt = DateTime.UtcNow, ExpiresAt = DateTime.UtcNow.AddHours(1), SizeBytes = 100 }
+        };
+        _mockCacheData.Setup(x => x.GetAllEntriesMetadataAsync()).ReturnsAsync(metadata);
+
+        var result = await _cacheModule.GetAllEntriesMetadataAsync();
+
+        Assert.Same(metadata, result);
+        _mockCacheData.Verify(x => x.GetAllEntriesMetadataAsync(), Times.Once);
+    }
+
+    [Fact]
     public async Task GetAsync_HandlesComplexObjects()
     {
         var testData = new ComplexTestData
@@ -218,6 +233,32 @@ public class CacheModuleTests
     }
 
     [Fact]
+    public async Task RemoveManyAsync_DelegatesToCacheData()
+    {
+        _mockCacheData.Setup(x => x.RemoveManyAsync(It.IsAny<IEnumerable<string>>())).ReturnsAsync(2);
+
+        var result = await _cacheModule.RemoveManyAsync(["teams_2024", "conferences"]);
+
+        Assert.Equal(2, result);
+        _mockCacheData.Verify(x => x.RemoveManyAsync(It.IsAny<IEnumerable<string>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RemoveManyAsync_ReturnsZero_AndSkipsCacheData_WhenKeysIsEmpty()
+    {
+        var result = await _cacheModule.RemoveManyAsync([]);
+
+        Assert.Equal(0, result);
+        _mockCacheData.Verify(x => x.RemoveManyAsync(It.IsAny<IEnumerable<string>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RemoveManyAsync_ThrowsOnNullKeys()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _cacheModule.RemoveManyAsync(null!));
+    }
+
+    [Fact]
     public async Task SetAsync_CompressesAndStoresData()
     {
         var testData = new TestData { Name = "Test", Value = 42 };
@@ -293,16 +334,16 @@ public class CacheModuleTests
         return output.ToArray();
     }
 
-    private class TestData
-    {
-        public string Name { get; set; } = string.Empty;
-        public int Value { get; set; }
-    }
-
     private class ComplexTestData
     {
         public int ID { get; set; }
         public List<string> Items { get; set; } = [];
         public TestData? Nested { get; set; }
+    }
+
+    private class TestData
+    {
+        public string Name { get; set; } = string.Empty;
+        public int Value { get; set; }
     }
 }

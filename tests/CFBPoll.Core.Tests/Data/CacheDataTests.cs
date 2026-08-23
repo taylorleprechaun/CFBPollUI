@@ -115,6 +115,87 @@ public class CacheDataTests
     }
 
     [Fact]
+    public async Task GetAllEntriesMetadataAsync_ExcludesData_ReturnsSizeInstead()
+    {
+        var (data, tempPath) = CreateCacheDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SetEntryAsync(new CacheDataEntry
+            {
+                CacheKey = "teams_2024",
+                CachedAt = DateTime.UtcNow,
+                Data = [1, 2, 3, 4, 5],
+                ExpiresAt = DateTime.UtcNow.AddHours(1)
+            });
+
+            var entries = (await data.GetAllEntriesMetadataAsync()).ToList();
+
+            var entry = Assert.Single(entries);
+            Assert.Equal("teams_2024", entry.CacheKey);
+            Assert.Equal(5, entry.SizeBytes);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetAllEntriesMetadataAsync_ReturnsAllEntries_OrderedByKey()
+    {
+        var (data, tempPath) = CreateCacheDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SetEntryAsync(new CacheDataEntry
+            {
+                CacheKey = "teams_2024",
+                CachedAt = DateTime.UtcNow,
+                Data = [1, 2, 3],
+                ExpiresAt = DateTime.UtcNow.AddHours(1)
+            });
+            await data.SetEntryAsync(new CacheDataEntry
+            {
+                CacheKey = "conferences",
+                CachedAt = DateTime.UtcNow,
+                Data = [1, 2],
+                ExpiresAt = DateTime.UtcNow.AddHours(1)
+            });
+
+            var entries = (await data.GetAllEntriesMetadataAsync()).ToList();
+
+            Assert.Equal(2, entries.Count);
+            Assert.Equal("conferences", entries[0].CacheKey);
+            Assert.Equal("teams_2024", entries[1].CacheKey);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetAllEntriesMetadataAsync_ReturnsEmpty_WhenTableIsEmpty()
+    {
+        var (data, tempPath) = CreateCacheDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var entries = await data.GetAllEntriesMetadataAsync();
+
+            Assert.Empty(entries);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
     public async Task GetEntryAsync_PreservesDateTimes()
     {
         var (data, tempPath) = CreateCacheDataWithFile();
@@ -381,6 +462,110 @@ public class CacheDataTests
 
             await Assert.ThrowsAsync<ArgumentException>(() =>
                 data.RemoveByPrefixAsync("   "));
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task RemoveManyAsync_IgnoresNonExistentKeys()
+    {
+        var (data, tempPath) = CreateCacheDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SetEntryAsync(new CacheDataEntry
+            {
+                CacheKey = "teams_2024",
+                CachedAt = DateTime.UtcNow,
+                Data = [1, 2, 3],
+                ExpiresAt = DateTime.UtcNow.AddHours(1)
+            });
+
+            var removed = await data.RemoveManyAsync(["nonexistent_1", "nonexistent_2"]);
+
+            Assert.Equal(0, removed);
+            Assert.NotNull(await data.GetEntryAsync("teams_2024"));
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task RemoveManyAsync_RemovesMatchingSubset()
+    {
+        var (data, tempPath) = CreateCacheDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SetEntryAsync(new CacheDataEntry
+            {
+                CacheKey = "teams_2024",
+                CachedAt = DateTime.UtcNow,
+                Data = [1, 2, 3],
+                ExpiresAt = DateTime.UtcNow.AddHours(1)
+            });
+            await data.SetEntryAsync(new CacheDataEntry
+            {
+                CacheKey = "conferences",
+                CachedAt = DateTime.UtcNow,
+                Data = [4, 5, 6],
+                ExpiresAt = DateTime.UtcNow.AddHours(1)
+            });
+            await data.SetEntryAsync(new CacheDataEntry
+            {
+                CacheKey = "maxSeasonYear",
+                CachedAt = DateTime.UtcNow,
+                Data = [7, 8, 9],
+                ExpiresAt = DateTime.UtcNow.AddHours(1)
+            });
+
+            var removed = await data.RemoveManyAsync(["teams_2024", "conferences"]);
+
+            Assert.Equal(2, removed);
+            Assert.Null(await data.GetEntryAsync("teams_2024"));
+            Assert.Null(await data.GetEntryAsync("conferences"));
+            Assert.NotNull(await data.GetEntryAsync("maxSeasonYear"));
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task RemoveManyAsync_ReturnsZero_WhenKeysIsEmpty()
+    {
+        var (data, tempPath) = CreateCacheDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var removed = await data.RemoveManyAsync([]);
+
+            Assert.Equal(0, removed);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task RemoveManyAsync_ThrowsOnNullKeys()
+    {
+        var (data, tempPath) = CreateCacheDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await Assert.ThrowsAsync<ArgumentNullException>(() => data.RemoveManyAsync(null!));
         }
         finally
         {

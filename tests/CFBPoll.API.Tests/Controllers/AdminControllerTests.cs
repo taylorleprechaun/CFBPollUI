@@ -278,6 +278,55 @@ public class AdminControllerTests
     }
 
     [Fact]
+    public async Task DeleteCacheEntries_EmptyKeys_ReturnsBadRequest()
+    {
+        var result = await _controller.DeleteCacheEntries([]);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        _mockAdminModule.Verify(x => x.RemoveCacheEntriesAsync(It.IsAny<IEnumerable<string>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteCacheEntries_KeysProvided_ReturnsRemovedCount()
+    {
+        _mockAdminModule.Setup(x => x.RemoveCacheEntriesAsync(It.IsAny<IEnumerable<string>>())).ReturnsAsync(2);
+
+        var result = await _controller.DeleteCacheEntries(["teams_2024", "conferences"]);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<RemoveCacheEntriesResponseDTO>(okResult.Value);
+        Assert.Equal(2, response.RemovedCount);
+    }
+    [Fact]
+    public async Task DeleteCacheEntries_NullKeys_ReturnsBadRequest()
+    {
+        var result = await _controller.DeleteCacheEntries(null!);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        _mockAdminModule.Verify(x => x.RemoveCacheEntriesAsync(It.IsAny<IEnumerable<string>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteCacheEntry_Found_ReturnsOk()
+    {
+        _mockAdminModule.Setup(x => x.RemoveCacheEntryAsync("teams_2024")).ReturnsAsync(true);
+
+        var result = await _controller.DeleteCacheEntry("teams_2024");
+
+        Assert.IsType<OkResult>(result);
+    }
+
+    [Fact]
+    public async Task DeleteCacheEntry_NotFound_ReturnsNotFound()
+    {
+        _mockAdminModule.Setup(x => x.RemoveCacheEntryAsync("teams_2024")).ReturnsAsync(false);
+
+        var result = await _controller.DeleteCacheEntry("teams_2024");
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
     public async Task DeletePrediction_Found_ReturnsOk()
     {
         _mockAdminModule.Setup(x => x.DeletePredictionsAsync(2024, 5)).ReturnsAsync(true);
@@ -334,6 +383,25 @@ public class AdminControllerTests
         var fileResult = Assert.IsType<FileContentResult>(result);
         Assert.Equal("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileResult.ContentType);
         Assert.Equal("Rankings_Experimental_V2_2024_Week6.xlsx", fileResult.FileDownloadName);
+    }
+
+    [Fact]
+    public async Task GetCacheEntries_ReturnsMappedEntries()
+    {
+        var entries = new List<CacheEntrySummary>
+        {
+            new() { CacheKey = "teams_2024", Family = "Teams", Season = 2024, CachedAt = DateTime.UtcNow, ExpiresAt = DateTime.UtcNow.AddHours(1), SizeBytes = 100 }
+        };
+        _mockAdminModule.Setup(x => x.GetCacheEntriesAsync()).ReturnsAsync(entries);
+
+        var result = await _controller.GetCacheEntries();
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsAssignableFrom<IEnumerable<CacheEntryDTO>>(okResult.Value);
+        var entry = Assert.Single(response);
+        Assert.Equal("teams_2024", entry.CacheKey);
+        Assert.Equal("Teams", entry.Family);
+        Assert.Equal(2024, entry.Season);
     }
 
     [Fact]
