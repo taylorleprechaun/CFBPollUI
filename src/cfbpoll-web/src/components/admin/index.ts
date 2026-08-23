@@ -27,3 +27,4 @@ export { SeasonPredictionsComparisonTable } from './season-predictions-compariso
 export { SeasonPredictionsWeekTable } from './season-predictions-week-table';
 export { SuccessCheckmark } from './success-checkmark';
 export type { ActionFeedback } from './types';
+export { WeekSelect } from './week-select';

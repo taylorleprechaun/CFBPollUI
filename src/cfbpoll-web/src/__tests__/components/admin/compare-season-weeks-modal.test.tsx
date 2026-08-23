@@ -90,7 +90,7 @@ describe('CompareSeasonWeeksModal', () => {
   it('focuses the first focusable element on mount', () => {
     render(<CompareSeasonWeeksModal {...defaultProps} />);
 
-    expect(document.activeElement).toBe(screen.getByText('Select All'));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'About Week scheduling gap' }));
   });
 
   it('has correct aria attributes', () => {
@@ -158,7 +158,7 @@ describe('CompareSeasonWeeksModal', () => {
   it('traps focus backward from the first element to the last on Shift+Tab', () => {
     render(<CompareSeasonWeeksModal {...defaultProps} />);
 
-    expect(document.activeElement).toBe(screen.getByText('Select All'));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'About Week scheduling gap' }));
 
     fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
 
@@ -172,7 +172,7 @@ describe('CompareSeasonWeeksModal', () => {
 
     fireEvent.keyDown(document, { key: 'Tab' });
 
-    expect(document.activeElement).toBe(screen.getByText('Select All'));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'About Week scheduling gap' }));
   });
 
   it('unchecks all week checkboxes when Deselect All is clicked', async () => {

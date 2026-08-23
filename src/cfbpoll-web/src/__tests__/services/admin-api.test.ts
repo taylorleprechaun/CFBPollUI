@@ -10,6 +10,7 @@ import {
   deleteSnapshot,
   downloadExperimentalExport,
   downloadExport,
+  fetchCfbdUsage,
   fetchPrediction,
   fetchPredictionsSummaries,
   fetchSnapshots,
@@ -435,6 +436,72 @@ describe('Admin API service', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await expect(downloadExport('token', 2024, 5)).rejects.toThrow('Not found');
+    });
+  });
+
+  describe('fetchCfbdUsage', () => {
+    it('appends forceRefresh query param when requested', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            monthlyLimit: 1000,
+            remainingCalls: 850,
+            resetAt: '2026-09-01T00:00:00Z',
+            tierName: 'Patron',
+            topEndpoints: [],
+            totalRequestsInWindow: 150,
+            usedCalls: 150,
+          }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await fetchCfbdUsage('my-token', true);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/cfbd-usage?forceRefresh=true'),
+        expect.anything()
+      );
+    });
+
+    it('sends GET to cfbd-usage with auth header and no forceRefresh param by default', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            monthlyLimit: 1000,
+            remainingCalls: 900,
+            resetAt: '2026-09-01T00:00:00Z',
+            tierName: 'Patron',
+            topEndpoints: [],
+            totalRequestsInWindow: 100,
+            usedCalls: 100,
+          }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchCfbdUsage('my-token');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringMatching(/\/api\/v1\/admin\/cfbd-usage$/),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+          }),
+        })
+      );
+      expect(result.remainingCalls).toBe(900);
+    });
+
+    it('throws on failed fetch', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ message: 'CFBD unreachable' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(fetchCfbdUsage('token')).rejects.toThrow('CFBD unreachable');
     });
   });
 

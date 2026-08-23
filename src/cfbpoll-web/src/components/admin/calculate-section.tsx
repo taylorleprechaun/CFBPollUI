@@ -5,6 +5,7 @@ import type { ActionFeedback } from './types';
 
 import { BUTTON_PRIMARY, BUTTON_SECONDARY, SELECT_BASE } from '../ui/button-styles';
 import { FeedbackIndicator } from './feedback-indicator';
+import { WeekSelect } from './week-select';
 
 interface CalculateSectionProps {
   buttonLabel?: string;
@@ -46,7 +47,6 @@ export function CalculateSection({
   weeksLoading,
 }: CalculateSectionProps) {
   const seasonId = useId();
-  const weekId = useId();
   const refreshFeedbackKey = `refresh-cache-${selectedSeason}-${selectedWeek}`;
 
   return (
@@ -90,22 +90,7 @@ export function CalculateSection({
             ))}
           </select>
         </div>
-        <div>
-          <label htmlFor={weekId} className="block text-sm font-medium text-text-secondary mb-1">
-            Week
-          </label>
-          <select
-            id={weekId}
-            value={selectedWeek ?? ''}
-            onChange={(e) => onWeekChange(Number(e.target.value))}
-            disabled={weeksLoading}
-            className={`px-3 py-2 ${SELECT_BASE}`}
-          >
-            {weeks.map((w) => (
-              <option key={w.weekNumber} value={w.weekNumber}>{w.label}</option>
-            ))}
-          </select>
-        </div>
+        <WeekSelect onWeekChange={onWeekChange} selectedWeek={selectedWeek} weeks={weeks} weeksLoading={weeksLoading} />
         <button
           onClick={onCalculate}
           disabled={isCalculating || selectedSeason === null || selectedWeek === null}

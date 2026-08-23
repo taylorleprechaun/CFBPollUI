@@ -324,14 +324,31 @@ public class CachingCFBDataServiceTests
     [Fact]
     public async Task GetCFBDUsageAsync_FetchesFromInnerService_WhenCacheMiss()
     {
-        var freshUsage = new CFBDUsage { RemainingCalls = 75 };
+        var freshUsage = new CFBDUsage
+        {
+            MonthlyLimit = 1000,
+            RemainingCalls = 75,
+            ResetAt = new DateTime(2026, 9, 1),
+            TierName = "Patron",
+            TopEndpoints = [new CFBDTopEndpoint { Endpoint = "/games", RequestCount = 42 }],
+            TotalRequestsInWindow = 925,
+            UsedCalls = 925
+        };
 
         _mockInnerService.Setup(x => x.GetCFBDUsageAsync(false))
             .ReturnsAsync(freshUsage);
 
         var result = await _service.GetCFBDUsageAsync();
 
+        Assert.Equal(1000, result.MonthlyLimit);
         Assert.Equal(75, result.RemainingCalls);
+        Assert.Equal(new DateTime(2026, 9, 1), result.ResetAt);
+        Assert.Equal("Patron", result.TierName);
+        Assert.Equal(925, result.TotalRequestsInWindow);
+        Assert.Equal(925, result.UsedCalls);
+        var endpoint = Assert.Single(result.TopEndpoints);
+        Assert.Equal("/games", endpoint.Endpoint);
+        Assert.Equal(42, endpoint.RequestCount);
         _mockInnerService.Verify(x => x.GetCFBDUsageAsync(false), Times.Once);
         _mockCache.Verify(x => x.SetAsync("cfbdUsage", freshUsage, It.IsAny<DateTime>()), Times.Once);
     }

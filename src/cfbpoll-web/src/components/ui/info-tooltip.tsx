@@ -5,7 +5,7 @@ import { TRACK_RECORD_EXPLAINED_PATH } from '../../lib/track-record-stat-info';
 import { InfoIcon } from './icons';
 
 interface InfoTooltipProps {
-  anchor: string;
+  anchor?: string;
   statName: string;
   summary: string;
 }
@@ -75,13 +75,15 @@ export function InfoTooltip({ anchor, statName, summary }: InfoTooltipProps) {
             className="bg-surface border border-border rounded-lg shadow-lg p-3 text-sm text-text-primary normal-case tracking-normal font-normal text-left"
           >
             <p id={summaryId}>{summary}</p>
-            <Link
-              to={`${TRACK_RECORD_EXPLAINED_PATH}#${anchor}`}
-              onClick={() => setIsOpen(false)}
-              className="mt-2 inline-block text-accent hover:underline text-xs font-medium"
-            >
-              Full explanation of {statName}
-            </Link>
+            {anchor && (
+              <Link
+                to={`${TRACK_RECORD_EXPLAINED_PATH}#${anchor}`}
+                onClick={() => setIsOpen(false)}
+                className="mt-2 inline-block text-accent hover:underline text-xs font-medium"
+              >
+                Full explanation of {statName}
+              </Link>
+            )}
           </div>
         </div>
       )}

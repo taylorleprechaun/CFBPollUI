@@ -55,6 +55,20 @@ describe('useCfbdUsage', () => {
     expect(result.current.data).toEqual(mockUsage);
   });
 
+  it('refresh() rejects when there is no token', async () => {
+    const { result } = renderHook(() => useCfbdUsage(null), {
+      wrapper: createWrapper(),
+    });
+
+    act(() => {
+      result.current.refresh();
+    });
+
+    await waitFor(() => expect(result.current.isRefreshing).toBe(false));
+
+    expect(fetchCfbdUsage).not.toHaveBeenCalled();
+  });
+
   it('refresh() forces a live fetch and writes the result into the cache', async () => {
     const refreshedUsage = { ...mockUsage, remainingCalls: 850 };
     vi.mocked(fetchCfbdUsage).mockResolvedValueOnce(mockUsage).mockResolvedValueOnce(refreshedUsage);
