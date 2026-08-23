@@ -4,6 +4,7 @@ export { AlgorithmVersionPicker } from './algorithm-version-picker';
 export { ALGORITHM_VERSIONS, DEFAULT_ALGORITHM_VERSIONS } from './algorithm-versions';
 export type { AlgorithmVersion } from './algorithm-versions';
 export { CalculateSection } from './calculate-section';
+export { CfbdUsageSection } from './cfbd-usage-section';
 export { CompareSeasonWeeksModal } from './compare-season-weeks-modal';
 export { ExperimentalCalculateSection } from './experimental-calculate-section';
 export { ExperimentalPredictionsCalculateSection } from './experimental-predictions-calculate-section';

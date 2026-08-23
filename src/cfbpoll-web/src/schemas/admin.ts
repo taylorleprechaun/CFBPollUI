@@ -95,6 +95,21 @@ export const PredictionsSummarySchema = z.object({
 
 export const PredictionsSummariesResponseSchema = z.array(PredictionsSummarySchema);
 
+export const CfbdTopEndpointSchema = z.object({
+  endpoint: z.string(),
+  requestCount: z.number(),
+});
+
+export const CfbdUsageSchema = z.object({
+  monthlyLimit: z.number(),
+  remainingCalls: z.number(),
+  resetAt: z.string(),
+  tierName: z.string(),
+  topEndpoints: z.array(CfbdTopEndpointSchema),
+  totalRequestsInWindow: z.number(),
+  usedCalls: z.number(),
+});
+
 export const RefreshCacheResponseSchema = z.object({
   removedCount: z.number(),
   season: z.number(),
@@ -104,6 +119,8 @@ export const RefreshCacheResponseSchema = z.object({
 export type AdminPredictionsResponse = z.infer<typeof AdminPredictionsResponseSchema>;
 export type CalculatePredictionsResponse = z.infer<typeof CalculatePredictionsResponseSchema>;
 export type CalculateResponse = z.infer<typeof CalculateResponseSchema>;
+export type CfbdTopEndpoint = z.infer<typeof CfbdTopEndpointSchema>;
+export type CfbdUsage = z.infer<typeof CfbdUsageSchema>;
 export type ExperimentalCalculateResponse = z.infer<typeof ExperimentalCalculateResponseSchema>;
 export type ExperimentalPredictionsResponse = z.infer<typeof ExperimentalPredictionsResponseSchema>;
 export type GamePrediction = z.infer<typeof GamePredictionSchema>;

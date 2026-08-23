@@ -358,6 +358,11 @@ public class AdminModule : IAdminModule
         return _excelExportModule.GenerateRankingsWorkbook(snapshot);
     }
 
+    public async Task<CFBDUsage> GetCFBDUsageAsync(bool forceRefresh = false)
+    {
+        return await _dataService.GetCFBDUsageAsync(forceRefresh).ConfigureAwait(false);
+    }
+
     public async Task<GetPredictionsResult?> GetPredictionsAsync(int season, int week)
     {
         var predictionsTask = _predictionsModule.GetAsync(season, week);

@@ -67,6 +67,13 @@ public interface IAdminModule
     Task<byte[]?> ExportRankingsAsync(int season, int week);
 
     /// <summary>
+    /// Retrieves the site's CollegeFootballData.com API account status: quota, tier, and recent usage.
+    /// </summary>
+    /// <param name="forceRefresh">Whether to bypass any cached value and fetch live data.</param>
+    /// <returns>The current CFBD API usage snapshot.</returns>
+    Task<CFBDUsage> GetCFBDUsageAsync(bool forceRefresh = false);
+
+    /// <summary>
     /// Retrieves the persisted predictions for the given season and week without recalculating or
     /// re-grading, along with publish/grade status flags. Returns null if no predictions exist for
     /// the week.

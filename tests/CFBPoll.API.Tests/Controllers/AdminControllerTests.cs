@@ -335,6 +335,22 @@ public class AdminControllerTests
         Assert.Equal("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileResult.ContentType);
         Assert.Equal("Rankings_Experimental_V2_2024_Week6.xlsx", fileResult.FileDownloadName);
     }
+
+    [Fact]
+    public async Task GetCFBDUsage_ReturnsUsage()
+    {
+        var usage = new CFBDUsage { RemainingCalls = 150, TierName = "Patron" };
+
+        _mockAdminModule.Setup(x => x.GetCFBDUsageAsync(false)).ReturnsAsync(usage);
+
+        var result = await _controller.GetCFBDUsage();
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<CFBDUsageDTO>(okResult.Value);
+        Assert.Equal(150, response.RemainingCalls);
+        Assert.Equal("Patron", response.TierName);
+    }
+
     [Fact]
     public async Task GetPrediction_NullResult_ReturnsNotFound()
     {

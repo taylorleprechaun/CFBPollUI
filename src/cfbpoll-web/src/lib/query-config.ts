@@ -10,6 +10,7 @@ export const STALE_TIME_SNAPSHOTS = 1000 * 60 * 30; // 30 minutes
 export const STALE_TIME_CONFERENCES = 1000 * 60 * 60 * 24; // 24 hours
 export const STALE_TIME_TRACK_RECORD = 1000 * 60 * 30; // 30 minutes
 export const STALE_TIME_TEAM_PREDICTION_RECORDS = 1000 * 60 * 30; // 30 minutes
+export const STALE_TIME_CFBD_USAGE = 1000 * 60 * 60 * 24; // 24 hours
 
 // Historical seasons (before maxSeason) never change, so treat them as permanently fresh.
 export function getStaleTime(season: number | null, maxSeason: number | null, defaultStaleTime: number): number {

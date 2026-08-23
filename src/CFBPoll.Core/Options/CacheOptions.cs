@@ -5,6 +5,7 @@ public class CacheOptions
     public const string SECTION_NAME = "Cache";
 
     public int CalendarExpirationHours { get; set; } = 168;
+    public int CFBDUsageExpirationHours { get; set; } = 24;
     public int CleanupIntervalMinutes { get; set; } = 60;
     public int CleanupStartupDelayMinutes { get; set; } = 5;
     public int ConferenceExpirationHours { get; set; } = 720;

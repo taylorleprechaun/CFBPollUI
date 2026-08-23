@@ -1412,6 +1412,19 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task GetCFBDUsageAsync_DelegatesToDataService_WithForceRefreshFlag()
+    {
+        var usage = new CFBDUsage { RemainingCalls = 42 };
+
+        _mockDataService.Setup(x => x.GetCFBDUsageAsync(true)).ReturnsAsync(usage);
+
+        var result = await _adminModule.GetCFBDUsageAsync(forceRefresh: true);
+
+        Assert.Equal(42, result.RemainingCalls);
+        _mockDataService.Verify(x => x.GetCFBDUsageAsync(true), Times.Once);
+    }
+
+    [Fact]
     public async Task GetPredictionsAsync_CallsBothPredictionsModuleMethods()
     {
         _mockPredictionsModule.Setup(x => x.GetAsync(2024, 5))

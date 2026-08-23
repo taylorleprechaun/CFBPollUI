@@ -15,6 +15,8 @@ import {
   CalculatePredictionsResponseSchema,
   type CalculateResponse,
   CalculateResponseSchema,
+  type CfbdUsage,
+  CfbdUsageSchema,
   type ExperimentalCalculateResponse,
   ExperimentalCalculateResponseSchema,
   type ExperimentalPredictionsResponse,
@@ -147,6 +149,17 @@ export async function downloadExport(
 
   const blob = await response.blob();
   triggerBlobDownload(blob, `Rankings_${season}_Week${week + 1}.xlsx`);
+}
+
+export async function fetchCfbdUsage(
+  token: string,
+  forceRefresh = false
+): Promise<CfbdUsage> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/cfbd-usage${forceRefresh ? '?forceRefresh=true' : ''}`,
+    withAuth(token)
+  );
+  return parseResponse(response, CfbdUsageSchema);
 }
 
 export async function fetchPrediction(

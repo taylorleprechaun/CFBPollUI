@@ -297,6 +297,7 @@ The frontend runs at `http://localhost:5173`.
 |----------|-------------|
 | `DELETE /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Delete a prediction |
 | `DELETE /api/v1/admin/seasons/{season}/weeks/{week}/snapshot` | Delete a snapshot |
+| `GET /api/v1/admin/cfbd-usage` | Get the site's CollegeFootballData.com API account status (remaining/used calls, tier, reset date, request totals), cached server-side for 24 hours; pass `?forceRefresh=true` to bypass the cache |
 | `GET /api/v1/admin/predictions` | List all persisted prediction summaries |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/export` | Download experimental rankings as Excel for a chosen algorithm version, without persisting or publishing |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Retrieve persisted predictions for a season/week without recalculating or re-grading |

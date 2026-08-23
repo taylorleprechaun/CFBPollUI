@@ -53,6 +53,29 @@ public class CachingCFBDataService : ICFBDataService
             expiresAt).ConfigureAwait(false);
     }
 
+    public async Task<CFBDUsage> GetCFBDUsageAsync(bool forceRefresh = false)
+    {
+        const string cacheKey = CacheKeys.CFBD_USAGE;
+
+        if (!forceRefresh)
+        {
+            var cached = await _cache.GetAsync<CFBDUsage>(cacheKey).ConfigureAwait(false);
+            if (cached is not null)
+            {
+                _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
+                return cached;
+            }
+        }
+
+        _logger.LogDebug("Cache miss for {CacheKey}, fetching from API", cacheKey);
+        var usage = await _innerService.GetCFBDUsageAsync(forceRefresh).ConfigureAwait(false);
+
+        var expiresAt = DateTime.UtcNow.AddHours(_options.CFBDUsageExpirationHours);
+        await _cache.SetAsync(cacheKey, usage, expiresAt).ConfigureAwait(false);
+
+        return usage;
+    }
+
     public async Task<IEnumerable<Conference>> GetConferencesAsync()
     {
         var expiresAt = DateTime.UtcNow.AddHours(_options.ConferenceExpirationHours);

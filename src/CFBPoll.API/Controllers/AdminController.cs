@@ -204,6 +204,18 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
+    /// Retrieves the site's CollegeFootballData.com API account status (remaining/used calls, tier,
+    /// reset date, request totals), cached server-side to avoid burning API quota on every page load.
+    /// </summary>
+    [HttpGet("cfbd-usage")]
+    public async Task<ActionResult<CFBDUsageDTO>> GetCFBDUsage([FromQuery] bool forceRefresh = false)
+    {
+        var usage = await _adminModule.GetCFBDUsageAsync(forceRefresh);
+
+        return Ok(CFBDUsageMapper.ToDTO(usage));
+    }
+
+    /// <summary>
     /// Retrieves the persisted predictions for the specified season and week without recalculating
     /// or re-grading. Returns full grade detail whenever the week has been graded, regardless of
     /// public publish state.
