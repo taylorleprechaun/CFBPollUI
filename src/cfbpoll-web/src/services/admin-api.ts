@@ -11,6 +11,8 @@ import {
 import {
   type AdminPredictionsResponse,
   AdminPredictionsResponseSchema,
+  CacheEntriesResponseSchema,
+  type CacheEntry,
   type CalculatePredictionsResponse,
   CalculatePredictionsResponseSchema,
   type CalculateResponse,
@@ -27,6 +29,7 @@ import {
   type PredictionsSummary,
   type RefreshCacheResponse,
   RefreshCacheResponseSchema,
+  RemoveCacheEntriesResponseSchema,
   type SeasonExperimentalPredictionsResponse,
   SeasonExperimentalPredictionsResponseSchema,
   type Snapshot,
@@ -100,6 +103,26 @@ export async function calculateRankings(
   return parseResponse(response, CalculateResponseSchema);
 }
 
+export async function deleteCacheEntries(token: string, cacheKeys: string[]): Promise<number> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/cache`,
+    withAuth(token, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cacheKeys),
+    })
+  );
+  const { removedCount } = await parseResponse(response, RemoveCacheEntriesResponseSchema);
+  return removedCount;
+}
+
+export async function deleteCacheEntry(token: string, cacheKey: string): Promise<void> {
+  await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/cache/${encodeURIComponent(cacheKey)}`,
+    withAuth(token, { method: 'DELETE' })
+  );
+}
+
 export async function deletePredictions(
   token: string,
   season: number,
@@ -149,6 +172,11 @@ export async function downloadExport(
 
   const blob = await response.blob();
   triggerBlobDownload(blob, `Rankings_${season}_Week${week + 1}.xlsx`);
+}
+
+export async function fetchCacheEntries(token: string): Promise<CacheEntry[]> {
+  const response = await safeFetch(`${API_BASE_URL}/api/v1/admin/cache`, withAuth(token));
+  return parseResponse(response, CacheEntriesResponseSchema);
 }
 
 export async function fetchCfbdUsage(

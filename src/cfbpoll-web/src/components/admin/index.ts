@@ -3,6 +3,7 @@ export { AlgorithmRunStatusBadge } from './algorithm-run-status-badge';
 export { AlgorithmVersionPicker } from './algorithm-version-picker';
 export { ALGORITHM_VERSIONS, DEFAULT_ALGORITHM_VERSIONS } from './algorithm-versions';
 export type { AlgorithmVersion } from './algorithm-versions';
+export { CacheEntriesSection } from './cache-entries-section';
 export { CalculateSection } from './calculate-section';
 export { CfbdUsageSection } from './cfbd-usage-section';
 export { CompareSeasonWeeksModal } from './compare-season-weeks-modal';
