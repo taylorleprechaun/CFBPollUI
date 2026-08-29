@@ -295,17 +295,20 @@ The frontend runs at `http://localhost:5173`.
 
 | Endpoint | Description |
 |----------|-------------|
+| `DELETE /api/v1/admin/cache` | Removes the persistent cache entries matching the given keys |
+| `DELETE /api/v1/admin/cache/{key}` | Removes a single persistent cache entry by key |
 | `DELETE /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Delete a prediction |
-| `DELETE /api/v1/admin/seasons/{season}/weeks/{week}/snapshot` | Delete a snapshot |
+| `DELETE /api/v1/admin/seasons/{season}/weeks/{week}/ranking` | Delete a persisted ranking |
+| `GET /api/v1/admin/cache` | Retrieves every persistent cache entry, grouped into a display-friendly family/season/detail summary for the admin cache management page |
 | `GET /api/v1/admin/cfbd-usage` | Get the site's CollegeFootballData.com API account status (remaining/used calls, tier, reset date, request totals), cached server-side for 24 hours; pass `?forceRefresh=true` to bypass the cache |
 | `GET /api/v1/admin/predictions` | List all persisted prediction summaries |
+| `GET /api/v1/admin/rankings` | List all persisted rankings |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/export` | Download experimental rankings as Excel for a chosen algorithm version, without persisting or publishing |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Retrieve persisted predictions for a season/week without recalculating or re-grading |
-| `GET /api/v1/admin/seasons/{season}/weeks/{week}/snapshot/export` | Download rankings as Excel |
-| `GET /api/v1/admin/snapshots` | List all persisted snapshots |
+| `GET /api/v1/admin/seasons/{season}/weeks/{week}/ranking/export` | Download rankings as Excel |
 | `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Update a prediction (currently supports publishing) |
 | `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/prediction/results` | Publish graded results, making them visible on the public predictions page |
-| `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/snapshot` | Update a snapshot (currently supports publishing) |
+| `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/ranking` | Update a ranking (currently supports publishing) |
 | `POST /api/v1/admin/seasons/{season}/experimental/{algorithmVersion}/predictions` | Calculate predictions for an explicit subset of weeks within a season using an explicitly chosen algorithm version, grading each week and returning a season-overall summary plus a per-week breakdown, without persisting anything |
 | `POST /api/v1/admin/seasons/{season}/experimental/{algorithmVersion}/trends` | Calculate season trends (top-25 rank progression) live across every week of a season using an explicitly chosen algorithm version, without persisting or publishing |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/cache` | Clear cached CollegeFootballData API responses for a season/week without recalculating |
@@ -313,7 +316,7 @@ The frontend runs at `http://localhost:5173`.
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/prediction` | Calculate predictions for a season/week using an explicitly chosen algorithm version and grade them against actual final scores when available, without persisting anything |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Calculate predictions for a season/week and save as draft |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction/grade` | Grade predictions against actual final scores and save as draft |
-| `POST /api/v1/admin/seasons/{season}/weeks/{week}/snapshot` | Calculate rankings for a season/week and save as draft |
+| `POST /api/v1/admin/seasons/{season}/weeks/{week}/ranking` | Calculate rankings for a season/week and save as draft |
 | `PUT /api/v1/page-visibility` | Update page visibility settings |
 
 ## Code Conventions
