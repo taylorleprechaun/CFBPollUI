@@ -12,7 +12,7 @@ export { ExperimentalPredictionsCalculateSection } from './experimental-predicti
 export { ExperimentalPredictionsSummarySection } from './experimental-predictions-summary-section';
 export { PersistedItemsSection } from './persisted-items-section';
 export { PersistedPredictionsSection } from './persisted-predictions-section';
-export { PersistedSnapshotsSection } from './persisted-snapshots-section';
+export { PersistedRankingsSnapshotsSection } from './persisted-rankings-snapshots-section';
 export { PredictionsComparisonColumn } from './predictions-comparison-column';
 export { PredictionsComparisonRow } from './predictions-comparison-row';
 export { PredictionsComparisonSection } from './predictions-comparison-section';

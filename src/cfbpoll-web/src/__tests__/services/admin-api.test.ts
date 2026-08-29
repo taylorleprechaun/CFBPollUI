@@ -9,18 +9,18 @@ import {
   deleteCacheEntries,
   deleteCacheEntry,
   deletePredictions,
-  deleteSnapshot,
+  deleteRankingsSnapshot,
   downloadExperimentalExport,
   downloadExport,
   fetchCacheEntries,
   fetchCfbdUsage,
   fetchPrediction,
   fetchPredictionsSummaries,
-  fetchSnapshots,
+  fetchRankingsSnapshots,
   gradePredictions,
   publishGradedResults,
   publishPredictions,
-  publishSnapshot,
+  publishRankingsSnapshot,
   refreshCache,
   updatePageVisibility,
 } from '../../services/admin-api';
@@ -214,7 +214,7 @@ describe('Admin API service', () => {
       await calculateRankings('my-token', 2024, 5);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/snapshot'),
+        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/rankings-snapshot'),
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
@@ -376,18 +376,18 @@ describe('Admin API service', () => {
     });
   });
 
-  describe('deleteSnapshot', () => {
-    it('sends DELETE to snapshot endpoint with auth header', async () => {
+  describe('deleteRankingsSnapshot', () => {
+    it('sends DELETE to rankings snapshot endpoint with auth header', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({}),
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      await deleteSnapshot('my-token', 2024, 5);
+      await deleteRankingsSnapshot('my-token', 2024, 5);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/snapshot'),
+        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/rankings-snapshot'),
         expect.objectContaining({
           method: 'DELETE',
           headers: expect.objectContaining({
@@ -398,7 +398,7 @@ describe('Admin API service', () => {
     });
   });
 
-  describe('deleteSnapshot - error paths', () => {
+  describe('deleteRankingsSnapshot - error paths', () => {
     it('throws on failed delete', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: false,
@@ -407,14 +407,14 @@ describe('Admin API service', () => {
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      await expect(deleteSnapshot('token', 2024, 5)).rejects.toThrow('Not found');
+      await expect(deleteRankingsSnapshot('token', 2024, 5)).rejects.toThrow('Not found');
     });
 
     it('throws on network failure', async () => {
       const mockFetch = vi.fn().mockRejectedValue(new Error('Connection reset'));
       vi.stubGlobal('fetch', mockFetch);
 
-      await expect(deleteSnapshot('token', 2024, 5)).rejects.toThrow('Connection reset');
+      await expect(deleteRankingsSnapshot('token', 2024, 5)).rejects.toThrow('Connection reset');
     });
   });
 
@@ -496,7 +496,7 @@ describe('Admin API service', () => {
       await downloadExport('my-token', 2024, 5);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/snapshot/export'),
+        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/rankings-snapshot/export'),
         expect.objectContaining({
           headers: expect.objectContaining({
             Authorization: 'Bearer my-token',
@@ -707,8 +707,8 @@ describe('Admin API service', () => {
     });
   });
 
-  describe('fetchSnapshots', () => {
-    it('sends GET to snapshots with auth header', async () => {
+  describe('fetchRankingsSnapshots', () => {
+    it('sends GET to rankings snapshots with auth header', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () =>
@@ -718,10 +718,10 @@ describe('Admin API service', () => {
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      const result = await fetchSnapshots('my-token');
+      const result = await fetchRankingsSnapshots('my-token');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/admin/snapshots'),
+        expect.stringContaining('/api/v1/admin/rankings-snapshots'),
         expect.objectContaining({
           headers: expect.objectContaining({
             Authorization: 'Bearer my-token',
@@ -732,7 +732,7 @@ describe('Admin API service', () => {
     });
   });
 
-  describe('fetchSnapshots - error paths', () => {
+  describe('fetchRankingsSnapshots - error paths', () => {
     it('throws on failed fetch', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: false,
@@ -741,14 +741,14 @@ describe('Admin API service', () => {
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      await expect(fetchSnapshots('token')).rejects.toThrow('DB error');
+      await expect(fetchRankingsSnapshots('token')).rejects.toThrow('DB error');
     });
 
     it('throws on network failure', async () => {
       const mockFetch = vi.fn().mockRejectedValue(new Error('Timeout'));
       vi.stubGlobal('fetch', mockFetch);
 
-      await expect(fetchSnapshots('token')).rejects.toThrow('Timeout');
+      await expect(fetchRankingsSnapshots('token')).rejects.toThrow('Timeout');
     });
   });
 
@@ -860,18 +860,18 @@ describe('Admin API service', () => {
     });
   });
 
-  describe('publishSnapshot', () => {
-    it('sends PATCH to snapshot endpoint with auth header and body', async () => {
+  describe('publishRankingsSnapshot', () => {
+    it('sends PATCH to rankings snapshot endpoint with auth header and body', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({}),
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      await publishSnapshot('my-token', 2024, 5);
+      await publishRankingsSnapshot('my-token', 2024, 5);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/snapshot'),
+        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/rankings-snapshot'),
         expect.objectContaining({
           method: 'PATCH',
           headers: expect.objectContaining({
@@ -884,7 +884,7 @@ describe('Admin API service', () => {
     });
   });
 
-  describe('publishSnapshot - error paths', () => {
+  describe('publishRankingsSnapshot - error paths', () => {
     it('handles error response with no JSON body', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: false,
@@ -893,7 +893,7 @@ describe('Admin API service', () => {
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      await expect(publishSnapshot('token', 2024, 5)).rejects.toThrow();
+      await expect(publishRankingsSnapshot('token', 2024, 5)).rejects.toThrow();
     });
 
     it('throws on failed publish', async () => {
@@ -904,21 +904,21 @@ describe('Admin API service', () => {
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      await expect(publishSnapshot('token', 2024, 5)).rejects.toThrow('Not found');
+      await expect(publishRankingsSnapshot('token', 2024, 5)).rejects.toThrow('Not found');
     });
 
     it('throws on network failure', async () => {
       const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'));
       vi.stubGlobal('fetch', mockFetch);
 
-      await expect(publishSnapshot('token', 2024, 5)).rejects.toThrow('Network error');
+      await expect(publishRankingsSnapshot('token', 2024, 5)).rejects.toThrow('Network error');
     });
 
     it('throws on non-Error network failure', async () => {
       const mockFetch = vi.fn().mockRejectedValue(42);
       vi.stubGlobal('fetch', mockFetch);
 
-      await expect(publishSnapshot('token', 2024, 5)).rejects.toThrow('Network request failed');
+      await expect(publishRankingsSnapshot('token', 2024, 5)).rejects.toThrow('Network request failed');
     });
   });
 

@@ -10,10 +10,10 @@ import {
   PredictionsResponseSchema,
   PredictionsSummariesResponseSchema,
   PredictionsSummarySchema,
+  RankingsSnapshotSchema,
+  RankingsSnapshotsResponseSchema,
   RefreshCacheResponseSchema,
   SeasonExperimentalPredictionsResponseSchema,
-  SnapshotSchema,
-  SnapshotsResponseSchema,
 } from '../../schemas/admin';
 
 describe('Admin schemas', () => {
@@ -432,6 +432,53 @@ describe('Admin schemas', () => {
     });
   });
 
+  describe('RankingsSnapshotSchema', () => {
+    it('rejects missing isPublished field', () => {
+      const data = {
+        season: 2024,
+        week: 5,
+        createdAt: '2024-11-01T12:00:00Z',
+      };
+      const result = RankingsSnapshotSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
+    it('validates a valid rankings snapshot', () => {
+      const data = {
+        season: 2024,
+        week: 5,
+        isPublished: true,
+        createdAt: '2024-11-01T12:00:00Z',
+      };
+      const result = RankingsSnapshotSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('RankingsSnapshotsResponseSchema', () => {
+    it('rejects non-array input', () => {
+      const result = RankingsSnapshotsResponseSchema.safeParse({ weeks: [] });
+      expect(result.success).toBe(false);
+    });
+
+    it('validates an array of rankings snapshots', () => {
+      const data = [
+        { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T12:00:00Z' },
+        { season: 2024, week: 2, isPublished: false, createdAt: '2024-09-08T12:00:00Z' },
+      ];
+      const result = RankingsSnapshotsResponseSchema.safeParse(data);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).toHaveLength(2);
+      }
+    });
+
+    it('validates an empty array', () => {
+      const result = RankingsSnapshotsResponseSchema.safeParse([]);
+      expect(result.success).toBe(true);
+    });
+  });
+
   describe('RefreshCacheResponseSchema', () => {
     it('rejects missing removedCount field', () => {
       const data = { season: 2024, week: 5 };
@@ -490,50 +537,4 @@ describe('Admin schemas', () => {
     });
   });
 
-  describe('SnapshotSchema', () => {
-    it('rejects missing isPublished field', () => {
-      const data = {
-        season: 2024,
-        week: 5,
-        createdAt: '2024-11-01T12:00:00Z',
-      };
-      const result = SnapshotSchema.safeParse(data);
-      expect(result.success).toBe(false);
-    });
-
-    it('validates a valid snapshot', () => {
-      const data = {
-        season: 2024,
-        week: 5,
-        isPublished: true,
-        createdAt: '2024-11-01T12:00:00Z',
-      };
-      const result = SnapshotSchema.safeParse(data);
-      expect(result.success).toBe(true);
-    });
-  });
-
-  describe('SnapshotsResponseSchema', () => {
-    it('rejects non-array input', () => {
-      const result = SnapshotsResponseSchema.safeParse({ weeks: [] });
-      expect(result.success).toBe(false);
-    });
-
-    it('validates an array of snapshots', () => {
-      const data = [
-        { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T12:00:00Z' },
-        { season: 2024, week: 2, isPublished: false, createdAt: '2024-09-08T12:00:00Z' },
-      ];
-      const result = SnapshotsResponseSchema.safeParse(data);
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.data).toHaveLength(2);
-      }
-    });
-
-    it('validates an empty array', () => {
-      const result = SnapshotsResponseSchema.safeParse([]);
-      expect(result.success).toBe(true);
-    });
-  });
 });

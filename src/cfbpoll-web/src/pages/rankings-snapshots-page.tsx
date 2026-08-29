@@ -4,30 +4,30 @@ import type { CalculateResponse } from '../schemas/admin';
 
 import {
   CalculateSection,
-  PersistedSnapshotsSection,
+  PersistedRankingsSnapshotsSection,
   PreviewSection,
 } from '../components/admin';
 import { ErrorAlert, ErrorBoundary } from '../components/error';
 import { ConfirmModal } from '../components/ui/confirm-modal';
 import {
   useCalculateRankings,
-  useDeleteSnapshot,
-  useExportSnapshot,
-  usePublishSnapshot,
+  useDeleteRankingsSnapshot,
+  useExportRankingsSnapshot,
+  usePublishRankingsSnapshot,
   useRefreshCache,
 } from '../hooks/use-admin-mutations';
 import { useAdminPageState } from '../hooks/use-admin-page-state';
 import { useAuth } from '../hooks/use-auth';
 import { useDocumentTitle } from '../hooks/use-document-title';
+import { useRankingsSnapshots } from '../hooks/use-rankings-snapshots';
 import { useSeason } from '../hooks/use-season';
-import { useSnapshots } from '../hooks/use-snapshots';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
 import { toError } from '../lib/error-utils';
 import { getWeekLabel } from '../lib/week-utils';
 
-export function SnapshotsPage() {
-  useDocumentTitle('Taylor Steinberg - Snapshots');
+export function RankingsSnapshotsPage() {
+  useDocumentTitle('Taylor Steinberg - Manage Rankings');
 
   const { token } = useAuth();
 
@@ -42,16 +42,16 @@ export function SnapshotsPage() {
   const { selectedWeek, setSelectedWeek } = useWeekSelection(weeksData?.weeks);
 
   const {
-    data: snapshots,
-    error: snapshotsError,
-    isLoading: snapshotsLoading,
-    refetch: refetchSnapshots,
-  } = useSnapshots(token);
+    data: rankingsSnapshots,
+    error: rankingsSnapshotsError,
+    isLoading: rankingsSnapshotsLoading,
+    refetch: refetchRankingsSnapshots,
+  } = useRankingsSnapshots(token);
 
   const calculateMutation = useCalculateRankings(token);
-  const publishMutation = usePublishSnapshot(token);
-  const deleteMutation = useDeleteSnapshot(token);
-  const exportMutation = useExportSnapshot(token);
+  const publishMutation = usePublishRankingsSnapshot(token);
+  const deleteMutation = useDeleteRankingsSnapshot(token);
+  const exportMutation = useExportRankingsSnapshot(token);
   const refreshCacheMutation = useRefreshCache(token);
 
   const {
@@ -82,11 +82,11 @@ export function SnapshotsPage() {
     calcErrorLabel: 'Calculation failed',
     deleteMutation,
     getResultSeasonWeek: (r) => ({ season: r.rankings.season, week: r.rankings.week }),
-    items: snapshots,
+    items: rankingsSnapshots,
     publishMutation,
-    queryError: snapshotsError,
-    queryErrorLabel: 'Failed to load snapshots',
-    refetch: refetchSnapshots,
+    queryError: rankingsSnapshotsError,
+    queryErrorLabel: 'Failed to load rankings snapshots',
+    refetch: refetchRankingsSnapshots,
     refreshCacheMutation,
     selectedSeason,
     selectedWeek,
@@ -101,15 +101,15 @@ export function SnapshotsPage() {
     }
   };
 
-  const existingSnapshotForSelection = useMemo(
-    () => snapshots?.find((s) => s.season === selectedSeason && s.week === selectedWeek) ?? null,
-    [snapshots, selectedSeason, selectedWeek]
+  const existingRankingsSnapshotForSelection = useMemo(
+    () => rankingsSnapshots?.find((s) => s.season === selectedSeason && s.week === selectedWeek) ?? null,
+    [rankingsSnapshots, selectedSeason, selectedWeek]
   );
 
   const [calculateConfirm, setCalculateConfirm] = useState<{ season: number; week: number } | null>(null);
 
   const handleCalculateClick = () => {
-    if (existingSnapshotForSelection?.isPublished && selectedSeason !== null && selectedWeek !== null) {
+    if (existingRankingsSnapshotForSelection?.isPublished && selectedSeason !== null && selectedWeek !== null) {
       setCalculateConfirm({ season: selectedSeason, week: selectedWeek });
       return;
     }
@@ -118,7 +118,7 @@ export function SnapshotsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-text-primary">Snapshots</h1>
+      <h1 className="text-2xl font-bold text-text-primary">Rankings</h1>
 
       {error && <ErrorAlert error={error} onRetry={handleRetry} />}
 
@@ -156,27 +156,27 @@ export function SnapshotsPage() {
         )}
       </ErrorBoundary>
 
-      <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render persisted snapshots')} />}>
-        <PersistedSnapshotsSection
+      <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render persisted rankings snapshots')} />}>
+        <PersistedRankingsSnapshotsSection
         actionFeedback={actionFeedback}
         collapsedSeasons={collapsedSeasons}
         isActionPending={isActionPending}
-        isLoading={snapshotsLoading}
+        isLoading={rankingsSnapshotsLoading}
         onClearFeedback={clearFeedback}
         onCollapseAll={handleCollapseAll}
         onDelete={handleDelete}
         onExpandAll={handleExpandAll}
         onExport={handleExport}
-        onPublish={(season, week) => handlePublish(season, week, 'snapshot-publish')}
+        onPublish={(season, week) => handlePublish(season, week, 'rankings-snapshot-publish')}
         onToggleSeason={toggleSeason}
-        snapshots={snapshots ?? []}
+        rankingsSnapshots={rankingsSnapshots ?? []}
       />
       </ErrorBoundary>
 
       {deleteConfirm && (
         <ConfirmModal
-          title="Delete Published Snapshot"
-          message={`This snapshot (${deleteConfirm.season} ${getWeekLabel(deleteConfirm.week)}) is published and visible to users. Are you sure you want to delete it?`}
+          title="Delete Published Rankings Snapshot"
+          message={`This rankings snapshot (${deleteConfirm.season} ${getWeekLabel(deleteConfirm.week)}) is published and visible to users. Are you sure you want to delete it?`}
           onConfirm={() => executeDelete(deleteConfirm.season, deleteConfirm.week)}
           onCancel={() => setDeleteConfirm(null)}
         />
@@ -184,8 +184,8 @@ export function SnapshotsPage() {
 
       {calculateConfirm && (
         <ConfirmModal
-          title="Overwrite Published Snapshot"
-          message={`The snapshot for ${calculateConfirm.season} ${getWeekLabel(calculateConfirm.week)} is already published and visible to users. Recalculating will overwrite it and reset it to draft. Continue?`}
+          title="Overwrite Published Rankings Snapshot"
+          message={`The rankings snapshot for ${calculateConfirm.season} ${getWeekLabel(calculateConfirm.week)} is already published and visible to users. Recalculating will overwrite it and reset it to draft. Continue?`}
           confirmLabel="Calculate"
           onConfirm={() => {
             setCalculateConfirm(null);
@@ -208,4 +208,4 @@ export function SnapshotsPage() {
   );
 }
 
-export default SnapshotsPage;
+export default RankingsSnapshotsPage;

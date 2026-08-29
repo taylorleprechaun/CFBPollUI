@@ -14,9 +14,9 @@ const PollLeadersPage = lazy(() => import('./pages/poll-leaders-page'));
 const PredictionsPage = lazy(() => import('./pages/predictions-page'));
 const PublicPredictionsPage = lazy(() => import('./pages/public-predictions-page'));
 const RankingsPage = lazy(() => import('./pages/rankings-page'));
+const RankingsSnapshotsPage = lazy(() => import('./pages/rankings-snapshots-page'));
 const SeasonTrendsPage = lazy(() => import('./pages/season-trends-page'));
 const SettingsPage = lazy(() => import('./pages/settings-page'));
-const SnapshotsPage = lazy(() => import('./pages/snapshots-page'));
 const TeamDetailsPage = lazy(() => import('./pages/team-details-page'));
 const TeamPredictionRecordsPage = lazy(() => import('./pages/team-prediction-records-page'));
 const TrackRecordExplainedPage = lazy(() => import('./pages/track-record-explained-page'));
@@ -78,9 +78,9 @@ function App() {
           } />
         </Route>
         <Route element={<RequireAuth />}>
-          <Route path="admin" element={<Navigate to="/admin/snapshots" replace />} />
-          <Route path="admin/snapshots" element={
-            <LazyPage><SnapshotsPage /></LazyPage>
+          <Route path="admin" element={<Navigate to="/admin/rankings-snapshots" replace />} />
+          <Route path="admin/rankings-snapshots" element={
+            <LazyPage><RankingsSnapshotsPage /></LazyPage>
           } />
           <Route path="admin/predictions" element={
             <LazyPage><PredictionsPage /></LazyPage>

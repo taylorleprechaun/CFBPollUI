@@ -22,8 +22,8 @@ const MOBILE_SUBLINK_ACTIVE = `${MOBILE_SUBLINK_BASE} bg-nav-active text-white`;
 const MOBILE_SUBLINK_INACTIVE = `${MOBILE_SUBLINK_BASE} text-white/80 hover:bg-nav-hover hover:text-white`;
 
 const ADMIN_ITEMS: NavItem[] = [
-  { label: 'Snapshots', to: '/admin/snapshots' },
-  { label: 'Predictions', to: '/admin/predictions' },
+  { label: 'Manage Rankings', to: '/admin/rankings-snapshots' },
+  { label: 'Manage Predictions', to: '/admin/predictions' },
   { label: 'Experimental', to: '/admin/experimental' },
   { label: 'Settings', to: '/admin/settings' },
   { label: 'Cache', to: '/admin/cache' },

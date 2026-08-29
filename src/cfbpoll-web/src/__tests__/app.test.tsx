@@ -32,10 +32,10 @@ vi.mock('../pages/login-page', () => ({
   default: MockLoginPage,
 }));
 
-const MockSnapshotsPage = () => <div>Snapshots Page Content</div>;
-vi.mock('../pages/snapshots-page', () => ({
-  SnapshotsPage: MockSnapshotsPage,
-  default: MockSnapshotsPage,
+const MockRankingsSnapshotsPage = () => <div>Rankings Snapshots Page Content</div>;
+vi.mock('../pages/rankings-snapshots-page', () => ({
+  RankingsSnapshotsPage: MockRankingsSnapshotsPage,
+  default: MockRankingsSnapshotsPage,
 }));
 
 const MockPredictionsPage = () => <div>Predictions Page Content</div>;
@@ -125,13 +125,13 @@ describe('App', () => {
     });
   });
 
-  it('redirects /admin to /admin/snapshots when authenticated', async () => {
+  it('redirects /admin to /admin/rankings-snapshots when authenticated', async () => {
     localStorage.setItem('cfbpoll_token', 'test-token');
     localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
 
     renderApp('/admin');
     await waitFor(() => {
-      expect(screen.getByText('Snapshots Page Content')).toBeInTheDocument();
+      expect(screen.getByText('Rankings Snapshots Page Content')).toBeInTheDocument();
     });
   });
 
@@ -142,8 +142,8 @@ describe('App', () => {
     });
   });
 
-  it('redirects /admin/snapshots to login when not authenticated', async () => {
-    renderApp('/admin/snapshots');
+  it('redirects /admin/rankings-snapshots to login when not authenticated', async () => {
+    renderApp('/admin/rankings-snapshots');
     await waitFor(() => {
       expect(screen.getByText('Login Page Content')).toBeInTheDocument();
     });
@@ -234,13 +234,13 @@ describe('App', () => {
     });
   });
 
-  it('renders snapshots page at /admin/snapshots when authenticated', async () => {
+  it('renders rankings snapshots page at /admin/rankings-snapshots when authenticated', async () => {
     localStorage.setItem('cfbpoll_token', 'test-token');
     localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
 
-    renderApp('/admin/snapshots');
+    renderApp('/admin/rankings-snapshots');
     await waitFor(() => {
-      expect(screen.getByText('Snapshots Page Content')).toBeInTheDocument();
+      expect(screen.getByText('Rankings Snapshots Page Content')).toBeInTheDocument();
     });
   });
 

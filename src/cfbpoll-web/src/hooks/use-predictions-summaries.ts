@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { STALE_TIME_SNAPSHOTS } from '../lib/query-config';
+import { STALE_TIME_ADMIN_PREDICTIONS } from '../lib/query-config';
 import { fetchPredictionsSummaries } from '../services/admin-api';
 
 export function usePredictionsSummaries(token: string | null) {
@@ -8,6 +8,6 @@ export function usePredictionsSummaries(token: string | null) {
     queryKey: ['predictions-summaries'],
     queryFn: () => fetchPredictionsSummaries(token!),
     enabled: token !== null,
-    staleTime: STALE_TIME_SNAPSHOTS,
+    staleTime: STALE_TIME_ADMIN_PREDICTIONS,
   });
 }

@@ -27,13 +27,13 @@ import {
   GradePredictionsResponseSchema,
   PredictionsSummariesResponseSchema,
   type PredictionsSummary,
+  type RankingsSnapshot,
+  RankingsSnapshotsResponseSchema,
   type RefreshCacheResponse,
   RefreshCacheResponseSchema,
   RemoveCacheEntriesResponseSchema,
   type SeasonExperimentalPredictionsResponse,
   SeasonExperimentalPredictionsResponseSchema,
-  type Snapshot,
-  SnapshotsResponseSchema,
 } from '../schemas/admin';
 
 export async function calculateExperimental(
@@ -97,7 +97,7 @@ export async function calculateRankings(
   week: number
 ): Promise<CalculateResponse> {
   const response = await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/snapshot`,
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/rankings-snapshot`,
     withAuth(token, { method: 'POST' })
   );
   return parseResponse(response, CalculateResponseSchema);
@@ -134,13 +134,13 @@ export async function deletePredictions(
   );
 }
 
-export async function deleteSnapshot(
+export async function deleteRankingsSnapshot(
   token: string,
   season: number,
   week: number
 ): Promise<void> {
   await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/snapshot`,
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/rankings-snapshot`,
     withAuth(token, { method: 'DELETE' })
   );
 }
@@ -166,7 +166,7 @@ export async function downloadExport(
   week: number
 ): Promise<void> {
   const response = await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/snapshot/export`,
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/rankings-snapshot/export`,
     withAuth(token)
   );
 
@@ -212,14 +212,14 @@ export async function fetchPredictionsSummaries(
   return parseResponse(response, PredictionsSummariesResponseSchema);
 }
 
-export async function fetchSnapshots(
+export async function fetchRankingsSnapshots(
   token: string
-): Promise<Snapshot[]> {
+): Promise<RankingsSnapshot[]> {
   const response = await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/snapshots`,
+    `${API_BASE_URL}/api/v1/admin/rankings-snapshots`,
     withAuth(token)
   );
-  return parseResponse(response, SnapshotsResponseSchema);
+  return parseResponse(response, RankingsSnapshotsResponseSchema);
 }
 
 export async function gradePredictions(
@@ -266,13 +266,13 @@ export async function publishPredictions(
   );
 }
 
-export async function publishSnapshot(
+export async function publishRankingsSnapshot(
   token: string,
   season: number,
   week: number
 ): Promise<void> {
   await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/snapshot`,
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/rankings-snapshot`,
     withAuth(token, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

@@ -7,12 +7,12 @@ import {
   calculatePredictions,
   calculateRankings,
   deletePredictions,
-  deleteSnapshot,
+  deleteRankingsSnapshot,
   downloadExport,
   gradePredictions,
   publishGradedResults,
   publishPredictions,
-  publishSnapshot,
+  publishRankingsSnapshot,
   refreshCache,
 } from '../services/admin-api';
 
@@ -24,7 +24,7 @@ export function useCalculatePredictions(token: string | null) {
 
 export function useCalculateRankings(token: string | null) {
   return useAdminMutation(token, calculateRankings, (_result, _params, queryClient) => {
-    queryClient.invalidateQueries({ queryKey: ['snapshots'] });
+    queryClient.invalidateQueries({ queryKey: ['rankings-snapshots'] });
   });
 }
 
@@ -35,13 +35,13 @@ export function useDeletePredictions(token: string | null) {
   });
 }
 
-export function useDeleteSnapshot(token: string | null) {
-  return useAdminMutation(token, deleteSnapshot, (_result, _params, queryClient) => {
-    queryClient.invalidateQueries({ queryKey: ['snapshots'] });
+export function useDeleteRankingsSnapshot(token: string | null) {
+  return useAdminMutation(token, deleteRankingsSnapshot, (_result, _params, queryClient) => {
+    queryClient.invalidateQueries({ queryKey: ['rankings-snapshots'] });
   });
 }
 
-export function useExportSnapshot(token: string | null) {
+export function useExportRankingsSnapshot(token: string | null) {
   return useAdminMutation(token, downloadExport);
 }
 
@@ -72,9 +72,9 @@ export function usePublishPredictions(token: string | null) {
   });
 }
 
-export function usePublishSnapshot(token: string | null) {
-  return useAdminMutation(token, publishSnapshot, (_result, _params, queryClient) => {
-    queryClient.invalidateQueries({ queryKey: ['snapshots'] });
+export function usePublishRankingsSnapshot(token: string | null) {
+  return useAdminMutation(token, publishRankingsSnapshot, (_result, _params, queryClient) => {
+    queryClient.invalidateQueries({ queryKey: ['rankings-snapshots'] });
   });
 }
 
