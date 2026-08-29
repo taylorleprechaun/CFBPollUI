@@ -149,7 +149,7 @@ public class RankingsData : IRankingsData
         return JsonSerializer.Deserialize<RankingsResult>(json);
     }
 
-    public async Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync()
+    public async Task<IEnumerable<RankingsSnapshotSummary>> GetSnapshotsAsync()
     {
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync().ConfigureAwait(false);
@@ -158,11 +158,11 @@ public class RankingsData : IRankingsData
         command.CommandText = "SELECT Season, Week, Published, CreatedAt, AlgorithmVersion FROM RankingsSnapshot ORDER BY Season DESC, Week DESC";
 
         await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
-        List<SnapshotSummary> results = [];
+        List<RankingsSnapshotSummary> results = [];
 
         while (await reader.ReadAsync().ConfigureAwait(false))
         {
-            results.Add(new SnapshotSummary
+            results.Add(new RankingsSnapshotSummary
             {
                 Season = reader.GetInt32(0),
                 Week = reader.GetInt32(1),

@@ -138,7 +138,7 @@ public class PollLeadersModule : IPollLeadersModule
     }
 
     private async Task<IReadOnlyList<PollLeaderEntry>> BuildFinalWeeksEntriesAsync(
-        IReadOnlyList<SnapshotSummary> publishedWeeks,
+        IReadOnlyList<RankingsSnapshotSummary> publishedWeeks,
         IReadOnlyList<RankingsResult> allSnapshots)
     {
         var snapshotLookup = allSnapshots

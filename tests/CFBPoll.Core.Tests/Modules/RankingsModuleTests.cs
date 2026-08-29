@@ -856,9 +856,9 @@ public class RankingsModuleTests
     [Fact]
     public async Task GetSnapshotsAsync_DelegatesToRankingsData()
     {
-        var weeks = new List<SnapshotSummary>
+        var weeks = new List<RankingsSnapshotSummary>
         {
-            new SnapshotSummary { Season = 2024, Week = 1, IsPublished = true }
+            new RankingsSnapshotSummary { Season = 2024, Week = 1, IsPublished = true }
         };
         _mockRankingsData.Setup(x => x.GetSnapshotsAsync()).ReturnsAsync(weeks);
 

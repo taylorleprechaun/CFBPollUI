@@ -127,7 +127,7 @@ public class RankingsModule : IRankingsModule
         return await _rankingsData.GetSnapshotAsync(season, week).ConfigureAwait(false);
     }
 
-    public async Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync()
+    public async Task<IEnumerable<RankingsSnapshotSummary>> GetSnapshotsAsync()
     {
         return await _rankingsData.GetSnapshotsAsync().ConfigureAwait(false);
     }

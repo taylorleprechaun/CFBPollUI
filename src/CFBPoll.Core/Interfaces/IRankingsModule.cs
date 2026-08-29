@@ -49,7 +49,7 @@ public interface IRankingsModule
     /// <summary>
     /// Retrieves all persisted week summaries including draft and published.
     /// </summary>
-    Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync();
+    Task<IEnumerable<RankingsSnapshotSummary>> GetSnapshotsAsync();
 
     /// <summary>
     /// Publishes a snapshot for the given season and week.

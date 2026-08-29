@@ -1,6 +1,6 @@
 namespace CFBPoll.API.DTOs;
 
-public class SnapshotDTO
+public class RankingsSnapshotDTO
 {
     public string AlgorithmVersion { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }

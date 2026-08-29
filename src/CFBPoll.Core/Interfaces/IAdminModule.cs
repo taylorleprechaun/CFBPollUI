@@ -94,7 +94,7 @@ public interface IAdminModule
     /// <summary>
     /// Gets all persisted week summaries.
     /// </summary>
-    Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync();
+    Task<IEnumerable<RankingsSnapshotSummary>> GetSnapshotsAsync();
 
     /// <summary>
     /// Grades predictions for the given season and week against actual final scores and saves the

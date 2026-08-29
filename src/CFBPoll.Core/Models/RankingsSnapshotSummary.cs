@@ -1,6 +1,6 @@
 namespace CFBPoll.Core.Models;
 
-public class SnapshotSummary
+public class RankingsSnapshotSummary
 {
     public RatingAlgorithmVersion AlgorithmVersion { get; set; }
     public DateTime CreatedAt { get; set; }

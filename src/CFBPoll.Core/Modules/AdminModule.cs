@@ -395,7 +395,7 @@ public class AdminModule : IAdminModule
         return await _predictionsModule.GetAllSummariesAsync().ConfigureAwait(false);
     }
 
-    public async Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync()
+    public async Task<IEnumerable<RankingsSnapshotSummary>> GetSnapshotsAsync()
     {
         return await _rankingsModule.GetSnapshotsAsync().ConfigureAwait(false);
     }

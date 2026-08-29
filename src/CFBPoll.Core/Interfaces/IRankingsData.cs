@@ -40,7 +40,7 @@ public interface IRankingsData
     /// <summary>
     /// Retrieves all persisted week summaries including draft and published.
     /// </summary>
-    Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync();
+    Task<IEnumerable<RankingsSnapshotSummary>> GetSnapshotsAsync();
 
     /// <summary>
     /// Creates the database table if it does not exist.

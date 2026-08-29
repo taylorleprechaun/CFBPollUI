@@ -157,7 +157,7 @@ public class AllTimeModuleTests
         // spread out relative to its mean, so Iowa's z-score is higher -> Iowa should rank first.
         _mockRankingsModule
             .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2022, Week = 5, IsPublished = true },
                 new() { Season = 2023, Week = 6, IsPublished = true }
@@ -217,7 +217,7 @@ public class AllTimeModuleTests
     {
         _mockRankingsModule
             .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 3, IsPublished = true },
                 new() { Season = 2023, Week = 5, IsPublished = true }
@@ -253,7 +253,7 @@ public class AllTimeModuleTests
     {
         _mockRankingsModule
             .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 5, IsPublished = true }
             });
@@ -271,7 +271,7 @@ public class AllTimeModuleTests
     {
         _mockRankingsModule
             .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 5, IsPublished = true }
             });
@@ -409,7 +409,7 @@ public class AllTimeModuleTests
     {
         _mockRankingsModule
             .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2022, Week = 3, IsPublished = true },
                 new() { Season = 2022, Week = 5, IsPublished = true },
@@ -462,7 +462,7 @@ public class AllTimeModuleTests
         // "Texas" (2022, rating 20) is the outlier furthest below its season's mean -> lowest z-score overall.
         _mockRankingsModule
             .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2022, Week = 5, IsPublished = true },
                 new() { Season = 2023, Week = 6, IsPublished = true }
@@ -525,7 +525,7 @@ public class AllTimeModuleTests
     {
         _mockRankingsModule
             .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>());
+            .ReturnsAsync(new List<RankingsSnapshotSummary>());
 
         var result = await _module.GetAllTimeRankingsAsync();
 
@@ -539,7 +539,7 @@ public class AllTimeModuleTests
     {
         _mockRankingsModule
             .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 5, IsPublished = true }
             });
@@ -564,7 +564,7 @@ public class AllTimeModuleTests
     {
         _mockRankingsModule
             .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 5, IsPublished = true }
             });
@@ -592,7 +592,7 @@ public class AllTimeModuleTests
     {
         _mockRankingsModule
             .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 1, IsPublished = false }
             });
@@ -714,7 +714,7 @@ public class AllTimeModuleTests
     {
         _mockRankingsModule
             .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = season, Week = 5, IsPublished = true }
             });

@@ -293,11 +293,11 @@ public class AdminController : ControllerBase
     /// Gets all persisted snapshots including draft and published.
     /// </summary>
     [HttpGet("snapshots")]
-    public async Task<ActionResult<IEnumerable<SnapshotDTO>>> GetSnapshots()
+    public async Task<ActionResult<IEnumerable<RankingsSnapshotDTO>>> GetSnapshots()
     {
         var snapshots = await _adminModule.GetSnapshotsAsync();
 
-        return Ok(snapshots.Select(SnapshotMapper.ToDTO));
+        return Ok(snapshots.Select(RankingsSnapshotMapper.ToDTO));
     }
 
     /// <summary>
@@ -323,7 +323,7 @@ public class AdminController : ControllerBase
     /// are published.
     /// </summary>
     [HttpPatch("seasons/{season}/weeks/{week}/prediction/results")]
-    public async Task<ActionResult> PublishGradedResults(int season, int week, [FromBody] UpdateSnapshotDTO request)
+    public async Task<ActionResult> PublishGradedResults(int season, int week, [FromBody] SetPublishedRequestDTO request)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -359,7 +359,7 @@ public class AdminController : ControllerBase
     /// Updates predictions for the specified season and week. Currently supports publishing.
     /// </summary>
     [HttpPatch("seasons/{season}/weeks/{week}/prediction")]
-    public async Task<ActionResult> UpdatePrediction(int season, int week, [FromBody] UpdateSnapshotDTO request)
+    public async Task<ActionResult> UpdatePrediction(int season, int week, [FromBody] SetPublishedRequestDTO request)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -380,7 +380,7 @@ public class AdminController : ControllerBase
     /// Updates a snapshot for the specified season and week. Currently supports publishing.
     /// </summary>
     [HttpPatch("seasons/{season}/weeks/{week}/snapshot")]
-    public async Task<ActionResult> UpdateSnapshot(int season, int week, [FromBody] UpdateSnapshotDTO request)
+    public async Task<ActionResult> UpdateSnapshot(int season, int week, [FromBody] SetPublishedRequestDTO request)
     {
         ArgumentNullException.ThrowIfNull(request);
 
