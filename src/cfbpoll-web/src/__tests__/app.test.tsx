@@ -224,16 +224,6 @@ describe('App', () => {
     });
   });
 
-  it('renders settings page at /admin/settings when authenticated', async () => {
-    localStorage.setItem('cfbpoll_token', 'test-token');
-    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
-
-    renderApp('/admin/settings');
-    await waitFor(() => {
-      expect(screen.getByText('Settings Page Content')).toBeInTheDocument();
-    });
-  });
-
   it('renders rankings snapshots page at /admin/rankings when authenticated', async () => {
     localStorage.setItem('cfbpoll_token', 'test-token');
     localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
@@ -241,6 +231,16 @@ describe('App', () => {
     renderApp('/admin/rankings');
     await waitFor(() => {
       expect(screen.getByText('Rankings Snapshots Page Content')).toBeInTheDocument();
+    });
+  });
+
+  it('renders settings page at /admin/settings when authenticated', async () => {
+    localStorage.setItem('cfbpoll_token', 'test-token');
+    localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
+
+    renderApp('/admin/settings');
+    await waitFor(() => {
+      expect(screen.getByText('Settings Page Content')).toBeInTheDocument();
     });
   });
 

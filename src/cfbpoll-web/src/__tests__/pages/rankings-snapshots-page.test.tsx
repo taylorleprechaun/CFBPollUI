@@ -535,6 +535,13 @@ describe('RankingsSnapshotsPage', () => {
     expect(screen.getByText('(1 ranking)')).toBeInTheDocument();
   });
 
+  it('renders rankings snapshots page heading', () => {
+    renderRankingsSnapshotsPage();
+    expect(screen.getByText('Rankings')).toBeInTheDocument();
+    expect(screen.getByText('Calculate Rankings')).toBeInTheDocument();
+    expect(screen.getByText('Persisted Rankings')).toBeInTheDocument();
+  });
+
   it('renders refresh cached data button', () => {
     renderRankingsSnapshotsPage();
     expect(screen.getByRole('button', { name: 'Refresh Cached Data' })).toBeInTheDocument();
@@ -544,13 +551,6 @@ describe('RankingsSnapshotsPage', () => {
     renderRankingsSnapshotsPage();
     expect(screen.getByLabelText('Season')).toBeInTheDocument();
     expect(screen.getByLabelText('Week')).toBeInTheDocument();
-  });
-
-  it('renders rankings snapshots page heading', () => {
-    renderRankingsSnapshotsPage();
-    expect(screen.getByText('Rankings')).toBeInTheDocument();
-    expect(screen.getByText('Calculate Rankings')).toBeInTheDocument();
-    expect(screen.getByText('Persisted Rankings')).toBeInTheDocument();
   });
 
   it('seasons start collapsed by default', () => {

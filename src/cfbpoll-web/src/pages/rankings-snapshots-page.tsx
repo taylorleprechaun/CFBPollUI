@@ -158,19 +158,19 @@ export function RankingsSnapshotsPage() {
 
       <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render persisted rankings snapshots')} />}>
         <PersistedRankingsSnapshotsSection
-        actionFeedback={actionFeedback}
-        collapsedSeasons={collapsedSeasons}
-        isActionPending={isActionPending}
-        isLoading={rankingsSnapshotsLoading}
-        onClearFeedback={clearFeedback}
-        onCollapseAll={handleCollapseAll}
-        onDelete={handleDelete}
-        onExpandAll={handleExpandAll}
-        onExport={handleExport}
-        onPublish={(season, week) => handlePublish(season, week, 'rankings-snapshot-publish')}
-        onToggleSeason={toggleSeason}
-        rankingsSnapshots={rankingsSnapshots ?? []}
-      />
+          actionFeedback={actionFeedback}
+          collapsedSeasons={collapsedSeasons}
+          isActionPending={isActionPending}
+          isLoading={rankingsSnapshotsLoading}
+          onClearFeedback={clearFeedback}
+          onCollapseAll={handleCollapseAll}
+          onDelete={handleDelete}
+          onExpandAll={handleExpandAll}
+          onExport={handleExport}
+          onPublish={(season, week) => handlePublish(season, week, 'rankings-snapshot-publish')}
+          onToggleSeason={toggleSeason}
+          rankingsSnapshots={rankingsSnapshots ?? []}
+        />
       </ErrorBoundary>
 
       {deleteConfirm && (
