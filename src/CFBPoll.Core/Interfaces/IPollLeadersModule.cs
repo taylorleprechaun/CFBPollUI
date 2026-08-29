@@ -3,7 +3,7 @@ using CFBPoll.Core.Models;
 namespace CFBPoll.Core.Interfaces;
 
 /// <summary>
-/// Aggregates rankings data across published snapshots to compute per-team appearance counts.
+/// Aggregates rankings data across published rankings snapshots to compute per-team appearance counts.
 /// </summary>
 public interface IPollLeadersModule
 {

@@ -9,7 +9,7 @@ public interface ISeasonTrendsModule
 {
     /// <summary>
     /// Builds season trends data (top-25 progression with drop-out gaps) from an already-computed
-    /// set of weekly rankings, without reading persisted published snapshots.
+    /// set of weekly rankings, without reading persisted published rankings snapshots.
     /// </summary>
     Task<SeasonTrendsResult> BuildFromRankingsAsync(int season, IEnumerable<RankingsResult> weeklyRankings);
 

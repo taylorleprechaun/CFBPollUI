@@ -104,7 +104,7 @@ public class AdminController : ControllerBase
 
     /// <summary>
     /// Computes season trends (top-25 rank progression) live across every week of a season using an
-    /// explicitly chosen algorithm version, without reading or requiring persisted published snapshots.
+    /// explicitly chosen algorithm version, without reading or requiring persisted published rankings snapshots.
     /// </summary>
     [HttpPost("seasons/{season}/experimental/{algorithmVersion}/trends")]
     public async Task<ActionResult<SeasonTrendsResponseDTO>> CalculateExperimentalSeasonTrends(int season, RatingAlgorithmVersion algorithmVersion)

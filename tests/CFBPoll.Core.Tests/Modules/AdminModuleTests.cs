@@ -96,7 +96,7 @@ public class AdminModuleTests
     }
 
     [Fact]
-    public async Task CalculateExperimentalAsync_NeverPersistsSnapshot()
+    public async Task CalculateExperimentalAsync_NeverPersistsRankingsSnapshot()
     {
         var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
         var ratings = new Dictionary<string, RatingDetails>();
@@ -934,7 +934,7 @@ public class AdminModuleTests
     }
 
     [Fact]
-    public async Task CalculateRankingsAsync_UsesResolvedVersionForSnapshotTag()
+    public async Task CalculateRankingsAsync_UsesResolvedVersionForRankingsSnapshotTag()
     {
         var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
         var ratings = new Dictionary<string, RatingDetails>();
@@ -1349,7 +1349,7 @@ public class AdminModuleTests
     }
 
     [Fact]
-    public async Task ExportExperimentalAsync_NeverPersistsSnapshot()
+    public async Task ExportExperimentalAsync_NeverPersistsRankingsSnapshot()
     {
         var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
         var ratings = new Dictionary<string, RatingDetails>();
@@ -1367,7 +1367,7 @@ public class AdminModuleTests
     }
 
     [Fact]
-    public async Task ExportRankingsAsync_NoSnapshot_ReturnsNull()
+    public async Task ExportRankingsAsync_NoRankingsSnapshot_ReturnsNull()
     {
         _mockRankingsModule.Setup(x => x.GetRankingsSnapshotAsync(2024, 5)).ReturnsAsync((RankingsResult?)null);
 
@@ -1378,33 +1378,33 @@ public class AdminModuleTests
     }
 
     [Fact]
-    public async Task ExportRankingsAsync_SnapshotExists_CallsGetSnapshotThenGenerateWorkbook()
+    public async Task ExportRankingsAsync_RankingsSnapshotExists_CallsGetRankingsSnapshotThenGenerateWorkbook()
     {
-        var snapshot = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+        var rankingsSnapshot = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
         var expectedBytes = new byte[] { 1, 2, 3 };
         var callOrder = new List<string>();
 
         _mockRankingsModule.Setup(x => x.GetRankingsSnapshotAsync(2024, 5))
-            .Callback(() => callOrder.Add("get_snapshot"))
-            .ReturnsAsync(snapshot);
-        _mockExcelExportModule.Setup(x => x.GenerateRankingsWorkbook(snapshot))
+            .Callback(() => callOrder.Add("get_rankings_snapshot"))
+            .ReturnsAsync(rankingsSnapshot);
+        _mockExcelExportModule.Setup(x => x.GenerateRankingsWorkbook(rankingsSnapshot))
             .Callback(() => callOrder.Add("generate_workbook"))
             .Returns(expectedBytes);
 
         await _adminModule.ExportRankingsAsync(2024, 5);
 
         Assert.Equal(2, callOrder.Count);
-        Assert.True(callOrder.IndexOf("get_snapshot") < callOrder.IndexOf("generate_workbook"));
+        Assert.True(callOrder.IndexOf("get_rankings_snapshot") < callOrder.IndexOf("generate_workbook"));
     }
 
     [Fact]
-    public async Task ExportRankingsAsync_SnapshotExists_ReturnsBytes()
+    public async Task ExportRankingsAsync_RankingsSnapshotExists_ReturnsBytes()
     {
-        var snapshot = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+        var rankingsSnapshot = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
         var expectedBytes = new byte[] { 1, 2, 3 };
 
-        _mockRankingsModule.Setup(x => x.GetRankingsSnapshotAsync(2024, 5)).ReturnsAsync(snapshot);
-        _mockExcelExportModule.Setup(x => x.GenerateRankingsWorkbook(snapshot)).Returns(expectedBytes);
+        _mockRankingsModule.Setup(x => x.GetRankingsSnapshotAsync(2024, 5)).ReturnsAsync(rankingsSnapshot);
+        _mockExcelExportModule.Setup(x => x.GenerateRankingsWorkbook(rankingsSnapshot)).Returns(expectedBytes);
 
         var result = await _adminModule.ExportRankingsAsync(2024, 5);
 
