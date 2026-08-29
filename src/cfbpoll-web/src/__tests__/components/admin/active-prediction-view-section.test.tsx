@@ -59,6 +59,7 @@ function defaultProps() {
     onClearGradeFeedback: vi.fn(),
     onClearPublishFeedback: vi.fn(),
     onClearPublishResultsFeedback: vi.fn(),
+    onExport: vi.fn(),
     onGrade: vi.fn(),
     onPublish: vi.fn(),
     onPublishResults: vi.fn(),
@@ -69,6 +70,16 @@ function defaultProps() {
 }
 
 describe('ActivePredictionViewSection', () => {
+  it('calls onExport with season and week when Download Excel is clicked', async () => {
+    const user = userEvent.setup();
+    const onExport = vi.fn();
+
+    render(<ActivePredictionViewSection {...defaultProps()} onExport={onExport} />);
+    await user.click(screen.getByRole('button', { name: 'Download Excel' }));
+
+    expect(onExport).toHaveBeenCalledWith(2024, 5);
+  });
+
   it('calls onGrade with season and week when Grade is clicked', async () => {
     const user = userEvent.setup();
     const onGrade = vi.fn();

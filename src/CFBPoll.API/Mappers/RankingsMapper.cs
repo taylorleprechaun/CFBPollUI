@@ -5,6 +5,17 @@ namespace CFBPoll.API.Mappers;
 
 public static class RankingsMapper
 {
+    public static AdminRankingsResponseDTO ToAdminResponseDTO(GetRankingsSnapshotResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        return new AdminRankingsResponseDTO
+        {
+            IsPublished = result.IsPublished,
+            Rankings = ToResponseDTO(result.Rankings)
+        };
+    }
+
     public static RankedTeamDTO ToDTO(RankedTeam team)
     {
         ArgumentNullException.ThrowIfNull(team);

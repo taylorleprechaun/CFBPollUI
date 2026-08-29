@@ -52,6 +52,7 @@ const mockDeleteMutateAsync = vi.fn();
 const mockRefreshCacheMutateAsync = vi.fn();
 const mockGradeMutateAsync = vi.fn();
 const mockPublishResultsMutateAsync = vi.fn();
+const mockExportMutateAsync = vi.fn();
 let mockCalculateIsPending = false;
 let mockRefreshCacheIsPending = false;
 let mockGradeIsPending = false;
@@ -82,6 +83,10 @@ vi.mock('../../hooks/use-admin-mutations', () => ({
   }),
   useDeletePredictions: () => ({
     mutateAsync: mockDeleteMutateAsync,
+    isPending: false,
+  }),
+  useExportPredictions: () => ({
+    mutateAsync: mockExportMutateAsync,
     isPending: false,
   }),
   useRefreshCache: () => ({
@@ -301,6 +306,22 @@ describe('PredictionsPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Generate' }));
     expect(mockCalculateMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
+  });
+
+  it('calls export mutation when Export is clicked on a persisted row', async () => {
+    const user = userEvent.setup();
+    mockSummariesData = [
+      { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z', gameCount: 10, gradedAt: null, isGraded: false, resultsPublished: false },
+    ];
+    mockExportMutateAsync.mockResolvedValue(undefined);
+
+    renderPredictionsPage();
+
+    const seasonButton = screen.getByRole('button', { name: /2024 Season/i });
+    await user.click(seasonButton);
+    await user.click(screen.getByRole('button', { name: 'Export' }));
+
+    expect(mockExportMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 1 });
   });
 
   it('calls grade mutation with the active view\'s season and week on Grade click', async () => {

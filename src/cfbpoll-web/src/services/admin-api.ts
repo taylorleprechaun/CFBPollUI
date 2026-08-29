@@ -11,6 +11,8 @@ import {
 import {
   type AdminPredictionsResponse,
   AdminPredictionsResponseSchema,
+  type AdminRankingsResponse,
+  AdminRankingsResponseSchema,
   CacheEntriesResponseSchema,
   type CacheEntry,
   type CalculatePredictionsResponse,
@@ -174,6 +176,20 @@ export async function downloadExport(
   triggerBlobDownload(blob, `Rankings_${season}_Week${week + 1}.xlsx`);
 }
 
+export async function downloadPredictionsExport(
+  token: string,
+  season: number,
+  week: number
+): Promise<void> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction/export`,
+    withAuth(token)
+  );
+
+  const blob = await response.blob();
+  triggerBlobDownload(blob, `Predictions_${season}_Week${week + 1}.xlsx`);
+}
+
 export async function fetchCacheEntries(token: string): Promise<CacheEntry[]> {
   const response = await safeFetch(`${API_BASE_URL}/api/v1/admin/cache`, withAuth(token));
   return parseResponse(response, CacheEntriesResponseSchema);
@@ -210,6 +226,18 @@ export async function fetchPredictionsSummaries(
     withAuth(token)
   );
   return parseResponse(response, PredictionsSummariesResponseSchema);
+}
+
+export async function fetchRanking(
+  token: string,
+  season: number,
+  week: number
+): Promise<AdminRankingsResponse> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/ranking`,
+    withAuth(token)
+  );
+  return parseResponse(response, AdminRankingsResponseSchema);
 }
 
 export async function fetchRankingsSnapshots(

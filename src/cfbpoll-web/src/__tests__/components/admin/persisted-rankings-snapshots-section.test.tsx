@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PersistedRankingsSnapshotsSection } from '../../../components/admin';
@@ -107,6 +108,23 @@ describe('PersistedRankingsSnapshotsSection', () => {
     expect(onToggleSeason).toHaveBeenCalledWith(2024);
   });
 
+  it('calls onView with season and week when View is clicked', async () => {
+    const onView = vi.fn();
+    render(
+      <PersistedRankingsSnapshotsSection
+        {...defaultProps}
+        onView={onView}
+        rankingsSnapshots={[
+          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+        ]}
+      />
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'View' }));
+
+    expect(onView).toHaveBeenCalledWith(2024, 1);
+  });
+
   it('disables action buttons when isActionPending is true', () => {
     render(
       <PersistedRankingsSnapshotsSection
@@ -152,6 +170,20 @@ describe('PersistedRankingsSnapshotsSection', () => {
     expect(screen.getByText('2023 Season')).toBeInTheDocument();
     expect(screen.getByText('(2 rankings)')).toBeInTheDocument();
     expect(screen.getByText('(1 ranking)')).toBeInTheDocument();
+  });
+
+  it('marks the row matching activeItem as currently being viewed', () => {
+    render(
+      <PersistedRankingsSnapshotsSection
+        {...defaultProps}
+        activeItem={{ season: 2024, week: 1 }}
+        rankingsSnapshots={[
+          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+        ]}
+      />
+    );
+
+    expect(screen.getByText('(Viewing)')).toBeInTheDocument();
   });
 
   it('renders heading', () => {
@@ -280,5 +312,19 @@ describe('PersistedRankingsSnapshotsSection', () => {
     );
 
     expect(screen.getByLabelText('Success')).toBeInTheDocument();
+  });
+
+  it('shows View button when onView is provided', () => {
+    render(
+      <PersistedRankingsSnapshotsSection
+        {...defaultProps}
+        onView={vi.fn()}
+        rankingsSnapshots={[
+          { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+        ]}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'View' })).toBeInTheDocument();
   });
 });

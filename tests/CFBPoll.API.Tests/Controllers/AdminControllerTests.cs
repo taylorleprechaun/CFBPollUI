@@ -386,6 +386,32 @@ public class AdminControllerTests
     }
 
     [Fact]
+    public async Task ExportPredictions_Found_ReturnsFile()
+    {
+        _mockAdminModule
+            .Setup(x => x.ExportPredictionsAsync(2024, 5))
+            .ReturnsAsync(new byte[] { 1, 2, 3 });
+
+        var result = await _controller.ExportPredictions(2024, 5);
+
+        var fileResult = Assert.IsType<FileContentResult>(result);
+        Assert.Equal("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileResult.ContentType);
+        Assert.Equal("Predictions_2024_Week6.xlsx", fileResult.FileDownloadName);
+    }
+
+    [Fact]
+    public async Task ExportPredictions_NotFound_ReturnsNotFound()
+    {
+        _mockAdminModule
+            .Setup(x => x.ExportPredictionsAsync(2024, 5))
+            .ReturnsAsync((byte[]?)null);
+
+        var result = await _controller.ExportPredictions(2024, 5);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
     public async Task GetCacheEntries_ReturnsMappedEntries()
     {
         var entries = new List<CacheEntrySummary>
@@ -483,6 +509,45 @@ public class AdminControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var response = Assert.IsAssignableFrom<IEnumerable<PredictionsSummaryDTO>>(okResult.Value);
         Assert.Equal(2, response.Count());
+    }
+
+    [Fact]
+    public async Task GetRanking_NullResult_ReturnsNotFound()
+    {
+        _mockAdminModule.Setup(x => x.GetRankingsSnapshotAsync(2024, 5)).ReturnsAsync((GetRankingsSnapshotResult?)null);
+
+        var result = await _controller.GetRanking(2024, 5);
+
+        Assert.IsType<NotFoundObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task GetRanking_Success_ReturnsOk()
+    {
+        var getResult = new GetRankingsSnapshotResult
+        {
+            IsPublished = true,
+            Rankings = new RankingsResult
+            {
+                Season = 2024,
+                Week = 5,
+                Rankings =
+                [
+                    new RankedTeam { Rank = 1, TeamName = "Ohio State" }
+                ]
+            }
+        };
+
+        _mockAdminModule.Setup(x => x.GetRankingsSnapshotAsync(2024, 5)).ReturnsAsync(getResult);
+
+        var result = await _controller.GetRanking(2024, 5);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<AdminRankingsResponseDTO>(okResult.Value);
+        Assert.True(response.IsPublished);
+        Assert.Equal(2024, response.Rankings.Season);
+        Assert.Equal(5, response.Rankings.Week);
+        Assert.Single(response.Rankings.Rankings);
     }
 
     [Fact]

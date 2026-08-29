@@ -17,6 +17,20 @@ public class ExcelExportModule : IExcelExportModule
         ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
     }
 
+    public byte[] GeneratePredictionsWorkbook(PredictionsResult predictions)
+    {
+        ArgumentNullException.ThrowIfNull(predictions);
+
+        using var package = new ExcelPackage();
+        var worksheet = package.Workbook.Worksheets.Add("Predictions");
+
+        WritePredictionHeaders(worksheet);
+        WritePredictionData(worksheet, predictions.Predictions);
+        FormatPredictionsWorksheet(worksheet);
+
+        return package.GetAsByteArray();
+    }
+
     public byte[] GenerateRankingsWorkbook(RankingsResult rankings)
     {
         ArgumentNullException.ThrowIfNull(rankings);
@@ -66,6 +80,21 @@ public class ExcelExportModule : IExcelExportModule
         }
 
         return (a.Length - i).CompareTo(b.Length - j);
+    }
+
+    private void FormatPredictionsWorksheet(ExcelWorksheet worksheet)
+    {
+        const int totalColumns = 17;
+
+        // Predicted Margin column (E) - 2 decimals
+        worksheet.Column(5).Style.Numberformat.Format = "0.00";
+        // Betting Spread column (H) - 2 decimals
+        worksheet.Column(8).Style.Numberformat.Format = "0.00";
+        // Betting O/U column (K) - 2 decimals
+        worksheet.Column(11).Style.Numberformat.Format = "0.00";
+
+        worksheet.Cells[1, 1, 1, totalColumns].Style.Font.Bold = true;
+        worksheet.Cells.AutoFitColumns();
     }
 
     private void FormatWorksheet(ExcelWorksheet worksheet, int dataRows, int dynamicColumnCount)
@@ -161,5 +190,66 @@ public class ExcelExportModule : IExcelExportModule
         {
             worksheet.Cells[1, 12 + i].Value = dynamicColumns[i];
         }
+    }
+
+    private void WritePredictionData(ExcelWorksheet worksheet, IReadOnlyList<GamePrediction> predictions)
+    {
+        for (var i = 0; i < predictions.Count; i++)
+        {
+            var prediction = predictions[i];
+            var row = i + 2;
+
+            worksheet.Cells[row, 1].Value = prediction.AwayTeam;
+            worksheet.Cells[row, 2].Value = prediction.HomeTeam;
+            worksheet.Cells[row, 3].Value = prediction.NeutralSite;
+            worksheet.Cells[row, 4].Value = prediction.PredictedWinner;
+            worksheet.Cells[row, 5].Value = prediction.PredictedMargin;
+            worksheet.Cells[row, 6].Value = prediction.AwayTeamScore;
+            worksheet.Cells[row, 7].Value = prediction.HomeTeamScore;
+
+            if (prediction.BettingSpread.HasValue)
+                worksheet.Cells[row, 8].Value = prediction.BettingSpread.Value;
+
+            worksheet.Cells[row, 9].Value = prediction.MySpreadPick;
+            worksheet.Cells[row, 10].Value = prediction.SpreadGrade.ToString();
+
+            if (prediction.BettingOverUnder.HasValue)
+                worksheet.Cells[row, 11].Value = prediction.BettingOverUnder.Value;
+
+            worksheet.Cells[row, 12].Value = prediction.MyOverUnderPick;
+            worksheet.Cells[row, 13].Value = prediction.OverUnderGrade.ToString();
+
+            if (prediction.ActualAwayScore.HasValue)
+                worksheet.Cells[row, 14].Value = prediction.ActualAwayScore.Value;
+
+            if (prediction.ActualHomeScore.HasValue)
+                worksheet.Cells[row, 15].Value = prediction.ActualHomeScore.Value;
+
+            if (prediction.ActualWinner is not null)
+                worksheet.Cells[row, 16].Value = prediction.ActualWinner;
+
+            worksheet.Cells[row, 17].Value = prediction.WinnerGrade.ToString();
+        }
+    }
+
+    private void WritePredictionHeaders(ExcelWorksheet worksheet)
+    {
+        worksheet.Cells[1, 1].Value = "Away Team";
+        worksheet.Cells[1, 2].Value = "Home Team";
+        worksheet.Cells[1, 3].Value = "Neutral Site";
+        worksheet.Cells[1, 4].Value = "Predicted Winner";
+        worksheet.Cells[1, 5].Value = "Predicted Margin";
+        worksheet.Cells[1, 6].Value = "Predicted Away Score";
+        worksheet.Cells[1, 7].Value = "Predicted Home Score";
+        worksheet.Cells[1, 8].Value = "Betting Spread";
+        worksheet.Cells[1, 9].Value = "My Spread Pick";
+        worksheet.Cells[1, 10].Value = "Spread Grade";
+        worksheet.Cells[1, 11].Value = "Betting O/U";
+        worksheet.Cells[1, 12].Value = "My O/U Pick";
+        worksheet.Cells[1, 13].Value = "O/U Grade";
+        worksheet.Cells[1, 14].Value = "Actual Away Score";
+        worksheet.Cells[1, 15].Value = "Actual Home Score";
+        worksheet.Cells[1, 16].Value = "Actual Winner";
+        worksheet.Cells[1, 17].Value = "Winner Grade";
     }
 }

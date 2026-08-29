@@ -12,6 +12,11 @@ export const CalculateResponseSchema = z.object({
   rankings: RankingsResponseSchema,
 });
 
+export const AdminRankingsResponseSchema = z.object({
+  isPublished: z.boolean(),
+  rankings: RankingsResponseSchema,
+});
+
 export const ExperimentalCalculateResponseSchema = z.object({
   algorithmVersion: z.string(),
   rankings: RankingsResponseSchema,
@@ -133,6 +138,7 @@ export const RemoveCacheEntriesResponseSchema = z.object({
 });
 
 export type AdminPredictionsResponse = z.infer<typeof AdminPredictionsResponseSchema>;
+export type AdminRankingsResponse = z.infer<typeof AdminRankingsResponseSchema>;
 export type CacheEntry = z.infer<typeof CacheEntrySchema>;
 export type CalculatePredictionsResponse = z.infer<typeof CalculatePredictionsResponseSchema>;
 export type CalculateResponse = z.infer<typeof CalculateResponseSchema>;

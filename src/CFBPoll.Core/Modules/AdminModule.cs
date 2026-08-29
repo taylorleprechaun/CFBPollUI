@@ -346,6 +346,18 @@ public class AdminModule : IAdminModule
         return _excelExportModule.GenerateRankingsWorkbook(result.Rankings);
     }
 
+    public async Task<byte[]?> ExportPredictionsAsync(int season, int week)
+    {
+        _logger.LogInformation("Exporting predictions for season {Season}, week {Week}", season, week);
+
+        var predictions = await _predictionsModule.GetAsync(season, week).ConfigureAwait(false);
+
+        if (predictions is null)
+            return null;
+
+        return _excelExportModule.GeneratePredictionsWorkbook(predictions);
+    }
+
     public async Task<byte[]?> ExportRankingsAsync(int season, int week)
     {
         _logger.LogInformation("Exporting rankings for season {Season}, week {Week}", season, week);
@@ -393,6 +405,25 @@ public class AdminModule : IAdminModule
     public async Task<IEnumerable<PredictionsSummary>> GetPredictionsSummariesAsync()
     {
         return await _predictionsModule.GetAllSummariesAsync().ConfigureAwait(false);
+    }
+
+    public async Task<GetRankingsSnapshotResult?> GetRankingsSnapshotAsync(int season, int week)
+    {
+        var rankingsTask = _rankingsModule.GetRankingsSnapshotAsync(season, week);
+        var summariesTask = _rankingsModule.GetRankingsSnapshotsAsync();
+        await Task.WhenAll(rankingsTask, summariesTask).ConfigureAwait(false);
+
+        var rankings = rankingsTask.Result;
+        if (rankings is null)
+            return null;
+
+        var summary = summariesTask.Result.FirstOrDefault(s => s.Season == season && s.Week == week);
+
+        return new GetRankingsSnapshotResult
+        {
+            IsPublished = summary?.IsPublished ?? false,
+            Rankings = rankings
+        };
     }
 
     public async Task<IEnumerable<RankingsSnapshotSummary>> GetRankingsSnapshotsAsync()

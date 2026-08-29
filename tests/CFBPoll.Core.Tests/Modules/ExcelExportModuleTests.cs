@@ -15,6 +15,141 @@ public class ExcelExportModuleTests
     }
 
     [Fact]
+    public void GeneratePredictionsWorkbook_EmptyPredictions_ProducesValidWorkbookWithHeaders()
+    {
+        var predictions = new PredictionsResult { Season = 2024, Week = 5, Predictions = [] };
+
+        var bytes = _module.GeneratePredictionsWorkbook(predictions);
+
+        using var package = new ExcelPackage(new MemoryStream(bytes));
+        var worksheet = package.Workbook.Worksheets[0];
+
+        Assert.Equal("Away Team", worksheet.Cells[1, 1].Value?.ToString());
+        Assert.Equal("Home Team", worksheet.Cells[1, 2].Value?.ToString());
+        Assert.Null(worksheet.Cells[2, 1].Value);
+    }
+
+    [Fact]
+    public void GeneratePredictionsWorkbook_HasCorrectDataValues()
+    {
+        var predictions = CreatePredictionsResult();
+
+        var bytes = _module.GeneratePredictionsWorkbook(predictions);
+
+        using var package = new ExcelPackage(new MemoryStream(bytes));
+        var worksheet = package.Workbook.Worksheets[0];
+
+        Assert.Equal("Iowa", worksheet.Cells[2, 1].Value);
+        Assert.Equal("Nebraska", worksheet.Cells[2, 2].Value);
+        Assert.Equal(false, worksheet.Cells[2, 3].Value);
+        Assert.Equal("Nebraska", worksheet.Cells[2, 4].Value);
+        Assert.Equal(7.5, worksheet.Cells[2, 5].Value);
+        Assert.Equal(21.0, worksheet.Cells[2, 6].Value);
+        Assert.Equal(28.0, worksheet.Cells[2, 7].Value);
+        Assert.Equal(-3.5, worksheet.Cells[2, 8].Value);
+        Assert.Equal("Nebraska", worksheet.Cells[2, 9].Value);
+        Assert.Equal("Correct", worksheet.Cells[2, 10].Value?.ToString());
+        Assert.Equal(54.5, worksheet.Cells[2, 11].Value);
+        Assert.Equal("Over", worksheet.Cells[2, 12].Value);
+        Assert.Equal("Correct", worksheet.Cells[2, 13].Value?.ToString());
+        Assert.Equal(21.0, worksheet.Cells[2, 14].Value);
+        Assert.Equal(28.0, worksheet.Cells[2, 15].Value);
+        Assert.Equal("Nebraska", worksheet.Cells[2, 16].Value);
+        Assert.Equal("Correct", worksheet.Cells[2, 17].Value?.ToString());
+    }
+
+    [Fact]
+    public void GeneratePredictionsWorkbook_HasCorrectHeaders()
+    {
+        var predictions = CreatePredictionsResult();
+
+        var bytes = _module.GeneratePredictionsWorkbook(predictions);
+
+        using var package = new ExcelPackage(new MemoryStream(bytes));
+        var worksheet = package.Workbook.Worksheets[0];
+
+        Assert.Equal("Away Team", worksheet.Cells[1, 1].Value?.ToString());
+        Assert.Equal("Home Team", worksheet.Cells[1, 2].Value?.ToString());
+        Assert.Equal("Neutral Site", worksheet.Cells[1, 3].Value?.ToString());
+        Assert.Equal("Predicted Winner", worksheet.Cells[1, 4].Value?.ToString());
+        Assert.Equal("Predicted Margin", worksheet.Cells[1, 5].Value?.ToString());
+        Assert.Equal("Predicted Away Score", worksheet.Cells[1, 6].Value?.ToString());
+        Assert.Equal("Predicted Home Score", worksheet.Cells[1, 7].Value?.ToString());
+        Assert.Equal("Betting Spread", worksheet.Cells[1, 8].Value?.ToString());
+        Assert.Equal("My Spread Pick", worksheet.Cells[1, 9].Value?.ToString());
+        Assert.Equal("Spread Grade", worksheet.Cells[1, 10].Value?.ToString());
+        Assert.Equal("Betting O/U", worksheet.Cells[1, 11].Value?.ToString());
+        Assert.Equal("My O/U Pick", worksheet.Cells[1, 12].Value?.ToString());
+        Assert.Equal("O/U Grade", worksheet.Cells[1, 13].Value?.ToString());
+        Assert.Equal("Actual Away Score", worksheet.Cells[1, 14].Value?.ToString());
+        Assert.Equal("Actual Home Score", worksheet.Cells[1, 15].Value?.ToString());
+        Assert.Equal("Actual Winner", worksheet.Cells[1, 16].Value?.ToString());
+        Assert.Equal("Winner Grade", worksheet.Cells[1, 17].Value?.ToString());
+    }
+
+    [Fact]
+    public void GeneratePredictionsWorkbook_HasOneSheetNamedPredictions()
+    {
+        var predictions = CreatePredictionsResult();
+
+        var bytes = _module.GeneratePredictionsWorkbook(predictions);
+
+        using var package = new ExcelPackage(new MemoryStream(bytes));
+        Assert.Single(package.Workbook.Worksheets);
+        Assert.Equal("Predictions", package.Workbook.Worksheets[0].Name);
+    }
+
+    [Fact]
+    public void GeneratePredictionsWorkbook_NullOptionalFields_LeavesCellsBlank()
+    {
+        var predictions = new PredictionsResult
+        {
+            Season = 2024,
+            Week = 5,
+            Predictions =
+            [
+                new GamePrediction
+                {
+                    AwayTeam = "Texas",
+                    HomeTeam = "Oklahoma",
+                    PredictedWinner = "Texas",
+                    PredictedMargin = 3.0,
+                    MySpreadPick = "Texas",
+                    MyOverUnderPick = "Under"
+                }
+            ]
+        };
+
+        var bytes = _module.GeneratePredictionsWorkbook(predictions);
+
+        using var package = new ExcelPackage(new MemoryStream(bytes));
+        var worksheet = package.Workbook.Worksheets[0];
+
+        Assert.Null(worksheet.Cells[2, 8].Value);
+        Assert.Null(worksheet.Cells[2, 11].Value);
+        Assert.Null(worksheet.Cells[2, 14].Value);
+        Assert.Null(worksheet.Cells[2, 15].Value);
+        Assert.Null(worksheet.Cells[2, 16].Value);
+    }
+
+    [Fact]
+    public void GeneratePredictionsWorkbook_ReturnsNonEmptyBytes()
+    {
+        var predictions = CreatePredictionsResult();
+
+        var result = _module.GeneratePredictionsWorkbook(predictions);
+
+        Assert.NotNull(result);
+        Assert.True(result.Length > 0);
+    }
+
+    [Fact]
+    public void GeneratePredictionsWorkbook_ThrowsOnNull()
+    {
+        Assert.Throws<ArgumentNullException>(() => _module.GeneratePredictionsWorkbook(null!));
+    }
+
+    [Fact]
     public void GenerateRankingsWorkbook_DynamicColumnsContainNumberedGames_SortsColumnsNumerically()
     {
         var rankings = new RankingsResult
@@ -223,6 +358,40 @@ public class ExcelExportModuleTests
     public void GenerateRankingsWorkbook_ThrowsOnNull()
     {
         Assert.Throws<ArgumentNullException>(() => _module.GenerateRankingsWorkbook(null!));
+    }
+
+    private static PredictionsResult CreatePredictionsResult()
+    {
+        return new PredictionsResult
+        {
+            Season = 2024,
+            Week = 5,
+            Predictions =
+            [
+                new GamePrediction
+                {
+                    ActualAwayScore = 21,
+                    ActualHomeScore = 28,
+                    ActualOverUnderResult = "Over",
+                    ActualSpreadCoveringTeam = "Nebraska",
+                    ActualWinner = "Nebraska",
+                    AwayTeam = "Iowa",
+                    AwayTeamScore = 21,
+                    BettingOverUnder = 54.5,
+                    BettingSpread = -3.5,
+                    HomeTeam = "Nebraska",
+                    HomeTeamScore = 28,
+                    MyOverUnderPick = "Over",
+                    MySpreadPick = "Nebraska",
+                    NeutralSite = false,
+                    OverUnderGrade = PredictionGradeStatus.Correct,
+                    PredictedMargin = 7.5,
+                    PredictedWinner = "Nebraska",
+                    SpreadGrade = PredictionGradeStatus.Correct,
+                    WinnerGrade = PredictionGradeStatus.Correct
+                }
+            ]
+        };
     }
 
     private static RankingsResult CreateRankingsResult()

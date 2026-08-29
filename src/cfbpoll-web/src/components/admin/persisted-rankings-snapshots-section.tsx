@@ -5,6 +5,7 @@ import { PersistedItemsSection } from './persisted-items-section';
 
 interface PersistedRankingsSnapshotsSectionProps {
   actionFeedback: ActionFeedback | null;
+  activeItem?: { season: number; week: number } | null;
   collapsedSeasons: Set<number>;
   isActionPending: boolean;
   isLoading?: boolean;
@@ -15,6 +16,7 @@ interface PersistedRankingsSnapshotsSectionProps {
   onExport: (season: number, week: number) => void;
   onPublish: (season: number, week: number) => void;
   onToggleSeason: (season: number) => void;
+  onView?: (season: number, week: number) => void;
   rankingsSnapshots: RankingsSnapshot[];
 }
 
@@ -22,6 +24,7 @@ const COLUMN_COUNT = 4;
 
 export function PersistedRankingsSnapshotsSection({
   actionFeedback,
+  activeItem = null,
   collapsedSeasons,
   isActionPending,
   isLoading = false,
@@ -32,11 +35,13 @@ export function PersistedRankingsSnapshotsSection({
   onExport,
   onPublish,
   onToggleSeason,
+  onView,
   rankingsSnapshots,
 }: PersistedRankingsSnapshotsSectionProps) {
   return (
     <PersistedItemsSection
       actionFeedback={actionFeedback}
+      activeItem={activeItem}
       collapsedSeasons={collapsedSeasons}
       columnCount={COLUMN_COUNT}
       contentIdPrefix="rankings-snapshots-season"
@@ -53,6 +58,7 @@ export function PersistedRankingsSnapshotsSection({
       onExport={onExport}
       onPublish={onPublish}
       onToggleSeason={onToggleSeason}
+      onView={onView}
       title="Persisted Rankings"
     />
   );
