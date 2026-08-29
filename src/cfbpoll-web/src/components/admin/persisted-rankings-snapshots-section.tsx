@@ -1,9 +1,9 @@
-import type { Snapshot } from '../../schemas/admin';
+import type { RankingsSnapshot } from '../../schemas/admin';
 import type { ActionFeedback } from './types';
 
 import { PersistedItemsSection } from './persisted-items-section';
 
-interface PersistedSnapshotsSectionProps {
+interface PersistedRankingsSnapshotsSectionProps {
   actionFeedback: ActionFeedback | null;
   collapsedSeasons: Set<number>;
   isActionPending: boolean;
@@ -15,12 +15,12 @@ interface PersistedSnapshotsSectionProps {
   onExport: (season: number, week: number) => void;
   onPublish: (season: number, week: number) => void;
   onToggleSeason: (season: number) => void;
-  snapshots: Snapshot[];
+  rankingsSnapshots: RankingsSnapshot[];
 }
 
 const COLUMN_COUNT = 4;
 
-export function PersistedSnapshotsSection({
+export function PersistedRankingsSnapshotsSection({
   actionFeedback,
   collapsedSeasons,
   isActionPending,
@@ -32,20 +32,20 @@ export function PersistedSnapshotsSection({
   onExport,
   onPublish,
   onToggleSeason,
-  snapshots,
-}: PersistedSnapshotsSectionProps) {
+  rankingsSnapshots,
+}: PersistedRankingsSnapshotsSectionProps) {
   return (
     <PersistedItemsSection
       actionFeedback={actionFeedback}
       collapsedSeasons={collapsedSeasons}
       columnCount={COLUMN_COUNT}
-      contentIdPrefix="snapshots-season"
-      emptyMessage="No persisted snapshots found."
-      feedbackKeyPrefix="snapshot-publish"
+      contentIdPrefix="rankings-snapshots-season"
+      emptyMessage="No persisted rankings found."
+      feedbackKeyPrefix="rankings-snapshot-publish"
       isActionPending={isActionPending}
       isLoading={isLoading}
-      itemLabel="snapshot"
-      items={snapshots}
+      itemLabel="ranking"
+      items={rankingsSnapshots}
       onClearFeedback={onClearFeedback}
       onCollapseAll={onCollapseAll}
       onDelete={onDelete}
@@ -53,7 +53,7 @@ export function PersistedSnapshotsSection({
       onExport={onExport}
       onPublish={onPublish}
       onToggleSeason={onToggleSeason}
-      title="Persisted Snapshots"
+      title="Persisted Rankings"
     />
   );
 }

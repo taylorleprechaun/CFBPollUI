@@ -3,7 +3,7 @@ using CFBPoll.Core.Models;
 namespace CFBPoll.Core.Interfaces;
 
 /// <summary>
-/// Module for computing all-time rankings across all seasons from postseason snapshots.
+/// Module for computing all-time rankings across all seasons from postseason rankings snapshots.
 /// </summary>
 public interface IAllTimeModule
 {

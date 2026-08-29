@@ -28,11 +28,11 @@ public class TeamsModule : ITeamsModule
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(teamName);
 
-        var publishedSnapshot = await _rankingsModule.GetPublishedSnapshotAsync(season, week).ConfigureAwait(false);
+        var publishedRankingsSnapshot = await _rankingsModule.GetPublishedRankingsSnapshotAsync(season, week).ConfigureAwait(false);
 
-        if (publishedSnapshot is not null)
+        if (publishedRankingsSnapshot is not null)
         {
-            return await BuildPublishedTeamDetailAsync(teamName, season, publishedSnapshot).ConfigureAwait(false);
+            return await BuildPublishedTeamDetailAsync(teamName, season, publishedRankingsSnapshot).ConfigureAwait(false);
         }
 
         return await BuildCalculatedTeamDetailAsync(teamName, season, week).ConfigureAwait(false);
@@ -78,15 +78,15 @@ public class TeamsModule : ITeamsModule
     private async Task<TeamDetailResult?> BuildPublishedTeamDetailAsync(
         string teamName,
         int season,
-        RankingsResult publishedSnapshot)
+        RankingsResult publishedRankingsSnapshot)
     {
-        var rankedTeam = publishedSnapshot.Rankings.FirstOrDefault(
+        var rankedTeam = publishedRankingsSnapshot.Rankings.FirstOrDefault(
             r => r.TeamName.Equals(teamName, _scoic));
 
         if (rankedTeam is null)
         {
             _logger.LogDebug("Team {TeamName} not found in published rankings for season {Season}, week {Week}",
-                teamName, season, publishedSnapshot.Week);
+                teamName, season, publishedRankingsSnapshot.Week);
             return null;
         }
 
@@ -95,11 +95,11 @@ public class TeamsModule : ITeamsModule
 
         await Task.WhenAll(fbsTeamsTask, fullScheduleTask).ConfigureAwait(false);
 
-        var teams = BuildTeamsFromMetadata(fbsTeamsTask.Result, publishedSnapshot.Rankings);
+        var teams = BuildTeamsFromMetadata(fbsTeamsTask.Result, publishedRankingsSnapshot.Rankings);
 
         return new TeamDetailResult
         {
-            AllRankings = publishedSnapshot.Rankings,
+            AllRankings = publishedRankingsSnapshot.Rankings,
             FullSchedule = fullScheduleTask.Result,
             RankedTeam = rankedTeam,
             Teams = teams

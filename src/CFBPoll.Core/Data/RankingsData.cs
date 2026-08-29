@@ -20,7 +20,7 @@ public class RankingsData : IRankingsData
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<bool> DeleteSnapshotAsync(int season, int week)
+    public async Task<bool> DeleteRankingsSnapshotAsync(int season, int week)
     {
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync().ConfigureAwait(false);
@@ -32,13 +32,13 @@ public class RankingsData : IRankingsData
 
         var rowsAffected = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
 
-        _logger.LogInformation("Deleted snapshot for season {Season}, week {Week}: {RowsAffected} rows affected",
+        _logger.LogInformation("Deleted rankings snapshot for season {Season}, week {Week}: {RowsAffected} rows affected",
             season, week, rowsAffected);
 
         return rowsAffected > 0;
     }
 
-    public async Task<RankingsResult?> GetPreviousPublishedSnapshotAsync(int season, int week)
+    public async Task<RankingsResult?> GetPreviousPublishedRankingsSnapshotAsync(int season, int week)
     {
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync().ConfigureAwait(false);
@@ -60,7 +60,7 @@ public class RankingsData : IRankingsData
         return JsonSerializer.Deserialize<RankingsResult>(json);
     }
 
-    public async Task<RankingsResult?> GetPublishedSnapshotAsync(int season, int week)
+    public async Task<RankingsResult?> GetPublishedRankingsSnapshotAsync(int season, int week)
     {
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync().ConfigureAwait(false);
@@ -78,7 +78,7 @@ public class RankingsData : IRankingsData
         return JsonSerializer.Deserialize<RankingsResult>(json);
     }
 
-    public async Task<IEnumerable<RankingsResult>> GetPublishedSnapshotsBySeasonRangeAsync(int minSeason, int maxSeason)
+    public async Task<IEnumerable<RankingsResult>> GetPublishedRankingsSnapshotsBySeasonRangeAsync(int minSeason, int maxSeason)
     {
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync().ConfigureAwait(false);
@@ -105,7 +105,7 @@ public class RankingsData : IRankingsData
         }
 
         _logger.LogDebug(
-            "Fetched {Count} published snapshots for seasons {MinSeason} to {MaxSeason}",
+            "Fetched {Count} published rankings snapshots for seasons {MinSeason} to {MaxSeason}",
             results.Count, minSeason, maxSeason);
 
         return results;
@@ -131,7 +131,7 @@ public class RankingsData : IRankingsData
         return weeks;
     }
 
-    public async Task<RankingsResult?> GetSnapshotAsync(int season, int week)
+    public async Task<RankingsResult?> GetRankingsSnapshotAsync(int season, int week)
     {
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync().ConfigureAwait(false);
@@ -149,7 +149,7 @@ public class RankingsData : IRankingsData
         return JsonSerializer.Deserialize<RankingsResult>(json);
     }
 
-    public async Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync()
+    public async Task<IEnumerable<RankingsSnapshotSummary>> GetRankingsSnapshotsAsync()
     {
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync().ConfigureAwait(false);
@@ -158,11 +158,11 @@ public class RankingsData : IRankingsData
         command.CommandText = "SELECT Season, Week, Published, CreatedAt, AlgorithmVersion FROM RankingsSnapshot ORDER BY Season DESC, Week DESC";
 
         await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
-        List<SnapshotSummary> results = [];
+        List<RankingsSnapshotSummary> results = [];
 
         while (await reader.ReadAsync().ConfigureAwait(false))
         {
-            results.Add(new SnapshotSummary
+            results.Add(new RankingsSnapshotSummary
             {
                 Season = reader.GetInt32(0),
                 Week = reader.GetInt32(1),
@@ -201,7 +201,7 @@ public class RankingsData : IRankingsData
         _logger.LogInformation("Database initialized");
     }
 
-    public async Task<bool> PublishSnapshotAsync(int season, int week)
+    public async Task<bool> PublishRankingsSnapshotAsync(int season, int week)
     {
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync().ConfigureAwait(false);
@@ -213,13 +213,13 @@ public class RankingsData : IRankingsData
 
         var rowsAffected = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
 
-        _logger.LogInformation("Published snapshot for season {Season}, week {Week}: {RowsAffected} rows affected",
+        _logger.LogInformation("Published rankings snapshot for season {Season}, week {Week}: {RowsAffected} rows affected",
             season, week, rowsAffected);
 
         return rowsAffected > 0;
     }
 
-    public async Task<bool> SaveSnapshotAsync(RankingsResult rankings, RatingAlgorithmVersion algorithmVersion)
+    public async Task<bool> SaveRankingsSnapshotAsync(RankingsResult rankings, RatingAlgorithmVersion algorithmVersion)
     {
         ArgumentNullException.ThrowIfNull(rankings);
 
@@ -241,7 +241,7 @@ public class RankingsData : IRankingsData
 
         var rowsAffected = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
 
-        _logger.LogInformation("Saved snapshot for season {Season}, week {Week}", rankings.Season, rankings.Week);
+        _logger.LogInformation("Saved rankings snapshot for season {Season}, week {Week}", rankings.Season, rankings.Week);
 
         return rowsAffected > 0;
     }

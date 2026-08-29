@@ -3,13 +3,13 @@ using CFBPoll.Core.Models;
 
 namespace CFBPoll.API.Mappers;
 
-public static class SnapshotMapper
+public static class RankingsSnapshotMapper
 {
-    public static SnapshotDTO ToDTO(SnapshotSummary summary)
+    public static RankingsSnapshotDTO ToDTO(RankingsSnapshotSummary summary)
     {
         ArgumentNullException.ThrowIfNull(summary);
 
-        return new SnapshotDTO
+        return new RankingsSnapshotDTO
         {
             AlgorithmVersion = summary.AlgorithmVersion.ToString(),
             CreatedAt = summary.CreatedAt,

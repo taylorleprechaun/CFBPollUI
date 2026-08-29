@@ -8,12 +8,12 @@ import {
   useCalculatePredictions,
   useCalculateRankings,
   useDeletePredictions,
-  useDeleteSnapshot,
-  useExportSnapshot,
+  useDeleteRankingsSnapshot,
+  useExportRankingsSnapshot,
   useGradePredictions,
   usePublishGradedResults,
   usePublishPredictions,
-  usePublishSnapshot,
+  usePublishRankingsSnapshot,
   useRefreshCache,
 } from '../../hooks/use-admin-mutations';
 
@@ -21,12 +21,12 @@ vi.mock('../../services/admin-api', () => ({
   calculatePredictions: vi.fn(),
   calculateRankings: vi.fn(),
   deletePredictions: vi.fn(),
-  deleteSnapshot: vi.fn(),
+  deleteRankingsSnapshot: vi.fn(),
   downloadExport: vi.fn(),
   gradePredictions: vi.fn(),
   publishGradedResults: vi.fn(),
   publishPredictions: vi.fn(),
-  publishSnapshot: vi.fn(),
+  publishRankingsSnapshot: vi.fn(),
   refreshCache: vi.fn(),
 }));
 
@@ -34,12 +34,12 @@ import {
   calculatePredictions,
   calculateRankings,
   deletePredictions,
-  deleteSnapshot,
+  deleteRankingsSnapshot,
   downloadExport,
   gradePredictions,
   publishGradedResults,
   publishPredictions,
-  publishSnapshot,
+  publishRankingsSnapshot,
   refreshCache,
 } from '../../services/admin-api';
 
@@ -91,8 +91,8 @@ describe('null token guard', () => {
     expect(deletePredictions).not.toHaveBeenCalled();
   });
 
-  it('useDeleteSnapshot rejects with Authentication required when token is null', async () => {
-    const { result } = renderHook(() => useDeleteSnapshot(null), {
+  it('useDeleteRankingsSnapshot rejects with Authentication required when token is null', async () => {
+    const { result } = renderHook(() => useDeleteRankingsSnapshot(null), {
       wrapper: createWrapper(),
     });
 
@@ -100,11 +100,11 @@ describe('null token guard', () => {
       act(() => result.current.mutateAsync({ season: 2024, week: 5 }))
     ).rejects.toThrow('Authentication required');
 
-    expect(deleteSnapshot).not.toHaveBeenCalled();
+    expect(deleteRankingsSnapshot).not.toHaveBeenCalled();
   });
 
-  it('useExportSnapshot rejects with Authentication required when token is null', async () => {
-    const { result } = renderHook(() => useExportSnapshot(null), {
+  it('useExportRankingsSnapshot rejects with Authentication required when token is null', async () => {
+    const { result } = renderHook(() => useExportRankingsSnapshot(null), {
       wrapper: createWrapper(),
     });
 
@@ -151,8 +151,8 @@ describe('null token guard', () => {
     expect(publishPredictions).not.toHaveBeenCalled();
   });
 
-  it('usePublishSnapshot rejects with Authentication required when token is null', async () => {
-    const { result } = renderHook(() => usePublishSnapshot(null), {
+  it('usePublishRankingsSnapshot rejects with Authentication required when token is null', async () => {
+    const { result } = renderHook(() => usePublishRankingsSnapshot(null), {
       wrapper: createWrapper(),
     });
 
@@ -160,7 +160,7 @@ describe('null token guard', () => {
       act(() => result.current.mutateAsync({ season: 2024, week: 5 }))
     ).rejects.toThrow('Authentication required');
 
-    expect(publishSnapshot).not.toHaveBeenCalled();
+    expect(publishRankingsSnapshot).not.toHaveBeenCalled();
   });
 
   it('useRefreshCache rejects with Authentication required when token is null', async () => {
@@ -296,13 +296,13 @@ describe('useDeletePredictions', () => {
   });
 });
 
-describe('useDeleteSnapshot', () => {
+describe('useDeleteRankingsSnapshot', () => {
   beforeEach(() => vi.resetAllMocks());
 
-  it('calls deleteSnapshot with token and params', async () => {
-    vi.mocked(deleteSnapshot).mockResolvedValue(undefined);
+  it('calls deleteRankingsSnapshot with token and params', async () => {
+    vi.mocked(deleteRankingsSnapshot).mockResolvedValue(undefined);
 
-    const { result } = renderHook(() => useDeleteSnapshot('test-token'), {
+    const { result } = renderHook(() => useDeleteRankingsSnapshot('test-token'), {
       wrapper: createWrapper(),
     });
 
@@ -310,17 +310,17 @@ describe('useDeleteSnapshot', () => {
       await result.current.mutateAsync({ season: 2024, week: 5 });
     });
 
-    expect(deleteSnapshot).toHaveBeenCalledWith('test-token', 2024, 5);
+    expect(deleteRankingsSnapshot).toHaveBeenCalledWith('test-token', 2024, 5);
   });
 });
 
-describe('useExportSnapshot', () => {
+describe('useExportRankingsSnapshot', () => {
   beforeEach(() => vi.resetAllMocks());
 
   it('calls downloadExport with token and params', async () => {
     vi.mocked(downloadExport).mockResolvedValue(undefined);
 
-    const { result } = renderHook(() => useExportSnapshot('test-token'), {
+    const { result } = renderHook(() => useExportRankingsSnapshot('test-token'), {
       wrapper: createWrapper(),
     });
 
@@ -478,13 +478,13 @@ describe('usePublishPredictions', () => {
   });
 });
 
-describe('usePublishSnapshot', () => {
+describe('usePublishRankingsSnapshot', () => {
   beforeEach(() => vi.resetAllMocks());
 
-  it('calls publishSnapshot with token and params', async () => {
-    vi.mocked(publishSnapshot).mockResolvedValue(undefined);
+  it('calls publishRankingsSnapshot with token and params', async () => {
+    vi.mocked(publishRankingsSnapshot).mockResolvedValue(undefined);
 
-    const { result } = renderHook(() => usePublishSnapshot('test-token'), {
+    const { result } = renderHook(() => usePublishRankingsSnapshot('test-token'), {
       wrapper: createWrapper(),
     });
 
@@ -492,7 +492,7 @@ describe('usePublishSnapshot', () => {
       await result.current.mutateAsync({ season: 2024, week: 5 });
     });
 
-    expect(publishSnapshot).toHaveBeenCalledWith('test-token', 2024, 5);
+    expect(publishRankingsSnapshot).toHaveBeenCalledWith('test-token', 2024, 5);
   });
 });
 

@@ -4,12 +4,12 @@ using Xunit;
 
 namespace CFBPoll.API.Tests.Mappers;
 
-public class SnapshotMapperTests
+public class RankingsSnapshotMapperTests
 {
     [Fact]
     public void ToDTO_MapsAllProperties()
     {
-        var summary = new SnapshotSummary
+        var summary = new RankingsSnapshotSummary
         {
             AlgorithmVersion = RatingAlgorithmVersion.V1,
             CreatedAt = new DateTime(2024, 9, 1, 12, 0, 0, DateTimeKind.Utc),
@@ -18,7 +18,7 @@ public class SnapshotMapperTests
             Week = 5
         };
 
-        var result = SnapshotMapper.ToDTO(summary);
+        var result = RankingsSnapshotMapper.ToDTO(summary);
 
         Assert.Equal("V1", result.AlgorithmVersion);
         Assert.Equal(new DateTime(2024, 9, 1, 12, 0, 0, DateTimeKind.Utc), result.CreatedAt);
@@ -30,13 +30,13 @@ public class SnapshotMapperTests
     [Fact]
     public void ToDTO_NullInput_ThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>(() => SnapshotMapper.ToDTO(null!));
+        Assert.Throws<ArgumentNullException>(() => RankingsSnapshotMapper.ToDTO(null!));
     }
 
     [Fact]
-    public void ToDTO_UnpublishedSnapshot_MapsPublishedFalse()
+    public void ToDTO_UnpublishedRankingsSnapshot_MapsPublishedFalse()
     {
-        var summary = new SnapshotSummary
+        var summary = new RankingsSnapshotSummary
         {
             AlgorithmVersion = RatingAlgorithmVersion.V1,
             CreatedAt = new DateTime(2024, 9, 8, 12, 0, 0, DateTimeKind.Utc),
@@ -45,15 +45,15 @@ public class SnapshotMapperTests
             Week = 2
         };
 
-        var result = SnapshotMapper.ToDTO(summary);
+        var result = RankingsSnapshotMapper.ToDTO(summary);
 
         Assert.False(result.IsPublished);
     }
 
     [Fact]
-    public void ToDTO_V2Snapshot_MapsAlgorithmVersionString()
+    public void ToDTO_V2RankingsSnapshot_MapsAlgorithmVersionString()
     {
-        var summary = new SnapshotSummary
+        var summary = new RankingsSnapshotSummary
         {
             AlgorithmVersion = RatingAlgorithmVersion.V2,
             CreatedAt = new DateTime(2024, 9, 8, 12, 0, 0, DateTimeKind.Utc),
@@ -62,7 +62,7 @@ public class SnapshotMapperTests
             Week = 1
         };
 
-        var result = SnapshotMapper.ToDTO(summary);
+        var result = RankingsSnapshotMapper.ToDTO(summary);
 
         Assert.Equal("V2", result.AlgorithmVersion);
     }

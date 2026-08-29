@@ -45,14 +45,14 @@ export const SeasonExperimentalPredictionsResponseSchema = z.object({
   weeks: z.array(SeasonExperimentalPredictionsWeekSchema),
 });
 
-export const SnapshotSchema = z.object({
+export const RankingsSnapshotSchema = z.object({
   createdAt: z.string(),
   isPublished: z.boolean(),
   season: z.number(),
   week: z.number(),
 });
 
-export const SnapshotsResponseSchema = z.array(SnapshotSchema);
+export const RankingsSnapshotsResponseSchema = z.array(RankingsSnapshotSchema);
 
 // Admin-side predictions have the same shape as the public predictions response;
 // reuse the public schema instead of redeclaring the 21 fields here.
@@ -146,8 +146,8 @@ export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 export type PredictionRecordSummary = z.infer<typeof PredictionRecordSummarySchema>;
 export type PredictionsResponse = z.infer<typeof PredictionsResponseSchema>;
 export type PredictionsSummary = z.infer<typeof PredictionsSummarySchema>;
+export type RankingsSnapshot = z.infer<typeof RankingsSnapshotSchema>;
 export type RefreshCacheResponse = z.infer<typeof RefreshCacheResponseSchema>;
 export type RemoveCacheEntriesResponse = z.infer<typeof RemoveCacheEntriesResponseSchema>;
 export type SeasonExperimentalPredictionsResponse = z.infer<typeof SeasonExperimentalPredictionsResponseSchema>;
 export type SeasonExperimentalPredictionsWeek = z.infer<typeof SeasonExperimentalPredictionsWeekSchema>;
-export type Snapshot = z.infer<typeof SnapshotSchema>;

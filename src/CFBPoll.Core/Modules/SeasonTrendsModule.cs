@@ -36,9 +36,9 @@ public class SeasonTrendsModule : ISeasonTrendsModule
 
     public async Task<SeasonTrendsResult> BuildFromRankingsAsync(int season, IEnumerable<RankingsResult> weeklyRankings)
     {
-        var snapshots = weeklyRankings.OrderBy(s => s.Week).ToList();
+        var rankingsSnapshots = weeklyRankings.OrderBy(s => s.Week).ToList();
 
-        if (snapshots.Count == 0)
+        if (rankingsSnapshots.Count == 0)
         {
             _logger.LogInformation("No weekly rankings supplied for season {Season}", season);
             return new SeasonTrendsResult { Season = season };
@@ -60,16 +60,16 @@ public class SeasonTrendsModule : ISeasonTrendsModule
             t => t,
             StringComparer.OrdinalIgnoreCase);
 
-        var publishedWeekNumbers = snapshots.Select(s => s.Week).ToList();
+        var publishedWeekNumbers = rankingsSnapshots.Select(s => s.Week).ToList();
 
         var teamRankings = new Dictionary<string, List<SeasonTrendRanking>>(StringComparer.OrdinalIgnoreCase);
         var teamMetadata = new Dictionary<string, (string Conference, string LogoURL)>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var snapshot in snapshots)
+        foreach (var rankingsSnapshot in rankingsSnapshots)
         {
             var rankedTeamNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var team in snapshot.Rankings.Where(t => t.Rank <= 25))
+            foreach (var team in rankingsSnapshot.Rankings.Where(t => t.Rank <= 25))
             {
                 rankedTeamNames.Add(team.TeamName);
 
@@ -84,7 +84,7 @@ public class SeasonTrendsModule : ISeasonTrendsModule
                     Rank = team.Rank,
                     Rating = team.Rating,
                     Record = $"{team.Wins}-{team.Losses}",
-                    WeekNumber = snapshot.Week
+                    WeekNumber = rankingsSnapshot.Week
                 });
             }
 
@@ -92,14 +92,14 @@ public class SeasonTrendsModule : ISeasonTrendsModule
             {
                 if (!rankedTeamNames.Contains(teamName))
                 {
-                    if (!teamRankings[teamName].Any(r => r.WeekNumber == snapshot.Week))
+                    if (!teamRankings[teamName].Any(r => r.WeekNumber == rankingsSnapshot.Week))
                     {
                         teamRankings[teamName].Add(new SeasonTrendRanking
                         {
                             Rank = null,
                             Rating = 0,
                             Record = string.Empty,
-                            WeekNumber = snapshot.Week
+                            WeekNumber = rankingsSnapshot.Week
                         });
                     }
                 }
@@ -154,12 +154,12 @@ public class SeasonTrendsModule : ISeasonTrendsModule
 
         _logger.LogInformation("Computing season trends for season {Season}", season);
 
-        var snapshots = (await _rankingsModule.GetPublishedSnapshotsBySeasonRangeAsync(season, season).ConfigureAwait(false)).ToList();
-        var result = await BuildFromRankingsAsync(season, snapshots).ConfigureAwait(false);
+        var rankingsSnapshots = (await _rankingsModule.GetPublishedRankingsSnapshotsBySeasonRangeAsync(season, season).ConfigureAwait(false)).ToList();
+        var result = await BuildFromRankingsAsync(season, rankingsSnapshots).ConfigureAwait(false);
 
-        if (snapshots.Count == 0)
+        if (rankingsSnapshots.Count == 0)
         {
-            _logger.LogInformation("No published snapshots found for season {Season}", season);
+            _logger.LogInformation("No published rankings snapshots found for season {Season}", season);
             return result;
         }
 

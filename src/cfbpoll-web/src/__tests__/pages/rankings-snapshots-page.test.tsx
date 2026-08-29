@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { SnapshotsPage } from '../../pages/snapshots-page';
+import { RankingsSnapshotsPage } from '../../pages/rankings-snapshots-page';
 
 let mockToken: string | null = 'test-token';
 
@@ -59,15 +59,15 @@ vi.mock('../../hooks/use-admin-mutations', () => ({
     mutateAsync: mockCalculateMutateAsync,
     isPending: mockCalculateIsPending,
   }),
-  usePublishSnapshot: () => ({
+  usePublishRankingsSnapshot: () => ({
     mutateAsync: mockPublishMutateAsync,
     isPending: mockPublishIsPending,
   }),
-  useDeleteSnapshot: () => ({
+  useDeleteRankingsSnapshot: () => ({
     mutateAsync: mockDeleteMutateAsync,
     isPending: mockDeleteIsPending,
   }),
-  useExportSnapshot: () => ({
+  useExportRankingsSnapshot: () => ({
     mutateAsync: mockExportMutateAsync,
     isPending: mockExportIsPending,
   }),
@@ -77,18 +77,18 @@ vi.mock('../../hooks/use-admin-mutations', () => ({
   }),
 }));
 
-let mockSnapshotsData: { createdAt: string; isPublished: boolean; season: number; week: number; }[] | undefined = [];
-let mockSnapshotsError: Error | null = null;
-let mockSnapshotsLoading = false;
+let mockRankingsSnapshotsData: { createdAt: string; isPublished: boolean; season: number; week: number; }[] | undefined = [];
+let mockRankingsSnapshotsError: Error | null = null;
+let mockRankingsSnapshotsLoading = false;
 
-const mockRefetchSnapshots = vi.fn();
+const mockRefetchRankingsSnapshots = vi.fn();
 
-vi.mock('../../hooks/use-snapshots', () => ({
-  useSnapshots: () => ({
-    data: mockSnapshotsData,
-    error: mockSnapshotsError,
-    isLoading: mockSnapshotsLoading,
-    refetch: mockRefetchSnapshots,
+vi.mock('../../hooks/use-rankings-snapshots', () => ({
+  useRankingsSnapshots: () => ({
+    data: mockRankingsSnapshotsData,
+    error: mockRankingsSnapshotsError,
+    isLoading: mockRankingsSnapshotsLoading,
+    refetch: mockRefetchRankingsSnapshots,
   }),
 }));
 
@@ -101,7 +101,7 @@ vi.mock('../../hooks/use-page-visibility', () => ({
   }),
 }));
 
-function renderSnapshotsPage() {
+function renderRankingsSnapshotsPage() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -109,19 +109,19 @@ function renderSnapshotsPage() {
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter>
-        <SnapshotsPage />
+        <RankingsSnapshotsPage />
       </MemoryRouter>
     </QueryClientProvider>
   );
 }
 
-describe('SnapshotsPage', () => {
+describe('RankingsSnapshotsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockToken = 'test-token';
-    mockSnapshotsData = [];
-    mockSnapshotsError = null;
-    mockSnapshotsLoading = false;
+    mockRankingsSnapshotsData = [];
+    mockRankingsSnapshotsError = null;
+    mockRankingsSnapshotsLoading = false;
     mockCalculateIsPending = false;
     mockPublishIsPending = false;
     mockDeleteIsPending = false;
@@ -129,8 +129,8 @@ describe('SnapshotsPage', () => {
     mockRefreshCacheIsPending = false;
   });
 
-  it('calculates after confirming the overwrite of a published snapshot', async () => {
-    mockSnapshotsData = [
+  it('calculates after confirming the overwrite of a published rankings snapshot', async () => {
+    mockRankingsSnapshotsData = [
       { season: 2024, week: 5, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockCalculateMutateAsync.mockResolvedValue({
@@ -138,7 +138,7 @@ describe('SnapshotsPage', () => {
       rankings: { season: 2024, week: 5, rankings: [] },
     });
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     const dialog = screen.getByRole('dialog');
@@ -149,8 +149,8 @@ describe('SnapshotsPage', () => {
     });
   });
 
-  it('calculates immediately without a confirm modal when the selected week has only a draft (unpublished) snapshot', async () => {
-    mockSnapshotsData = [
+  it('calculates immediately without a confirm modal when the selected week has only a draft (unpublished) rankings snapshot', async () => {
+    mockRankingsSnapshotsData = [
       { season: 2024, week: 5, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockCalculateMutateAsync.mockResolvedValue({
@@ -158,7 +158,7 @@ describe('SnapshotsPage', () => {
       rankings: { season: 2024, week: 5, rankings: [] },
     });
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -173,7 +173,7 @@ describe('SnapshotsPage', () => {
       rankings: { season: 2024, week: 5, rankings: [] },
     });
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -181,13 +181,13 @@ describe('SnapshotsPage', () => {
     });
   });
 
-  it('calls deleteSnapshot when delete is clicked on draft', async () => {
-    mockSnapshotsData = [
+  it('calls deleteRankingsSnapshot when delete is clicked on draft', async () => {
+    mockRankingsSnapshotsData = [
       { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockDeleteMutateAsync.mockResolvedValue(undefined);
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
 
     await userEvent.click(screen.getByText('2024 Season'));
     await userEvent.click(screen.getByText('Delete'));
@@ -204,7 +204,7 @@ describe('SnapshotsPage', () => {
     });
     mockExportMutateAsync.mockResolvedValue(undefined);
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -219,12 +219,12 @@ describe('SnapshotsPage', () => {
   });
 
   it('calls downloadExport when export is clicked', async () => {
-    mockSnapshotsData = [
+    mockRankingsSnapshotsData = [
       { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockExportMutateAsync.mockResolvedValue(undefined);
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
 
     await userEvent.click(screen.getByText('2024 Season'));
     await userEvent.click(screen.getByText('Export'));
@@ -234,13 +234,13 @@ describe('SnapshotsPage', () => {
     });
   });
 
-  it('calls publishSnapshot when publish is clicked on draft', async () => {
-    mockSnapshotsData = [
+  it('calls publishRankingsSnapshot when publish is clicked on draft', async () => {
+    mockRankingsSnapshotsData = [
       { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockPublishMutateAsync.mockResolvedValue(undefined);
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
 
     await userEvent.click(screen.getByText('2024 Season'));
     await userEvent.click(screen.getByText('Publish'));
@@ -250,20 +250,20 @@ describe('SnapshotsPage', () => {
     });
   });
 
-  it('calls refetchSnapshots when retry is clicked on a snapshots error', async () => {
-    mockSnapshotsError = new Error('Server unavailable');
+  it('calls refetchRankingsSnapshots when retry is clicked on a rankings snapshots error', async () => {
+    mockRankingsSnapshotsError = new Error('Server unavailable');
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
 
     await userEvent.click(screen.getByText('Retry'));
 
-    expect(mockRefetchSnapshots).toHaveBeenCalled();
+    expect(mockRefetchRankingsSnapshots).toHaveBeenCalled();
   });
 
   it('calls refreshCache with selected season and week when confirmed', async () => {
     mockRefreshCacheMutateAsync.mockResolvedValue({ removedCount: 8, season: 2024, week: 5 });
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
 
     const dialog = screen.getByRole('dialog');
@@ -275,7 +275,7 @@ describe('SnapshotsPage', () => {
   });
 
   it('changes season on season dropdown change', async () => {
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
 
     const seasonSelect = screen.getByLabelText('Season');
     await userEvent.selectOptions(seasonSelect, '2023');
@@ -284,7 +284,7 @@ describe('SnapshotsPage', () => {
   });
 
   it('changes week on week dropdown change', async () => {
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
 
     const weekSelect = screen.getByLabelText('Week');
     await userEvent.selectOptions(weekSelect, '1');
@@ -292,17 +292,17 @@ describe('SnapshotsPage', () => {
     expect((weekSelect as HTMLSelectElement).value).toBe('1');
   });
 
-  it('clears calculated result when matching snapshot is deleted', async () => {
+  it('clears calculated result when matching rankings snapshot is deleted', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
       isPersisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
-    mockSnapshotsData = [
+    mockRankingsSnapshotsData = [
       { season: 2024, week: 5, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockDeleteMutateAsync.mockResolvedValue(undefined);
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
 
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
@@ -328,7 +328,7 @@ describe('SnapshotsPage', () => {
       rankings: { season: 2024, week: 5, rankings: [] },
     });
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -346,11 +346,11 @@ describe('SnapshotsPage', () => {
   });
 
   it('does not calculate when the overwrite confirm modal is cancelled', async () => {
-    mockSnapshotsData = [
+    mockRankingsSnapshotsData = [
       { season: 2024, week: 5, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
     ];
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -361,10 +361,10 @@ describe('SnapshotsPage', () => {
     expect(mockCalculateMutateAsync).not.toHaveBeenCalled();
   });
 
-  it('does not call refetchSnapshots when retry is clicked on an operation error', async () => {
+  it('does not call refetchRankingsSnapshots when retry is clicked on an operation error', async () => {
     mockCalculateMutateAsync.mockRejectedValue(new Error('Network error'));
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -373,12 +373,12 @@ describe('SnapshotsPage', () => {
 
     await userEvent.click(screen.getByText('Retry'));
 
-    expect(mockRefetchSnapshots).not.toHaveBeenCalled();
+    expect(mockRefetchRankingsSnapshots).not.toHaveBeenCalled();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('does not call refreshCache when confirm modal is cancelled', async () => {
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -390,11 +390,11 @@ describe('SnapshotsPage', () => {
   });
 
   it('does not delete when confirm modal is cancelled', async () => {
-    mockSnapshotsData = [
+    mockRankingsSnapshotsData = [
       { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
     ];
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
 
     await userEvent.click(screen.getByText('2024 Season'));
     await userEvent.click(screen.getByText('Delete'));
@@ -407,19 +407,19 @@ describe('SnapshotsPage', () => {
     expect(mockDeleteMutateAsync).not.toHaveBeenCalled();
   });
 
-  it('does not show the empty-state message while snapshots are still loading', () => {
-    mockSnapshotsLoading = true;
-    renderSnapshotsPage();
-    expect(screen.queryByText('No persisted snapshots found.')).not.toBeInTheDocument();
+  it('does not show the empty-state message while rankings snapshots are still loading', () => {
+    mockRankingsSnapshotsLoading = true;
+    renderRankingsSnapshotsPage();
+    expect(screen.queryByText('No persisted rankings found.')).not.toBeInTheDocument();
   });
 
   it('expand all and collapse all buttons work', async () => {
-    mockSnapshotsData = [
+    mockRankingsSnapshotsData = [
       { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
       { season: 2023, week: 1, isPublished: true, createdAt: '2023-09-01T00:00:00Z' },
     ];
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
 
     const button2024 = screen.getByText('2024 Season').closest('button')!;
     const button2023 = screen.getByText('2023 Season').closest('button')!;
@@ -441,11 +441,11 @@ describe('SnapshotsPage', () => {
   });
 
   it('expands and collapses season groups on click', async () => {
-    mockSnapshotsData = [
+    mockRankingsSnapshotsData = [
       { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
     ];
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
 
     const seasonButton = screen.getByText('2024 Season').closest('button')!;
     const chevron = () => seasonButton.querySelector('svg')!;
@@ -458,13 +458,13 @@ describe('SnapshotsPage', () => {
   });
 
   it('preserves collapsed state after publish', async () => {
-    mockSnapshotsData = [
+    mockRankingsSnapshotsData = [
       { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
       { season: 2024, week: 2, isPublished: false, createdAt: '2024-09-08T00:00:00Z' },
     ];
     mockPublishMutateAsync.mockResolvedValue(undefined);
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
 
     await userEvent.click(screen.getByText('2024 Season'));
     const seasonButton = screen.getByText('2024 Season').closest('button')!;
@@ -481,17 +481,17 @@ describe('SnapshotsPage', () => {
     expect(chevron().classList.toString()).not.toContain('-rotate-90');
   });
 
-  it('preview publish checkmark does not appear in snapshot section', async () => {
+  it('preview publish checkmark does not appear in rankings snapshot section', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
       isPersisted: true,
       rankings: { season: 2024, week: 5, rankings: [] },
     });
-    mockSnapshotsData = [
+    mockRankingsSnapshotsData = [
       { season: 2024, week: 5, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockPublishMutateAsync.mockResolvedValue(undefined);
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
 
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
@@ -516,70 +516,70 @@ describe('SnapshotsPage', () => {
   });
 
   it('renders calculate button', () => {
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
     expect(screen.getByRole('button', { name: 'Calculate' })).toBeInTheDocument();
   });
 
   it('renders persisted weeks grouped by season', () => {
-    mockSnapshotsData = [
+    mockRankingsSnapshotsData = [
       { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
       { season: 2024, week: 2, isPublished: false, createdAt: '2024-09-08T00:00:00Z' },
       { season: 2023, week: 1, isPublished: true, createdAt: '2023-09-01T00:00:00Z' },
     ];
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
 
     expect(screen.getByText('2024 Season')).toBeInTheDocument();
     expect(screen.getByText('2023 Season')).toBeInTheDocument();
-    expect(screen.getByText('(2 snapshots)')).toBeInTheDocument();
-    expect(screen.getByText('(1 snapshot)')).toBeInTheDocument();
+    expect(screen.getByText('(2 rankings)')).toBeInTheDocument();
+    expect(screen.getByText('(1 ranking)')).toBeInTheDocument();
+  });
+
+  it('renders rankings snapshots page heading', () => {
+    renderRankingsSnapshotsPage();
+    expect(screen.getByText('Rankings')).toBeInTheDocument();
+    expect(screen.getByText('Calculate Rankings')).toBeInTheDocument();
+    expect(screen.getByText('Persisted Rankings')).toBeInTheDocument();
   });
 
   it('renders refresh cached data button', () => {
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
     expect(screen.getByRole('button', { name: 'Refresh Cached Data' })).toBeInTheDocument();
   });
 
   it('renders season and week dropdowns', () => {
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
     expect(screen.getByLabelText('Season')).toBeInTheDocument();
     expect(screen.getByLabelText('Week')).toBeInTheDocument();
   });
 
-  it('renders snapshots page heading', () => {
-    renderSnapshotsPage();
-    expect(screen.getByText('Snapshots')).toBeInTheDocument();
-    expect(screen.getByText('Calculate Rankings')).toBeInTheDocument();
-    expect(screen.getByText('Persisted Snapshots')).toBeInTheDocument();
-  });
-
   it('seasons start collapsed by default', () => {
-    mockSnapshotsData = [
+    mockRankingsSnapshotsData = [
       { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
     ];
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
 
     const seasonButton = screen.getByText('2024 Season').closest('button')!;
     const chevron = seasonButton.querySelector('svg')!;
     expect(chevron.classList.toString()).toContain('-rotate-90');
   });
 
-  it('shows a confirm modal instead of calculating immediately when the selected week already has a published snapshot', async () => {
-    mockSnapshotsData = [
+  it('shows a confirm modal instead of calculating immediately when the selected week already has a published rankings snapshot', async () => {
+    mockRankingsSnapshotsData = [
       { season: 2024, week: 5, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
     ];
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     const dialog = screen.getByRole('dialog');
-    expect(within(dialog).getByText('Overwrite Published Snapshot')).toBeInTheDocument();
+    expect(within(dialog).getByText('Overwrite Published Rankings')).toBeInTheDocument();
     expect(mockCalculateMutateAsync).not.toHaveBeenCalled();
   });
 
   it('shows confirm modal instead of calling refreshCache immediately when refresh button is clicked', async () => {
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
 
     const dialog = screen.getByRole('dialog');
@@ -587,20 +587,20 @@ describe('SnapshotsPage', () => {
     expect(mockRefreshCacheMutateAsync).not.toHaveBeenCalled();
   });
 
-  it('shows confirm modal when deleting published snapshot', async () => {
-    mockSnapshotsData = [
+  it('shows confirm modal when deleting published rankings snapshot', async () => {
+    mockRankingsSnapshotsData = [
       { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockDeleteMutateAsync.mockResolvedValue(undefined);
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
 
     await userEvent.click(screen.getByText('2024 Season'));
     await userEvent.click(screen.getByText('Delete'));
 
     const dialog = screen.getByRole('dialog');
     expect(dialog).toBeInTheDocument();
-    expect(screen.getByText('Delete Published Snapshot')).toBeInTheDocument();
+    expect(screen.getByText('Delete Published Rankings')).toBeInTheDocument();
 
     const modalDeleteButton = screen.getAllByText('Delete').find(
       (btn) => btn.closest('[role="dialog"]') !== null
@@ -612,15 +612,15 @@ describe('SnapshotsPage', () => {
     });
   });
 
-  it('shows empty state for persisted snapshots', () => {
-    renderSnapshotsPage();
-    expect(screen.getByText('No persisted snapshots found.')).toBeInTheDocument();
+  it('shows empty state for persisted rankings snapshots', () => {
+    renderRankingsSnapshotsPage();
+    expect(screen.getByText('No persisted rankings found.')).toBeInTheDocument();
   });
 
   it('shows error feedback when confirmed refresh fails', async () => {
     mockRefreshCacheMutateAsync.mockRejectedValue(new Error('Refresh failed'));
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
 
     const dialog = screen.getByRole('dialog');
@@ -632,18 +632,18 @@ describe('SnapshotsPage', () => {
   });
 
   it('shows error message after publish fails', async () => {
-    mockSnapshotsData = [
+    mockRankingsSnapshotsData = [
       { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
-    mockPublishMutateAsync.mockRejectedValue(new Error('Snapshot not found'));
+    mockPublishMutateAsync.mockRejectedValue(new Error('Rankings snapshot not found'));
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
 
     await userEvent.click(screen.getByText('2024 Season'));
     await userEvent.click(screen.getByText('Publish'));
 
     await waitFor(() => {
-      expect(screen.getByText('Snapshot not found')).toBeInTheDocument();
+      expect(screen.getByText('Rankings snapshot not found')).toBeInTheDocument();
     });
   });
 
@@ -654,7 +654,7 @@ describe('SnapshotsPage', () => {
     });
     mockPublishMutateAsync.mockRejectedValue(new Error('Server error'));
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -672,7 +672,7 @@ describe('SnapshotsPage', () => {
   it('shows error when calculation fails', async () => {
     mockCalculateMutateAsync.mockRejectedValue(new Error('Network error'));
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -681,12 +681,12 @@ describe('SnapshotsPage', () => {
   });
 
   it('shows error when delete fails', async () => {
-    mockSnapshotsData = [
+    mockRankingsSnapshotsData = [
       { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockDeleteMutateAsync.mockRejectedValue(new Error('Delete failed'));
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
 
     await userEvent.click(screen.getByText('2024 Season'));
     await userEvent.click(screen.getByText('Delete'));
@@ -697,12 +697,12 @@ describe('SnapshotsPage', () => {
   });
 
   it('shows error when export fails', async () => {
-    mockSnapshotsData = [
+    mockRankingsSnapshotsData = [
       { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockExportMutateAsync.mockRejectedValue(new Error('Export failed'));
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
 
     await userEvent.click(screen.getByText('2024 Season'));
     await userEvent.click(screen.getByText('Export'));
@@ -712,10 +712,10 @@ describe('SnapshotsPage', () => {
     });
   });
 
-  it('shows error when fetching snapshots fails', () => {
-    mockSnapshotsError = new Error('Server unavailable');
+  it('shows error when fetching rankings snapshots fails', () => {
+    mockRankingsSnapshotsError = new Error('Server unavailable');
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
 
     expect(screen.getByText(/Server unavailable/)).toBeInTheDocument();
   });
@@ -726,7 +726,7 @@ describe('SnapshotsPage', () => {
       rankings: { season: 2024, week: 5, rankings: [] },
     });
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -740,7 +740,7 @@ describe('SnapshotsPage', () => {
       rankings: { season: 2024, week: 5, rankings: [] },
     });
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -751,7 +751,7 @@ describe('SnapshotsPage', () => {
   it('shows removed count feedback after a successful confirmed refresh', async () => {
     mockRefreshCacheMutateAsync.mockResolvedValue({ removedCount: 8, season: 2024, week: 5 });
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
 
     const dialog = screen.getByRole('dialog');
@@ -763,12 +763,12 @@ describe('SnapshotsPage', () => {
   });
 
   it('shows success checkmark after publish succeeds', async () => {
-    mockSnapshotsData = [
+    mockRankingsSnapshotsData = [
       { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockPublishMutateAsync.mockResolvedValue(undefined);
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
 
     await userEvent.click(screen.getByText('2024 Season'));
     await userEvent.click(screen.getByText('Publish'));
@@ -785,7 +785,7 @@ describe('SnapshotsPage', () => {
     });
     mockPublishMutateAsync.mockResolvedValue(undefined);
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -801,12 +801,12 @@ describe('SnapshotsPage', () => {
   });
 
   it('success checkmark disappears after timeout', async () => {
-    mockSnapshotsData = [
+    mockRankingsSnapshotsData = [
       { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
     ];
     mockPublishMutateAsync.mockResolvedValue(undefined);
 
-    renderSnapshotsPage();
+    renderRankingsSnapshotsPage();
 
     await userEvent.click(screen.getByText('2024 Season'));
     await userEvent.click(screen.getByText('Publish'));

@@ -1,6 +1,6 @@
 namespace CFBPoll.API.DTOs;
 
-public class UpdateSnapshotDTO
+public class SetPublishedRequestDTO
 {
     public bool IsPublished { get; set; }
 }

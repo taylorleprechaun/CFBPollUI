@@ -82,7 +82,7 @@ public class RankingsControllerTests
     public async Task GetRankings_LiveCalculation_DoesNotAttemptAutoPersist()
     {
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotAsync(2023, 5))
+            .Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5))
             .ReturnsAsync((RankingsResult?)null);
 
         var seasonData = new SeasonData
@@ -105,15 +105,15 @@ public class RankingsControllerTests
 
         await _controller.GetRankings(2023, 5);
 
-        _mockRankingsModule.Verify(x => x.SaveSnapshotAsync(It.IsAny<RankingsResult>(), It.IsAny<RatingAlgorithmVersion>()), Times.Never);
-        _mockRankingsModule.Verify(x => x.PublishSnapshotAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+        _mockRankingsModule.Verify(x => x.SaveRankingsSnapshotAsync(It.IsAny<RankingsResult>(), It.IsAny<RatingAlgorithmVersion>()), Times.Never);
+        _mockRankingsModule.Verify(x => x.PublishRankingsSnapshotAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
     }
 
     [Fact]
     public async Task GetRankings_LiveCalculation_IncludesRankDeltas()
     {
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotAsync(2024, 5))
+            .Setup(x => x.GetPublishedRankingsSnapshotAsync(2024, 5))
             .ReturnsAsync((RankingsResult?)null);
 
         var seasonData = new SeasonData
@@ -153,10 +153,10 @@ public class RankingsControllerTests
     }
 
     [Fact]
-    public async Task GetRankings_NoPersistedSnapshot_FallsBackToLiveCalculation()
+    public async Task GetRankings_NoPersistedRankingsSnapshot_FallsBackToLiveCalculation()
     {
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotAsync(2023, 5))
+            .Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5))
             .ReturnsAsync((RankingsResult?)null);
 
         var seasonData = new SeasonData
@@ -209,7 +209,7 @@ public class RankingsControllerTests
     }
 
     [Fact]
-    public async Task GetRankings_PersistedSnapshot_CallsGetRankDeltasAsync()
+    public async Task GetRankings_PersistedRankingsSnapshot_CallsGetRankDeltasAsync()
     {
         var persistedResult = new RankingsResult
         {
@@ -220,7 +220,7 @@ public class RankingsControllerTests
             }
         };
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotAsync(2024, 3)).ReturnsAsync(persistedResult);
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotAsync(2024, 3)).ReturnsAsync(persistedResult);
         _mockRankingsModule
             .Setup(x => x.GetRankDeltasAsync(2024, 3, persistedResult.Rankings))
             .ReturnsAsync(new Dictionary<string, int?> { ["Notre Dame"] = 0 });
@@ -231,7 +231,7 @@ public class RankingsControllerTests
     }
 
     [Fact]
-    public async Task GetRankings_PersistedSnapshot_IncludesRankDeltas()
+    public async Task GetRankings_PersistedRankingsSnapshot_IncludesRankDeltas()
     {
         var persistedResult = new RankingsResult
         {
@@ -244,7 +244,7 @@ public class RankingsControllerTests
         };
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotAsync(2024, 5))
+            .Setup(x => x.GetPublishedRankingsSnapshotAsync(2024, 5))
             .ReturnsAsync(persistedResult);
 
         _mockRankingsModule
@@ -261,7 +261,7 @@ public class RankingsControllerTests
     }
 
     [Fact]
-    public async Task GetRankings_PersistedSnapshot_ReturnsPersistedRankings()
+    public async Task GetRankings_PersistedRankingsSnapshot_ReturnsPersistedRankings()
     {
         var persistedResult = new RankingsResult
         {
@@ -280,7 +280,7 @@ public class RankingsControllerTests
         };
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotAsync(2023, 5))
+            .Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5))
             .ReturnsAsync(persistedResult);
 
         _mockRankingsModule

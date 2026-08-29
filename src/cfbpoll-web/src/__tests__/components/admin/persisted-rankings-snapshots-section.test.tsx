@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { PersistedSnapshotsSection } from '../../../components/admin';
+import { PersistedRankingsSnapshotsSection } from '../../../components/admin';
 
 const defaultProps = {
   actionFeedback: null,
@@ -14,17 +14,17 @@ const defaultProps = {
   onExport: vi.fn(),
   onPublish: vi.fn(),
   onToggleSeason: vi.fn(),
-  snapshots: [] as { createdAt: string; isPublished: boolean; season: number; week: number; }[],
+  rankingsSnapshots: [] as { createdAt: string; isPublished: boolean; season: number; week: number; }[],
 };
 
-describe('PersistedSnapshotsSection', () => {
+describe('PersistedRankingsSnapshotsSection', () => {
   it('calls onDelete when Delete button is clicked', () => {
     const onDelete = vi.fn();
     render(
-      <PersistedSnapshotsSection
+      <PersistedRankingsSnapshotsSection
         {...defaultProps}
         onDelete={onDelete}
-        snapshots={[
+        rankingsSnapshots={[
           { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
@@ -39,11 +39,11 @@ describe('PersistedSnapshotsSection', () => {
     const onExpandAll = vi.fn();
     const onCollapseAll = vi.fn();
     render(
-      <PersistedSnapshotsSection
+      <PersistedRankingsSnapshotsSection
         {...defaultProps}
         onExpandAll={onExpandAll}
         onCollapseAll={onCollapseAll}
-        snapshots={[
+        rankingsSnapshots={[
           { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
@@ -59,10 +59,10 @@ describe('PersistedSnapshotsSection', () => {
   it('calls onExport when Export button is clicked', () => {
     const onExport = vi.fn();
     render(
-      <PersistedSnapshotsSection
+      <PersistedRankingsSnapshotsSection
         {...defaultProps}
         onExport={onExport}
-        snapshots={[
+        rankingsSnapshots={[
           { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
@@ -76,10 +76,10 @@ describe('PersistedSnapshotsSection', () => {
   it('calls onPublish when Publish button is clicked', () => {
     const onPublish = vi.fn();
     render(
-      <PersistedSnapshotsSection
+      <PersistedRankingsSnapshotsSection
         {...defaultProps}
         onPublish={onPublish}
-        snapshots={[
+        rankingsSnapshots={[
           { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
@@ -93,10 +93,10 @@ describe('PersistedSnapshotsSection', () => {
   it('calls onToggleSeason when season header is clicked', () => {
     const onToggleSeason = vi.fn();
     render(
-      <PersistedSnapshotsSection
+      <PersistedRankingsSnapshotsSection
         {...defaultProps}
         onToggleSeason={onToggleSeason}
-        snapshots={[
+        rankingsSnapshots={[
           { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
@@ -109,10 +109,10 @@ describe('PersistedSnapshotsSection', () => {
 
   it('disables action buttons when isActionPending is true', () => {
     render(
-      <PersistedSnapshotsSection
+      <PersistedRankingsSnapshotsSection
         {...defaultProps}
         isActionPending={true}
-        snapshots={[
+        rankingsSnapshots={[
           { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
@@ -125,9 +125,9 @@ describe('PersistedSnapshotsSection', () => {
 
   it('does not show a View button since onView is not passed', () => {
     render(
-      <PersistedSnapshotsSection
+      <PersistedRankingsSnapshotsSection
         {...defaultProps}
-        snapshots={[
+        rankingsSnapshots={[
           { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
@@ -136,11 +136,11 @@ describe('PersistedSnapshotsSection', () => {
     expect(screen.queryByRole('button', { name: 'View' })).not.toBeInTheDocument();
   });
 
-  it('groups snapshots by season', () => {
+  it('groups rankings snapshots by season', () => {
     render(
-      <PersistedSnapshotsSection
+      <PersistedRankingsSnapshotsSection
         {...defaultProps}
-        snapshots={[
+        rankingsSnapshots={[
           { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
           { season: 2024, week: 2, isPublished: false, createdAt: '2024-09-08T00:00:00Z' },
           { season: 2023, week: 1, isPublished: true, createdAt: '2023-09-01T00:00:00Z' },
@@ -150,22 +150,22 @@ describe('PersistedSnapshotsSection', () => {
 
     expect(screen.getByText('2024 Season')).toBeInTheDocument();
     expect(screen.getByText('2023 Season')).toBeInTheDocument();
-    expect(screen.getByText('(2 snapshots)')).toBeInTheDocument();
-    expect(screen.getByText('(1 snapshot)')).toBeInTheDocument();
+    expect(screen.getByText('(2 rankings)')).toBeInTheDocument();
+    expect(screen.getByText('(1 ranking)')).toBeInTheDocument();
   });
 
   it('renders heading', () => {
-    render(<PersistedSnapshotsSection {...defaultProps} />);
+    render(<PersistedRankingsSnapshotsSection {...defaultProps} />);
 
-    expect(screen.getByText('Persisted Snapshots')).toBeInTheDocument();
+    expect(screen.getByText('Persisted Rankings')).toBeInTheDocument();
   });
 
   it('sets aria-controls pointing to content container', () => {
     render(
-      <PersistedSnapshotsSection
+      <PersistedRankingsSnapshotsSection
         {...defaultProps}
         collapsedSeasons={new Set([2024])}
-        snapshots={[
+        rankingsSnapshots={[
           { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
@@ -179,10 +179,10 @@ describe('PersistedSnapshotsSection', () => {
 
   it('sets aria-expanded to true when season is expanded', () => {
     render(
-      <PersistedSnapshotsSection
+      <PersistedRankingsSnapshotsSection
         {...defaultProps}
         collapsedSeasons={new Set()}
-        snapshots={[
+        rankingsSnapshots={[
           { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
@@ -193,17 +193,17 @@ describe('PersistedSnapshotsSection', () => {
   });
 
   it('shows a loading skeleton instead of the empty state while isLoading is true', () => {
-    render(<PersistedSnapshotsSection {...defaultProps} isLoading={true} />);
+    render(<PersistedRankingsSnapshotsSection {...defaultProps} isLoading={true} />);
 
-    expect(screen.queryByText('No persisted snapshots found.')).not.toBeInTheDocument();
+    expect(screen.queryByText('No persisted rankings found.')).not.toBeInTheDocument();
   });
 
   it('shows collapsed indicator when season is collapsed', () => {
     render(
-      <PersistedSnapshotsSection
+      <PersistedRankingsSnapshotsSection
         {...defaultProps}
         collapsedSeasons={new Set([2024])}
-        snapshots={[
+        rankingsSnapshots={[
           { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
@@ -216,9 +216,9 @@ describe('PersistedSnapshotsSection', () => {
 
   it('shows Draft badge and Publish button for drafts', () => {
     render(
-      <PersistedSnapshotsSection
+      <PersistedRankingsSnapshotsSection
         {...defaultProps}
-        snapshots={[
+        rankingsSnapshots={[
           { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
@@ -228,22 +228,22 @@ describe('PersistedSnapshotsSection', () => {
     expect(screen.getByText('Publish')).toBeInTheDocument();
   });
 
-  it('shows empty state when no snapshots', () => {
-    render(<PersistedSnapshotsSection {...defaultProps} />);
+  it('shows empty state when no rankings snapshots', () => {
+    render(<PersistedRankingsSnapshotsSection {...defaultProps} />);
 
-    expect(screen.getByText('No persisted snapshots found.')).toBeInTheDocument();
+    expect(screen.getByText('No persisted rankings found.')).toBeInTheDocument();
   });
 
   it('shows error message for matching feedback', () => {
     render(
-      <PersistedSnapshotsSection
+      <PersistedRankingsSnapshotsSection
         {...defaultProps}
         actionFeedback={{
-          key: 'snapshot-publish-2024-1',
+          key: 'rankings-snapshot-publish-2024-1',
           type: 'error',
           message: 'Publish failed',
         }}
-        snapshots={[
+        rankingsSnapshots={[
           { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
@@ -252,11 +252,11 @@ describe('PersistedSnapshotsSection', () => {
     expect(screen.getByText('Publish failed')).toBeInTheDocument();
   });
 
-  it('shows Published badge for published snapshots', () => {
+  it('shows Published badge for published rankings snapshots', () => {
     render(
-      <PersistedSnapshotsSection
+      <PersistedRankingsSnapshotsSection
         {...defaultProps}
-        snapshots={[
+        rankingsSnapshots={[
           { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />
@@ -267,13 +267,13 @@ describe('PersistedSnapshotsSection', () => {
 
   it('shows success checkmark for matching feedback', () => {
     render(
-      <PersistedSnapshotsSection
+      <PersistedRankingsSnapshotsSection
         {...defaultProps}
         actionFeedback={{
-          key: 'snapshot-publish-2024-1',
+          key: 'rankings-snapshot-publish-2024-1',
           type: 'success',
         }}
-        snapshots={[
+        rankingsSnapshots={[
           { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z' },
         ]}
       />

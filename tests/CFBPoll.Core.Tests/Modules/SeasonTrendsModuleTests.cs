@@ -52,12 +52,12 @@ public class SeasonTrendsModuleTests
     [Fact]
     public async Task BuildFromRankingsAsync_FiltersToTop25AndFillsGapsForDropouts_ReturnsExpectedTeams()
     {
-        var snapshot1 = CreateSnapshot(2024, 1, new[]
+        var rankingsSnapshot1 = CreateRankingsSnapshot(2024, 1, new[]
         {
             CreateRankedTeam("Nebraska", 25, 50.0, 1, 0),
             CreateRankedTeam("Michigan", 26, 49.0, 1, 0),
         });
-        var snapshot2 = CreateSnapshot(2024, 2, new[]
+        var rankingsSnapshot2 = CreateRankingsSnapshot(2024, 2, new[]
         {
             CreateRankedTeam("Iowa", 1, 95.0, 2, 0),
         });
@@ -77,7 +77,7 @@ public class SeasonTrendsModuleTests
                 new WeekInfo { WeekNumber = 2, Label = "Week 3" },
             });
 
-        var result = await _module.BuildFromRankingsAsync(2024, new[] { snapshot1, snapshot2 });
+        var result = await _module.BuildFromRankingsAsync(2024, new[] { rankingsSnapshot1, rankingsSnapshot2 });
 
         var teamNames = result.Teams.Select(t => t.TeamName).ToList();
         Assert.Contains("Nebraska", teamNames);
@@ -93,7 +93,7 @@ public class SeasonTrendsModuleTests
     [Fact]
     public async Task BuildFromRankingsAsync_SortsTeamsAlphabetically_ReturnsExpectedOrder()
     {
-        var snapshot = CreateSnapshot(2024, 1, new[]
+        var rankingsSnapshot = CreateRankingsSnapshot(2024, 1, new[]
         {
             CreateRankedTeam("USC", 1, 95.0, 1, 0),
             CreateRankedTeam("Alabama", 2, 90.0, 1, 0),
@@ -107,7 +107,7 @@ public class SeasonTrendsModuleTests
         _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>()))
             .Returns(new[] { new WeekInfo { WeekNumber = 1, Label = "Week 2" } });
 
-        var result = await _module.BuildFromRankingsAsync(2024, new[] { snapshot });
+        var result = await _module.BuildFromRankingsAsync(2024, new[] { rankingsSnapshot });
 
         var teamNames = result.Teams.Select(t => t.TeamName).ToList();
         Assert.Equal("Alabama", teamNames[0]);
@@ -204,7 +204,7 @@ public class SeasonTrendsModuleTests
 
         Assert.Equal(2024, result.Season);
         _mockRankingsModule.Verify(
-            x => x.GetPublishedSnapshotsBySeasonRangeAsync(It.IsAny<int>(), It.IsAny<int>()),
+            x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(It.IsAny<int>(), It.IsAny<int>()),
             Times.Never);
     }
 
@@ -212,13 +212,13 @@ public class SeasonTrendsModuleTests
     public async Task GetSeasonTrendsAsync_ColorsFromFBSData()
     {
         SetupCacheMiss();
-        var snapshot = CreateSnapshot(2024, 1, new[]
+        var rankingsSnapshot = CreateRankingsSnapshot(2024, 1, new[]
         {
             CreateRankedTeam("Texas", 1, 95.0, 1, 0),
         });
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2024, 2024))
-            .ReturnsAsync(new[] { snapshot });
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2024, 2024))
+            .ReturnsAsync(new[] { rankingsSnapshot });
         _mockDataService.Setup(x => x.GetCalendarAsync(2024))
             .ReturnsAsync(new[] { new CalendarWeek { Week = 1, SeasonType = "regular" } });
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
@@ -234,22 +234,22 @@ public class SeasonTrendsModuleTests
     }
 
     [Fact]
-    public async Task GetSeasonTrendsAsync_MultipleSnapshots_TracksRankChanges()
+    public async Task GetSeasonTrendsAsync_MultipleRankingsSnapshots_TracksRankChanges()
     {
         SetupCacheMiss();
-        var snapshot1 = CreateSnapshot(2024, 1, new[]
+        var rankingsSnapshot1 = CreateRankingsSnapshot(2024, 1, new[]
         {
             CreateRankedTeam("Texas", 1, 95.0, 1, 0),
             CreateRankedTeam("Oklahoma", 2, 90.0, 1, 0),
         });
-        var snapshot2 = CreateSnapshot(2024, 2, new[]
+        var rankingsSnapshot2 = CreateRankingsSnapshot(2024, 2, new[]
         {
             CreateRankedTeam("Oklahoma", 1, 96.0, 2, 0),
             CreateRankedTeam("Texas", 3, 88.0, 1, 1),
         });
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2024, 2024))
-            .ReturnsAsync(new[] { snapshot1, snapshot2 });
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2024, 2024))
+            .ReturnsAsync(new[] { rankingsSnapshot1, rankingsSnapshot2 });
         _mockDataService.Setup(x => x.GetCalendarAsync(2024))
             .ReturnsAsync(new[]
             {
@@ -277,10 +277,10 @@ public class SeasonTrendsModuleTests
     }
 
     [Fact]
-    public async Task GetSeasonTrendsAsync_NoSnapshots_ReturnsEmptyResult()
+    public async Task GetSeasonTrendsAsync_NoRankingsSnapshots_ReturnsEmptyResult()
     {
         SetupCacheMiss();
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2024, 2024))
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2024, 2024))
             .ReturnsAsync(Enumerable.Empty<RankingsResult>());
         _mockDataService.Setup(x => x.GetCalendarAsync(2024))
             .ReturnsAsync(Enumerable.Empty<CalendarWeek>());
@@ -298,14 +298,14 @@ public class SeasonTrendsModuleTests
     public async Task GetSeasonTrendsAsync_OnlyTop25TeamsIncluded()
     {
         SetupCacheMiss();
-        var snapshot = CreateSnapshot(2024, 1, new[]
+        var rankingsSnapshot = CreateRankingsSnapshot(2024, 1, new[]
         {
             CreateRankedTeam("Ohio State", 25, 50.0, 5, 3),
             CreateRankedTeam("Michigan", 26, 49.0, 4, 4),
         });
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2024, 2024))
-            .ReturnsAsync(new[] { snapshot });
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2024, 2024))
+            .ReturnsAsync(new[] { rankingsSnapshot });
         _mockDataService.Setup(x => x.GetCalendarAsync(2024))
             .ReturnsAsync(new[] { new CalendarWeek { Week = 1, SeasonType = "regular" } });
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
@@ -323,13 +323,13 @@ public class SeasonTrendsModuleTests
     public async Task GetSeasonTrendsAsync_RecordFormat()
     {
         SetupCacheMiss();
-        var snapshot = CreateSnapshot(2024, 1, new[]
+        var rankingsSnapshot = CreateRankingsSnapshot(2024, 1, new[]
         {
             CreateRankedTeam("Alabama", 1, 95.0, 10, 2),
         });
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2024, 2024))
-            .ReturnsAsync(new[] { snapshot });
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2024, 2024))
+            .ReturnsAsync(new[] { rankingsSnapshot });
         _mockDataService.Setup(x => x.GetCalendarAsync(2024))
             .ReturnsAsync(new[] { new CalendarWeek { Week = 1, SeasonType = "regular" } });
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
@@ -347,7 +347,7 @@ public class SeasonTrendsModuleTests
     public async Task GetSeasonTrendsAsync_SetsCache()
     {
         SetupCacheMiss();
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2024, 2024))
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2024, 2024))
             .ReturnsAsync(Enumerable.Empty<RankingsResult>());
         _mockDataService.Setup(x => x.GetCalendarAsync(2024))
             .ReturnsAsync(Enumerable.Empty<CalendarWeek>());
@@ -363,17 +363,17 @@ public class SeasonTrendsModuleTests
     }
 
     [Fact]
-    public async Task GetSeasonTrendsAsync_SingleSnapshot_ReturnsCorrectData()
+    public async Task GetSeasonTrendsAsync_SingleRankingsSnapshot_ReturnsCorrectData()
     {
         SetupCacheMiss();
-        var snapshot = CreateSnapshot(2024, 3, new[]
+        var rankingsSnapshot = CreateRankingsSnapshot(2024, 3, new[]
         {
             CreateRankedTeam("Ohio State", 1, 95.0, 8, 1),
             CreateRankedTeam("Michigan", 2, 90.0, 7, 2),
         });
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2024, 2024))
-            .ReturnsAsync(new[] { snapshot });
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2024, 2024))
+            .ReturnsAsync(new[] { rankingsSnapshot });
         _mockDataService.Setup(x => x.GetCalendarAsync(2024))
             .ReturnsAsync(new[] { new CalendarWeek { Week = 3, SeasonType = "regular" } });
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
@@ -401,17 +401,17 @@ public class SeasonTrendsModuleTests
     public async Task GetSeasonTrendsAsync_TeamDropsOut_GetsNullRank()
     {
         SetupCacheMiss();
-        var snapshot1 = CreateSnapshot(2024, 1, new[]
+        var rankingsSnapshot1 = CreateRankingsSnapshot(2024, 1, new[]
         {
             CreateRankedTeam("Nebraska", 25, 50.0, 1, 0),
         });
-        var snapshot2 = CreateSnapshot(2024, 2, new[]
+        var rankingsSnapshot2 = CreateRankingsSnapshot(2024, 2, new[]
         {
             CreateRankedTeam("Iowa", 1, 95.0, 2, 0),
         });
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2024, 2024))
-            .ReturnsAsync(new[] { snapshot1, snapshot2 });
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2024, 2024))
+            .ReturnsAsync(new[] { rankingsSnapshot1, rankingsSnapshot2 });
         _mockDataService.Setup(x => x.GetCalendarAsync(2024))
             .ReturnsAsync(new[]
             {
@@ -439,13 +439,13 @@ public class SeasonTrendsModuleTests
     public async Task GetSeasonTrendsAsync_TeamNotInFBSData_GetsEmptyColors()
     {
         SetupCacheMiss();
-        var snapshot = CreateSnapshot(2024, 1, new[]
+        var rankingsSnapshot = CreateRankingsSnapshot(2024, 1, new[]
         {
             CreateRankedTeam("Notre Dame", 1, 95.0, 1, 0),
         });
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2024, 2024))
-            .ReturnsAsync(new[] { snapshot });
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2024, 2024))
+            .ReturnsAsync(new[] { rankingsSnapshot });
         _mockDataService.Setup(x => x.GetCalendarAsync(2024))
             .ReturnsAsync(new[] { new CalendarWeek { Week = 1, SeasonType = "regular" } });
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
@@ -464,15 +464,15 @@ public class SeasonTrendsModuleTests
     public async Task GetSeasonTrendsAsync_TeamsSortedAlphabetically()
     {
         SetupCacheMiss();
-        var snapshot = CreateSnapshot(2024, 1, new[]
+        var rankingsSnapshot = CreateRankingsSnapshot(2024, 1, new[]
         {
             CreateRankedTeam("USC", 1, 95.0, 1, 0),
             CreateRankedTeam("Alabama", 2, 90.0, 1, 0),
             CreateRankedTeam("Notre Dame", 3, 85.0, 1, 0),
         });
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2024, 2024))
-            .ReturnsAsync(new[] { snapshot });
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2024, 2024))
+            .ReturnsAsync(new[] { rankingsSnapshot });
         _mockDataService.Setup(x => x.GetCalendarAsync(2024))
             .ReturnsAsync(new[] { new CalendarWeek { Week = 1, SeasonType = "regular" } });
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
@@ -489,16 +489,16 @@ public class SeasonTrendsModuleTests
     }
 
     [Fact]
-    public async Task GetSeasonTrendsAsync_WithSnapshots_SetsCache()
+    public async Task GetSeasonTrendsAsync_WithRankingsSnapshots_SetsCache()
     {
         SetupCacheMiss();
-        var snapshot = CreateSnapshot(2024, 1, new[]
+        var rankingsSnapshot = CreateRankingsSnapshot(2024, 1, new[]
         {
             CreateRankedTeam("Florida", 1, 95.0, 1, 0),
         });
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2024, 2024))
-            .ReturnsAsync(new[] { snapshot });
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2024, 2024))
+            .ReturnsAsync(new[] { rankingsSnapshot });
         _mockDataService.Setup(x => x.GetCalendarAsync(2024))
             .ReturnsAsync(new[] { new CalendarWeek { Week = 1, SeasonType = "regular" } });
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
@@ -537,7 +537,7 @@ public class SeasonTrendsModuleTests
         };
     }
 
-    private static RankingsResult CreateSnapshot(int season, int week, RankedTeam[] teams)
+    private static RankingsResult CreateRankingsSnapshot(int season, int week, RankedTeam[] teams)
     {
         return new RankingsResult
         {

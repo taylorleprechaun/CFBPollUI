@@ -112,8 +112,8 @@ describe('Layout', () => {
 
     await user.click(screen.getByLabelText('Open menu'));
 
-    expect(screen.queryByText('Snapshots')).not.toBeInTheDocument();
-    expect(screen.queryByText('Predictions')).not.toBeInTheDocument();
+    expect(screen.queryByText('Manage Rankings')).not.toBeInTheDocument();
+    expect(screen.queryByText('Manage Predictions')).not.toBeInTheDocument();
     expect(screen.queryByText('Settings')).not.toBeInTheDocument();
   });
 
@@ -282,8 +282,8 @@ describe('Layout', () => {
     const adminButton = screen.getAllByRole('button', { name: /^Admin$/i })[0];
     await userEvent.click(adminButton);
 
-    expect(screen.getByText('Snapshots')).toBeInTheDocument();
-    expect(screen.getByText('Predictions')).toBeInTheDocument();
+    expect(screen.getByText('Manage Rankings')).toBeInTheDocument();
+    expect(screen.getByText('Manage Predictions')).toBeInTheDocument();
     expect(screen.getByText('Settings')).toBeInTheDocument();
   });
 
@@ -294,8 +294,8 @@ describe('Layout', () => {
 
     await user.click(screen.getByLabelText('Open menu'));
 
-    expect(screen.getByText('Snapshots')).toBeInTheDocument();
-    expect(screen.getByText('Predictions')).toBeInTheDocument();
+    expect(screen.getByText('Manage Rankings')).toBeInTheDocument();
+    expect(screen.getByText('Manage Predictions')).toBeInTheDocument();
     expect(screen.getByText('Settings')).toBeInTheDocument();
   });
 

@@ -30,7 +30,7 @@ public interface IAdminModule
     /// <summary>
     /// Computes season trends (top-25 rank progression with drop-out gaps) live across every week of
     /// a season using an explicitly chosen algorithm version, without reading or requiring persisted
-    /// published snapshots.
+    /// published rankings snapshots.
     /// </summary>
     Task<SeasonTrendsResult> CalculateExperimentalSeasonTrendsAsync(int season, RatingAlgorithmVersion algorithmVersion);
 
@@ -50,9 +50,9 @@ public interface IAdminModule
     Task<bool> DeletePredictionsAsync(int season, int week);
 
     /// <summary>
-    /// Deletes a snapshot for the given season and week.
+    /// Deletes a rankings snapshot for the given season and week.
     /// </summary>
-    Task<bool> DeleteSnapshotAsync(int season, int week);
+    Task<bool> DeleteRankingsSnapshotAsync(int season, int week);
 
     /// <summary>
     /// Generates an Excel export of rankings for the given season and week using an explicitly
@@ -63,7 +63,7 @@ public interface IAdminModule
     /// <summary>
     /// Generates an Excel export of rankings for the given season and week.
     /// </summary>
-    /// <returns>Excel file bytes, or null if no snapshot exists.</returns>
+    /// <returns>Excel file bytes, or null if no rankings snapshot exists.</returns>
     Task<byte[]?> ExportRankingsAsync(int season, int week);
 
     /// <summary>
@@ -94,7 +94,7 @@ public interface IAdminModule
     /// <summary>
     /// Gets all persisted week summaries.
     /// </summary>
-    Task<IEnumerable<SnapshotSummary>> GetSnapshotsAsync();
+    Task<IEnumerable<RankingsSnapshotSummary>> GetRankingsSnapshotsAsync();
 
     /// <summary>
     /// Grades predictions for the given season and week against actual final scores and saves the
@@ -114,9 +114,9 @@ public interface IAdminModule
     Task<bool> PublishPredictionsAsync(int season, int week);
 
     /// <summary>
-    /// Publishes a snapshot for the given season and week.
+    /// Publishes a rankings snapshot for the given season and week.
     /// </summary>
-    Task<bool> PublishSnapshotAsync(int season, int week);
+    Task<bool> PublishRankingsSnapshotAsync(int season, int week);
 
     /// <summary>
     /// Removes cached CollegeFootballData API responses scoped to the given season and week,

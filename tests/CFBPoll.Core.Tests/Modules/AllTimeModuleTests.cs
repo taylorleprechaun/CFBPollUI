@@ -156,8 +156,8 @@ public class AllTimeModuleTests
         // "Iowa" has a lower raw rating (45) than "Ohio State" (60), but Iowa's season was far less
         // spread out relative to its mean, so Iowa's z-score is higher -> Iowa should rank first.
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
+            .Setup(x => x.GetRankingsSnapshotsAsync())
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2022, Week = 5, IsPublished = true },
                 new() { Season = 2023, Week = 6, IsPublished = true }
@@ -178,7 +178,7 @@ public class AllTimeModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotAsync(2022, 5))
+            .Setup(x => x.GetPublishedRankingsSnapshotAsync(2022, 5))
             .ReturnsAsync(new RankingsResult
             {
                 Season = 2022,
@@ -192,7 +192,7 @@ public class AllTimeModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotAsync(2023, 6))
+            .Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 6))
             .ReturnsAsync(new RankingsResult
             {
                 Season = 2023,
@@ -216,8 +216,8 @@ public class AllTimeModuleTests
     public async Task GetAllTimeRankingsAsync_DeduplicatesSeasonsFromMultipleWeeks()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
+            .Setup(x => x.GetRankingsSnapshotsAsync())
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 3, IsPublished = true },
                 new() { Season = 2023, Week = 5, IsPublished = true }
@@ -231,7 +231,7 @@ public class AllTimeModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotAsync(2023, 5))
+            .Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5))
             .ReturnsAsync(new RankingsResult
             {
                 Season = 2023,
@@ -252,8 +252,8 @@ public class AllTimeModuleTests
     public async Task GetAllTimeRankingsAsync_GetCalendarAsyncThrows_PropagatesException()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
+            .Setup(x => x.GetRankingsSnapshotsAsync())
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 5, IsPublished = true }
             });
@@ -267,11 +267,11 @@ public class AllTimeModuleTests
     }
 
     [Fact]
-    public async Task GetAllTimeRankingsAsync_GetPublishedSnapshotAsyncThrows_PropagatesException()
+    public async Task GetAllTimeRankingsAsync_GetPublishedRankingsSnapshotAsyncThrows_PropagatesException()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
+            .Setup(x => x.GetRankingsSnapshotsAsync())
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 5, IsPublished = true }
             });
@@ -284,18 +284,18 @@ public class AllTimeModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotAsync(2023, 5))
-            .ThrowsAsync(new InvalidOperationException("Snapshot corrupted"));
+            .Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5))
+            .ThrowsAsync(new InvalidOperationException("RankingsSnapshot corrupted"));
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => _module.GetAllTimeRankingsAsync());
     }
 
     [Fact]
-    public async Task GetAllTimeRankingsAsync_GetSnapshotsThrows_PropagatesException()
+    public async Task GetAllTimeRankingsAsync_GetRankingsSnapshotsThrows_PropagatesException()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
+            .Setup(x => x.GetRankingsSnapshotsAsync())
             .ThrowsAsync(new InvalidOperationException("Database unavailable"));
 
         await Assert.ThrowsAsync<InvalidOperationException>(
@@ -408,8 +408,8 @@ public class AllTimeModuleTests
     public async Task GetAllTimeRankingsAsync_MultipleSeasonsWithDuplicateWeeks_CallsGetCalendarOncePerSeason()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
+            .Setup(x => x.GetRankingsSnapshotsAsync())
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2022, Week = 3, IsPublished = true },
                 new() { Season = 2022, Week = 5, IsPublished = true },
@@ -431,7 +431,7 @@ public class AllTimeModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotAsync(2022, 5))
+            .Setup(x => x.GetPublishedRankingsSnapshotAsync(2022, 5))
             .ReturnsAsync(new RankingsResult
             {
                 Season = 2022,
@@ -440,7 +440,7 @@ public class AllTimeModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotAsync(2023, 6))
+            .Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 6))
             .ReturnsAsync(new RankingsResult
             {
                 Season = 2023,
@@ -461,8 +461,8 @@ public class AllTimeModuleTests
         // 2023: ratings 55/54/53 -> mean 54.0, stddev 0.8165 -> "Michigan" z = 1/0.8165 = 1.2247
         // "Texas" (2022, rating 20) is the outlier furthest below its season's mean -> lowest z-score overall.
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
+            .Setup(x => x.GetRankingsSnapshotsAsync())
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2022, Week = 5, IsPublished = true },
                 new() { Season = 2023, Week = 6, IsPublished = true }
@@ -483,7 +483,7 @@ public class AllTimeModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotAsync(2022, 5))
+            .Setup(x => x.GetPublishedRankingsSnapshotAsync(2022, 5))
             .ReturnsAsync(new RankingsResult
             {
                 Season = 2022,
@@ -497,7 +497,7 @@ public class AllTimeModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotAsync(2023, 6))
+            .Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 6))
             .ReturnsAsync(new RankingsResult
             {
                 Season = 2023,
@@ -524,8 +524,8 @@ public class AllTimeModuleTests
     public async Task GetAllTimeRankingsAsync_NoPersistedWeeks_ReturnsEmptyLists()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>());
+            .Setup(x => x.GetRankingsSnapshotsAsync())
+            .ReturnsAsync(new List<RankingsSnapshotSummary>());
 
         var result = await _module.GetAllTimeRankingsAsync();
 
@@ -538,8 +538,8 @@ public class AllTimeModuleTests
     public async Task GetAllTimeRankingsAsync_NoPostseasonInCalendar_SkipsSeason()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
+            .Setup(x => x.GetRankingsSnapshotsAsync())
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 5, IsPublished = true }
             });
@@ -560,11 +560,11 @@ public class AllTimeModuleTests
     }
 
     [Fact]
-    public async Task GetAllTimeRankingsAsync_NoPublishedPostseasonSnapshot_SkipsSeason()
+    public async Task GetAllTimeRankingsAsync_NoPublishedPostseasonRankingsSnapshot_SkipsSeason()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
+            .Setup(x => x.GetRankingsSnapshotsAsync())
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 5, IsPublished = true }
             });
@@ -577,7 +577,7 @@ public class AllTimeModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotAsync(2023, 5))
+            .Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5))
             .ReturnsAsync((RankingsResult?)null);
 
         var result = await _module.GetAllTimeRankingsAsync();
@@ -588,11 +588,11 @@ public class AllTimeModuleTests
     }
 
     [Fact]
-    public async Task GetAllTimeRankingsAsync_OnlyDraftSnapshots_ReturnsEmptyLists()
+    public async Task GetAllTimeRankingsAsync_OnlyDraftRankingsSnapshots_ReturnsEmptyLists()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
+            .Setup(x => x.GetRankingsSnapshotsAsync())
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 1, IsPublished = false }
             });
@@ -605,7 +605,7 @@ public class AllTimeModuleTests
     }
 
     [Fact]
-    public async Task GetAllTimeRankingsAsync_PostseasonCaseInsensitive_FindsSnapshot()
+    public async Task GetAllTimeRankingsAsync_PostseasonCaseInsensitive_FindsRankingsSnapshot()
     {
         SetupSingleSeason(2023, "Postseason", CreateTeam("Team A", 50.0, 5, 0, 1, 0.8));
 
@@ -713,8 +713,8 @@ public class AllTimeModuleTests
     private void SetupSingleSeason(int season, string seasonType, params RankedTeam[] teams)
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
-            .ReturnsAsync(new List<SnapshotSummary>
+            .Setup(x => x.GetRankingsSnapshotsAsync())
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = season, Week = 5, IsPublished = true }
             });
@@ -727,7 +727,7 @@ public class AllTimeModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotAsync(season, 5))
+            .Setup(x => x.GetPublishedRankingsSnapshotAsync(season, 5))
             .ReturnsAsync(new RankingsResult
             {
                 Season = season,
