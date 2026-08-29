@@ -351,17 +351,17 @@ npm test
 ### Coverage Summary
 
 <!-- coverage:start -->
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-1040-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1547-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-1058-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1557-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
-![Web Coverage](https://img.shields.io/badge/Web_Coverage-100%25-brightgreen)
+![Web Coverage](https://img.shields.io/badge/Web_Coverage-99%25-brightgreen)
 
 | Project | Line Coverage | Branch Coverage |
 |---------|---------------|-----------------|
 | CFBPoll.Core | 99% | 94% |
 | CFBPoll.API | 100% | 98% |
-| cfbpoll-web | 100% | 95% |
+| cfbpoll-web | 99% | 95% |
 <!-- coverage:end -->
 
 **Excluded from coverage:**
