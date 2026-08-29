@@ -61,6 +61,12 @@ public interface IAdminModule
     Task<byte[]> ExportExperimentalAsync(int season, int week, RatingAlgorithmVersion algorithmVersion);
 
     /// <summary>
+    /// Generates an Excel export of predictions for the given season and week.
+    /// </summary>
+    /// <returns>Excel file bytes, or null if no predictions exist.</returns>
+    Task<byte[]?> ExportPredictionsAsync(int season, int week);
+
+    /// <summary>
     /// Generates an Excel export of rankings for the given season and week.
     /// </summary>
     /// <returns>Excel file bytes, or null if no rankings snapshot exists.</returns>
@@ -90,6 +96,12 @@ public interface IAdminModule
     /// Gets all persisted prediction summaries.
     /// </summary>
     Task<IEnumerable<PredictionsSummary>> GetPredictionsSummariesAsync();
+
+    /// <summary>
+    /// Retrieves the persisted rankings snapshot for the given season and week without recalculating,
+    /// along with its publish status. Returns null if no rankings snapshot exists for the week.
+    /// </summary>
+    Task<GetRankingsSnapshotResult?> GetRankingsSnapshotAsync(int season, int week);
 
     /// <summary>
     /// Gets all persisted week summaries.

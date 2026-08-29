@@ -15,6 +15,7 @@ interface PersistedPredictionsSectionProps {
   onCollapseAll: () => void;
   onDelete: (season: number, week: number, isPublished: boolean) => void;
   onExpandAll: () => void;
+  onExport?: (season: number, week: number) => void;
   onPublish: (season: number, week: number) => void;
   onToggleSeason: (season: number) => void;
   onView?: (season: number, week: number) => void;
@@ -37,6 +38,7 @@ export function PersistedPredictionsSection({
   onCollapseAll,
   onDelete,
   onExpandAll,
+  onExport,
   onPublish,
   onToggleSeason,
   onView,
@@ -60,6 +62,7 @@ export function PersistedPredictionsSection({
       onCollapseAll={onCollapseAll}
       onDelete={onDelete}
       onExpandAll={onExpandAll}
+      onExport={onExport}
       onPublish={onPublish}
       onToggleSeason={onToggleSeason}
       onView={onView}

@@ -237,6 +237,24 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
+    /// Downloads an Excel export of the predictions for the specified season and week.
+    /// </summary>
+    [HttpGet("seasons/{season}/weeks/{week}/prediction/export")]
+    public async Task<ActionResult> ExportPredictions(int season, int week)
+    {
+        _logger.LogInformation("Admin exporting predictions for season {Season}, week {Week}", season, week);
+
+        var bytes = await _adminModule.ExportPredictionsAsync(season, week);
+
+        if (bytes is null)
+            return NotFound(new ErrorResponseDTO { Message = PREDICTION_NOT_FOUND, StatusCode = 404 });
+
+        return File(bytes,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            $"Predictions_{season}_Week{week + 1}.xlsx");
+    }
+
+    /// <summary>
     /// Retrieves every persistent cache entry, grouped into a display-friendly family/season/detail
     /// summary for the admin cache management page.
     /// </summary>
@@ -287,6 +305,23 @@ public class AdminController : ControllerBase
         var summaries = await _adminModule.GetPredictionsSummariesAsync();
 
         return Ok(summaries.Select(PredictionsMapper.ToSummaryDTO));
+    }
+
+    /// <summary>
+    /// Retrieves the persisted rankings snapshot for the specified season and week without
+    /// recalculating. Returns full ranking detail regardless of published state.
+    /// </summary>
+    [HttpGet("seasons/{season}/weeks/{week}/ranking")]
+    public async Task<ActionResult<AdminRankingsResponseDTO>> GetRanking(int season, int week)
+    {
+        _logger.LogInformation("Admin fetching persisted rankings snapshot for season {Season}, week {Week}", season, week);
+
+        var result = await _adminModule.GetRankingsSnapshotAsync(season, week);
+
+        if (result is null)
+            return NotFound(new ErrorResponseDTO { Message = RANKING_NOT_FOUND, StatusCode = 404 });
+
+        return Ok(RankingsMapper.ToAdminResponseDTO(result));
     }
 
     /// <summary>

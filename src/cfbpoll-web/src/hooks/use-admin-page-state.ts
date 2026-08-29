@@ -176,6 +176,7 @@ export function useAdminPageState<TCalcResult>({
     isActionPending,
     isRefreshingCache,
     refreshCacheConfirm,
+    setCalculatedResult,
     setDeleteConfirm,
     setOperationError,
     setRefreshCacheConfirm,

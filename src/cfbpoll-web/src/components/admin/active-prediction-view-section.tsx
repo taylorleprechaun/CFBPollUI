@@ -6,7 +6,7 @@ import type { ActionFeedback } from './types';
 import { derivePredictionStage, predictionStageClasses, predictionStageLabel } from '../../lib/prediction-stage';
 import { getWeekLabel } from '../../lib/week-utils';
 import { PredictionsTable } from '../predictions/predictions-table';
-import { BUTTON_PRIMARY } from '../ui/button-styles';
+import { BUTTON_PRIMARY, BUTTON_SUCCESS } from '../ui/button-styles';
 import { CollapsibleContent } from '../ui/collapsible-content';
 import { CollapsibleTrigger } from '../ui/collapsible-trigger';
 import { StatusBadge } from '../ui/status-badge';
@@ -25,6 +25,7 @@ interface ActivePredictionViewSectionProps {
   onClearGradeFeedback: () => void;
   onClearPublishFeedback: () => void;
   onClearPublishResultsFeedback: () => void;
+  onExport: (season: number, week: number) => void;
   onGrade: (season: number, week: number) => void;
   onPublish: (season: number, week: number) => void;
   onPublishResults: (season: number, week: number) => void;
@@ -40,6 +41,7 @@ export function ActivePredictionViewSection({
   onClearGradeFeedback,
   onClearPublishFeedback,
   onClearPublishResultsFeedback,
+  onExport,
   onGrade,
   onPublish,
   onPublishResults,
@@ -80,6 +82,13 @@ export function ActivePredictionViewSection({
             <StatusBadge className={predictionStageClasses(stage)} label={predictionStageLabel(stage)} />
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => onExport(predictions.season, predictions.week)}
+              disabled={isActionPending}
+              className={BUTTON_SUCCESS}
+            >
+              Download Excel
+            </button>
             {showPublish && (
               <>
                 <button

@@ -8,6 +8,7 @@ import {
   PreviewSection,
 } from '../components/admin';
 import { ErrorAlert, ErrorBoundary } from '../components/error';
+import { BUTTON_GHOST } from '../components/ui/button-styles';
 import { ConfirmModal } from '../components/ui/confirm-modal';
 import {
   useCalculateRankings,
@@ -15,6 +16,7 @@ import {
   useExportRankingsSnapshot,
   usePublishRankingsSnapshot,
   useRefreshCache,
+  useViewRankingsSnapshot,
 } from '../hooks/use-admin-mutations';
 import { useAdminPageState } from '../hooks/use-admin-page-state';
 import { useAuth } from '../hooks/use-auth';
@@ -53,6 +55,7 @@ export function RankingsSnapshotsPage() {
   const deleteMutation = useDeleteRankingsSnapshot(token);
   const exportMutation = useExportRankingsSnapshot(token);
   const refreshCacheMutation = useRefreshCache(token);
+  const viewMutation = useViewRankingsSnapshot(token);
 
   const {
     actionFeedback,
@@ -73,6 +76,7 @@ export function RankingsSnapshotsPage() {
     isActionPending,
     isRefreshingCache,
     refreshCacheConfirm,
+    setCalculatedResult,
     setDeleteConfirm,
     setOperationError,
     setRefreshCacheConfirm,
@@ -98,6 +102,16 @@ export function RankingsSnapshotsPage() {
       await exportMutation.mutateAsync({ season, week });
     } catch (err) {
       setOperationError(toError(err, 'Export failed'));
+    }
+  };
+
+  const handleView = async (season: number, week: number) => {
+    setOperationError(null);
+    try {
+      const result = await viewMutation.mutateAsync({ season, week });
+      setCalculatedResult({ isPersisted: true, rankings: result.rankings });
+    } catch (err) {
+      setOperationError(toError(err, 'Failed to load rankings'));
     }
   };
 
@@ -143,6 +157,21 @@ export function RankingsSnapshotsPage() {
         weeksLoading={weeksLoading}
       />
 
+      {existingRankingsSnapshotForSelection && selectedSeason !== null && selectedWeek !== null && (
+        <div className="bg-surface border border-border rounded-xl p-4 flex items-center justify-between gap-4 animate-fade-in">
+          <p className="text-sm text-text-secondary">
+            {selectedSeason} {getWeekLabel(selectedWeek)} already has{' '}
+            {existingRankingsSnapshotForSelection.isPublished ? 'published' : 'draft'} rankings.
+          </p>
+          <button
+            onClick={() => handleView(selectedSeason, selectedWeek)}
+            className={BUTTON_GHOST}
+          >
+            View
+          </button>
+        </div>
+      )}
+
       <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render rankings preview')} />}>
         {calculatedResult && (
           <PreviewSection
@@ -159,6 +188,7 @@ export function RankingsSnapshotsPage() {
       <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render persisted rankings snapshots')} />}>
         <PersistedRankingsSnapshotsSection
           actionFeedback={actionFeedback}
+          activeItem={calculatedResult ? { season: calculatedResult.rankings.season, week: calculatedResult.rankings.week } : null}
           collapsedSeasons={collapsedSeasons}
           isActionPending={isActionPending}
           isLoading={rankingsSnapshotsLoading}
@@ -169,6 +199,7 @@ export function RankingsSnapshotsPage() {
           onExport={handleExport}
           onPublish={(season, week) => handlePublish(season, week, 'rankings-snapshot-publish')}
           onToggleSeason={toggleSeason}
+          onView={handleView}
           rankingsSnapshots={rankingsSnapshots ?? []}
         />
       </ErrorBoundary>

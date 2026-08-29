@@ -9,6 +9,8 @@ import {
   deletePredictions,
   deleteRankingsSnapshot,
   downloadExport,
+  downloadPredictionsExport,
+  fetchRanking,
   gradePredictions,
   publishGradedResults,
   publishPredictions,
@@ -39,6 +41,10 @@ export function useDeleteRankingsSnapshot(token: string | null) {
   return useAdminMutation(token, deleteRankingsSnapshot, (_result, _params, queryClient) => {
     queryClient.invalidateQueries({ queryKey: ['rankings-snapshots'] });
   });
+}
+
+export function useExportPredictions(token: string | null) {
+  return useAdminMutation(token, downloadPredictionsExport);
 }
 
 export function useExportRankingsSnapshot(token: string | null) {
@@ -80,6 +86,10 @@ export function usePublishRankingsSnapshot(token: string | null) {
 
 export function useRefreshCache(token: string | null) {
   return useAdminMutation(token, refreshCache);
+}
+
+export function useViewRankingsSnapshot(token: string | null) {
+  return useAdminMutation(token, fetchRanking);
 }
 
 function useAdminMutation<TResult>(

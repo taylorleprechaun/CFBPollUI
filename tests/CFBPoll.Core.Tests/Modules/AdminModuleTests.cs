@@ -1367,6 +1367,51 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task ExportPredictionsAsync_NoPredictions_ReturnsNull()
+    {
+        _mockPredictionsModule.Setup(x => x.GetAsync(2024, 5)).ReturnsAsync((PredictionsResult?)null);
+
+        var result = await _adminModule.ExportPredictionsAsync(2024, 5);
+
+        Assert.Null(result);
+        _mockExcelExportModule.Verify(x => x.GeneratePredictionsWorkbook(It.IsAny<PredictionsResult>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExportPredictionsAsync_PredictionsExist_CallsGetThenGenerateWorkbook()
+    {
+        var predictions = new PredictionsResult { Season = 2024, Week = 5 };
+        var expectedBytes = new byte[] { 1, 2, 3 };
+        var callOrder = new List<string>();
+
+        _mockPredictionsModule.Setup(x => x.GetAsync(2024, 5))
+            .Callback(() => callOrder.Add("get_predictions"))
+            .ReturnsAsync(predictions);
+        _mockExcelExportModule.Setup(x => x.GeneratePredictionsWorkbook(predictions))
+            .Callback(() => callOrder.Add("generate_workbook"))
+            .Returns(expectedBytes);
+
+        await _adminModule.ExportPredictionsAsync(2024, 5);
+
+        Assert.Equal(2, callOrder.Count);
+        Assert.True(callOrder.IndexOf("get_predictions") < callOrder.IndexOf("generate_workbook"));
+    }
+
+    [Fact]
+    public async Task ExportPredictionsAsync_PredictionsExist_ReturnsBytes()
+    {
+        var predictions = new PredictionsResult { Season = 2024, Week = 5 };
+        var expectedBytes = new byte[] { 1, 2, 3 };
+
+        _mockPredictionsModule.Setup(x => x.GetAsync(2024, 5)).ReturnsAsync(predictions);
+        _mockExcelExportModule.Setup(x => x.GeneratePredictionsWorkbook(predictions)).Returns(expectedBytes);
+
+        var result = await _adminModule.ExportPredictionsAsync(2024, 5);
+
+        Assert.Equal(expectedBytes, result);
+    }
+
+    [Fact]
     public async Task ExportRankingsAsync_NoRankingsSnapshot_ReturnsNull()
     {
         _mockRankingsModule.Setup(x => x.GetRankingsSnapshotAsync(2024, 5)).ReturnsAsync((RankingsResult?)null);
@@ -1521,6 +1566,67 @@ public class AdminModuleTests
 
         Assert.Single(result);
         _mockPredictionsModule.Verify(x => x.GetAllSummariesAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetRankingsSnapshotAsync_CallsBothRankingsModuleMethods()
+    {
+        _mockRankingsModule.Setup(x => x.GetRankingsSnapshotAsync(2024, 5))
+            .ReturnsAsync(new RankingsResult { Season = 2024, Week = 5, Rankings = [] });
+        _mockRankingsModule.Setup(x => x.GetRankingsSnapshotsAsync())
+            .ReturnsAsync(new List<RankingsSnapshotSummary>());
+
+        await _adminModule.GetRankingsSnapshotAsync(2024, 5);
+
+        _mockRankingsModule.Verify(x => x.GetRankingsSnapshotAsync(2024, 5), Times.Once);
+        _mockRankingsModule.Verify(x => x.GetRankingsSnapshotsAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetRankingsSnapshotAsync_DefaultsIsPublished_WhenNoMatchingSummaryFound()
+    {
+        _mockRankingsModule.Setup(x => x.GetRankingsSnapshotAsync(2024, 5))
+            .ReturnsAsync(new RankingsResult { Season = 2024, Week = 5, Rankings = [] });
+        _mockRankingsModule.Setup(x => x.GetRankingsSnapshotsAsync())
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
+            {
+                new RankingsSnapshotSummary { Season = 2024, Week = 1, IsPublished = true }
+            });
+
+        var result = await _adminModule.GetRankingsSnapshotAsync(2024, 5);
+
+        Assert.NotNull(result);
+        Assert.False(result.IsPublished);
+    }
+
+    [Fact]
+    public async Task GetRankingsSnapshotAsync_ReturnsComposedResult_WhenMatchingSummaryExists()
+    {
+        var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+        _mockRankingsModule.Setup(x => x.GetRankingsSnapshotAsync(2024, 5)).ReturnsAsync(rankings);
+        _mockRankingsModule.Setup(x => x.GetRankingsSnapshotsAsync())
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
+            {
+                new RankingsSnapshotSummary { Season = 2024, Week = 5, IsPublished = true }
+            });
+
+        var result = await _adminModule.GetRankingsSnapshotAsync(2024, 5);
+
+        Assert.NotNull(result);
+        Assert.Same(rankings, result.Rankings);
+        Assert.True(result.IsPublished);
+    }
+
+    [Fact]
+    public async Task GetRankingsSnapshotAsync_ReturnsNull_WhenNoRankingsSnapshotExists()
+    {
+        _mockRankingsModule.Setup(x => x.GetRankingsSnapshotAsync(2024, 5)).ReturnsAsync((RankingsResult?)null);
+        _mockRankingsModule.Setup(x => x.GetRankingsSnapshotsAsync())
+            .ReturnsAsync(new List<RankingsSnapshotSummary>());
+
+        var result = await _adminModule.GetRankingsSnapshotAsync(2024, 5);
+
+        Assert.Null(result);
     }
 
     [Fact]

@@ -48,11 +48,13 @@ const mockPublishMutateAsync = vi.fn();
 const mockDeleteMutateAsync = vi.fn();
 const mockExportMutateAsync = vi.fn();
 const mockRefreshCacheMutateAsync = vi.fn();
+const mockViewMutateAsync = vi.fn();
 let mockCalculateIsPending = false;
 let mockPublishIsPending = false;
 let mockDeleteIsPending = false;
 let mockExportIsPending = false;
 let mockRefreshCacheIsPending = false;
+let mockViewIsPending = false;
 
 vi.mock('../../hooks/use-admin-mutations', () => ({
   useCalculateRankings: () => ({
@@ -74,6 +76,10 @@ vi.mock('../../hooks/use-admin-mutations', () => ({
   useRefreshCache: () => ({
     mutateAsync: mockRefreshCacheMutateAsync,
     isPending: mockRefreshCacheIsPending,
+  }),
+  useViewRankingsSnapshot: () => ({
+    mutateAsync: mockViewMutateAsync,
+    isPending: mockViewIsPending,
   }),
 }));
 
@@ -127,6 +133,7 @@ describe('RankingsSnapshotsPage', () => {
     mockDeleteIsPending = false;
     mockExportIsPending = false;
     mockRefreshCacheIsPending = false;
+    mockViewIsPending = false;
   });
 
   it('calculates after confirming the overwrite of a published rankings snapshot', async () => {
@@ -274,6 +281,31 @@ describe('RankingsSnapshotsPage', () => {
     });
   });
 
+  it('calls viewRankingsSnapshot when View is clicked and shows the result in preview', async () => {
+    mockRankingsSnapshotsData = [
+      { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+    ];
+    mockViewMutateAsync.mockResolvedValue({
+      isPublished: true,
+      rankings: { season: 2024, week: 1, rankings: [] },
+    });
+
+    renderRankingsSnapshotsPage();
+
+    await userEvent.click(screen.getByText('2024 Season'));
+    await userEvent.click(screen.getByRole('button', { name: 'View' }));
+
+    await waitFor(() => {
+      expect(mockViewMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 1 });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Preview: 2024 Week 2/)).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('(Viewing)')).toBeInTheDocument();
+  });
+
   it('changes season on season dropdown change', async () => {
     renderRankingsSnapshotsPage();
 
@@ -405,6 +437,12 @@ describe('RankingsSnapshotsPage', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(mockDeleteMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('does not show the already-published banner when nothing exists for the selected week', () => {
+    renderRankingsSnapshotsPage();
+
+    expect(screen.queryByText(/already has/)).not.toBeInTheDocument();
   });
 
   it('does not show the empty-state message while rankings snapshots are still loading', () => {
@@ -720,6 +758,22 @@ describe('RankingsSnapshotsPage', () => {
     expect(screen.getByText(/Server unavailable/)).toBeInTheDocument();
   });
 
+  it('shows error when view fails', async () => {
+    mockRankingsSnapshotsData = [
+      { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+    ];
+    mockViewMutateAsync.mockRejectedValue(new Error('Failed to load rankings'));
+
+    renderRankingsSnapshotsPage();
+
+    await userEvent.click(screen.getByText('2024 Season'));
+    await userEvent.click(screen.getByRole('button', { name: 'View' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Failed to load rankings/)).toBeInTheDocument();
+    });
+  });
+
   it('shows persist warning when not persisted', async () => {
     mockCalculateMutateAsync.mockResolvedValue({
       isPersisted: false,
@@ -798,6 +852,17 @@ describe('RankingsSnapshotsPage', () => {
     await waitFor(() => {
       expect(screen.getByLabelText('Success')).toBeInTheDocument();
     });
+  });
+
+  it('shows the already-published banner with a View button when the selected week already has a rankings snapshot', () => {
+    mockRankingsSnapshotsData = [
+      { season: 2024, week: 5, isPublished: true, createdAt: '2024-09-01T00:00:00Z' },
+    ];
+
+    renderRankingsSnapshotsPage();
+
+    const banner = screen.getByText(/already has published rankings/).closest('div')!;
+    expect(within(banner).getByRole('button', { name: 'View' })).toBeInTheDocument();
   });
 
   it('success checkmark disappears after timeout', async () => {

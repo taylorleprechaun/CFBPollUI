@@ -45,6 +45,22 @@ describe('PersistedPredictionsSection', () => {
     expect(onDelete).toHaveBeenCalledWith(2024, 1, false);
   });
 
+  it('calls onExport when Export button is clicked', async () => {
+    const onExport = vi.fn();
+    const props = {
+      ...defaultProps,
+      onExport,
+      summaries: [
+        { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z', gameCount: 10, gradedAt: null, isGraded: false, resultsPublished: false },
+      ],
+    };
+
+    render(<PersistedPredictionsSection {...props} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Export' }));
+
+    expect(onExport).toHaveBeenCalledWith(2024, 1);
+  });
+
   it('calls onPublish when Publish button is clicked', async () => {
     const onPublish = vi.fn();
     const props = {

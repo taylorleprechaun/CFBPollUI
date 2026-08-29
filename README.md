@@ -46,7 +46,7 @@ Last Updated 8/6/2026
 - **Game Predictions**: Generate game predictions with spread and over/under picks using team ratings and betting line data
 - **Admin Dashboard**: JWT-authenticated admin panel to calculate, preview, and publish rankings and predictions with a two-step draft/publish workflow
 - **Experimental Rating & Prediction Comparison**: Admin-only calculation of rankings and predictions against multiple algorithm versions at once for any season/week, compared side-by-side, without persisting or publishing — used to validate a candidate algorithm against the current one before it becomes a season's default. A "Compare Season" mode extends this to predictions across an admin-selected subset of a season's weeks at once, showing a season-overall summary plus a per-week breakdown per algorithm version
-- **Excel Export**: Download rankings as Excel spreadsheets with rating breakdowns
+- **Excel Export**: Download rankings and predictions as Excel spreadsheets with rating breakdowns and pick/grade detail
 - **SQLite Persistence**: Rankings and predictions snapshots stored in SQLite for fast retrieval without redundant API calls
 - **REST API**: Full API with Swagger documentation
 - **Caching**: SQLite + GZip persistent cache with per-component storage to reduce external API calls
@@ -305,6 +305,8 @@ The frontend runs at `http://localhost:5173`.
 | `GET /api/v1/admin/rankings` | List all persisted rankings |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/export` | Download experimental rankings as Excel for a chosen algorithm version, without persisting or publishing |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Retrieve persisted predictions for a season/week without recalculating or re-grading |
+| `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction/export` | Download predictions as Excel |
+| `GET /api/v1/admin/seasons/{season}/weeks/{week}/ranking` | Retrieve the persisted rankings snapshot for a season/week without recalculating |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/ranking/export` | Download rankings as Excel |
 | `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Update a prediction (currently supports publishing) |
 | `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/prediction/results` | Publish graded results, making them visible on the public predictions page |

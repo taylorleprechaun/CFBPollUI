@@ -13,6 +13,7 @@ import { ConfirmModal } from '../components/ui/confirm-modal';
 import {
   useCalculatePredictions,
   useDeletePredictions,
+  useExportPredictions,
   useGradePredictions,
   usePublishGradedResults,
   usePublishPredictions,
@@ -27,6 +28,7 @@ import { usePredictionsSummaries } from '../hooks/use-predictions-summaries';
 import { useSeason } from '../hooks/use-season';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
+import { toError } from '../lib/error-utils';
 import { derivePredictionStage, predictionStageLabel } from '../lib/prediction-stage';
 import { getWeekLabel } from '../lib/week-utils';
 
@@ -63,6 +65,7 @@ export function PredictionsPage() {
   const refreshCacheMutation = useRefreshCache(token);
   const gradeMutation = useGradePredictions(token);
   const publishResultsMutation = usePublishGradedResults(token);
+  const exportMutation = useExportPredictions(token);
 
   const activeView = usePredictionsActiveView(token);
 
@@ -115,6 +118,7 @@ export function PredictionsPage() {
     isRefreshingCache,
     refreshCacheConfirm,
     setDeleteConfirm,
+    setOperationError,
     setRefreshCacheConfirm,
     toggleSeason,
   } = useAdminPageState<CalculatePredictionsResponse>({
@@ -133,6 +137,15 @@ export function PredictionsPage() {
     selectedSeason,
     selectedWeek,
   });
+
+  const handleExport = async (season: number, week: number) => {
+    setOperationError(null);
+    try {
+      await exportMutation.mutateAsync({ season, week });
+    } catch (err) {
+      setOperationError(toError(err, 'Export failed'));
+    }
+  };
 
   const [generateConfirm, setGenerateConfirm] = useState<{ season: number; stage: string; week: number } | null>(null);
 
@@ -201,6 +214,7 @@ export function PredictionsPage() {
             onClearGradeFeedback={clearGradingFeedback}
             onClearPublishFeedback={clearFeedback}
             onClearPublishResultsFeedback={clearGradingFeedback}
+            onExport={handleExport}
             onGrade={handleGrade}
             onPublish={(season, week) => handlePublish(season, week, 'active-view-publish')}
             onPublishResults={handlePublishResults}
@@ -222,6 +236,7 @@ export function PredictionsPage() {
         onCollapseAll={handleCollapseAll}
         onDelete={handleDelete}
         onExpandAll={handleExpandAll}
+        onExport={handleExport}
         onPublish={(season, week) => handlePublish(season, week, 'persisted-prediction-publish')}
         onToggleSeason={toggleSeason}
         onView={activeView.showView}
