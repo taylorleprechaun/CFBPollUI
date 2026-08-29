@@ -38,7 +38,7 @@ public class RankingsController : ControllerBase
     {
         _logger.LogInformation("Fetching rankings for season {Season}, week {Week}", season, week);
 
-        var persisted = await _rankingsModule.GetPublishedSnapshotAsync(season, week);
+        var persisted = await _rankingsModule.GetPublishedRankingsSnapshotAsync(season, week);
         if (persisted is not null)
         {
             _logger.LogDebug("Returning persisted rankings for season {Season}, week {Week}", season, week);

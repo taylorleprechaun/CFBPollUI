@@ -32,7 +32,7 @@ public class RankingsData : IRankingsData
 
         var rowsAffected = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
 
-        _logger.LogInformation("Deleted snapshot for season {Season}, week {Week}: {RowsAffected} rows affected",
+        _logger.LogInformation("Deleted rankings snapshot for season {Season}, week {Week}: {RowsAffected} rows affected",
             season, week, rowsAffected);
 
         return rowsAffected > 0;
@@ -105,7 +105,7 @@ public class RankingsData : IRankingsData
         }
 
         _logger.LogDebug(
-            "Fetched {Count} published snapshots for seasons {MinSeason} to {MaxSeason}",
+            "Fetched {Count} published rankings snapshots for seasons {MinSeason} to {MaxSeason}",
             results.Count, minSeason, maxSeason);
 
         return results;
@@ -213,7 +213,7 @@ public class RankingsData : IRankingsData
 
         var rowsAffected = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
 
-        _logger.LogInformation("Published snapshot for season {Season}, week {Week}: {RowsAffected} rows affected",
+        _logger.LogInformation("Published rankings snapshot for season {Season}, week {Week}: {RowsAffected} rows affected",
             season, week, rowsAffected);
 
         return rowsAffected > 0;
@@ -241,7 +241,7 @@ public class RankingsData : IRankingsData
 
         var rowsAffected = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
 
-        _logger.LogInformation("Saved snapshot for season {Season}, week {Week}", rankings.Season, rankings.Week);
+        _logger.LogInformation("Saved rankings snapshot for season {Season}, week {Week}", rankings.Season, rankings.Week);
 
         return rowsAffected > 0;
     }

@@ -25,26 +25,26 @@ public class AllTimeModule : IAllTimeModule
 
     public async Task<AllTimeResult> GetAllTimeRankingsAsync()
     {
-        var postseasonSnapshots = await GetPostseasonSnapshotsAsync().ConfigureAwait(false);
+        var postseasonRankingsSnapshots = await GetPostseasonRankingsSnapshotsAsync().ConfigureAwait(false);
 
-        var allEntries = postseasonSnapshots
-            .SelectMany(snapshot =>
+        var allEntries = postseasonRankingsSnapshots
+            .SelectMany(rankingsSnapshot =>
             {
-                var seasonRatings = snapshot.Rankings.Select(t => t.Rating).ToList();
+                var seasonRatings = rankingsSnapshot.Rankings.Select(t => t.Rating).ToList();
                 var mean = CalculateMean(seasonRatings);
                 var stdDev = CalculatePopulationStandardDeviation(seasonRatings, mean);
 
-                return snapshot.Rankings.Select(team => new AllTimeEntry
+                return rankingsSnapshot.Rankings.Select(team => new AllTimeEntry
                 {
                     LogoURL = team.LogoURL,
                     Losses = team.Losses,
                     Rank = team.Rank,
                     Rating = team.Rating,
                     RatingZScore = CalculateZScore(team.Rating, mean, stdDev),
-                    Season = snapshot.Season,
+                    Season = rankingsSnapshot.Season,
                     TeamName = team.TeamName,
                     WeightedSOS = team.WeightedSOS,
-                    Week = snapshot.Week,
+                    Week = rankingsSnapshot.Week,
                     Wins = team.Wins
                 });
             })
@@ -120,18 +120,18 @@ public class AllTimeModule : IAllTimeModule
         return (rating - mean) / stdDev;
     }
 
-    private async Task<IReadOnlyList<RankingsResult>> GetPostseasonSnapshotsAsync()
+    private async Task<IReadOnlyList<RankingsResult>> GetPostseasonRankingsSnapshotsAsync()
     {
-        var snapshots = await _rankingsModule.GetSnapshotsAsync().ConfigureAwait(false);
+        var rankingsSnapshots = await _rankingsModule.GetRankingsSnapshotsAsync().ConfigureAwait(false);
 
-        var publishedSeasons = snapshots
+        var publishedSeasons = rankingsSnapshots
             .Where(pw => pw.IsPublished)
             .Select(pw => pw.Season)
             .Distinct()
             .OrderBy(s => s)
             .ToList();
 
-        _logger.LogInformation("Found {Count} seasons with published snapshots", publishedSeasons.Count);
+        _logger.LogInformation("Found {Count} seasons with published rankings snapshots", publishedSeasons.Count);
 
         var results = new List<RankingsResult>();
 
@@ -147,20 +147,20 @@ public class AllTimeModule : IAllTimeModule
                 continue;
             }
 
-            var snapshot = await _rankingsModule.GetPublishedSnapshotAsync(season, postseasonWeek.Week)
+            var rankingsSnapshot = await _rankingsModule.GetPublishedRankingsSnapshotAsync(season, postseasonWeek.Week)
                 .ConfigureAwait(false);
 
-            if (snapshot is null)
+            if (rankingsSnapshot is null)
             {
-                _logger.LogDebug("No published postseason snapshot for season {Season}, week {Week}",
+                _logger.LogDebug("No published postseason rankings snapshot for season {Season}, week {Week}",
                     season, postseasonWeek.Week);
                 continue;
             }
 
-            results.Add(snapshot);
+            results.Add(rankingsSnapshot);
         }
 
-        _logger.LogInformation("Loaded {Count} postseason snapshots", results.Count);
+        _logger.LogInformation("Loaded {Count} postseason rankings snapshots", results.Count);
         return results;
     }
 }

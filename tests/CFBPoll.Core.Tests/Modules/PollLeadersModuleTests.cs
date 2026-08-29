@@ -97,10 +97,10 @@ public class PollLeadersModuleTests
     }
 
     [Fact]
-    public async Task GetPollLeadersAsync_AllWeeks_CountsAppearancesAcrossMultipleSnapshots()
+    public async Task GetPollLeadersAsync_AllWeeks_CountsAppearancesAcrossMultipleRankingsSnapshots()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
+            .Setup(x => x.GetRankingsSnapshotsAsync())
             .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 1, IsPublished = true },
@@ -116,7 +116,7 @@ public class PollLeadersModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2023))
+            .Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2023, 2023))
             .ReturnsAsync(new List<RankingsResult>
             {
                 new()
@@ -159,7 +159,7 @@ public class PollLeadersModuleTests
     public async Task GetPollLeadersAsync_AllWeeks_OrderedByTop25ThenTop10ThenTop5()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
+            .Setup(x => x.GetRankingsSnapshotsAsync())
             .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 1, IsPublished = true },
@@ -175,7 +175,7 @@ public class PollLeadersModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2023))
+            .Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2023, 2023))
             .ReturnsAsync(new List<RankingsResult>
             {
                 new()
@@ -215,7 +215,7 @@ public class PollLeadersModuleTests
     public async Task GetPollLeadersAsync_AllWeeks_RankThresholdsCounted()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
+            .Setup(x => x.GetRankingsSnapshotsAsync())
             .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 1, IsPublished = true }
@@ -229,7 +229,7 @@ public class PollLeadersModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2023))
+            .Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2023, 2023))
             .ReturnsAsync(new List<RankingsResult>
             {
                 new()
@@ -275,7 +275,7 @@ public class PollLeadersModuleTests
     public async Task GetPollLeadersAsync_AvailableSeasonBounds_ReportsFromAllPublishedData()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
+            .Setup(x => x.GetRankingsSnapshotsAsync())
             .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2020, Week = 5, IsPublished = true },
@@ -285,7 +285,7 @@ public class PollLeadersModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2022, 2022))
+            .Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2022, 2022))
             .ReturnsAsync(new List<RankingsResult>
             {
                 new()
@@ -316,7 +316,7 @@ public class PollLeadersModuleTests
     public async Task GetPollLeadersAsync_CacheHit_ReturnsWithoutComputation()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
+            .Setup(x => x.GetRankingsSnapshotsAsync())
             .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 1, IsPublished = true }
@@ -341,7 +341,7 @@ public class PollLeadersModuleTests
 
         Assert.Equal(cachedResult, result);
         _mockRankingsModule.Verify(
-            x => x.GetPublishedSnapshotsBySeasonRangeAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+            x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
     }
 
     [Fact]
@@ -365,10 +365,10 @@ public class PollLeadersModuleTests
     }
 
     [Fact]
-    public async Task GetPollLeadersAsync_FinalWeeksOnly_CountsOnlyPostseasonSnapshots()
+    public async Task GetPollLeadersAsync_FinalWeeksOnly_CountsOnlyPostseasonRankingsSnapshots()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
+            .Setup(x => x.GetRankingsSnapshotsAsync())
             .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2022, Week = 3, IsPublished = true },
@@ -394,7 +394,7 @@ public class PollLeadersModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2022, 2023))
+            .Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2022, 2023))
             .ReturnsAsync(new List<RankingsResult>
             {
                 new()
@@ -460,7 +460,7 @@ public class PollLeadersModuleTests
     public async Task GetPollLeadersAsync_FinalWeeksOnly_SkipsSeasonsWithNoPostseason()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
+            .Setup(x => x.GetRankingsSnapshotsAsync())
             .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 3, IsPublished = true }
@@ -475,7 +475,7 @@ public class PollLeadersModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2023))
+            .Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2023, 2023))
             .ReturnsAsync(new List<RankingsResult>
             {
                 new()
@@ -496,10 +496,10 @@ public class PollLeadersModuleTests
     }
 
     [Fact]
-    public async Task GetPollLeadersAsync_FinalWeeksOnly_SkipsSeasonsWithNoPublishedPostseasonSnapshot()
+    public async Task GetPollLeadersAsync_FinalWeeksOnly_SkipsSeasonsWithNoPublishedPostseasonRankingsSnapshot()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
+            .Setup(x => x.GetRankingsSnapshotsAsync())
             .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 3, IsPublished = true }
@@ -513,7 +513,7 @@ public class PollLeadersModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2023))
+            .Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2023, 2023))
             .ReturnsAsync(new List<RankingsResult>
             {
                 new()
@@ -549,7 +549,7 @@ public class PollLeadersModuleTests
     public async Task GetPollLeadersAsync_MaxSeasonOnly_FiltersToMax()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
+            .Setup(x => x.GetRankingsSnapshotsAsync())
             .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2020, Week = 1, IsPublished = true },
@@ -558,7 +558,7 @@ public class PollLeadersModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2020, 2021))
+            .Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2020, 2021))
             .ReturnsAsync(new List<RankingsResult>
             {
                 new()
@@ -596,14 +596,14 @@ public class PollLeadersModuleTests
         Assert.Equal(2, allWeeks[0].Top25Count);
 
         _mockRankingsModule.Verify(
-            x => x.GetPublishedSnapshotsBySeasonRangeAsync(2020, 2021), Times.Once);
+            x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2020, 2021), Times.Once);
     }
 
     [Fact]
     public async Task GetPollLeadersAsync_MinSeasonOnly_FiltersFromMin()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
+            .Setup(x => x.GetRankingsSnapshotsAsync())
             .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2020, Week = 1, IsPublished = true },
@@ -612,7 +612,7 @@ public class PollLeadersModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2021, 2022))
+            .Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2021, 2022))
             .ReturnsAsync(new List<RankingsResult>
             {
                 new()
@@ -650,14 +650,14 @@ public class PollLeadersModuleTests
         Assert.Equal(2, allWeeks[0].Top25Count);
 
         _mockRankingsModule.Verify(
-            x => x.GetPublishedSnapshotsBySeasonRangeAsync(2021, 2022), Times.Once);
+            x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2021, 2022), Times.Once);
     }
 
     [Fact]
     public async Task GetPollLeadersAsync_MixedPublishedAndUnpublished_OnlyCountsPublished()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
+            .Setup(x => x.GetRankingsSnapshotsAsync())
             .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 1, IsPublished = true },
@@ -673,7 +673,7 @@ public class PollLeadersModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2023))
+            .Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2023, 2023))
             .ReturnsAsync(new List<RankingsResult>
             {
                 new()
@@ -705,10 +705,10 @@ public class PollLeadersModuleTests
     }
 
     [Fact]
-    public async Task GetPollLeadersAsync_NoPublishedSnapshots_ReturnsEmptyResult()
+    public async Task GetPollLeadersAsync_NoPublishedRankingsSnapshots_ReturnsEmptyResult()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
+            .Setup(x => x.GetRankingsSnapshotsAsync())
             .ReturnsAsync(new List<RankingsSnapshotSummary>());
 
         var result = await _module.GetPollLeadersAsync(null, null);
@@ -720,10 +720,10 @@ public class PollLeadersModuleTests
     }
 
     [Fact]
-    public async Task GetPollLeadersAsync_NullSnapshotFromBatch_HandledGracefully()
+    public async Task GetPollLeadersAsync_NullRankingsSnapshotFromBatch_HandledGracefully()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
+            .Setup(x => x.GetRankingsSnapshotsAsync())
             .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 1, IsPublished = true },
@@ -739,7 +739,7 @@ public class PollLeadersModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2023))
+            .Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2023, 2023))
             .ReturnsAsync(new List<RankingsResult>
             {
                 new()
@@ -761,10 +761,10 @@ public class PollLeadersModuleTests
     }
 
     [Fact]
-    public async Task GetPollLeadersAsync_SkipsUnpublishedSnapshots()
+    public async Task GetPollLeadersAsync_SkipsUnpublishedRankingsSnapshots()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
+            .Setup(x => x.GetRankingsSnapshotsAsync())
             .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 1, IsPublished = false },
@@ -776,14 +776,14 @@ public class PollLeadersModuleTests
         Assert.Empty(result.AllWeeks);
         Assert.Empty(result.FinalWeeksOnly);
         _mockRankingsModule.Verify(
-            x => x.GetPublishedSnapshotsBySeasonRangeAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+            x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
     }
 
     [Fact]
     public async Task GetPollLeadersAsync_TeamsOutsideTop25_ExcludedFromResults()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
+            .Setup(x => x.GetRankingsSnapshotsAsync())
             .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2023, Week = 1, IsPublished = true }
@@ -797,7 +797,7 @@ public class PollLeadersModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2023))
+            .Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2023, 2023))
             .ReturnsAsync(new List<RankingsResult>
             {
                 new()
@@ -828,7 +828,7 @@ public class PollLeadersModuleTests
     public async Task GetPollLeadersAsync_YearRangeFilter_RespectsMinMaxParams()
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
+            .Setup(x => x.GetRankingsSnapshotsAsync())
             .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = 2021, Week = 5, IsPublished = true },
@@ -837,7 +837,7 @@ public class PollLeadersModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(2022, 2022))
+            .Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2022, 2022))
             .ReturnsAsync(new List<RankingsResult>
             {
                 new()
@@ -865,7 +865,7 @@ public class PollLeadersModuleTests
         Assert.Equal("Florida", allWeeks[0].TeamName);
 
         _mockRankingsModule.Verify(
-            x => x.GetPublishedSnapshotsBySeasonRangeAsync(2022, 2022), Times.Once);
+            x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2022, 2022), Times.Once);
     }
 
     [Fact]
@@ -901,7 +901,7 @@ public class PollLeadersModuleTests
         int season, int week, string seasonType, params RankedTeam[] teams)
     {
         _mockRankingsModule
-            .Setup(x => x.GetSnapshotsAsync())
+            .Setup(x => x.GetRankingsSnapshotsAsync())
             .ReturnsAsync(new List<RankingsSnapshotSummary>
             {
                 new() { Season = season, Week = week, IsPublished = true }
@@ -915,7 +915,7 @@ public class PollLeadersModuleTests
             });
 
         _mockRankingsModule
-            .Setup(x => x.GetPublishedSnapshotsBySeasonRangeAsync(season, season))
+            .Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(season, season))
             .ReturnsAsync(new List<RankingsResult>
             {
                 new()

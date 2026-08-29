@@ -52,7 +52,7 @@ public class TeamsModuleTests
             }
         };
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotAsync(2023, 5)).ReturnsAsync(publishedResult);
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5)).ReturnsAsync(publishedResult);
         _mockDataService
             .Setup(x => x.GetFBSTeamsAsync(2023))
             .ThrowsAsync(new InvalidOperationException("FBS teams fetch failed"));
@@ -65,7 +65,7 @@ public class TeamsModuleTests
     [Fact]
     public async Task GetTeamDetailAsync_GetSeasonDataAsyncThrows_PropagatesException()
     {
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotAsync(2023, 5)).ReturnsAsync((RankingsResult?)null);
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5)).ReturnsAsync((RankingsResult?)null);
         _mockDataService
             .Setup(x => x.GetSeasonDataAsync(2023, 5))
             .ThrowsAsync(new InvalidOperationException("API unavailable"));
@@ -75,7 +75,7 @@ public class TeamsModuleTests
     }
 
     [Fact]
-    public async Task GetTeamDetailAsync_NoPublishedSnapshot_CallsGenerateRankingsAsync()
+    public async Task GetTeamDetailAsync_NoPublishedRankingsSnapshot_CallsGenerateRankingsAsync()
     {
         var seasonData = new SeasonData
         {
@@ -103,7 +103,7 @@ public class TeamsModuleTests
             }
         };
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotAsync(2023, 5)).ReturnsAsync((RankingsResult?)null);
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5)).ReturnsAsync((RankingsResult?)null);
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2023, 5)).ReturnsAsync(seasonData);
         _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
         _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankingsResult);
@@ -115,7 +115,7 @@ public class TeamsModuleTests
     }
 
     [Fact]
-    public async Task GetTeamDetailAsync_NoPublishedSnapshot_FallsBackToLiveCalculation()
+    public async Task GetTeamDetailAsync_NoPublishedRankingsSnapshot_FallsBackToLiveCalculation()
     {
         var seasonData = new SeasonData
         {
@@ -143,7 +143,7 @@ public class TeamsModuleTests
             }
         };
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotAsync(2023, 5)).ReturnsAsync((RankingsResult?)null);
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5)).ReturnsAsync((RankingsResult?)null);
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2023, 5)).ReturnsAsync(seasonData);
         _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
         _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankingsResult);
@@ -158,7 +158,7 @@ public class TeamsModuleTests
     }
 
     [Fact]
-    public async Task GetTeamDetailAsync_NoPublishedSnapshot_GetFullSeasonScheduleAsyncThrows_PropagatesException()
+    public async Task GetTeamDetailAsync_NoPublishedRankingsSnapshot_GetFullSeasonScheduleAsyncThrows_PropagatesException()
     {
         var seasonData = new SeasonData
         {
@@ -186,7 +186,7 @@ public class TeamsModuleTests
             }
         };
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotAsync(2023, 5)).ReturnsAsync((RankingsResult?)null);
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5)).ReturnsAsync((RankingsResult?)null);
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2023, 5)).ReturnsAsync(seasonData);
         _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
         _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankingsResult);
@@ -199,7 +199,7 @@ public class TeamsModuleTests
     }
 
     [Fact]
-    public async Task GetTeamDetailAsync_NoPublishedSnapshot_ReturnsSeasonDataTeams()
+    public async Task GetTeamDetailAsync_NoPublishedRankingsSnapshot_ReturnsSeasonDataTeams()
     {
         var seasonData = new SeasonData
         {
@@ -227,7 +227,7 @@ public class TeamsModuleTests
             }
         };
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotAsync(2023, 5)).ReturnsAsync((RankingsResult?)null);
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5)).ReturnsAsync((RankingsResult?)null);
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2023, 5)).ReturnsAsync(seasonData);
         _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
         _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankingsResult);
@@ -240,7 +240,7 @@ public class TeamsModuleTests
     }
 
     [Fact]
-    public async Task GetTeamDetailAsync_NoPublishedSnapshot_TeamNotInRankings_ReturnsNull()
+    public async Task GetTeamDetailAsync_NoPublishedRankingsSnapshot_TeamNotInRankings_ReturnsNull()
     {
         var seasonData = new SeasonData
         {
@@ -268,7 +268,7 @@ public class TeamsModuleTests
             ["Florida"] = new RatingDetails { RatingComponents = new Dictionary<string, double>() }
         };
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotAsync(2023, 5)).ReturnsAsync((RankingsResult?)null);
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5)).ReturnsAsync((RankingsResult?)null);
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2023, 5)).ReturnsAsync(seasonData);
         _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
         _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankingsResult);
@@ -279,7 +279,7 @@ public class TeamsModuleTests
     }
 
     [Fact]
-    public async Task GetTeamDetailAsync_NoPublishedSnapshot_TeamNotInSeasonData_ReturnsNull()
+    public async Task GetTeamDetailAsync_NoPublishedRankingsSnapshot_TeamNotInSeasonData_ReturnsNull()
     {
         var seasonData = new SeasonData
         {
@@ -292,7 +292,7 @@ public class TeamsModuleTests
             Games = []
         };
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotAsync(2023, 5)).ReturnsAsync((RankingsResult?)null);
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5)).ReturnsAsync((RankingsResult?)null);
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2023, 5)).ReturnsAsync(seasonData);
 
         var result = await _teamsModule.GetTeamDetailAsync("NonExistentTeam", 2023, 5);
@@ -308,7 +308,7 @@ public class TeamsModuleTests
     }
 
     [Fact]
-    public async Task GetTeamDetailAsync_PublishedSnapshot_BuildsTeamsFromMetadata()
+    public async Task GetTeamDetailAsync_PublishedRankingsSnapshot_BuildsTeamsFromMetadata()
     {
         var publishedResult = new RankingsResult
         {
@@ -327,7 +327,7 @@ public class TeamsModuleTests
             new FBSTeam { Name = "Alabama", Color = "#9E1B32", AltColor = "#FFFFFF", Conference = "SEC", LogoURL = "bama.png" }
         };
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotAsync(2023, 5)).ReturnsAsync(publishedResult);
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5)).ReturnsAsync(publishedResult);
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2023)).ReturnsAsync(fbsTeams);
         _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2023)).ReturnsAsync(new List<ScheduleGame>());
 
@@ -344,7 +344,7 @@ public class TeamsModuleTests
     }
 
     [Fact]
-    public async Task GetTeamDetailAsync_PublishedSnapshot_FBSTeamNotInRankings_HasZeroWinsLosses()
+    public async Task GetTeamDetailAsync_PublishedRankingsSnapshot_FBSTeamNotInRankings_HasZeroWinsLosses()
     {
         var publishedResult = new RankingsResult
         {
@@ -362,7 +362,7 @@ public class TeamsModuleTests
             new FBSTeam { Name = "Notre Dame", Color = "#0C2340", Conference = "Independent" }
         };
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotAsync(2023, 5)).ReturnsAsync(publishedResult);
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5)).ReturnsAsync(publishedResult);
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2023)).ReturnsAsync(fbsTeams);
         _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2023)).ReturnsAsync(new List<ScheduleGame>());
 
@@ -374,7 +374,7 @@ public class TeamsModuleTests
     }
 
     [Fact]
-    public async Task GetTeamDetailAsync_PublishedSnapshot_GetFullSeasonScheduleAsyncThrows_PropagatesException()
+    public async Task GetTeamDetailAsync_PublishedRankingsSnapshot_GetFullSeasonScheduleAsyncThrows_PropagatesException()
     {
         var publishedResult = new RankingsResult
         {
@@ -386,7 +386,7 @@ public class TeamsModuleTests
             }
         };
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotAsync(2023, 5)).ReturnsAsync(publishedResult);
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5)).ReturnsAsync(publishedResult);
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2023)).ReturnsAsync(new List<FBSTeam>());
         _mockDataService
             .Setup(x => x.GetFullSeasonScheduleAsync(2023))
@@ -397,7 +397,7 @@ public class TeamsModuleTests
     }
 
     [Fact]
-    public async Task GetTeamDetailAsync_PublishedSnapshot_ReturnsAllFields()
+    public async Task GetTeamDetailAsync_PublishedRankingsSnapshot_ReturnsAllFields()
     {
         var rankings = new List<RankedTeam>
         {
@@ -416,7 +416,7 @@ public class TeamsModuleTests
             new ScheduleGame { HomeTeam = "Florida", AwayTeam = "USC", Week = 1, Completed = true }
         };
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotAsync(2023, 5)).ReturnsAsync(publishedResult);
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5)).ReturnsAsync(publishedResult);
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2023)).ReturnsAsync(fbsTeams);
         _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2023)).ReturnsAsync(fullSchedule);
 
@@ -430,7 +430,7 @@ public class TeamsModuleTests
     }
 
     [Fact]
-    public async Task GetTeamDetailAsync_PublishedSnapshot_SkipsGetSeasonDataAsync()
+    public async Task GetTeamDetailAsync_PublishedRankingsSnapshot_SkipsGetSeasonDataAsync()
     {
         var publishedResult = new RankingsResult
         {
@@ -447,7 +447,7 @@ public class TeamsModuleTests
             new FBSTeam { Name = "Florida", Color = "#0021A5", AltColor = "#FF6600", Conference = "SEC" }
         };
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotAsync(2023, 5)).ReturnsAsync(publishedResult);
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5)).ReturnsAsync(publishedResult);
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2023)).ReturnsAsync(fbsTeams);
         _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2023)).ReturnsAsync(new List<ScheduleGame>());
 
@@ -460,7 +460,7 @@ public class TeamsModuleTests
     }
 
     [Fact]
-    public async Task GetTeamDetailAsync_PublishedSnapshot_TeamNotInRankings_ReturnsNull()
+    public async Task GetTeamDetailAsync_PublishedRankingsSnapshot_TeamNotInRankings_ReturnsNull()
     {
         var publishedResult = new RankingsResult
         {
@@ -472,7 +472,7 @@ public class TeamsModuleTests
             }
         };
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotAsync(2023, 5)).ReturnsAsync(publishedResult);
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5)).ReturnsAsync(publishedResult);
 
         var result = await _teamsModule.GetTeamDetailAsync("Florida", 2023, 5);
 
@@ -481,7 +481,7 @@ public class TeamsModuleTests
     }
 
     [Fact]
-    public async Task GetTeamDetailAsync_PublishedSnapshot_UsesGetFBSTeamsAsync()
+    public async Task GetTeamDetailAsync_PublishedRankingsSnapshot_UsesGetFBSTeamsAsync()
     {
         var publishedResult = new RankingsResult
         {
@@ -498,7 +498,7 @@ public class TeamsModuleTests
             new FBSTeam { Name = "Florida", Color = "#0021A5", AltColor = "#FF6600", Conference = "SEC" }
         };
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotAsync(2023, 5)).ReturnsAsync(publishedResult);
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5)).ReturnsAsync(publishedResult);
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2023)).ReturnsAsync(fbsTeams);
         _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2023)).ReturnsAsync(new List<ScheduleGame>());
 
@@ -521,7 +521,7 @@ public class TeamsModuleTests
             Games = []
         };
 
-        _mockRankingsModule.Setup(x => x.GetPublishedSnapshotAsync(2023, 5)).ReturnsAsync((RankingsResult?)null);
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotAsync(2023, 5)).ReturnsAsync((RankingsResult?)null);
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2023, 5)).ReturnsAsync(seasonData);
         _mockRatingModule
             .Setup(x => x.RateTeamsAsync(seasonData))

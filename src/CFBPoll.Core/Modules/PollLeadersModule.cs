@@ -34,12 +34,12 @@ public class PollLeadersModule : IPollLeadersModule
 
     public async Task<PollLeadersResult> GetPollLeadersAsync(int? minSeason, int? maxSeason)
     {
-        var snapshots = await _rankingsModule.GetSnapshotsAsync().ConfigureAwait(false);
-        var publishedWeeks = snapshots.Where(pw => pw.IsPublished).ToList();
+        var rankingsSnapshots = await _rankingsModule.GetRankingsSnapshotsAsync().ConfigureAwait(false);
+        var publishedWeeks = rankingsSnapshots.Where(pw => pw.IsPublished).ToList();
 
         if (publishedWeeks.Count == 0)
         {
-            _logger.LogInformation("No published snapshots found");
+            _logger.LogInformation("No published rankings snapshots found");
             return new PollLeadersResult();
         }
 
@@ -66,13 +66,13 @@ public class PollLeadersModule : IPollLeadersModule
             .Where(pw => pw.Season >= effectiveMin && pw.Season <= effectiveMax)
             .ToList();
 
-        var allSnapshots = (await _rankingsModule
-            .GetPublishedSnapshotsBySeasonRangeAsync(effectiveMin, effectiveMax)
+        var allRankingsSnapshots = (await _rankingsModule
+            .GetPublishedRankingsSnapshotsBySeasonRangeAsync(effectiveMin, effectiveMax)
             .ConfigureAwait(false))
             .ToList();
 
-        var allWeeksEntries = BuildAllWeeksEntries(allSnapshots);
-        var finalWeeksEntries = await BuildFinalWeeksEntriesAsync(filteredWeeks, allSnapshots)
+        var allWeeksEntries = BuildAllWeeksEntries(allRankingsSnapshots);
+        var finalWeeksEntries = await BuildFinalWeeksEntriesAsync(filteredWeeks, allRankingsSnapshots)
             .ConfigureAwait(false);
 
         var result = new PollLeadersResult
@@ -95,11 +95,11 @@ public class PollLeadersModule : IPollLeadersModule
         _logger.LogDebug("Invalidated {Count} poll leaders cache entries", count);
     }
 
-    private void AggregateSnapshot(
+    private void AggregateRankingsSnapshot(
         IDictionary<string, PollLeaderEntry> counts,
-        RankingsResult snapshot)
+        RankingsResult rankingsSnapshot)
     {
-        foreach (var team in snapshot.Rankings)
+        foreach (var team in rankingsSnapshot.Rankings)
         {
             if (!counts.TryGetValue(team.TeamName, out var entry))
             {
@@ -121,27 +121,27 @@ public class PollLeadersModule : IPollLeadersModule
     }
 
     private IReadOnlyList<PollLeaderEntry> BuildAllWeeksEntries(
-        IReadOnlyList<RankingsResult> snapshots)
+        IReadOnlyList<RankingsResult> rankingsSnapshots)
     {
         var counts = new Dictionary<string, PollLeaderEntry>(StringComparer.OrdinalIgnoreCase);
         var aggregatedCount = 0;
 
-        foreach (var snapshot in snapshots)
+        foreach (var rankingsSnapshot in rankingsSnapshots)
         {
-            AggregateSnapshot(counts, snapshot);
+            AggregateRankingsSnapshot(counts, rankingsSnapshot);
             aggregatedCount++;
         }
 
-        _logger.LogInformation("All-weeks mode: aggregated {Count} snapshots", aggregatedCount);
+        _logger.LogInformation("All-weeks mode: aggregated {Count} rankings snapshots", aggregatedCount);
 
         return SortAndFilter(counts);
     }
 
     private async Task<IReadOnlyList<PollLeaderEntry>> BuildFinalWeeksEntriesAsync(
         IReadOnlyList<RankingsSnapshotSummary> publishedWeeks,
-        IReadOnlyList<RankingsResult> allSnapshots)
+        IReadOnlyList<RankingsResult> allRankingsSnapshots)
     {
-        var snapshotLookup = allSnapshots
+        var rankingsSnapshotLookup = allRankingsSnapshots
             .ToDictionary(s => (s.Season, s.Week));
 
         var seasons = publishedWeeks
@@ -165,18 +165,18 @@ public class PollLeadersModule : IPollLeadersModule
                 continue;
             }
 
-            if (!snapshotLookup.TryGetValue((season, postseasonWeek.Week), out var snapshot))
+            if (!rankingsSnapshotLookup.TryGetValue((season, postseasonWeek.Week), out var rankingsSnapshot))
             {
-                _logger.LogDebug("No published postseason snapshot for season {Season}, week {Week}",
+                _logger.LogDebug("No published postseason rankings snapshot for season {Season}, week {Week}",
                     season, postseasonWeek.Week);
                 continue;
             }
 
-            AggregateSnapshot(counts, snapshot);
+            AggregateRankingsSnapshot(counts, rankingsSnapshot);
             aggregatedCount++;
         }
 
-        _logger.LogInformation("Final-weeks mode: aggregated {Count} postseason snapshots", aggregatedCount);
+        _logger.LogInformation("Final-weeks mode: aggregated {Count} postseason rankings snapshots", aggregatedCount);
 
         return SortAndFilter(counts);
     }

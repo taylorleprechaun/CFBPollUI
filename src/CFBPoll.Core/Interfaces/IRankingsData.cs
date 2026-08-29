@@ -8,22 +8,22 @@ namespace CFBPoll.Core.Interfaces;
 public interface IRankingsData
 {
     /// <summary>
-    /// Deletes a snapshot for the given season and week.
+    /// Deletes a rankings snapshot for the given season and week.
     /// </summary>
     Task<bool> DeleteRankingsSnapshotAsync(int season, int week);
 
     /// <summary>
-    /// Retrieves the most recent published snapshot before the given week in the same season.
+    /// Retrieves the most recent published rankings snapshot before the given week in the same season.
     /// </summary>
     Task<RankingsResult?> GetPreviousPublishedRankingsSnapshotAsync(int season, int week);
 
     /// <summary>
-    /// Retrieves a published snapshot for the given season and week.
+    /// Retrieves a published rankings snapshot for the given season and week.
     /// </summary>
     Task<RankingsResult?> GetPublishedRankingsSnapshotAsync(int season, int week);
 
     /// <summary>
-    /// Retrieves all published snapshots within the given season range.
+    /// Retrieves all published rankings snapshots within the given season range.
     /// </summary>
     Task<IEnumerable<RankingsResult>> GetPublishedRankingsSnapshotsBySeasonRangeAsync(int minSeason, int maxSeason);
 
@@ -33,7 +33,7 @@ public interface IRankingsData
     Task<IEnumerable<int>> GetPublishedWeekNumbersAsync(int season);
 
     /// <summary>
-    /// Retrieves a snapshot for the given season and week regardless of published status.
+    /// Retrieves a rankings snapshot for the given season and week regardless of published status.
     /// </summary>
     Task<RankingsResult?> GetRankingsSnapshotAsync(int season, int week);
 
@@ -48,12 +48,12 @@ public interface IRankingsData
     Task InitializeAsync();
 
     /// <summary>
-    /// Publishes a snapshot for the given season and week.
+    /// Publishes a rankings snapshot for the given season and week.
     /// </summary>
     Task<bool> PublishRankingsSnapshotAsync(int season, int week);
 
     /// <summary>
-    /// Saves a rankings result as a draft snapshot, tagged with the algorithm version that produced it.
+    /// Saves a rankings result as a draft rankings snapshot, tagged with the algorithm version that produced it.
     /// </summary>
     Task<bool> SaveRankingsSnapshotAsync(RankingsResult rankings, RatingAlgorithmVersion algorithmVersion);
 }

@@ -4,7 +4,7 @@ using Xunit;
 
 namespace CFBPoll.API.Tests.Mappers;
 
-public class RankingsRankingsSnapshotMapperTests
+public class RankingsSnapshotMapperTests
 {
     [Fact]
     public void ToDTO_MapsAllProperties()
@@ -34,7 +34,7 @@ public class RankingsRankingsSnapshotMapperTests
     }
 
     [Fact]
-    public void ToDTO_UnpublishedSnapshot_MapsPublishedFalse()
+    public void ToDTO_UnpublishedRankingsSnapshot_MapsPublishedFalse()
     {
         var summary = new RankingsSnapshotSummary
         {
@@ -51,7 +51,7 @@ public class RankingsRankingsSnapshotMapperTests
     }
 
     [Fact]
-    public void ToDTO_V2Snapshot_MapsAlgorithmVersionString()
+    public void ToDTO_V2RankingsSnapshot_MapsAlgorithmVersionString()
     {
         var summary = new RankingsSnapshotSummary
         {

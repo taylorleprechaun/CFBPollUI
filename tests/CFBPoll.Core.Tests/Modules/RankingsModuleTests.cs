@@ -20,11 +20,11 @@ public class RankingsModuleTests
     }
 
     [Fact]
-    public async Task DeleteSnapshotAsync_DelegatesToRankingsData()
+    public async Task DeleteRankingsSnapshotAsync_DelegatesToRankingsData()
     {
         _mockRankingsData.Setup(x => x.DeleteRankingsSnapshotAsync(2024, 5)).ReturnsAsync(true);
 
-        var result = await _rankingsModule.DeleteSnapshotAsync(2024, 5);
+        var result = await _rankingsModule.DeleteRankingsSnapshotAsync(2024, 5);
 
         Assert.True(result);
         _mockRankingsData.Verify(x => x.DeleteRankingsSnapshotAsync(2024, 5), Times.Once);
@@ -628,28 +628,28 @@ public class RankingsModuleTests
     }
 
     [Fact]
-    public async Task GetPublishedSnapshotAsync_DelegatesToRankingsData()
+    public async Task GetPublishedRankingsSnapshotAsync_DelegatesToRankingsData()
     {
-        var snapshot = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
-        _mockRankingsData.Setup(x => x.GetPublishedRankingsSnapshotAsync(2024, 5)).ReturnsAsync(snapshot);
+        var rankingsSnapshot = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+        _mockRankingsData.Setup(x => x.GetPublishedRankingsSnapshotAsync(2024, 5)).ReturnsAsync(rankingsSnapshot);
 
-        var result = await _rankingsModule.GetPublishedSnapshotAsync(2024, 5);
+        var result = await _rankingsModule.GetPublishedRankingsSnapshotAsync(2024, 5);
 
-        Assert.Equal(snapshot, result);
+        Assert.Equal(rankingsSnapshot, result);
         _mockRankingsData.Verify(x => x.GetPublishedRankingsSnapshotAsync(2024, 5), Times.Once);
     }
 
     [Fact]
-    public async Task GetPublishedSnapshotsBySeasonRangeAsync_DelegatesToRankingsData()
+    public async Task GetPublishedRankingsSnapshotsBySeasonRangeAsync_DelegatesToRankingsData()
     {
-        var snapshots = new List<RankingsResult>
+        var rankingsSnapshots = new List<RankingsResult>
         {
             new RankingsResult { Season = 2023, Week = 1, Rankings = [] },
             new RankingsResult { Season = 2024, Week = 5, Rankings = [] }
         };
-        _mockRankingsData.Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2023, 2024)).ReturnsAsync(snapshots);
+        _mockRankingsData.Setup(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2023, 2024)).ReturnsAsync(rankingsSnapshots);
 
-        var result = (await _rankingsModule.GetPublishedSnapshotsBySeasonRangeAsync(2023, 2024)).ToList();
+        var result = (await _rankingsModule.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2023, 2024)).ToList();
 
         Assert.Equal(2, result.Count);
         _mockRankingsData.Verify(x => x.GetPublishedRankingsSnapshotsBySeasonRangeAsync(2023, 2024), Times.Once);
@@ -670,7 +670,7 @@ public class RankingsModuleTests
     [Fact]
     public async Task GetRankDeltasAsync_CaseInsensitiveTeamNameMatching()
     {
-        var previousSnapshot = new RankingsResult
+        var previousRankingsSnapshot = new RankingsResult
         {
             Season = 2024, Week = 4,
             Rankings = new List<RankedTeam>
@@ -681,7 +681,7 @@ public class RankingsModuleTests
 
         _mockRankingsData
             .Setup(x => x.GetPreviousPublishedRankingsSnapshotAsync(2024, 5))
-            .ReturnsAsync(previousSnapshot);
+            .ReturnsAsync(previousRankingsSnapshot);
 
         var currentRankings = new List<RankedTeam>
         {
@@ -713,7 +713,7 @@ public class RankingsModuleTests
     [Fact]
     public async Task GetRankDeltasAsync_NewTeamNotInPrevious_ReturnsNullDelta()
     {
-        var previousSnapshot = new RankingsResult
+        var previousRankingsSnapshot = new RankingsResult
         {
             Season = 2024, Week = 4,
             Rankings = new List<RankedTeam>
@@ -724,7 +724,7 @@ public class RankingsModuleTests
 
         _mockRankingsData
             .Setup(x => x.GetPreviousPublishedRankingsSnapshotAsync(2024, 5))
-            .ReturnsAsync(previousSnapshot);
+            .ReturnsAsync(previousRankingsSnapshot);
 
         var currentRankings = new List<RankedTeam>
         {
@@ -737,7 +737,7 @@ public class RankingsModuleTests
     }
 
     [Fact]
-    public async Task GetRankDeltasAsync_NoPreviousSnapshot_ReturnsNullDeltas()
+    public async Task GetRankDeltasAsync_NoPreviousRankingsSnapshot_ReturnsNullDeltas()
     {
         _mockRankingsData
             .Setup(x => x.GetPreviousPublishedRankingsSnapshotAsync(2024, 1))
@@ -766,7 +766,7 @@ public class RankingsModuleTests
     [Fact]
     public async Task GetRankDeltasAsync_TeamMovedDown_ReturnsNegativeDelta()
     {
-        var previousSnapshot = new RankingsResult
+        var previousRankingsSnapshot = new RankingsResult
         {
             Season = 2024, Week = 4,
             Rankings = new List<RankedTeam>
@@ -777,7 +777,7 @@ public class RankingsModuleTests
 
         _mockRankingsData
             .Setup(x => x.GetPreviousPublishedRankingsSnapshotAsync(2024, 5))
-            .ReturnsAsync(previousSnapshot);
+            .ReturnsAsync(previousRankingsSnapshot);
 
         var currentRankings = new List<RankedTeam>
         {
@@ -792,7 +792,7 @@ public class RankingsModuleTests
     [Fact]
     public async Task GetRankDeltasAsync_TeamMovedUp_ReturnsPositiveDelta()
     {
-        var previousSnapshot = new RankingsResult
+        var previousRankingsSnapshot = new RankingsResult
         {
             Season = 2024, Week = 4,
             Rankings = new List<RankedTeam>
@@ -803,7 +803,7 @@ public class RankingsModuleTests
 
         _mockRankingsData
             .Setup(x => x.GetPreviousPublishedRankingsSnapshotAsync(2024, 5))
-            .ReturnsAsync(previousSnapshot);
+            .ReturnsAsync(previousRankingsSnapshot);
 
         var currentRankings = new List<RankedTeam>
         {
@@ -818,7 +818,7 @@ public class RankingsModuleTests
     [Fact]
     public async Task GetRankDeltasAsync_TeamUnchanged_ReturnsZero()
     {
-        var previousSnapshot = new RankingsResult
+        var previousRankingsSnapshot = new RankingsResult
         {
             Season = 2024, Week = 4,
             Rankings = new List<RankedTeam>
@@ -829,7 +829,7 @@ public class RankingsModuleTests
 
         _mockRankingsData
             .Setup(x => x.GetPreviousPublishedRankingsSnapshotAsync(2024, 5))
-            .ReturnsAsync(previousSnapshot);
+            .ReturnsAsync(previousRankingsSnapshot);
 
         var currentRankings = new List<RankedTeam>
         {
@@ -842,19 +842,19 @@ public class RankingsModuleTests
     }
 
     [Fact]
-    public async Task GetSnapshotAsync_DelegatesToRankingsData()
+    public async Task GetRankingsSnapshotAsync_DelegatesToRankingsData()
     {
-        var snapshot = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
-        _mockRankingsData.Setup(x => x.GetRankingsSnapshotAsync(2024, 5)).ReturnsAsync(snapshot);
+        var rankingsSnapshot = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
+        _mockRankingsData.Setup(x => x.GetRankingsSnapshotAsync(2024, 5)).ReturnsAsync(rankingsSnapshot);
 
-        var result = await _rankingsModule.GetSnapshotAsync(2024, 5);
+        var result = await _rankingsModule.GetRankingsSnapshotAsync(2024, 5);
 
-        Assert.Equal(snapshot, result);
+        Assert.Equal(rankingsSnapshot, result);
         _mockRankingsData.Verify(x => x.GetRankingsSnapshotAsync(2024, 5), Times.Once);
     }
 
     [Fact]
-    public async Task GetSnapshotsAsync_DelegatesToRankingsData()
+    public async Task GetRankingsSnapshotsAsync_DelegatesToRankingsData()
     {
         var weeks = new List<RankingsSnapshotSummary>
         {
@@ -862,25 +862,25 @@ public class RankingsModuleTests
         };
         _mockRankingsData.Setup(x => x.GetRankingsSnapshotsAsync()).ReturnsAsync(weeks);
 
-        var result = await _rankingsModule.GetSnapshotsAsync();
+        var result = await _rankingsModule.GetRankingsSnapshotsAsync();
 
         Assert.Single(result);
         _mockRankingsData.Verify(x => x.GetRankingsSnapshotsAsync(), Times.Once);
     }
 
     [Fact]
-    public async Task PublishSnapshotAsync_DelegatesToRankingsData()
+    public async Task PublishRankingsSnapshotAsync_DelegatesToRankingsData()
     {
         _mockRankingsData.Setup(x => x.PublishRankingsSnapshotAsync(2024, 5)).ReturnsAsync(true);
 
-        var result = await _rankingsModule.PublishSnapshotAsync(2024, 5);
+        var result = await _rankingsModule.PublishRankingsSnapshotAsync(2024, 5);
 
         Assert.True(result);
         _mockRankingsData.Verify(x => x.PublishRankingsSnapshotAsync(2024, 5), Times.Once);
     }
 
     [Fact]
-    public async Task SaveSnapshotAsync_DataLayerThrows_PropagatesException()
+    public async Task SaveRankingsSnapshotAsync_DataLayerThrows_PropagatesException()
     {
         var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
 
@@ -889,26 +889,26 @@ public class RankingsModuleTests
             .ThrowsAsync(new InvalidOperationException("Database write failed"));
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _rankingsModule.SaveSnapshotAsync(rankings, RatingAlgorithmVersion.V1));
+            () => _rankingsModule.SaveRankingsSnapshotAsync(rankings, RatingAlgorithmVersion.V1));
     }
 
     [Fact]
-    public async Task SaveSnapshotAsync_DelegatesToRankingsData()
+    public async Task SaveRankingsSnapshotAsync_DelegatesToRankingsData()
     {
         var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
         _mockRankingsData.Setup(x => x.SaveRankingsSnapshotAsync(rankings, RatingAlgorithmVersion.V2)).ReturnsAsync(true);
 
-        var result = await _rankingsModule.SaveSnapshotAsync(rankings, RatingAlgorithmVersion.V2);
+        var result = await _rankingsModule.SaveRankingsSnapshotAsync(rankings, RatingAlgorithmVersion.V2);
 
         Assert.True(result);
         _mockRankingsData.Verify(x => x.SaveRankingsSnapshotAsync(rankings, RatingAlgorithmVersion.V2), Times.Once);
     }
 
     [Fact]
-    public async Task SaveSnapshotAsync_NullRankings_ThrowsArgumentNullException()
+    public async Task SaveRankingsSnapshotAsync_NullRankings_ThrowsArgumentNullException()
     {
         await Assert.ThrowsAsync<ArgumentNullException>(
-            () => _rankingsModule.SaveSnapshotAsync(null!, RatingAlgorithmVersion.V1));
+            () => _rankingsModule.SaveRankingsSnapshotAsync(null!, RatingAlgorithmVersion.V1));
     }
 
     private static RatingDetails CreateRatingDetails(

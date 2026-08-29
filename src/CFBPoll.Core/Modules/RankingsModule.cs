@@ -13,7 +13,7 @@ public class RankingsModule : IRankingsModule
         _rankingsData = rankingsData ?? throw new ArgumentNullException(nameof(rankingsData));
     }
 
-    public async Task<bool> DeleteSnapshotAsync(int season, int week)
+    public async Task<bool> DeleteRankingsSnapshotAsync(int season, int week)
     {
         return await _rankingsData.DeleteRankingsSnapshotAsync(season, week).ConfigureAwait(false);
     }
@@ -76,12 +76,12 @@ public class RankingsModule : IRankingsModule
         });
     }
 
-    public async Task<RankingsResult?> GetPublishedSnapshotAsync(int season, int week)
+    public async Task<RankingsResult?> GetPublishedRankingsSnapshotAsync(int season, int week)
     {
         return await _rankingsData.GetPublishedRankingsSnapshotAsync(season, week).ConfigureAwait(false);
     }
 
-    public async Task<IEnumerable<RankingsResult>> GetPublishedSnapshotsBySeasonRangeAsync(int minSeason, int maxSeason)
+    public async Task<IEnumerable<RankingsResult>> GetPublishedRankingsSnapshotsBySeasonRangeAsync(int minSeason, int maxSeason)
     {
         return await _rankingsData.GetPublishedRankingsSnapshotsBySeasonRangeAsync(minSeason, maxSeason).ConfigureAwait(false);
     }
@@ -122,22 +122,22 @@ public class RankingsModule : IRankingsModule
             StringComparer.OrdinalIgnoreCase);
     }
 
-    public async Task<RankingsResult?> GetSnapshotAsync(int season, int week)
+    public async Task<RankingsResult?> GetRankingsSnapshotAsync(int season, int week)
     {
         return await _rankingsData.GetRankingsSnapshotAsync(season, week).ConfigureAwait(false);
     }
 
-    public async Task<IEnumerable<RankingsSnapshotSummary>> GetSnapshotsAsync()
+    public async Task<IEnumerable<RankingsSnapshotSummary>> GetRankingsSnapshotsAsync()
     {
         return await _rankingsData.GetRankingsSnapshotsAsync().ConfigureAwait(false);
     }
 
-    public async Task<bool> PublishSnapshotAsync(int season, int week)
+    public async Task<bool> PublishRankingsSnapshotAsync(int season, int week)
     {
         return await _rankingsData.PublishRankingsSnapshotAsync(season, week).ConfigureAwait(false);
     }
 
-    public async Task<bool> SaveSnapshotAsync(RankingsResult rankings, RatingAlgorithmVersion algorithmVersion)
+    public async Task<bool> SaveRankingsSnapshotAsync(RankingsResult rankings, RatingAlgorithmVersion algorithmVersion)
     {
         ArgumentNullException.ThrowIfNull(rankings);
 

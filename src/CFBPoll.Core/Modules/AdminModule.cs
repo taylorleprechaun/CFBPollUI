@@ -286,8 +286,8 @@ public class AdminModule : IAdminModule
         var persisted = true;
         try
         {
-            await _rankingsModule.SaveSnapshotAsync(rankings, algorithmVersion).ConfigureAwait(false);
-            _logger.LogInformation("Saved draft snapshot for season {Season}, week {Week}", season, week);
+            await _rankingsModule.SaveRankingsSnapshotAsync(rankings, algorithmVersion).ConfigureAwait(false);
+            _logger.LogInformation("Saved draft rankings snapshot for season {Season}, week {Week}", season, week);
 
             await _pollLeadersModule.InvalidateCacheAsync().ConfigureAwait(false);
             await _seasonTrendsModule.InvalidateCacheAsync().ConfigureAwait(false);
@@ -295,7 +295,7 @@ public class AdminModule : IAdminModule
         catch (Exception ex)
         {
             persisted = false;
-            _logger.LogWarning(ex, "Failed to persist snapshot for season {Season}, week {Week}", season, week);
+            _logger.LogWarning(ex, "Failed to persist rankings snapshot for season {Season}, week {Week}", season, week);
         }
 
         return new CalculateRankingsResult
@@ -320,11 +320,11 @@ public class AdminModule : IAdminModule
         return result;
     }
 
-    public async Task<bool> DeleteSnapshotAsync(int season, int week)
+    public async Task<bool> DeleteRankingsSnapshotAsync(int season, int week)
     {
-        _logger.LogInformation("Deleting snapshot for season {Season}, week {Week}", season, week);
+        _logger.LogInformation("Deleting rankings snapshot for season {Season}, week {Week}", season, week);
 
-        var result = await _rankingsModule.DeleteSnapshotAsync(season, week).ConfigureAwait(false);
+        var result = await _rankingsModule.DeleteRankingsSnapshotAsync(season, week).ConfigureAwait(false);
 
         if (result)
         {
@@ -350,12 +350,12 @@ public class AdminModule : IAdminModule
     {
         _logger.LogInformation("Exporting rankings for season {Season}, week {Week}", season, week);
 
-        var snapshot = await _rankingsModule.GetSnapshotAsync(season, week).ConfigureAwait(false);
+        var rankingsSnapshot = await _rankingsModule.GetRankingsSnapshotAsync(season, week).ConfigureAwait(false);
 
-        if (snapshot is null)
+        if (rankingsSnapshot is null)
             return null;
 
-        return _excelExportModule.GenerateRankingsWorkbook(snapshot);
+        return _excelExportModule.GenerateRankingsWorkbook(rankingsSnapshot);
     }
 
     public async Task<IEnumerable<CacheEntrySummary>> GetCacheEntriesAsync()
@@ -395,9 +395,9 @@ public class AdminModule : IAdminModule
         return await _predictionsModule.GetAllSummariesAsync().ConfigureAwait(false);
     }
 
-    public async Task<IEnumerable<RankingsSnapshotSummary>> GetSnapshotsAsync()
+    public async Task<IEnumerable<RankingsSnapshotSummary>> GetRankingsSnapshotsAsync()
     {
-        return await _rankingsModule.GetSnapshotsAsync().ConfigureAwait(false);
+        return await _rankingsModule.GetRankingsSnapshotsAsync().ConfigureAwait(false);
     }
 
     public async Task<GradePredictionsResult?> GradePredictionsAsync(int season, int week)
@@ -427,11 +427,11 @@ public class AdminModule : IAdminModule
         return await _predictionsModule.PublishAsync(season, week).ConfigureAwait(false);
     }
 
-    public async Task<bool> PublishSnapshotAsync(int season, int week)
+    public async Task<bool> PublishRankingsSnapshotAsync(int season, int week)
     {
-        _logger.LogInformation("Publishing snapshot for season {Season}, week {Week}", season, week);
+        _logger.LogInformation("Publishing rankings snapshot for season {Season}, week {Week}", season, week);
 
-        var result = await _rankingsModule.PublishSnapshotAsync(season, week).ConfigureAwait(false);
+        var result = await _rankingsModule.PublishRankingsSnapshotAsync(season, week).ConfigureAwait(false);
 
         if (result)
         {
