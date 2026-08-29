@@ -150,14 +150,14 @@ describe('PersistedRankingsSnapshotsSection', () => {
 
     expect(screen.getByText('2024 Season')).toBeInTheDocument();
     expect(screen.getByText('2023 Season')).toBeInTheDocument();
-    expect(screen.getByText('(2 ranking snapshots)')).toBeInTheDocument();
-    expect(screen.getByText('(1 ranking snapshot)')).toBeInTheDocument();
+    expect(screen.getByText('(2 rankings)')).toBeInTheDocument();
+    expect(screen.getByText('(1 ranking)')).toBeInTheDocument();
   });
 
   it('renders heading', () => {
     render(<PersistedRankingsSnapshotsSection {...defaultProps} />);
 
-    expect(screen.getByText('Persisted Rankings Snapshots')).toBeInTheDocument();
+    expect(screen.getByText('Persisted Rankings')).toBeInTheDocument();
   });
 
   it('sets aria-controls pointing to content container', () => {
@@ -195,7 +195,7 @@ describe('PersistedRankingsSnapshotsSection', () => {
   it('shows a loading skeleton instead of the empty state while isLoading is true', () => {
     render(<PersistedRankingsSnapshotsSection {...defaultProps} isLoading={true} />);
 
-    expect(screen.queryByText('No persisted rankings snapshots found.')).not.toBeInTheDocument();
+    expect(screen.queryByText('No persisted rankings found.')).not.toBeInTheDocument();
   });
 
   it('shows collapsed indicator when season is collapsed', () => {
@@ -231,7 +231,7 @@ describe('PersistedRankingsSnapshotsSection', () => {
   it('shows empty state when no rankings snapshots', () => {
     render(<PersistedRankingsSnapshotsSection {...defaultProps} />);
 
-    expect(screen.getByText('No persisted rankings snapshots found.')).toBeInTheDocument();
+    expect(screen.getByText('No persisted rankings found.')).toBeInTheDocument();
   });
 
   it('shows error message for matching feedback', () => {

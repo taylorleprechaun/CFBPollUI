@@ -410,7 +410,7 @@ describe('RankingsSnapshotsPage', () => {
   it('does not show the empty-state message while rankings snapshots are still loading', () => {
     mockRankingsSnapshotsLoading = true;
     renderRankingsSnapshotsPage();
-    expect(screen.queryByText('No persisted rankings snapshots found.')).not.toBeInTheDocument();
+    expect(screen.queryByText('No persisted rankings found.')).not.toBeInTheDocument();
   });
 
   it('expand all and collapse all buttons work', async () => {
@@ -531,8 +531,8 @@ describe('RankingsSnapshotsPage', () => {
 
     expect(screen.getByText('2024 Season')).toBeInTheDocument();
     expect(screen.getByText('2023 Season')).toBeInTheDocument();
-    expect(screen.getByText('(2 ranking snapshots)')).toBeInTheDocument();
-    expect(screen.getByText('(1 ranking snapshot)')).toBeInTheDocument();
+    expect(screen.getByText('(2 rankings)')).toBeInTheDocument();
+    expect(screen.getByText('(1 ranking)')).toBeInTheDocument();
   });
 
   it('renders refresh cached data button', () => {
@@ -550,7 +550,7 @@ describe('RankingsSnapshotsPage', () => {
     renderRankingsSnapshotsPage();
     expect(screen.getByText('Rankings')).toBeInTheDocument();
     expect(screen.getByText('Calculate Rankings')).toBeInTheDocument();
-    expect(screen.getByText('Persisted Rankings Snapshots')).toBeInTheDocument();
+    expect(screen.getByText('Persisted Rankings')).toBeInTheDocument();
   });
 
   it('seasons start collapsed by default', () => {
@@ -574,7 +574,7 @@ describe('RankingsSnapshotsPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     const dialog = screen.getByRole('dialog');
-    expect(within(dialog).getByText('Overwrite Published Rankings Snapshot')).toBeInTheDocument();
+    expect(within(dialog).getByText('Overwrite Published Rankings')).toBeInTheDocument();
     expect(mockCalculateMutateAsync).not.toHaveBeenCalled();
   });
 
@@ -600,7 +600,7 @@ describe('RankingsSnapshotsPage', () => {
 
     const dialog = screen.getByRole('dialog');
     expect(dialog).toBeInTheDocument();
-    expect(screen.getByText('Delete Published Rankings Snapshot')).toBeInTheDocument();
+    expect(screen.getByText('Delete Published Rankings')).toBeInTheDocument();
 
     const modalDeleteButton = screen.getAllByText('Delete').find(
       (btn) => btn.closest('[role="dialog"]') !== null
@@ -614,7 +614,7 @@ describe('RankingsSnapshotsPage', () => {
 
   it('shows empty state for persisted rankings snapshots', () => {
     renderRankingsSnapshotsPage();
-    expect(screen.getByText('No persisted rankings snapshots found.')).toBeInTheDocument();
+    expect(screen.getByText('No persisted rankings found.')).toBeInTheDocument();
   });
 
   it('shows error feedback when confirmed refresh fails', async () => {

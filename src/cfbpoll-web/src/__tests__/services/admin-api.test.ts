@@ -214,7 +214,7 @@ describe('Admin API service', () => {
       await calculateRankings('my-token', 2024, 5);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/rankings-snapshot'),
+        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/ranking'),
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
@@ -387,7 +387,7 @@ describe('Admin API service', () => {
       await deleteRankingsSnapshot('my-token', 2024, 5);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/rankings-snapshot'),
+        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/ranking'),
         expect.objectContaining({
           method: 'DELETE',
           headers: expect.objectContaining({
@@ -496,7 +496,7 @@ describe('Admin API service', () => {
       await downloadExport('my-token', 2024, 5);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/rankings-snapshot/export'),
+        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/ranking/export'),
         expect.objectContaining({
           headers: expect.objectContaining({
             Authorization: 'Bearer my-token',
@@ -721,7 +721,7 @@ describe('Admin API service', () => {
       const result = await fetchRankingsSnapshots('my-token');
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/admin/rankings-snapshots'),
+        expect.stringContaining('/api/v1/admin/rankings'),
         expect.objectContaining({
           headers: expect.objectContaining({
             Authorization: 'Bearer my-token',
@@ -871,7 +871,7 @@ describe('Admin API service', () => {
       await publishRankingsSnapshot('my-token', 2024, 5);
 
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/rankings-snapshot'),
+        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/ranking'),
         expect.objectContaining({
           method: 'PATCH',
           headers: expect.objectContaining({

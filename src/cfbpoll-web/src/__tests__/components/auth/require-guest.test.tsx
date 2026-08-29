@@ -23,7 +23,7 @@ function renderWithRoutes(initialEntry: string | { pathname: string; state?: unk
           <Route path="/login" element={<div>Login Content</div>} />
         </Route>
         <Route path="/" element={<div>Home Page</div>} />
-        <Route path="/admin/rankings-snapshots" element={<div>Rankings Snapshots Page</div>} />
+        <Route path="/admin/rankings" element={<div>Rankings Snapshots Page</div>} />
       </Routes>
     </MemoryRouter>
   );
@@ -40,7 +40,7 @@ describe('RequireGuest', () => {
 
   it('redirects to the return path when authenticated with state.from', () => {
     mockIsAuthenticated = true;
-    renderWithRoutes({ pathname: '/login', state: { from: '/admin/rankings-snapshots' } });
+    renderWithRoutes({ pathname: '/login', state: { from: '/admin/rankings' } });
 
     expect(screen.getByText('Rankings Snapshots Page')).toBeInTheDocument();
     expect(screen.queryByText('Login Content')).not.toBeInTheDocument();

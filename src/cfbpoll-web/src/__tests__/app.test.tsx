@@ -125,7 +125,7 @@ describe('App', () => {
     });
   });
 
-  it('redirects /admin to /admin/rankings-snapshots when authenticated', async () => {
+  it('redirects /admin to /admin/rankings when authenticated', async () => {
     localStorage.setItem('cfbpoll_token', 'test-token');
     localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
 
@@ -142,8 +142,8 @@ describe('App', () => {
     });
   });
 
-  it('redirects /admin/rankings-snapshots to login when not authenticated', async () => {
-    renderApp('/admin/rankings-snapshots');
+  it('redirects /admin/rankings to login when not authenticated', async () => {
+    renderApp('/admin/rankings');
     await waitFor(() => {
       expect(screen.getByText('Login Page Content')).toBeInTheDocument();
     });
@@ -234,11 +234,11 @@ describe('App', () => {
     });
   });
 
-  it('renders rankings snapshots page at /admin/rankings-snapshots when authenticated', async () => {
+  it('renders rankings snapshots page at /admin/rankings when authenticated', async () => {
     localStorage.setItem('cfbpoll_token', 'test-token');
     localStorage.setItem('cfbpoll_token_expiry', String(Date.now() + 86400000));
 
-    renderApp('/admin/rankings-snapshots');
+    renderApp('/admin/rankings');
     await waitFor(() => {
       expect(screen.getByText('Rankings Snapshots Page Content')).toBeInTheDocument();
     });

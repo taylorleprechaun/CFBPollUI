@@ -97,7 +97,7 @@ export async function calculateRankings(
   week: number
 ): Promise<CalculateResponse> {
   const response = await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/rankings-snapshot`,
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/ranking`,
     withAuth(token, { method: 'POST' })
   );
   return parseResponse(response, CalculateResponseSchema);
@@ -140,7 +140,7 @@ export async function deleteRankingsSnapshot(
   week: number
 ): Promise<void> {
   await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/rankings-snapshot`,
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/ranking`,
     withAuth(token, { method: 'DELETE' })
   );
 }
@@ -166,7 +166,7 @@ export async function downloadExport(
   week: number
 ): Promise<void> {
   const response = await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/rankings-snapshot/export`,
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/ranking/export`,
     withAuth(token)
   );
 
@@ -216,7 +216,7 @@ export async function fetchRankingsSnapshots(
   token: string
 ): Promise<RankingsSnapshot[]> {
   const response = await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/rankings-snapshots`,
+    `${API_BASE_URL}/api/v1/admin/rankings`,
     withAuth(token)
   );
   return parseResponse(response, RankingsSnapshotsResponseSchema);
@@ -272,7 +272,7 @@ export async function publishRankingsSnapshot(
   week: number
 ): Promise<void> {
   await safeFetch(
-    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/rankings-snapshot`,
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/ranking`,
     withAuth(token, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

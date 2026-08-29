@@ -78,8 +78,8 @@ function App() {
           } />
         </Route>
         <Route element={<RequireAuth />}>
-          <Route path="admin" element={<Navigate to="/admin/rankings-snapshots" replace />} />
-          <Route path="admin/rankings-snapshots" element={
+          <Route path="admin" element={<Navigate to="/admin/rankings" replace />} />
+          <Route path="admin/rankings" element={
             <LazyPage><RankingsSnapshotsPage /></LazyPage>
           } />
           <Route path="admin/predictions" element={

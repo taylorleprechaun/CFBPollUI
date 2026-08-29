@@ -40,11 +40,11 @@ export function PersistedRankingsSnapshotsSection({
       collapsedSeasons={collapsedSeasons}
       columnCount={COLUMN_COUNT}
       contentIdPrefix="rankings-snapshots-season"
-      emptyMessage="No persisted rankings snapshots found."
+      emptyMessage="No persisted rankings found."
       feedbackKeyPrefix="rankings-snapshot-publish"
       isActionPending={isActionPending}
       isLoading={isLoading}
-      itemLabel="ranking snapshot"
+      itemLabel="ranking"
       items={rankingsSnapshots}
       onClearFeedback={onClearFeedback}
       onCollapseAll={onCollapseAll}
@@ -53,7 +53,7 @@ export function PersistedRankingsSnapshotsSection({
       onExport={onExport}
       onPublish={onPublish}
       onToggleSeason={onToggleSeason}
-      title="Persisted Rankings Snapshots"
+      title="Persisted Rankings"
     />
   );
 }

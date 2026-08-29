@@ -175,8 +175,8 @@ export function RankingsSnapshotsPage() {
 
       {deleteConfirm && (
         <ConfirmModal
-          title="Delete Published Rankings Snapshot"
-          message={`This rankings snapshot (${deleteConfirm.season} ${getWeekLabel(deleteConfirm.week)}) is published and visible to users. Are you sure you want to delete it?`}
+          title="Delete Published Rankings"
+          message={`These rankings (${deleteConfirm.season} ${getWeekLabel(deleteConfirm.week)}) are published and visible to users. Are you sure you want to delete them?`}
           onConfirm={() => executeDelete(deleteConfirm.season, deleteConfirm.week)}
           onCancel={() => setDeleteConfirm(null)}
         />
@@ -184,8 +184,8 @@ export function RankingsSnapshotsPage() {
 
       {calculateConfirm && (
         <ConfirmModal
-          title="Overwrite Published Rankings Snapshot"
-          message={`The rankings snapshot for ${calculateConfirm.season} ${getWeekLabel(calculateConfirm.week)} is already published and visible to users. Recalculating will overwrite it and reset it to draft. Continue?`}
+          title="Overwrite Published Rankings"
+          message={`The rankings for ${calculateConfirm.season} ${getWeekLabel(calculateConfirm.week)} are already published and visible to users. Recalculating will overwrite them and reset them to draft. Continue?`}
           confirmLabel="Calculate"
           onConfirm={() => {
             setCalculateConfirm(null);
