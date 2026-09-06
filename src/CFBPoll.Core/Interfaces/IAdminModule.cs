@@ -126,9 +126,10 @@ public interface IAdminModule
     Task<bool> PublishPredictionsAsync(int season, int week);
 
     /// <summary>
-    /// Publishes a rankings snapshot for the given season and week.
+    /// Publishes a rankings snapshot for the given season and week. Blocked if the week's games
+    /// have not all been played yet.
     /// </summary>
-    Task<bool> PublishRankingsSnapshotAsync(int season, int week);
+    Task<PublishRankingsOutcome> PublishRankingsSnapshotAsync(int season, int week);
 
     /// <summary>
     /// Removes cached CollegeFootballData API responses scoped to the given season and week,

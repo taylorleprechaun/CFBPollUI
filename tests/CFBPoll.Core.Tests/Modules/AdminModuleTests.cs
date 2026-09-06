@@ -450,7 +450,7 @@ public class AdminModuleTests
         var trendsResult = new SeasonTrendsResult { Season = 2024 };
 
         _mockDataService.Setup(x => x.GetCalendarAsync(2024)).ReturnsAsync(calendar);
-        _mockSeasonModule.Setup(x => x.GetWeekLabels(calendar))
+        _mockSeasonModule.Setup(x => x.GetWeekLabels(calendar, It.IsAny<IEnumerable<ScheduleGame>>()))
             .Returns(new[] { new WeekInfo { WeekNumber = 1, Label = "Week 2" } });
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 1)).ReturnsAsync(seasonData);
         _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
@@ -479,7 +479,7 @@ public class AdminModuleTests
         var rankingsWeek2 = new RankingsResult { Season = 2024, Week = 2, Rankings = [] };
 
         _mockDataService.Setup(x => x.GetCalendarAsync(2024)).ReturnsAsync(calendar);
-        _mockSeasonModule.Setup(x => x.GetWeekLabels(calendar))
+        _mockSeasonModule.Setup(x => x.GetWeekLabels(calendar, It.IsAny<IEnumerable<ScheduleGame>>()))
             .Returns(new[]
             {
                 new WeekInfo { WeekNumber = 2, Label = "Week 3" },
@@ -1720,21 +1720,24 @@ public class AdminModuleTests
     [Fact]
     public async Task PublishRankingsSnapshotAsync_DelegatesToRankingsModule()
     {
+        SetUpCompleteWeek(2024, 5);
         _mockRankingsModule.Setup(x => x.PublishRankingsSnapshotAsync(2024, 5)).ReturnsAsync(true);
 
         var result = await _adminModule.PublishRankingsSnapshotAsync(2024, 5);
 
-        Assert.True(result);
+        Assert.Equal(PublishRankingsOutcome.Published, result);
         _mockRankingsModule.Verify(x => x.PublishRankingsSnapshotAsync(2024, 5), Times.Once);
     }
 
     [Fact]
     public async Task PublishRankingsSnapshotAsync_Failure_DoesNotInvalidatePollLeadersCache()
     {
+        SetUpCompleteWeek(2024, 5);
         _mockRankingsModule.Setup(x => x.PublishRankingsSnapshotAsync(2024, 5)).ReturnsAsync(false);
 
-        await _adminModule.PublishRankingsSnapshotAsync(2024, 5);
+        var result = await _adminModule.PublishRankingsSnapshotAsync(2024, 5);
 
+        Assert.Equal(PublishRankingsOutcome.NotFound, result);
         _mockPollLeadersModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
         _mockSeasonTrendsModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
     }
@@ -1742,6 +1745,7 @@ public class AdminModuleTests
     [Fact]
     public async Task PublishRankingsSnapshotAsync_RankingsModuleThrows_PropagatesException()
     {
+        SetUpCompleteWeek(2024, 5);
         _mockRankingsModule
             .Setup(x => x.PublishRankingsSnapshotAsync(2024, 5))
             .ThrowsAsync(new InvalidOperationException("Publish failed"));
@@ -1753,6 +1757,7 @@ public class AdminModuleTests
     [Fact]
     public async Task PublishRankingsSnapshotAsync_Success_InvalidatesPollLeadersCache()
     {
+        SetUpCompleteWeek(2024, 5);
         _mockRankingsModule.Setup(x => x.PublishRankingsSnapshotAsync(2024, 5)).ReturnsAsync(true);
 
         await _adminModule.PublishRankingsSnapshotAsync(2024, 5);
@@ -1763,11 +1768,32 @@ public class AdminModuleTests
     [Fact]
     public async Task PublishRankingsSnapshotAsync_Success_InvalidatesSeasonTrendsCache()
     {
+        SetUpCompleteWeek(2024, 5);
         _mockRankingsModule.Setup(x => x.PublishRankingsSnapshotAsync(2024, 5)).ReturnsAsync(true);
 
         await _adminModule.PublishRankingsSnapshotAsync(2024, 5);
 
         _mockSeasonTrendsModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task PublishRankingsSnapshotAsync_WeekIncomplete_DoesNotCallRankingsModule()
+    {
+        SetUpIncompleteWeek(2024, 5);
+
+        await _adminModule.PublishRankingsSnapshotAsync(2024, 5);
+
+        _mockRankingsModule.Verify(x => x.PublishRankingsSnapshotAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task PublishRankingsSnapshotAsync_WeekIncomplete_ReturnsWeekIncomplete()
+    {
+        SetUpIncompleteWeek(2024, 5);
+
+        var result = await _adminModule.PublishRankingsSnapshotAsync(2024, 5);
+
+        Assert.Equal(PublishRankingsOutcome.WeekIncomplete, result);
     }
 
     [Fact]
@@ -1832,5 +1858,25 @@ public class AdminModuleTests
 
         Assert.True(result);
         _mockCache.Verify(x => x.RemoveAsync("teams_2024"), Times.Once);
+    }
+
+    private void SetUpCompleteWeek(int season, int week)
+    {
+        _mockDataService.Setup(x => x.GetCalendarAsync(season))
+            .ReturnsAsync(new[] { new CalendarWeek { Week = week, SeasonType = "regular" } });
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(season)).ReturnsAsync(new List<ScheduleGame>());
+        _mockSeasonModule
+            .Setup(x => x.IsWeekComplete(week, "regular", It.IsAny<IEnumerable<ScheduleGame>>()))
+            .Returns(true);
+    }
+
+    private void SetUpIncompleteWeek(int season, int week)
+    {
+        _mockDataService.Setup(x => x.GetCalendarAsync(season))
+            .ReturnsAsync(new[] { new CalendarWeek { Week = week, SeasonType = "regular" } });
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(season)).ReturnsAsync(new List<ScheduleGame>());
+        _mockSeasonModule
+            .Setup(x => x.IsWeekComplete(week, "regular", It.IsAny<IEnumerable<ScheduleGame>>()))
+            .Returns(false);
     }
 }

@@ -17,6 +17,7 @@ const defaultProps = {
   calculatedResult: defaultResult,
   actionFeedback: null,
   isActionPending: false,
+  isWeekComplete: true,
   onClearFeedback: vi.fn(),
   onExport: vi.fn(),
   onPublish: vi.fn(),
@@ -54,6 +55,13 @@ describe('PreviewSection', () => {
 
     expect(screen.getByText('Download Excel')).toBeDisabled();
     expect(screen.getByText('Publish')).toBeDisabled();
+  });
+
+  it('disables Publish when isWeekComplete is false', () => {
+    renderPreview({ isWeekComplete: false });
+
+    expect(screen.getByText('Publish')).toBeDisabled();
+    expect(screen.getByText('Download Excel')).not.toBeDisabled();
   });
 
   it('does not show warning when persisted is true', () => {

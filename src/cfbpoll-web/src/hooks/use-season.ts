@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react';
 
 export interface SeasonContextValue {
+  nextSeason: number | null;
   refetchSeasons: () => void;
   seasons: number[];
   seasonsError: Error | null;

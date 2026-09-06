@@ -120,7 +120,7 @@ describe('API Functions with Validation', () => {
 
   describe('fetchSeasons', () => {
     it('returns validated data on success', async () => {
-      const mockResponse = { seasons: [2024, 2023, 2022] };
+      const mockResponse = { nextSeason: null, seasons: [2024, 2023, 2022] };
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
         json: () => Promise.resolve(mockResponse),
@@ -161,8 +161,8 @@ describe('API Functions with Validation', () => {
       const mockResponse = {
         season: 2024,
         weeks: [
-          { weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: true },
-          { weekNumber: 2, label: 'Week 2', predictionsPublished: false, rankingsPublished: false },
+          { weekNumber: 1, label: 'Week 1', isComplete: true, predictionsPublished: false, rankingsPublished: true },
+          { weekNumber: 2, label: 'Week 2', isComplete: true, predictionsPublished: false, rankingsPublished: false },
         ],
       };
       vi.mocked(global.fetch).mockResolvedValue({

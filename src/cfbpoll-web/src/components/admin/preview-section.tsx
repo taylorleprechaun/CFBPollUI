@@ -14,6 +14,7 @@ interface PreviewSectionProps {
   actionFeedback: ActionFeedback | null;
   calculatedResult: CalculateResponse;
   isActionPending: boolean;
+  isWeekComplete: boolean;
   onClearFeedback: () => void;
   onExport: (season: number, week: number) => void;
   onPublish: (season: number, week: number) => void;
@@ -23,6 +24,7 @@ export function PreviewSection({
   calculatedResult,
   actionFeedback,
   isActionPending,
+  isWeekComplete,
   onClearFeedback,
   onExport,
   onPublish,
@@ -55,7 +57,7 @@ export function PreviewSection({
             </button>
             <button
               onClick={() => onPublish(previewRankings.season, previewRankings.week)}
-              disabled={isActionPending}
+              disabled={isActionPending || !isWeekComplete}
               className={BUTTON_PRIMARY}
             >
               Publish

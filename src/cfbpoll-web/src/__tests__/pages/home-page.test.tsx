@@ -61,6 +61,7 @@ beforeEach(() => {
   vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }));
 
   vi.mocked(useSeason).mockReturnValue({
+    nextSeason: null,
     seasons: [2026],
     seasonsLoading: false,
     seasonsError: null,
@@ -70,7 +71,7 @@ beforeEach(() => {
   });
 
   vi.mocked(useWeeks).mockReturnValue({
-    data: { season: 2026, weeks: [{ weekNumber: 3, label: 'Championship', rankingsPublished: true, predictionsPublished: true }] },
+    data: { season: 2026, weeks: [{ weekNumber: 3, label: 'Championship', isComplete: true, rankingsPublished: true, predictionsPublished: true }] },
     isLoading: false,
     error: null,
   } as unknown as ReturnType<typeof useWeeks>);
@@ -95,7 +96,7 @@ function renderHomePage() {
 describe('HomePage', () => {
   it('falls back to the computed week label when the current week isn\'t in the fetched weeks list', () => {
     vi.mocked(useWeeks).mockReturnValue({
-      data: { season: 2026, weeks: [{ weekNumber: 99, label: 'Bowls', rankingsPublished: true, predictionsPublished: true }] },
+      data: { season: 2026, weeks: [{ weekNumber: 99, label: 'Bowls', isComplete: true, rankingsPublished: true, predictionsPublished: true }] },
       isLoading: false,
       error: null,
     } as unknown as ReturnType<typeof useWeeks>);
@@ -219,6 +220,7 @@ describe('HomePage', () => {
 
   it('renders without a season/week label when there are no seasons yet', () => {
     vi.mocked(useSeason).mockReturnValue({
+      nextSeason: null,
       seasons: [],
       seasonsLoading: false,
       seasonsError: null,

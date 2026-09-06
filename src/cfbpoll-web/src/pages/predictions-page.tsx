@@ -5,6 +5,7 @@ import type { CalculatePredictionsResponse } from '../schemas/admin';
 import {
   ActivePredictionViewSection,
   CalculateSection,
+  IncompleteWeekBanner,
   PersistedPredictionsSection,
 } from '../components/admin';
 import { ErrorAlert, ErrorBoundary } from '../components/error';
@@ -38,14 +39,25 @@ export function PredictionsPage() {
   const { token } = useAuth();
 
   const {
+    nextSeason,
     seasons,
     seasonsLoading,
     selectedSeason,
     setSelectedSeason,
   } = useSeason();
 
+  const seasonOptions = useMemo(
+    () => (nextSeason !== null ? [nextSeason, ...seasons] : seasons),
+    [nextSeason, seasons]
+  );
+
   const { data: weeksData, isLoading: weeksLoading } = useWeeks(selectedSeason);
   const { selectedWeek, setSelectedWeek } = useWeekSelection(weeksData?.weeks);
+
+  const isSelectedWeekComplete = useMemo(
+    () => weeksData?.weeks.find((w) => w.weekNumber === selectedWeek)?.isComplete ?? true,
+    [weeksData, selectedWeek]
+  );
 
   const {
     data: summaries,
@@ -181,7 +193,7 @@ export function PredictionsPage() {
         onSeasonChange={setSelectedSeason}
         onWeekChange={setSelectedWeek}
         refreshFeedback={actionFeedback}
-        seasons={seasons}
+        seasons={seasonOptions}
         seasonsLoading={seasonsLoading}
         selectedSeason={selectedSeason}
         selectedWeek={selectedWeek}
@@ -189,6 +201,8 @@ export function PredictionsPage() {
         weeks={weeksData?.weeks ?? []}
         weeksLoading={weeksLoading}
       />
+
+      {selectedWeek !== null && !isSelectedWeekComplete && <IncompleteWeekBanner variant="predictions" />}
 
       {existingSummaryForSelection && selectedSeason !== null && selectedWeek !== null && !selectionMatchesActiveView && (
         <div className="bg-surface border border-border rounded-xl p-4 flex items-center justify-between gap-4 animate-fade-in">

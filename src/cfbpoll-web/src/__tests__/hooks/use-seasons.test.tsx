@@ -33,7 +33,7 @@ describe('useSeasons', () => {
   });
 
   it('fetches seasons on mount', async () => {
-    const mockResponse = { seasons: [2024, 2023, 2022] };
+    const mockResponse = { nextSeason: null, seasons: [2024, 2023, 2022] };
 
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
@@ -68,7 +68,7 @@ describe('useSeasons', () => {
 
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ seasons: [2024, 2023] }),
+      json: () => Promise.resolve({ nextSeason: null, seasons: [2024, 2023] }),
     } as Response);
 
     await result.current.refetch();
@@ -80,7 +80,7 @@ describe('useSeasons', () => {
   it('returns empty array when seasons is empty', async () => {
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ seasons: [] }),
+      json: () => Promise.resolve({ nextSeason: null, seasons: [] }),
     } as Response);
 
     const { result } = renderHook(() => useSeasons(), {

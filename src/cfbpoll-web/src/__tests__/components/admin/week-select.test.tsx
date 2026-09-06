@@ -5,8 +5,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { WeekSelect } from '../../../components/admin';
 
 const weeks = [
-  { weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: true },
-  { weekNumber: 5, label: 'Week 5', predictionsPublished: false, rankingsPublished: false },
+  { weekNumber: 1, label: 'Week 1', isComplete: true, predictionsPublished: false, rankingsPublished: true },
+  { weekNumber: 5, label: 'Week 5', isComplete: true, predictionsPublished: false, rankingsPublished: false },
 ];
 
 describe('WeekSelect', () => {

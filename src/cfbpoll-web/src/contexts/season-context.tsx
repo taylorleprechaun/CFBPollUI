@@ -25,6 +25,7 @@ export function SeasonProvider({ children }: { children: ReactNode }) {
   }
 
   const value = useMemo<SeasonContextValue>(() => ({
+    nextSeason: seasonsData?.nextSeason ?? null,
     refetchSeasons,
     seasons: seasonsData?.seasons ?? [],
     seasonsError: seasonsError as Error | null,

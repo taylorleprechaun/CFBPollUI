@@ -70,7 +70,7 @@ public class SeasonTrendsModuleTests
             });
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
             .ReturnsAsync(Enumerable.Empty<FBSTeam>());
-        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>()))
+        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>(), It.IsAny<IEnumerable<ScheduleGame>>()))
             .Returns(new[]
             {
                 new WeekInfo { WeekNumber = 1, Label = "Week 2" },
@@ -104,7 +104,7 @@ public class SeasonTrendsModuleTests
             .ReturnsAsync(new[] { new CalendarWeek { Week = 1, SeasonType = "regular" } });
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
             .ReturnsAsync(Enumerable.Empty<FBSTeam>());
-        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>()))
+        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>(), It.IsAny<IEnumerable<ScheduleGame>>()))
             .Returns(new[] { new WeekInfo { WeekNumber = 1, Label = "Week 2" } });
 
         var result = await _module.BuildFromRankingsAsync(2024, new[] { rankingsSnapshot });
@@ -223,7 +223,7 @@ public class SeasonTrendsModuleTests
             .ReturnsAsync(new[] { new CalendarWeek { Week = 1, SeasonType = "regular" } });
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
             .ReturnsAsync(new[] { new FBSTeam { Name = "Texas", Color = "#BF5700", AltColor = "#FFFFFF" } });
-        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>()))
+        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>(), It.IsAny<IEnumerable<ScheduleGame>>()))
             .Returns(new[] { new WeekInfo { WeekNumber = 1, Label = "Week 2" } });
 
         var result = await _module.GetSeasonTrendsAsync(2024);
@@ -258,7 +258,7 @@ public class SeasonTrendsModuleTests
             });
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
             .ReturnsAsync(Enumerable.Empty<FBSTeam>());
-        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>()))
+        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>(), It.IsAny<IEnumerable<ScheduleGame>>()))
             .Returns(new[]
             {
                 new WeekInfo { WeekNumber = 1, Label = "Week 2" },
@@ -310,7 +310,7 @@ public class SeasonTrendsModuleTests
             .ReturnsAsync(new[] { new CalendarWeek { Week = 1, SeasonType = "regular" } });
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
             .ReturnsAsync(Enumerable.Empty<FBSTeam>());
-        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>()))
+        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>(), It.IsAny<IEnumerable<ScheduleGame>>()))
             .Returns(new[] { new WeekInfo { WeekNumber = 1, Label = "Week 2" } });
 
         var result = await _module.GetSeasonTrendsAsync(2024);
@@ -334,7 +334,7 @@ public class SeasonTrendsModuleTests
             .ReturnsAsync(new[] { new CalendarWeek { Week = 1, SeasonType = "regular" } });
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
             .ReturnsAsync(Enumerable.Empty<FBSTeam>());
-        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>()))
+        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>(), It.IsAny<IEnumerable<ScheduleGame>>()))
             .Returns(new[] { new WeekInfo { WeekNumber = 1, Label = "Week 2" } });
 
         var result = await _module.GetSeasonTrendsAsync(2024);
@@ -382,7 +382,7 @@ public class SeasonTrendsModuleTests
                 new FBSTeam { Name = "Ohio State", Color = "#BB0000", AltColor = "#666666" },
                 new FBSTeam { Name = "Michigan", Color = "#00274C", AltColor = "#FFCB05" },
             });
-        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>()))
+        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>(), It.IsAny<IEnumerable<ScheduleGame>>()))
             .Returns(new[] { new WeekInfo { WeekNumber = 3, Label = "Week 4" } });
 
         var result = await _module.GetSeasonTrendsAsync(2024);
@@ -420,7 +420,7 @@ public class SeasonTrendsModuleTests
             });
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
             .ReturnsAsync(Enumerable.Empty<FBSTeam>());
-        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>()))
+        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>(), It.IsAny<IEnumerable<ScheduleGame>>()))
             .Returns(new[]
             {
                 new WeekInfo { WeekNumber = 1, Label = "Week 2" },
@@ -450,7 +450,7 @@ public class SeasonTrendsModuleTests
             .ReturnsAsync(new[] { new CalendarWeek { Week = 1, SeasonType = "regular" } });
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
             .ReturnsAsync(Enumerable.Empty<FBSTeam>());
-        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>()))
+        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>(), It.IsAny<IEnumerable<ScheduleGame>>()))
             .Returns(new[] { new WeekInfo { WeekNumber = 1, Label = "Week 2" } });
 
         var result = await _module.GetSeasonTrendsAsync(2024);
@@ -477,7 +477,7 @@ public class SeasonTrendsModuleTests
             .ReturnsAsync(new[] { new CalendarWeek { Week = 1, SeasonType = "regular" } });
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
             .ReturnsAsync(Enumerable.Empty<FBSTeam>());
-        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>()))
+        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>(), It.IsAny<IEnumerable<ScheduleGame>>()))
             .Returns(new[] { new WeekInfo { WeekNumber = 1, Label = "Week 2" } });
 
         var result = await _module.GetSeasonTrendsAsync(2024);
@@ -503,7 +503,7 @@ public class SeasonTrendsModuleTests
             .ReturnsAsync(new[] { new CalendarWeek { Week = 1, SeasonType = "regular" } });
         _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
             .ReturnsAsync(Enumerable.Empty<FBSTeam>());
-        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>()))
+        _mockSeasonModule.Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>(), It.IsAny<IEnumerable<ScheduleGame>>()))
             .Returns(new[] { new WeekInfo { WeekNumber = 1, Label = "Week 2" } });
 
         await _module.GetSeasonTrendsAsync(2024);

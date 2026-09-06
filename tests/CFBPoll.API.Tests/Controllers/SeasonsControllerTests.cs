@@ -128,9 +128,45 @@ public class SeasonsControllerTests
     }
 
     [Fact]
+    public async Task GetSeasons_NextSeasonCalendarEmpty_ReturnsNullNextSeason()
+    {
+        _mockDataService.Setup(x => x.GetMaxSeasonYearAsync()).ReturnsAsync(2024);
+        _mockDataService.Setup(x => x.GetCalendarAsync(2025)).ReturnsAsync(new List<CalendarWeek>());
+        _mockSeasonModule
+            .Setup(x => x.GetSeasonRange(2002, 2024))
+            .Returns(Enumerable.Range(2002, 23).Reverse());
+
+        var result = await _controller.GetSeasons();
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<SeasonsResponseDTO>(okResult.Value);
+
+        Assert.Null(response.NextSeason);
+    }
+
+    [Fact]
+    public async Task GetSeasons_NextSeasonCalendarExists_ReturnsNextSeason()
+    {
+        _mockDataService.Setup(x => x.GetMaxSeasonYearAsync()).ReturnsAsync(2024);
+        _mockDataService.Setup(x => x.GetCalendarAsync(2025))
+            .ReturnsAsync(new List<CalendarWeek> { new() { Week = 1, SeasonType = "regular" } });
+        _mockSeasonModule
+            .Setup(x => x.GetSeasonRange(2002, 2024))
+            .Returns(Enumerable.Range(2002, 23).Reverse());
+
+        var result = await _controller.GetSeasons();
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<SeasonsResponseDTO>(okResult.Value);
+
+        Assert.Equal(2025, response.NextSeason);
+    }
+
+    [Fact]
     public async Task GetSeasons_ReturnsSeasonsList()
     {
         _mockDataService.Setup(x => x.GetMaxSeasonYearAsync()).ReturnsAsync(2024);
+        _mockDataService.Setup(x => x.GetCalendarAsync(2025)).ReturnsAsync(new List<CalendarWeek>());
         _mockSeasonModule
             .Setup(x => x.GetSeasonRange(2002, 2024))
             .Returns(Enumerable.Range(2002, 23).Reverse());
@@ -161,6 +197,7 @@ public class SeasonsControllerTests
             _mockLogger.Object);
 
         _mockDataService.Setup(x => x.GetMaxSeasonYearAsync()).ReturnsAsync(2024);
+        _mockDataService.Setup(x => x.GetCalendarAsync(2025)).ReturnsAsync(new List<CalendarWeek>());
         _mockSeasonModule
             .Setup(x => x.GetSeasonRange(2015, 2024))
             .Returns(Enumerable.Range(2015, 10).Reverse());
@@ -202,7 +239,7 @@ public class SeasonsControllerTests
 
         _mockDataService.Setup(x => x.GetCalendarAsync(2023)).ReturnsAsync(calendar);
         _mockSeasonModule
-            .Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>()))
+            .Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>(), It.IsAny<IEnumerable<ScheduleGame>>()))
             .Returns(weekInfos);
         _mockRankingsModule
             .Setup(x => x.GetPublishedWeekNumbersAsync(2023))
@@ -233,7 +270,7 @@ public class SeasonsControllerTests
 
         _mockDataService.Setup(x => x.GetCalendarAsync(2023)).ReturnsAsync(calendar);
         _mockSeasonModule
-            .Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>()))
+            .Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>(), It.IsAny<IEnumerable<ScheduleGame>>()))
             .Returns(weekInfos);
 
         var result = await _controller.GetWeeks(2023);
@@ -263,7 +300,7 @@ public class SeasonsControllerTests
 
         _mockDataService.Setup(x => x.GetCalendarAsync(2023)).ReturnsAsync(calendar);
         _mockSeasonModule
-            .Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>()))
+            .Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>(), It.IsAny<IEnumerable<ScheduleGame>>()))
             .Returns(weekInfos);
         _mockPredictionsModule
             .Setup(x => x.GetPublishedWeekNumbersAsync(2023))
@@ -298,7 +335,7 @@ public class SeasonsControllerTests
 
         _mockDataService.Setup(x => x.GetCalendarAsync(2023)).ReturnsAsync(calendar);
         _mockSeasonModule
-            .Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>()))
+            .Setup(x => x.GetWeekLabels(It.IsAny<IEnumerable<CalendarWeek>>(), It.IsAny<IEnumerable<ScheduleGame>>()))
             .Returns(weekInfos);
         _mockRankingsModule
             .Setup(x => x.GetPublishedWeekNumbersAsync(2023))

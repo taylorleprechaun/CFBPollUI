@@ -13,11 +13,13 @@ export const ConferencesResponseSchema = z.object({
 
 // Season schemas
 export const SeasonsResponseSchema = z.object({
+  nextSeason: z.number().nullable(),
   seasons: z.array(z.number()),
 });
 
 // Week schemas
 export const WeekSchema = z.object({
+  isComplete: z.boolean(),
   label: z.string(),
   predictionsPublished: z.boolean(),
   rankingsPublished: z.boolean(),

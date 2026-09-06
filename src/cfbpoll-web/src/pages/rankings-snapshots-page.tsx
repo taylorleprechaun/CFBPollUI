@@ -4,6 +4,7 @@ import type { CalculateResponse } from '../schemas/admin';
 
 import {
   CalculateSection,
+  IncompleteWeekBanner,
   PersistedRankingsSnapshotsSection,
   PreviewSection,
 } from '../components/admin';
@@ -34,14 +35,25 @@ export function RankingsSnapshotsPage() {
   const { token } = useAuth();
 
   const {
+    nextSeason,
     seasons,
     seasonsLoading,
     selectedSeason,
     setSelectedSeason,
   } = useSeason();
 
+  const seasonOptions = useMemo(
+    () => (nextSeason !== null ? [nextSeason, ...seasons] : seasons),
+    [nextSeason, seasons]
+  );
+
   const { data: weeksData, isLoading: weeksLoading } = useWeeks(selectedSeason);
   const { selectedWeek, setSelectedWeek } = useWeekSelection(weeksData?.weeks);
+
+  const isSelectedWeekComplete = useMemo(
+    () => weeksData?.weeks.find((w) => w.weekNumber === selectedWeek)?.isComplete ?? true,
+    [weeksData, selectedWeek]
+  );
 
   const {
     data: rankingsSnapshots,
@@ -149,13 +161,15 @@ export function RankingsSnapshotsPage() {
         onSeasonChange={setSelectedSeason}
         onWeekChange={setSelectedWeek}
         refreshFeedback={actionFeedback}
-        seasons={seasons}
+        seasons={seasonOptions}
         seasonsLoading={seasonsLoading}
         selectedSeason={selectedSeason}
         selectedWeek={selectedWeek}
         weeks={weeksData?.weeks ?? []}
         weeksLoading={weeksLoading}
       />
+
+      {selectedWeek !== null && !isSelectedWeekComplete && <IncompleteWeekBanner variant="ratings" />}
 
       {existingRankingsSnapshotForSelection && selectedSeason !== null && selectedWeek !== null && (
         <div className="bg-surface border border-border rounded-xl p-4 flex items-center justify-between gap-4 animate-fade-in">
@@ -178,6 +192,7 @@ export function RankingsSnapshotsPage() {
             calculatedResult={calculatedResult}
             actionFeedback={actionFeedback}
             isActionPending={isActionPending}
+            isWeekComplete={isSelectedWeekComplete}
             onClearFeedback={clearFeedback}
             onExport={handleExport}
             onPublish={(season, week) => handlePublish(season, week, 'preview-publish')}
