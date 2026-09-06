@@ -7,8 +7,8 @@ import { WeekSelector } from '../../../components/rankings/week-selector';
 describe('WeekSelector', () => {
   const defaultProps = {
     weeks: [
-      { weekNumber: 1, label: 'Week 2', predictionsPublished: true, rankingsPublished: true },
-      { weekNumber: 5, label: 'Week 6', predictionsPublished: true, rankingsPublished: true },
+      { weekNumber: 1, label: 'Week 2', isComplete: true, predictionsPublished: true, rankingsPublished: true },
+      { weekNumber: 5, label: 'Week 6', isComplete: true, predictionsPublished: true, rankingsPublished: true },
     ],
     selectedWeek: 1,
     onWeekChange: vi.fn(),

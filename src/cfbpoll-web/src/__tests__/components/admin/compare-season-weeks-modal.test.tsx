@@ -6,9 +6,9 @@ import { CompareSeasonWeeksModal } from '../../../components/admin/compare-seaso
 
 describe('CompareSeasonWeeksModal', () => {
   const weeks = [
-    { label: 'Week 5', predictionsPublished: true, rankingsPublished: true, weekNumber: 5 },
-    { label: 'Week 6', predictionsPublished: true, rankingsPublished: true, weekNumber: 6 },
-    { label: 'Postseason', predictionsPublished: false, rankingsPublished: false, weekNumber: 17 },
+    { isComplete: true, label: 'Week 5', predictionsPublished: true, rankingsPublished: true, weekNumber: 5 },
+    { isComplete: true, label: 'Week 6', predictionsPublished: true, rankingsPublished: true, weekNumber: 6 },
+    { isComplete: true, label: 'Postseason', predictionsPublished: false, rankingsPublished: false, weekNumber: 17 },
   ];
 
   const defaultProps = {

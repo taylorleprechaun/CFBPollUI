@@ -49,7 +49,7 @@ describe('API service', () => {
   it('constructs correct URL for fetchPredictionSeasons', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ seasons: [2025, 2024] }),
+      json: () => Promise.resolve({ nextSeason: null, seasons: [2025, 2024] }),
     });
     vi.stubGlobal('fetch', mockFetch);
 
@@ -84,7 +84,7 @@ describe('API service', () => {
   it('constructs correct URL for fetchSeasons', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ seasons: [2024, 2023, 2022] }),
+      json: () => Promise.resolve({ nextSeason: null, seasons: [2024, 2023, 2022] }),
     });
     vi.stubGlobal('fetch', mockFetch);
 
@@ -141,7 +141,7 @@ describe('API service', () => {
       json: () =>
         Promise.resolve({
           season: 2024,
-          weeks: [{ weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: false }],
+          weeks: [{ weekNumber: 1, label: 'Week 1', isComplete: true, predictionsPublished: false, rankingsPublished: false }],
         }),
     });
     vi.stubGlobal('fetch', mockFetch);

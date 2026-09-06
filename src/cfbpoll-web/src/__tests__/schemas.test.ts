@@ -341,7 +341,7 @@ describe('Zod Schemas', () => {
     });
 
     it('validates valid seasons response', () => {
-      const data = { seasons: [2024, 2023, 2022] };
+      const data = { nextSeason: null, seasons: [2024, 2023, 2022] };
       const result = SeasonsResponseSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
@@ -459,7 +459,7 @@ describe('Zod Schemas', () => {
     });
 
     it('validates valid week', () => {
-      const data = { weekNumber: 5, label: 'Week 5', predictionsPublished: false, rankingsPublished: false };
+      const data = { weekNumber: 5, label: 'Week 5', isComplete: true, predictionsPublished: false, rankingsPublished: false };
       const result = WeekSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
@@ -468,7 +468,7 @@ describe('Zod Schemas', () => {
   describe('WeeksResponseSchema', () => {
     it('rejects response without season', () => {
       const data = {
-        weeks: [{ weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: false }],
+        weeks: [{ weekNumber: 1, label: 'Week 1', isComplete: true, predictionsPublished: false, rankingsPublished: false }],
       };
       const result = WeeksResponseSchema.safeParse(data);
       expect(result.success).toBe(false);
@@ -478,8 +478,8 @@ describe('Zod Schemas', () => {
       const data = {
         season: 2024,
         weeks: [
-          { weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: true },
-          { weekNumber: 2, label: 'Week 2', predictionsPublished: true, rankingsPublished: false },
+          { weekNumber: 1, label: 'Week 1', isComplete: true, predictionsPublished: false, rankingsPublished: true },
+          { weekNumber: 2, label: 'Week 2', isComplete: false, predictionsPublished: true, rankingsPublished: false },
         ],
       };
       const result = WeeksResponseSchema.safeParse(data);

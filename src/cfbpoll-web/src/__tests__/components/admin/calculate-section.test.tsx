@@ -14,8 +14,8 @@ const defaultProps = {
   selectedSeason: 2024,
   selectedWeek: 5,
   weeks: [
-    { weekNumber: 1, label: 'Week 1', predictionsPublished: false, rankingsPublished: true },
-    { weekNumber: 5, label: 'Week 5', predictionsPublished: false, rankingsPublished: false },
+    { weekNumber: 1, label: 'Week 1', isComplete: true, predictionsPublished: false, rankingsPublished: true },
+    { weekNumber: 5, label: 'Week 5', isComplete: true, predictionsPublished: false, rankingsPublished: false },
   ],
   weeksLoading: false,
 };

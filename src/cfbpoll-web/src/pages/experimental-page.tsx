@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import type { AlgorithmVersion } from '../components/admin';
 
@@ -7,6 +7,7 @@ import {
   DEFAULT_ALGORITHM_VERSIONS,
   ExperimentalCalculateSection,
   ExperimentalPredictionsCalculateSection,
+  IncompleteWeekBanner,
   PredictionsComparisonSection,
   RatingsComparisonSection,
   SeasonPredictionsComparisonSection,
@@ -30,14 +31,25 @@ export function ExperimentalPage() {
   const { token } = useAuth();
 
   const {
+    nextSeason,
     seasons,
     seasonsLoading,
     selectedSeason,
     setSelectedSeason,
   } = useSeason();
 
+  const seasonOptions = useMemo(
+    () => (nextSeason !== null ? [nextSeason, ...seasons] : seasons),
+    [nextSeason, seasons]
+  );
+
   const { data: weeksData, isLoading: weeksLoading } = useWeeks(selectedSeason);
   const { selectedWeek, setSelectedWeek } = useWeekSelection(weeksData?.weeks);
+
+  const isSelectedWeekComplete = useMemo(
+    () => weeksData?.weeks.find((w) => w.weekNumber === selectedWeek)?.isComplete ?? true,
+    [weeksData, selectedWeek]
+  );
 
   const [ratingsSelectedVersions, setRatingsSelectedVersions] = useState<AlgorithmVersion[]>(DEFAULT_ALGORITHM_VERSIONS);
   const [predictionsSelectedVersions, setPredictionsSelectedVersions] = useState<AlgorithmVersion[]>(DEFAULT_ALGORITHM_VERSIONS);
@@ -87,7 +99,7 @@ export function ExperimentalPage() {
             onSeasonChange={setSelectedSeason}
             onSelectedVersionsChange={setRatingsSelectedVersions}
             onWeekChange={setSelectedWeek}
-            seasons={seasons}
+            seasons={seasonOptions}
             seasonsLoading={seasonsLoading}
             selectedSeason={selectedSeason}
             selectedVersions={ratingsSelectedVersions}
@@ -95,6 +107,8 @@ export function ExperimentalPage() {
             weeks={weeksData?.weeks ?? []}
             weeksLoading={weeksLoading}
           />
+
+          {selectedWeek !== null && !isSelectedWeekComplete && <IncompleteWeekBanner variant="ratings" />}
 
           <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render experimental comparison')} />}>
             <RatingsComparisonSection
@@ -117,7 +131,7 @@ export function ExperimentalPage() {
             onSeasonChange={setSelectedSeason}
             onSelectedVersionsChange={setPredictionsSelectedVersions}
             onWeekChange={setSelectedWeek}
-            seasons={seasons}
+            seasons={seasonOptions}
             seasonsLoading={seasonsLoading}
             selectedSeason={selectedSeason}
             selectedVersions={predictionsSelectedVersions}
@@ -125,6 +139,8 @@ export function ExperimentalPage() {
             weeks={weeksData?.weeks ?? []}
             weeksLoading={weeksLoading}
           />
+
+          {selectedWeek !== null && !isSelectedWeekComplete && <IncompleteWeekBanner variant="predictions" />}
 
           <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render experimental predictions comparison')} />}>
             <PredictionsComparisonSection

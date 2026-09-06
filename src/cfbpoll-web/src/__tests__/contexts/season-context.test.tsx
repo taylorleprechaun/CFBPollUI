@@ -29,11 +29,12 @@ function renderWithProvider() {
 }
 
 function TestConsumer() {
-  const { seasons, seasonsLoading, seasonsError, selectedSeason, setSelectedSeason } = useSeason();
+  const { nextSeason, seasons, seasonsLoading, seasonsError, selectedSeason, setSelectedSeason } = useSeason();
 
   return (
     <div>
       <span data-testid="seasons">{JSON.stringify(seasons)}</span>
+      <span data-testid="nextSeason">{nextSeason ?? 'none'}</span>
       <span data-testid="loading">{seasonsLoading ? 'loading' : 'ready'}</span>
       <span data-testid="error">{seasonsError?.message ?? 'no-error'}</span>
       <span data-testid="selected">{selectedSeason ?? 'none'}</span>
@@ -60,6 +61,19 @@ describe('SeasonContext', () => {
 
     expect(screen.getByTestId('selected').textContent).toBe('2024');
     expect(screen.getByTestId('seasons').textContent).toBe('[2024,2023,2022]');
+  });
+
+  it('exposes nextSeason from seasons data', () => {
+    vi.mocked(useSeasons).mockReturnValue({
+      data: { nextSeason: 2025, seasons: [2024, 2023, 2022] },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useSeasons>);
+
+    renderWithProvider();
+
+    expect(screen.getByTestId('nextSeason').textContent).toBe('2025');
   });
 
   it('exposes seasons error', () => {
@@ -135,6 +149,19 @@ describe('SeasonContext', () => {
     renderWithProvider();
 
     expect(screen.getByTestId('seasons').textContent).toBe('[]');
+  });
+
+  it('returns null nextSeason when data has no nextSeason', () => {
+    vi.mocked(useSeasons).mockReturnValue({
+      data: { seasons: [2024, 2023] },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useSeasons>);
+
+    renderWithProvider();
+
+    expect(screen.getByTestId('nextSeason').textContent).toBe('none');
   });
 
   it('setSelectedSeason updates state and sessionStorage', () => {
