@@ -351,8 +351,8 @@ npm test
 ### Coverage Summary
 
 <!-- coverage:start -->
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-1058-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1557-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-1071-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1560-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
 ![Web Coverage](https://img.shields.io/badge/Web_Coverage-99%25-brightgreen)
