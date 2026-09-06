@@ -46,7 +46,11 @@ public class SeasonsController : ControllerBase
         var maxYear = await _dataService.GetMaxSeasonYearAsync();
         var seasons = _seasonModule.GetSeasonRange(_options.MinimumYear, maxYear);
 
-        return Ok(new SeasonsResponseDTO { Seasons = seasons });
+        var nextSeasonCandidate = maxYear + 1;
+        var nextSeasonCalendar = await _dataService.GetCalendarAsync(nextSeasonCandidate);
+        int? nextSeason = nextSeasonCalendar.Any() ? nextSeasonCandidate : null;
+
+        return Ok(new SeasonsResponseDTO { NextSeason = nextSeason, Seasons = seasons });
     }
 
     /// <summary>
@@ -60,12 +64,14 @@ public class SeasonsController : ControllerBase
         _logger.LogInformation("Fetching weeks for season {Season}", season);
 
         var calendarTask = _dataService.GetCalendarAsync(season);
+        var fullScheduleTask = _dataService.GetFullSeasonScheduleAsync(season);
         var publishedWeekNumbersTask = _rankingsModule.GetPublishedWeekNumbersAsync(season);
         var publishedPredictionWeekNumbersTask = _predictionsModule.GetPublishedWeekNumbersAsync(season);
 
-        await Task.WhenAll(calendarTask, publishedWeekNumbersTask, publishedPredictionWeekNumbersTask);
+        await Task.WhenAll(calendarTask, fullScheduleTask, publishedWeekNumbersTask, publishedPredictionWeekNumbersTask);
 
         var calendar = await calendarTask;
+        var fullSchedule = await fullScheduleTask;
         var publishedWeekNumbers = await publishedWeekNumbersTask;
         var publishedPredictionWeekNumbers = await publishedPredictionWeekNumbersTask;
 
@@ -74,7 +80,7 @@ public class SeasonsController : ControllerBase
         if (calendarList.Count == 0)
             return NotFound(new ErrorResponseDTO { Message = $"No calendar data found for season {season}", StatusCode = 404 });
 
-        var weeks = _seasonModule.GetWeekLabels(calendarList);
+        var weeks = _seasonModule.GetWeekLabels(calendarList, fullSchedule);
         IReadOnlySet<int> publishedSet = publishedWeekNumbers.ToHashSet();
         IReadOnlySet<int> publishedPredictionSet = publishedPredictionWeekNumbers.ToHashSet();
 

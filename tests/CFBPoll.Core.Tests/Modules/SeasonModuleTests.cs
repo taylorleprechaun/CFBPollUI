@@ -54,10 +54,24 @@ public class SeasonModuleTests
             new() { Week = 11, SeasonType = "postseason" }
         };
 
-        var result = _seasonModule.GetWeekLabels(calendarWeeks);
+        var result = _seasonModule.GetWeekLabels(calendarWeeks, []);
 
         Assert.Equal(10, result.ElementAt(0).WeekNumber);
         Assert.Equal(11, result.ElementAt(1).WeekNumber);
+    }
+
+    [Fact]
+    public void GetWeekLabels_WithCompleteWeek_SetsIsCompleteTrue()
+    {
+        var calendarWeeks = new List<CalendarWeek> { new() { Week = 1, SeasonType = "regular" } };
+        var scheduleGames = new List<ScheduleGame>
+        {
+            new() { Week = 1, SeasonType = "regular", HomeTeam = "Iowa", AwayTeam = "Nebraska", Completed = true }
+        };
+
+        var result = _seasonModule.GetWeekLabels(calendarWeeks, scheduleGames);
+
+        Assert.True(result.ElementAt(0).IsComplete);
     }
 
     [Fact]
@@ -65,9 +79,23 @@ public class SeasonModuleTests
     {
         var calendarWeeks = new List<CalendarWeek>();
 
-        var result = _seasonModule.GetWeekLabels(calendarWeeks);
+        var result = _seasonModule.GetWeekLabels(calendarWeeks, []);
 
         Assert.Empty(result);
+    }
+
+    [Fact]
+    public void GetWeekLabels_WithIncompleteWeek_SetsIsCompleteFalse()
+    {
+        var calendarWeeks = new List<CalendarWeek> { new() { Week = 1, SeasonType = "regular" } };
+        var scheduleGames = new List<ScheduleGame>
+        {
+            new() { Week = 1, SeasonType = "regular", HomeTeam = "Michigan", AwayTeam = "Ohio State", Completed = false }
+        };
+
+        var result = _seasonModule.GetWeekLabels(calendarWeeks, scheduleGames);
+
+        Assert.False(result.ElementAt(0).IsComplete);
     }
 
     [Fact]
@@ -79,7 +107,7 @@ public class SeasonModuleTests
             new() { Week = 17, SeasonType = "Postseason" }
         };
 
-        var result = _seasonModule.GetWeekLabels(calendarWeeks);
+        var result = _seasonModule.GetWeekLabels(calendarWeeks, []);
 
         Assert.Equal("Postseason", result.ElementAt(0).Label);
         Assert.Equal("Postseason", result.ElementAt(1).Label);
@@ -94,7 +122,7 @@ public class SeasonModuleTests
             new() { Week = 16, SeasonType = "postseason" }
         };
 
-        var result = _seasonModule.GetWeekLabels(calendarWeeks);
+        var result = _seasonModule.GetWeekLabels(calendarWeeks, []);
 
         Assert.Equal(2, result.Count());
         Assert.Equal("Week 16", result.ElementAt(0).Label);
@@ -111,7 +139,7 @@ public class SeasonModuleTests
             new() { Week = 3, SeasonType = "regular" }
         };
 
-        var result = _seasonModule.GetWeekLabels(calendarWeeks);
+        var result = _seasonModule.GetWeekLabels(calendarWeeks, []);
 
         Assert.Equal(3, result.Count());
         Assert.Equal("Week 2", result.ElementAt(0).Label);
@@ -120,5 +148,88 @@ public class SeasonModuleTests
         Assert.Equal(2, result.ElementAt(1).WeekNumber);
         Assert.Equal("Week 4", result.ElementAt(2).Label);
         Assert.Equal(3, result.ElementAt(2).WeekNumber);
+    }
+
+    [Fact]
+    public void IsWeekComplete_PostseasonWithAllGamesCompleted_ReturnsTrue()
+    {
+        var scheduleGames = new List<ScheduleGame>
+        {
+            new() { Week = 16, SeasonType = "postseason", HomeTeam = "Texas", AwayTeam = "Oklahoma", Completed = true },
+            new() { Week = 17, SeasonType = "postseason", HomeTeam = "Alabama", AwayTeam = "Florida", Completed = true }
+        };
+
+        var result = _seasonModule.IsWeekComplete(16, "postseason", scheduleGames);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void IsWeekComplete_PostseasonWithIncompleteGame_ReturnsFalse()
+    {
+        var scheduleGames = new List<ScheduleGame>
+        {
+            new() { Week = 16, SeasonType = "postseason", HomeTeam = "Notre Dame", AwayTeam = "USC", Completed = true },
+            new() { Week = 17, SeasonType = "postseason", HomeTeam = "Iowa", AwayTeam = "Nebraska", Completed = false }
+        };
+
+        var result = _seasonModule.IsWeekComplete(16, "postseason", scheduleGames);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void IsWeekComplete_RegularWeekCaseInsensitiveSeasonType_MatchesGames()
+    {
+        var scheduleGames = new List<ScheduleGame>
+        {
+            new() { Week = 1, SeasonType = "REGULAR", HomeTeam = "Michigan", AwayTeam = "Ohio State", Completed = true }
+        };
+
+        var result = _seasonModule.IsWeekComplete(1, "Regular", scheduleGames);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void IsWeekComplete_RegularWeekWithAllGamesCompleted_ReturnsTrue()
+    {
+        var scheduleGames = new List<ScheduleGame>
+        {
+            new() { Week = 1, SeasonType = "regular", HomeTeam = "Texas", AwayTeam = "Oklahoma", Completed = true },
+            new() { Week = 1, SeasonType = "regular", HomeTeam = "Alabama", AwayTeam = "Florida", Completed = true },
+            new() { Week = 2, SeasonType = "regular", HomeTeam = "Iowa", AwayTeam = "Nebraska", Completed = false }
+        };
+
+        var result = _seasonModule.IsWeekComplete(1, "regular", scheduleGames);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void IsWeekComplete_RegularWeekWithIncompleteGame_ReturnsFalse()
+    {
+        var scheduleGames = new List<ScheduleGame>
+        {
+            new() { Week = 1, SeasonType = "regular", HomeTeam = "Notre Dame", AwayTeam = "USC", Completed = true },
+            new() { Week = 1, SeasonType = "regular", HomeTeam = "Michigan", AwayTeam = "Ohio State", Completed = false }
+        };
+
+        var result = _seasonModule.IsWeekComplete(1, "regular", scheduleGames);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void IsWeekComplete_WithNoMatchingGames_ReturnsFalse()
+    {
+        var scheduleGames = new List<ScheduleGame>
+        {
+            new() { Week = 2, SeasonType = "regular", HomeTeam = "Texas", AwayTeam = "Oklahoma", Completed = true }
+        };
+
+        var result = _seasonModule.IsWeekComplete(1, "regular", scheduleGames);
+
+        Assert.False(result);
     }
 }

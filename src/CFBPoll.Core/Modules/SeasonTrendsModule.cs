@@ -52,7 +52,7 @@ public class SeasonTrendsModule : ISeasonTrendsModule
         var calendar = await calendarTask;
         var fbsTeams = await teamsTask;
 
-        var weekLabels = _seasonModule.GetWeekLabels(calendar)
+        var weekLabels = _seasonModule.GetWeekLabels(calendar, [])
             .ToDictionary(w => w.WeekNumber, w => w.Label);
 
         var teamColorLookup = fbsTeams.ToDictionary(

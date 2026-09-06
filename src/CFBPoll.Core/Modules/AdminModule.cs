@@ -189,7 +189,7 @@ public class AdminModule : IAdminModule
             season, algorithmVersion);
 
         var calendar = await _dataService.GetCalendarAsync(season).ConfigureAwait(false);
-        var weekNumbers = _seasonModule.GetWeekLabels(calendar).Select(w => w.WeekNumber).ToList();
+        var weekNumbers = _seasonModule.GetWeekLabels(calendar, []).Select(w => w.WeekNumber).ToList();
 
         var weekTasks = weekNumbers
             .Select(week => CalculateExperimentalAsync(season, week, algorithmVersion))
@@ -458,19 +458,35 @@ public class AdminModule : IAdminModule
         return await _predictionsModule.PublishAsync(season, week).ConfigureAwait(false);
     }
 
-    public async Task<bool> PublishRankingsSnapshotAsync(int season, int week)
+    public async Task<PublishRankingsOutcome> PublishRankingsSnapshotAsync(int season, int week)
     {
         _logger.LogInformation("Publishing rankings snapshot for season {Season}, week {Week}", season, week);
 
-        var result = await _rankingsModule.PublishRankingsSnapshotAsync(season, week).ConfigureAwait(false);
+        var calendarTask = _dataService.GetCalendarAsync(season);
+        var fullScheduleTask = _dataService.GetFullSeasonScheduleAsync(season);
+        await Task.WhenAll(calendarTask, fullScheduleTask).ConfigureAwait(false);
 
-        if (result)
+        var calendarWeek = (await calendarTask).FirstOrDefault(w => w.Week == week);
+        var fullSchedule = await fullScheduleTask;
+        var seasonType = calendarWeek?.SeasonType ?? string.Empty;
+
+        if (!_seasonModule.IsWeekComplete(week, seasonType, fullSchedule))
         {
-            await _pollLeadersModule.InvalidateCacheAsync().ConfigureAwait(false);
-            await _seasonTrendsModule.InvalidateCacheAsync().ConfigureAwait(false);
+            _logger.LogWarning(
+                "Refused to publish rankings snapshot for season {Season}, week {Week}: week is not yet complete",
+                season, week);
+            return PublishRankingsOutcome.WeekIncomplete;
         }
 
-        return result;
+        var result = await _rankingsModule.PublishRankingsSnapshotAsync(season, week).ConfigureAwait(false);
+
+        if (!result)
+            return PublishRankingsOutcome.NotFound;
+
+        await _pollLeadersModule.InvalidateCacheAsync().ConfigureAwait(false);
+        await _seasonTrendsModule.InvalidateCacheAsync().ConfigureAwait(false);
+
+        return PublishRankingsOutcome.Published;
     }
 
     public async Task<int> RefreshSeasonCacheAsync(int season, int week)

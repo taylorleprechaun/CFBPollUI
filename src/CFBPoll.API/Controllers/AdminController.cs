@@ -15,6 +15,7 @@ public class AdminController : ControllerBase
     private const string CACHE_ENTRY_NOT_FOUND = "Cache entry not found";
     private const string PREDICTION_NOT_FOUND = "Prediction not found";
     private const string RANKING_NOT_FOUND = "Ranking not found";
+    private const string RANKING_WEEK_INCOMPLETE = "Cannot publish rankings for a week that has not been fully played yet";
 
     private readonly IAdminModule _adminModule;
     private readonly ILogger<AdminController> _logger;
@@ -424,11 +425,13 @@ public class AdminController : ControllerBase
 
         _logger.LogInformation("Admin updating rankings snapshot for season {Season}, week {Week}", season, week);
 
-        var published = await _adminModule.PublishRankingsSnapshotAsync(season, week);
+        var outcome = await _adminModule.PublishRankingsSnapshotAsync(season, week);
 
-        if (!published)
-            return NotFound(new ErrorResponseDTO { Message = RANKING_NOT_FOUND, StatusCode = 404 });
-
-        return Ok();
+        return outcome switch
+        {
+            PublishRankingsOutcome.NotFound => NotFound(new ErrorResponseDTO { Message = RANKING_NOT_FOUND, StatusCode = 404 }),
+            PublishRankingsOutcome.WeekIncomplete => BadRequest(new ErrorResponseDTO { Message = RANKING_WEEK_INCOMPLETE, StatusCode = 400 }),
+            _ => Ok()
+        };
     }
 }

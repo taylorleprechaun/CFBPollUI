@@ -11,6 +11,7 @@ public static class WeekMapper
 
         return new WeekDTO
         {
+            IsComplete = weekInfo.IsComplete,
             Label = weekInfo.Label,
             PredictionsPublished = publishedPredictionWeekNumbers?.Contains(weekInfo.WeekNumber) ?? false,
             RankingsPublished = publishedWeekNumbers?.Contains(weekInfo.WeekNumber) ?? false,
