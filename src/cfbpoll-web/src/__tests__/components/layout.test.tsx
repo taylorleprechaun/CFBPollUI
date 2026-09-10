@@ -11,6 +11,11 @@ let mockAllTimeEnabled = true;
 let mockPollLeadersEnabled = true;
 let mockPredictionsPageEnabled = false;
 let mockSeasonTrendsEnabled = true;
+let mockGithubUrl = 'https://github.com/testowner';
+let mockKofiUsername = 'testowner';
+let mockLinkedinUrl = 'https://www.linkedin.com/in/testowner';
+let mockSiteOwnerName = 'Test Owner';
+let mockTwitterUrl = 'https://twitter.com/testowner';
 const mockLogout = vi.fn();
 
 vi.mock('../../hooks/use-auth', () => ({
@@ -32,6 +37,14 @@ vi.mock('../../hooks/use-page-visibility', () => ({
   }),
 }));
 
+vi.mock('../../lib/config', () => ({
+  get GITHUB_URL() { return mockGithubUrl; },
+  get KOFI_USERNAME() { return mockKofiUsername; },
+  get LINKEDIN_URL() { return mockLinkedinUrl; },
+  get SITE_OWNER_NAME() { return mockSiteOwnerName; },
+  get TWITTER_URL() { return mockTwitterUrl; },
+}));
+
 function renderLayout(initialEntries: string[] = ['/']) {
   return render(
     <ThemeProvider>
@@ -49,6 +62,11 @@ describe('Layout', () => {
     mockPollLeadersEnabled = true;
     mockPredictionsPageEnabled = false;
     mockSeasonTrendsEnabled = true;
+    mockGithubUrl = 'https://github.com/testowner';
+    mockKofiUsername = 'testowner';
+    mockLinkedinUrl = 'https://www.linkedin.com/in/testowner';
+    mockSiteOwnerName = 'Test Owner';
+    mockTwitterUrl = 'https://twitter.com/testowner';
     mockLogout.mockClear();
   });
 
@@ -153,6 +171,13 @@ describe('Layout', () => {
     expect(screen.queryByText('Trends')).not.toBeInTheDocument();
   });
 
+  it('hides Ko-fi support button in footer when not configured', () => {
+    mockKofiUsername = '';
+    renderLayout();
+
+    expect(screen.queryByRole('link', { name: /Support me/i })).not.toBeInTheDocument();
+  });
+
   it('hides Leaders link when pollLeadersEnabled is false', async () => {
     mockPollLeadersEnabled = false;
     renderLayout();
@@ -185,6 +210,17 @@ describe('Layout', () => {
 
     const teamRecordsLink = screen.queryAllByRole('link').find((l) => l.getAttribute('href') === '/team-prediction-records');
     expect(teamRecordsLink).toBeUndefined();
+  });
+
+  it('hides social links in footer when none are configured', () => {
+    mockGithubUrl = '';
+    mockLinkedinUrl = '';
+    mockTwitterUrl = '';
+    renderLayout();
+
+    expect(screen.queryByLabelText('GitHub')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('LinkedIn')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Twitter')).not.toBeInTheDocument();
   });
 
   it('opens mobile menu with grouped sections', async () => {
@@ -237,10 +273,10 @@ describe('Layout', () => {
   it('renders footer with name and social links', () => {
     renderLayout();
 
-    expect(screen.getByText('Taylor Steinberg')).toBeInTheDocument();
-    expect(screen.getByLabelText('GitHub')).toHaveAttribute('href', 'https://github.com/taylorleprechaun');
-    expect(screen.getByLabelText('LinkedIn')).toHaveAttribute('href', 'https://www.linkedin.com/in/taylor-steinberg-a86994111/');
-    expect(screen.getByLabelText('Twitter')).toHaveAttribute('href', 'https://twitter.com/TaylorLeprechau');
+    expect(screen.getByText('Test Owner')).toBeInTheDocument();
+    expect(screen.getByLabelText('GitHub')).toHaveAttribute('href', mockGithubUrl);
+    expect(screen.getByLabelText('LinkedIn')).toHaveAttribute('href', mockLinkedinUrl);
+    expect(screen.getByLabelText('Twitter')).toHaveAttribute('href', mockTwitterUrl);
   });
 
   it('renders hamburger menu button', () => {
@@ -254,7 +290,7 @@ describe('Layout', () => {
     renderLayout();
 
     const kofiButton = screen.getByRole('link', { name: /Support me/i });
-    expect(kofiButton).toHaveAttribute('href', 'https://ko-fi.com/taylorsteinberg');
+    expect(kofiButton).toHaveAttribute('href', `https://ko-fi.com/${mockKofiUsername}`);
   });
 
   it('renders navigation with brand and Home link', () => {
@@ -343,6 +379,16 @@ describe('Layout', () => {
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText('Are you sure you want to log out?')).toBeInTheDocument();
+  });
+
+  it('shows only the configured social links in footer', () => {
+    mockLinkedinUrl = '';
+    mockTwitterUrl = '';
+    renderLayout();
+
+    expect(screen.getByLabelText('GitHub')).toBeInTheDocument();
+    expect(screen.queryByLabelText('LinkedIn')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Twitter')).not.toBeInTheDocument();
   });
 
   it('shows Predictions dropdown when predictionsPageEnabled is true', async () => {

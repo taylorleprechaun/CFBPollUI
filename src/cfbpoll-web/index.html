@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Taylor Steinberg</title>
+    <title>CFB Poll</title>
     <script>
       (function() {
         var t = localStorage.getItem('cfbpoll_theme');
@@ -26,21 +26,5 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script>
-      // Only load Ko-fi's floating widget on desktop; mobile gets a footer link instead.
-      if (window.innerWidth >= 768) {
-        var kofiScript = document.createElement('script');
-        kofiScript.src = 'https://storage.ko-fi.com/cdn/scripts/overlay-widget.js';
-        kofiScript.onload = function () {
-          kofiWidgetOverlay.draw('taylorsteinberg', {
-            type: 'floating-chat',
-            'floating-chat.donateButton.text': 'Support me',
-            'floating-chat.donateButton.background-color': '#72A5F2',
-            'floating-chat.donateButton.text-color': '#fff'
-          });
-        };
-        document.body.appendChild(kofiScript);
-      }
-    </script>
   </body>
 </html>

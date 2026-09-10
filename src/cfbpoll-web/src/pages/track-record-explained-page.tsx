@@ -2,12 +2,13 @@ import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 import { useDocumentTitle } from '../hooks/use-document-title';
+import { SITE_OWNER_NAME } from '../lib/config';
 import { TRACK_RECORD_STAT_INFO } from '../lib/track-record-stat-info';
 
 const STAT_ORDER = ['winner', 'spread', 'overUnder', 'marginRMSE', 'marginBias'] as const;
 
 export function TrackRecordExplainedPage() {
-  useDocumentTitle('Taylor Steinberg - Track Record Stats Explained');
+  useDocumentTitle(`${SITE_OWNER_NAME} - Track Record Stats Explained`);
 
   const { hash } = useLocation();
 

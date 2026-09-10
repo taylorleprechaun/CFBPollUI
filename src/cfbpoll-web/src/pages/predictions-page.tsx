@@ -29,12 +29,13 @@ import { usePredictionsSummaries } from '../hooks/use-predictions-summaries';
 import { useSeason } from '../hooks/use-season';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
+import { SITE_OWNER_NAME } from '../lib/config';
 import { toError } from '../lib/error-utils';
 import { derivePredictionStage, predictionStageLabel } from '../lib/prediction-stage';
 import { getWeekLabel } from '../lib/week-utils';
 
 export function PredictionsPage() {
-  useDocumentTitle('Taylor Steinberg - Manage Predictions');
+  useDocumentTitle(`${SITE_OWNER_NAME} - Manage Predictions`);
 
   const { token } = useAuth();
 

@@ -245,6 +245,24 @@ public class PredictionCalculatorModule : IPredictionCalculatorModule
 }
 ```
 
+### 5. Configure Personalization (optional)
+
+The frontend's display name, social links, and Ko-fi donate button are configured via environment variables rather than hardcoded, so you can run your own instance without editing source files. Copy `src/cfbpoll-web/.env.example` to `src/cfbpoll-web/.env` and set any of:
+
+```
+VITE_SITE_OWNER_NAME=Your Name
+VITE_GITHUB_URL=https://github.com/yourusername
+VITE_LINKEDIN_URL=https://www.linkedin.com/in/yourusername
+VITE_TWITTER_URL=https://twitter.com/yourusername
+VITE_KOFI_USERNAME=yourusername
+```
+
+Leaving `VITE_SITE_OWNER_NAME` unset falls back to "CFB Poll". Leaving any of `VITE_GITHUB_URL`, `VITE_LINKEDIN_URL`, `VITE_TWITTER_URL`, or `VITE_KOFI_USERNAME` unset hides that link/button entirely rather than showing a broken one.
+
+These are build-time Vite variables — a local `.env` only affects `npm run dev` and local builds. For an actual deployment, set them as environment variables in your hosting platform's own project/build settings (e.g. Cloudflare Pages' dashboard), the same way `VITE_API_BASE_URL` is configured there.
+
+Separately, the backend's allowed CORS origins are still hardcoded in `src/CFBPoll.API/Program.cs` (the `WithOrigins(...)` call). If you deploy your own frontend, update that list to your frontend's domain(s), or the browser will block API requests from your deployment.
+
 ## Running the Application
 
 ### Backend API

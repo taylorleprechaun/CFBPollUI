@@ -12,11 +12,12 @@ import { useRankings } from '../hooks/use-rankings';
 import { useSeason } from '../hooks/use-season';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
+import { SITE_OWNER_NAME } from '../lib/config';
 import { collectLogoUrls } from '../lib/logo-utils';
 import { getWeekLabel } from '../lib/week-utils';
 
 export function RankingsPage() {
-  useDocumentTitle('Taylor Steinberg - College Football Ratings');
+  useDocumentTitle(`${SITE_OWNER_NAME} - College Football Ratings`);
 
   const [selectedConference, setSelectedConference] = useState<string | null>(null);
 

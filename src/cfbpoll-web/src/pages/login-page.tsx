@@ -3,12 +3,13 @@ import { type FormEvent, useId, useState } from 'react';
 import { BUTTON_PRIMARY } from '../components/ui/button-styles';
 import { useAuth } from '../hooks/use-auth';
 import { useDocumentTitle } from '../hooks/use-document-title';
+import { SITE_OWNER_NAME } from '../lib/config';
 import { toErrorMessage } from '../lib/error-utils';
 
 const INPUT_CLASS = 'w-full px-3 py-2 border border-border bg-surface text-text-primary rounded-md focus:outline-none focus:ring-2 focus:ring-accent';
 
 export function LoginPage() {
-  useDocumentTitle('Taylor Steinberg - Login');
+  useDocumentTitle(`${SITE_OWNER_NAME} - Login`);
 
   const { login } = useAuth();
 

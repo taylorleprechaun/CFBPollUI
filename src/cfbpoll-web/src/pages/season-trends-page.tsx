@@ -6,9 +6,10 @@ import { useDocumentTitle } from '../hooks/use-document-title';
 import { usePreloadImages } from '../hooks/use-preload-images';
 import { useSeason } from '../hooks/use-season';
 import { useSeasonTrends } from '../hooks/use-season-trends';
+import { SITE_OWNER_NAME } from '../lib/config';
 
 export function SeasonTrendsPage() {
-  useDocumentTitle('Taylor Steinberg - Season Trends');
+  useDocumentTitle(`${SITE_OWNER_NAME} - Season Trends`);
 
   const {
     seasons,

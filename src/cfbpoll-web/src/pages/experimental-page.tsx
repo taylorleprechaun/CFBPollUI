@@ -22,11 +22,12 @@ import { useExperimentalSeasonPredictionsState } from '../hooks/use-experimental
 import { useSeason } from '../hooks/use-season';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
+import { SITE_OWNER_NAME } from '../lib/config';
 
 type ExperimentalMode = 'predictions' | 'ratings';
 
 export function ExperimentalPage() {
-  useDocumentTitle('Taylor Steinberg - Experimental');
+  useDocumentTitle(`${SITE_OWNER_NAME} - Experimental`);
 
   const { token } = useAuth();
 

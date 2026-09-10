@@ -6,12 +6,13 @@ import { ConfirmModal } from '../components/ui/confirm-modal';
 import { useAuth } from '../hooks/use-auth';
 import { useCacheEntries } from '../hooks/use-cache-entries';
 import { useDocumentTitle } from '../hooks/use-document-title';
+import { SITE_OWNER_NAME } from '../lib/config';
 import { groupCacheEntriesByFamily } from '../lib/group-cache-entries';
 
 type ConfirmTarget = { keys: string[]; type: 'bulk' } | { keys: [string]; type: 'single' };
 
 export function CachePage() {
-  useDocumentTitle('Taylor Steinberg - Cache');
+  useDocumentTitle(`${SITE_OWNER_NAME} - Cache`);
 
   const { token } = useAuth();
   const { data, deleteMany, deleteOne, isDeleting, isLoading } = useCacheEntries(token);

@@ -118,7 +118,7 @@ describe('App', () => {
   it('includes Layout component with navigation', async () => {
     renderApp('/');
     await waitFor(() => {
-      expect(screen.getByText('CFB Poll')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'CFB Poll' })).toBeInTheDocument();
       expect(screen.getByText('Home')).toBeInTheDocument();
       const rankingsButtons = screen.getAllByRole('button', { name: /Rankings/i });
       expect(rankingsButtons.length).toBeGreaterThanOrEqual(1);

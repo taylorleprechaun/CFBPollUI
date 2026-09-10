@@ -17,6 +17,7 @@ import { useTeamDetail } from '../hooks/use-team-detail';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
 import { getContrastTextColor } from '../lib/color-utils';
+import { SITE_OWNER_NAME } from '../lib/config';
 
 const filterHome = (g: ScheduleGame) => g.isHome && !g.neutralSite && g.isWin != null;
 const filterAway = (g: ScheduleGame) => !g.isHome && !g.neutralSite && g.isWin != null;
@@ -28,7 +29,7 @@ const filterVsRank51To100 = (g: ScheduleGame) => g.opponentRank != null && g.opp
 const filterVsRank101Plus = (g: ScheduleGame) => (g.opponentRank == null || g.opponentRank >= 101) && g.isWin != null;
 
 export function TeamDetailsPage() {
-  useDocumentTitle('Taylor Steinberg - Team Details');
+  useDocumentTitle(`${SITE_OWNER_NAME} - Team Details`);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedTeam = searchParams.get('team') || null;

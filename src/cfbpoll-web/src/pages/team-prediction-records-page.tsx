@@ -7,9 +7,10 @@ import { SeasonSelector } from '../components/rankings/season-selector';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { usePredictionSeasons } from '../hooks/use-prediction-seasons';
 import { useTeamPredictionRecords } from '../hooks/use-team-prediction-records';
+import { SITE_OWNER_NAME } from '../lib/config';
 
 export function TeamPredictionRecordsPage() {
-  useDocumentTitle('Taylor Steinberg - Team Prediction Records');
+  useDocumentTitle(`${SITE_OWNER_NAME} - Team Prediction Records`);
 
   const {
     data: predictionSeasonsData,

@@ -8,13 +8,14 @@ import { useDebouncedValue } from '../hooks/use-debounced-value';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { usePollLeaders } from '../hooks/use-poll-leaders';
 import { usePreloadImages } from '../hooks/use-preload-images';
+import { SITE_OWNER_NAME } from '../lib/config';
 import { collectLogoUrls } from '../lib/logo-utils';
 
 const HEADER_HEIGHT = 64;
 const SLIDER_DEBOUNCE_MS = 300;
 
 export function PollLeadersPage() {
-  useDocumentTitle('Taylor Steinberg - Poll Leaders');
+  useDocumentTitle(`${SITE_OWNER_NAME} - Poll Leaders`);
 
   const [searchParams, setSearchParams] = useSearchParams();
 
