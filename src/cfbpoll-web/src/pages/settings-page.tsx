@@ -7,6 +7,7 @@ import { CfbdUsageSection } from '../components/admin';
 import { useAuth } from '../hooks/use-auth';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { usePageVisibility } from '../hooks/use-page-visibility';
+import { SITE_OWNER_NAME } from '../lib/config';
 import { updatePageVisibility } from '../services/admin-api';
 
 interface ToggleSwitchProps {
@@ -17,7 +18,7 @@ interface ToggleSwitchProps {
 }
 
 export function SettingsPage() {
-  useDocumentTitle('Taylor Steinberg - Settings');
+  useDocumentTitle(`${SITE_OWNER_NAME} - Settings`);
 
   const { token } = useAuth();
   const { allTimeEnabled, pollLeadersEnabled, predictionsPageEnabled, seasonTrendsEnabled } = usePageVisibility();

@@ -16,10 +16,11 @@ import { CollapsibleSection } from '../components/ui/collapsible-section';
 import { useAllTime } from '../hooks/use-all-time';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { usePreloadImages } from '../hooks/use-preload-images';
+import { SITE_OWNER_NAME } from '../lib/config';
 import { collectLogoUrls } from '../lib/logo-utils';
 
 export function AllTimePage() {
-  useDocumentTitle('Taylor Steinberg - All-Time Rankings');
+  useDocumentTitle(`${SITE_OWNER_NAME} - All-Time Rankings`);
 
   const { data, isLoading, error, refetch } = useAllTime();
 

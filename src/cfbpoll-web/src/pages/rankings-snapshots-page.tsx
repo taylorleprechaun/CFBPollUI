@@ -26,11 +26,12 @@ import { useRankingsSnapshots } from '../hooks/use-rankings-snapshots';
 import { useSeason } from '../hooks/use-season';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
+import { SITE_OWNER_NAME } from '../lib/config';
 import { toError } from '../lib/error-utils';
 import { getWeekLabel } from '../lib/week-utils';
 
 export function RankingsSnapshotsPage() {
-  useDocumentTitle('Taylor Steinberg - Manage Rankings');
+  useDocumentTitle(`${SITE_OWNER_NAME} - Manage Rankings`);
 
   const { token } = useAuth();
 

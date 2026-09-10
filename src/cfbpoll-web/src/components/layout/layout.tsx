@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 
 import { useAuth } from '../../hooks/use-auth';
 import { usePageVisibility } from '../../hooks/use-page-visibility';
+import { GITHUB_URL, KOFI_USERNAME, LINKEDIN_URL, SITE_OWNER_NAME, TWITTER_URL } from '../../lib/config';
 import { isActiveLink } from '../../lib/route-utils';
 import { ConfirmModal } from '../ui/confirm-modal';
 import { CloseIcon, GitHubIcon, LinkedInIcon, LockIcon, MenuIcon, TwitterIcon, UnlockIcon } from '../ui/icons';
@@ -251,19 +252,39 @@ export function Layout() {
         <Outlet />
       </main>
       <footer className="border-t border-border py-6 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center gap-4">
-          <span className="text-sm text-text-muted">Taylor Steinberg</span>
-          <div className="flex items-center gap-3">
-            <a href="https://github.com/taylorleprechaun" target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="text-text-muted hover:text-text-primary transition-colors">
-              <GitHubIcon className="w-5 h-5" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-center gap-4">
+          <span className="text-sm text-text-muted">{SITE_OWNER_NAME}</span>
+          {(GITHUB_URL || LINKEDIN_URL || TWITTER_URL) && (
+            <div className="flex items-center gap-3">
+              {GITHUB_URL && (
+                <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="text-text-muted hover:text-text-primary transition-colors">
+                  <GitHubIcon className="w-5 h-5" />
+                </a>
+              )}
+              {LINKEDIN_URL && (
+                <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="text-text-muted hover:text-text-primary transition-colors">
+                  <LinkedInIcon className="w-5 h-5" />
+                </a>
+              )}
+              {TWITTER_URL && (
+                <a href={TWITTER_URL} target="_blank" rel="noopener noreferrer" aria-label="Twitter" className="text-text-muted hover:text-text-primary transition-colors">
+                  <TwitterIcon className="w-5 h-5" />
+                </a>
+              )}
+            </div>
+          )}
+          {KOFI_USERNAME && (
+            <a
+              href={`https://ko-fi.com/${KOFI_USERNAME}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="md:hidden inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+              style={{ backgroundColor: '#72A5F2' }}
+            >
+              <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="" className="h-4 w-4" />
+              Support me
             </a>
-            <a href="https://www.linkedin.com/in/taylor-steinberg-a86994111/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="text-text-muted hover:text-text-primary transition-colors">
-              <LinkedInIcon className="w-5 h-5" />
-            </a>
-            <a href="https://twitter.com/TaylorLeprechau" target="_blank" rel="noopener noreferrer" aria-label="Twitter" className="text-text-muted hover:text-text-primary transition-colors">
-              <TwitterIcon className="w-5 h-5" />
-            </a>
-          </div>
+          )}
         </div>
       </footer>
     </div>

@@ -8,6 +8,7 @@ import { useRankings } from '../hooks/use-rankings';
 import { useSeason } from '../hooks/use-season';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
+import { SITE_OWNER_NAME } from '../lib/config';
 import { getWeekLabel } from '../lib/week-utils';
 
 const FEATURES = [
@@ -41,7 +42,7 @@ const FEATURES = [
 ];
 
 export function HomePage() {
-  useDocumentTitle('Taylor Steinberg - Home');
+  useDocumentTitle(`${SITE_OWNER_NAME} - Home`);
 
   const { ref: featureGridRef, inView: featuresInView } = useInView({
     threshold: 0.2,
@@ -83,7 +84,7 @@ export function HomePage() {
       <section className="relative overflow-hidden bg-gradient-to-b from-accent-light to-page-bg px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         <div className="relative max-w-4xl mx-auto text-center">
           <h1 className="text-2xl sm:text-3xl font-bold text-text-primary mb-8 tracking-tight">
-            Taylor Steinberg&rsquo;s College Football Rankings
+            {SITE_OWNER_NAME}&rsquo;s College Football Rankings
           </h1>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link

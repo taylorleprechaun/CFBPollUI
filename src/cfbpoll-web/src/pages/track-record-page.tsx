@@ -11,13 +11,14 @@ import { EmptyState } from '../components/ui/empty-state';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { useMarginStatsVisibility } from '../hooks/use-margin-stats-visibility';
 import { useTrackRecord } from '../hooks/use-track-record';
+import { SITE_OWNER_NAME } from '../lib/config';
 import { marginBiasClasses, marginRMSEClasses } from '../lib/margin-quality';
 import { overUnderClasses, spreadClasses, winnerClasses } from '../lib/pick-quality';
 import { TRACK_RECORD_STAT_INFO } from '../lib/track-record-stat-info';
 import { combineMarginBias, combineMarginRMSE, formatMarginBias, formatMarginRMSE, sumTotals } from '../lib/track-record-utils';
 
 export function TrackRecordPage() {
-  useDocumentTitle('Taylor Steinberg - Track Record');
+  useDocumentTitle(`${SITE_OWNER_NAME} - Track Record`);
 
   const { data, isLoading, error, refetch } = useTrackRecord();
   const { showMarginStats, toggleMarginStats } = useMarginStatsVisibility();

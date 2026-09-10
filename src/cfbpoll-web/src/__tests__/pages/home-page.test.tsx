@@ -144,7 +144,7 @@ describe('HomePage', () => {
     renderHomePage();
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'Taylor Steinberg’s College Football Rankings'
+      'CFB Poll’s College Football Rankings'
     );
   });
 
@@ -250,6 +250,6 @@ describe('HomePage', () => {
   it('sets the document title', () => {
     renderHomePage();
 
-    expect(document.title).toBe('Taylor Steinberg - Home');
+    expect(document.title).toBe('CFB Poll - Home');
   });
 });

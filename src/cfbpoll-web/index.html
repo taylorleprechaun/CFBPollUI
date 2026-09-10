@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Taylor Steinberg</title>
+    <title>CFB Poll</title>
     <script>
       (function() {
         var t = localStorage.getItem('cfbpoll_theme');
@@ -12,6 +12,16 @@
         if (d) document.documentElement.classList.add('dark');
       })();
     </script>
+    <style>
+      /* Ko-fi's floating widget hardcodes bottom-left positioning with no config option; override to bottom-right. */
+      .floatingchat-container-wrap,
+      .floatingchat-container-wrap-mobi,
+      .floating-chat-kofi-popup-iframe,
+      .floating-chat-kofi-popup-iframe-mobi {
+        left: auto !important;
+        right: 16px !important;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

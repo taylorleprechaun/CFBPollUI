@@ -13,10 +13,11 @@ import { useSeason } from '../hooks/use-season';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
 import { ApiError } from '../lib/api-error';
+import { SITE_OWNER_NAME } from '../lib/config';
 import { getWeekLabel } from '../lib/week-utils';
 
 export function PublicPredictionsPage() {
-  useDocumentTitle('Taylor Steinberg - Predictions');
+  useDocumentTitle(`${SITE_OWNER_NAME} - Predictions`);
 
   const [searchParams] = useSearchParams();
   const initialSeasonApplied = useRef(false);
