@@ -49,8 +49,7 @@ export function HomePage() {
     triggerOnce: true,
   });
 
-  const { seasons } = useSeason();
-  const currentSeason = seasons.length > 0 ? seasons[0] : null;
+  const { selectedSeason: currentSeason } = useSeason();
 
   const { data: weeksData, isLoading: weeksLoading } = useWeeks(currentSeason);
   const publishedWeeks = useMemo(

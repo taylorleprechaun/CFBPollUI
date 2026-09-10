@@ -76,6 +76,11 @@ public class RankingsModule : IRankingsModule
         });
     }
 
+    public async Task<int?> GetLatestPublishedSeasonAsync()
+    {
+        return await _rankingsData.GetLatestPublishedSeasonAsync().ConfigureAwait(false);
+    }
+
     public async Task<RankingsResult?> GetPublishedRankingsSnapshotAsync(int season, int week)
     {
         return await _rankingsData.GetPublishedRankingsSnapshotAsync(season, week).ConfigureAwait(false);

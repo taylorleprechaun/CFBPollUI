@@ -340,8 +340,14 @@ describe('Zod Schemas', () => {
       expect(result.success).toBe(false);
     });
 
+    it('validates seasons response with a non-null latestPublishedSeason', () => {
+      const data = { latestPublishedSeason: 2023, nextSeason: null, seasons: [2024, 2023, 2022] };
+      const result = SeasonsResponseSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
     it('validates valid seasons response', () => {
-      const data = { nextSeason: null, seasons: [2024, 2023, 2022] };
+      const data = { latestPublishedSeason: null, nextSeason: null, seasons: [2024, 2023, 2022] };
       const result = SeasonsResponseSchema.safeParse(data);
       expect(result.success).toBe(true);
     });

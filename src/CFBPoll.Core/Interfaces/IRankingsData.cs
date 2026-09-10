@@ -13,6 +13,11 @@ public interface IRankingsData
     Task<bool> DeleteRankingsSnapshotAsync(int season, int week);
 
     /// <summary>
+    /// Retrieves the most recent season with at least one published rankings snapshot, or null if none are published.
+    /// </summary>
+    Task<int?> GetLatestPublishedSeasonAsync();
+
+    /// <summary>
     /// Retrieves the most recent published rankings snapshot before the given week in the same season.
     /// </summary>
     Task<RankingsResult?> GetPreviousPublishedRankingsSnapshotAsync(int season, int week);

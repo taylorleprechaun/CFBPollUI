@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { RankedTeam } from '../../types';
 
+import { SITE_OWNER_NAME } from '../../lib/config';
+
 vi.mock('../../hooks/use-rankings', () => ({
   useRankings: vi.fn(),
 }));
@@ -144,7 +146,7 @@ describe('HomePage', () => {
     renderHomePage();
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'CFB Poll’s College Football Rankings'
+      `${SITE_OWNER_NAME}’s College Football Rankings`
     );
   });
 
@@ -192,6 +194,33 @@ describe('HomePage', () => {
 
     expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
     expect(screen.queryByText('Oklahoma')).not.toBeInTheDocument();
+  });
+
+  it('renders the rankings preview using the selected season instead of the newest available season', () => {
+    vi.mocked(useSeason).mockReturnValue({
+      nextSeason: null,
+      seasons: [2026, 2025],
+      seasonsLoading: false,
+      seasonsError: null,
+      refetchSeasons: vi.fn(),
+      selectedSeason: 2025,
+      setSelectedSeason: vi.fn(),
+    });
+    vi.mocked(useWeeks).mockReturnValue({
+      data: { season: 2025, weeks: [{ weekNumber: 3, label: 'Championship', isComplete: true, rankingsPublished: true, predictionsPublished: true }] },
+      isLoading: false,
+      error: null,
+    } as unknown as ReturnType<typeof useWeeks>);
+    vi.mocked(useRankings).mockReturnValue({
+      data: { season: 2025, week: 3, rankings: mockRankings },
+      isLoading: false,
+      error: null,
+    } as unknown as ReturnType<typeof useRankings>);
+
+    renderHomePage();
+
+    expect(useWeeks).toHaveBeenCalledWith(2025);
+    expect(screen.getByText(/Season 2025/)).toBeInTheDocument();
   });
 
   it('renders the rankings preview with real team data', () => {
@@ -250,6 +279,6 @@ describe('HomePage', () => {
   it('sets the document title', () => {
     renderHomePage();
 
-    expect(document.title).toBe('CFB Poll - Home');
+    expect(document.title).toBe(`${SITE_OWNER_NAME} - Home`);
   });
 });

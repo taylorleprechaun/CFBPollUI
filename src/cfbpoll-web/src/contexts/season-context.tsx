@@ -21,7 +21,7 @@ export function SeasonProvider({ children }: { children: ReactNode }) {
   }, []);
 
   if (seasonsData?.seasons?.length && selectedSeason === null) {
-    setSelectedSeason(seasonsData.seasons[0]);
+    setSelectedSeason(seasonsData.latestPublishedSeason ?? seasonsData.seasons[0]);
   }
 
   const value = useMemo<SeasonContextValue>(() => ({

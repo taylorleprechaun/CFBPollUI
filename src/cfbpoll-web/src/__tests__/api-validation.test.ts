@@ -120,7 +120,7 @@ describe('API Functions with Validation', () => {
 
   describe('fetchSeasons', () => {
     it('returns validated data on success', async () => {
-      const mockResponse = { nextSeason: null, seasons: [2024, 2023, 2022] };
+      const mockResponse = { latestPublishedSeason: null, nextSeason: null, seasons: [2024, 2023, 2022] };
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
         json: () => Promise.resolve(mockResponse),

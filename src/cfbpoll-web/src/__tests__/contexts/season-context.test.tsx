@@ -63,6 +63,32 @@ describe('SeasonContext', () => {
     expect(screen.getByTestId('seasons').textContent).toBe('[2024,2023,2022]');
   });
 
+  it('defaults to latestPublishedSeason over seasons[0] when present', () => {
+    vi.mocked(useSeasons).mockReturnValue({
+      data: { latestPublishedSeason: 2023, seasons: [2024, 2023, 2022] },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useSeasons>);
+
+    renderWithProvider();
+
+    expect(screen.getByTestId('selected').textContent).toBe('2023');
+  });
+
+  it('defaults to seasons[0] when latestPublishedSeason is null', () => {
+    vi.mocked(useSeasons).mockReturnValue({
+      data: { latestPublishedSeason: null, seasons: [2024, 2023, 2022] },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useSeasons>);
+
+    renderWithProvider();
+
+    expect(screen.getByTestId('selected').textContent).toBe('2024');
+  });
+
   it('exposes nextSeason from seasons data', () => {
     vi.mocked(useSeasons).mockReturnValue({
       data: { nextSeason: 2025, seasons: [2024, 2023, 2022] },

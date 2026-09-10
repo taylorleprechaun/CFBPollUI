@@ -21,6 +21,11 @@ public interface IRankingsModule
     Task<RankingsResult> GenerateRankingsAsync(SeasonData seasonData, IDictionary<string, RatingDetails> ratings);
 
     /// <summary>
+    /// Retrieves the most recent season with at least one published rankings snapshot, or null if none are published.
+    /// </summary>
+    Task<int?> GetLatestPublishedSeasonAsync();
+
+    /// <summary>
     /// Retrieves a published rankings snapshot for the given season and week.
     /// </summary>
     Task<RankingsResult?> GetPublishedRankingsSnapshotAsync(int season, int week);

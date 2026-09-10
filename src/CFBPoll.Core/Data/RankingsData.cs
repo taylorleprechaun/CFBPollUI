@@ -38,6 +38,19 @@ public class RankingsData : IRankingsData
         return rowsAffected > 0;
     }
 
+    public async Task<int?> GetLatestPublishedSeasonAsync()
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT Season FROM RankingsSnapshot WHERE Published = 1 ORDER BY Season DESC, Week DESC LIMIT 1";
+
+        var result = await command.ExecuteScalarAsync().ConfigureAwait(false);
+
+        return result is long season ? (int)season : null;
+    }
+
     public async Task<RankingsResult?> GetPreviousPublishedRankingsSnapshotAsync(int season, int week)
     {
         await using var connection = new SqliteConnection(_connectionString);

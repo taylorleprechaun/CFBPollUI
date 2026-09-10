@@ -33,7 +33,7 @@ describe('usePredictionSeasons', () => {
   });
 
   it('fetches prediction seasons on mount', async () => {
-    const mockResponse = { nextSeason: null, seasons: [2025, 2024] };
+    const mockResponse = { latestPublishedSeason: null, nextSeason: null, seasons: [2025, 2024] };
 
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
@@ -56,7 +56,7 @@ describe('usePredictionSeasons', () => {
   it('returns empty array when no seasons have published predictions', async () => {
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ nextSeason: null, seasons: [] }),
+      json: () => Promise.resolve({ latestPublishedSeason: null, nextSeason: null, seasons: [] }),
     } as Response);
 
     const { result } = renderHook(() => usePredictionSeasons(), {
