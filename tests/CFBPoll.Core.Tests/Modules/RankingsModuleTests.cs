@@ -628,6 +628,17 @@ public class RankingsModuleTests
     }
 
     [Fact]
+    public async Task GetLatestPublishedSeasonAsync_DelegatesToRankingsData()
+    {
+        _mockRankingsData.Setup(x => x.GetLatestPublishedSeasonAsync()).ReturnsAsync(2024);
+
+        var result = await _rankingsModule.GetLatestPublishedSeasonAsync();
+
+        Assert.Equal(2024, result);
+        _mockRankingsData.Verify(x => x.GetLatestPublishedSeasonAsync(), Times.Once);
+    }
+
+    [Fact]
     public async Task GetPublishedRankingsSnapshotAsync_DelegatesToRankingsData()
     {
         var rankingsSnapshot = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };

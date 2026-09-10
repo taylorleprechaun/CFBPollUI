@@ -50,7 +50,14 @@ public class SeasonsController : ControllerBase
         var nextSeasonCalendar = await _dataService.GetCalendarAsync(nextSeasonCandidate);
         int? nextSeason = nextSeasonCalendar.Any() ? nextSeasonCandidate : null;
 
-        return Ok(new SeasonsResponseDTO { NextSeason = nextSeason, Seasons = seasons });
+        var latestPublishedSeason = await _rankingsModule.GetLatestPublishedSeasonAsync();
+
+        return Ok(new SeasonsResponseDTO
+        {
+            LatestPublishedSeason = latestPublishedSeason,
+            NextSeason = nextSeason,
+            Seasons = seasons
+        });
     }
 
     /// <summary>

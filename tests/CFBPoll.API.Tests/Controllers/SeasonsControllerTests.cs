@@ -163,6 +163,42 @@ public class SeasonsControllerTests
     }
 
     [Fact]
+    public async Task GetSeasons_NoRankingsPublished_ReturnsNullLatestPublishedSeason()
+    {
+        _mockDataService.Setup(x => x.GetMaxSeasonYearAsync()).ReturnsAsync(2024);
+        _mockDataService.Setup(x => x.GetCalendarAsync(2025)).ReturnsAsync(new List<CalendarWeek>());
+        _mockSeasonModule
+            .Setup(x => x.GetSeasonRange(2002, 2024))
+            .Returns(Enumerable.Range(2002, 23).Reverse());
+        _mockRankingsModule.Setup(x => x.GetLatestPublishedSeasonAsync()).ReturnsAsync((int?)null);
+
+        var result = await _controller.GetSeasons();
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<SeasonsResponseDTO>(okResult.Value);
+
+        Assert.Null(response.LatestPublishedSeason);
+    }
+
+    [Fact]
+    public async Task GetSeasons_ReturnsLatestPublishedSeason()
+    {
+        _mockDataService.Setup(x => x.GetMaxSeasonYearAsync()).ReturnsAsync(2024);
+        _mockDataService.Setup(x => x.GetCalendarAsync(2025)).ReturnsAsync(new List<CalendarWeek>());
+        _mockSeasonModule
+            .Setup(x => x.GetSeasonRange(2002, 2024))
+            .Returns(Enumerable.Range(2002, 23).Reverse());
+        _mockRankingsModule.Setup(x => x.GetLatestPublishedSeasonAsync()).ReturnsAsync(2023);
+
+        var result = await _controller.GetSeasons();
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<SeasonsResponseDTO>(okResult.Value);
+
+        Assert.Equal(2023, response.LatestPublishedSeason);
+    }
+
+    [Fact]
     public async Task GetSeasons_ReturnsSeasonsList()
     {
         _mockDataService.Setup(x => x.GetMaxSeasonYearAsync()).ReturnsAsync(2024);

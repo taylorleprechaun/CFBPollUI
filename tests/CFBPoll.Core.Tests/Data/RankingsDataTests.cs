@@ -69,6 +69,71 @@ public class RankingsDataTests
     }
 
     [Fact]
+    public async Task GetLatestPublishedSeasonAsync_IgnoresDrafts()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveRankingsSnapshotAsync(CreateRankingsResult(2023, 1, "Nebraska"), RatingAlgorithmVersion.V1);
+            await data.PublishRankingsSnapshotAsync(2023, 1);
+            await data.SaveRankingsSnapshotAsync(CreateRankingsResult(2024, 1, "Oklahoma"), RatingAlgorithmVersion.V1);
+
+            var result = await data.GetLatestPublishedSeasonAsync();
+
+            Assert.Equal(2023, result);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetLatestPublishedSeasonAsync_ReturnsHighestSeason()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveRankingsSnapshotAsync(CreateRankingsResult(2023, 1, "Iowa"), RatingAlgorithmVersion.V1);
+            await data.PublishRankingsSnapshotAsync(2023, 1);
+            await data.SaveRankingsSnapshotAsync(CreateRankingsResult(2024, 3, "Texas"), RatingAlgorithmVersion.V1);
+            await data.PublishRankingsSnapshotAsync(2024, 3);
+
+            var result = await data.GetLatestPublishedSeasonAsync();
+
+            Assert.Equal(2024, result);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetLatestPublishedSeasonAsync_ReturnsNull_WhenNonePublished()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveRankingsSnapshotAsync(CreateRankingsResult(2024, 1, "Notre Dame"), RatingAlgorithmVersion.V1);
+
+            var result = await data.GetLatestPublishedSeasonAsync();
+
+            Assert.Null(result);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
     public async Task GetPreviousPublishedRankingsSnapshotAsync_DoesNotCrossSeason()
     {
         var (data, tempPath) = CreateRankingsDataWithFile();

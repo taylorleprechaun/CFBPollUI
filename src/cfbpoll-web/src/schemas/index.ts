@@ -13,6 +13,7 @@ export const ConferencesResponseSchema = z.object({
 
 // Season schemas
 export const SeasonsResponseSchema = z.object({
+  latestPublishedSeason: z.number().nullable(),
   nextSeason: z.number().nullable(),
   seasons: z.array(z.number()),
 });
