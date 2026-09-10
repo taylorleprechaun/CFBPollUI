@@ -251,7 +251,7 @@ export function Layout() {
         <Outlet />
       </main>
       <footer className="border-t border-border py-6 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-center gap-4">
           <span className="text-sm text-text-muted">Taylor Steinberg</span>
           <div className="flex items-center gap-3">
             <a href="https://github.com/taylorleprechaun" target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="text-text-muted hover:text-text-primary transition-colors">
@@ -264,6 +264,16 @@ export function Layout() {
               <TwitterIcon className="w-5 h-5" />
             </a>
           </div>
+          <a
+            href="https://ko-fi.com/taylorsteinberg"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="md:hidden inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+            style={{ backgroundColor: '#72A5F2' }}
+          >
+            <img src="https://storage.ko-fi.com/cdn/cup-border.png" alt="" className="h-4 w-4" />
+            Support me
+          </a>
         </div>
       </footer>
     </div>

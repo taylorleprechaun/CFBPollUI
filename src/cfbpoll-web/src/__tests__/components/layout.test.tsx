@@ -250,6 +250,13 @@ describe('Layout', () => {
     expect(menuButton).toBeInTheDocument();
   });
 
+  it('renders Ko-fi support button in footer', () => {
+    renderLayout();
+
+    const kofiButton = screen.getByRole('link', { name: /Support me/i });
+    expect(kofiButton).toHaveAttribute('href', 'https://ko-fi.com/taylorsteinberg');
+  });
+
   it('renders navigation with brand and Home link', () => {
     renderLayout();
 

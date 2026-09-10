@@ -12,9 +12,35 @@
         if (d) document.documentElement.classList.add('dark');
       })();
     </script>
+    <style>
+      /* Ko-fi's floating widget hardcodes bottom-left positioning with no config option; override to bottom-right. */
+      .floatingchat-container-wrap,
+      .floatingchat-container-wrap-mobi,
+      .floating-chat-kofi-popup-iframe,
+      .floating-chat-kofi-popup-iframe-mobi {
+        left: auto !important;
+        right: 16px !important;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Only load Ko-fi's floating widget on desktop; mobile gets a footer link instead.
+      if (window.innerWidth >= 768) {
+        var kofiScript = document.createElement('script');
+        kofiScript.src = 'https://storage.ko-fi.com/cdn/scripts/overlay-widget.js';
+        kofiScript.onload = function () {
+          kofiWidgetOverlay.draw('taylorsteinberg', {
+            type: 'floating-chat',
+            'floating-chat.donateButton.text': 'Support me',
+            'floating-chat.donateButton.background-color': '#72A5F2',
+            'floating-chat.donateButton.text-color': '#fff'
+          });
+        };
+        document.body.appendChild(kofiScript);
+      }
+    </script>
   </body>
 </html>
