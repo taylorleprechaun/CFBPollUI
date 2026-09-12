@@ -155,9 +155,13 @@ describe('ActivePredictionViewSection', () => {
   });
 
   it('does not show Grade for an already-graded view', () => {
-    render(<ActivePredictionViewSection {...defaultProps()} view={buildView({ isGraded: true, isPublished: true })} />);
+    const view = buildView({ isGraded: true, isPublished: true });
+    view.predictions.predictions[0].winnerGrade = 'Correct';
+
+    render(<ActivePredictionViewSection {...defaultProps()} view={view} />);
 
     expect(screen.queryByRole('button', { name: 'Grade' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Re-grade' })).not.toBeInTheDocument();
   });
 
   it('does not show Publish Results for a freshly-calculated (ungraded) view even though its label reads "graded" source', () => {
@@ -294,6 +298,17 @@ describe('ActivePredictionViewSection', () => {
     render(<ActivePredictionViewSection {...defaultProps()} view={buildView({ unmatchedGameCount: 2 })} />);
 
     expect(screen.getByText('Unmatched games: 2')).toBeInTheDocument();
+  });
+
+  it('shows Grade as Re-grade when isGraded but some games are still ungraded', () => {
+    render(
+      <ActivePredictionViewSection
+        {...defaultProps()}
+        view={buildView({ isGraded: true, isPublished: true })}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: 'Re-grade' })).toBeInTheDocument();
   });
 
   it('shows Grade for an ungraded view', () => {

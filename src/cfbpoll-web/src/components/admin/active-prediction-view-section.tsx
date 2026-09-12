@@ -54,7 +54,8 @@ export function ActivePredictionViewSection({
   const { predictions } = view;
   const sourceLabel = SOURCE_LABELS[view.source];
   const stage = derivePredictionStage(view);
-  const showGrade = !view.isGraded;
+  const hasUngradedGames = predictions.predictions.some((p) => p.winnerGrade === 'Ungraded');
+  const showGrade = !view.isGraded || hasUngradedGames;
   const showPublish = !view.isPublished;
   const showPublishResults = view.isGraded && view.isPublished && !view.resultsPublished;
   const gradeKey = `grade-${predictions.season}-${predictions.week}`;
@@ -108,7 +109,7 @@ export function ActivePredictionViewSection({
                   disabled={isActionPending}
                   className={BUTTON_PRIMARY}
                 >
-                  {isGrading ? 'Grading...' : 'Grade'}
+                  {isGrading ? 'Grading...' : view.isGraded ? 'Re-grade' : 'Grade'}
                 </button>
                 <FeedbackIndicator feedback={gradeFeedback} feedbackKey={gradeKey} onClear={onClearGradeFeedback} />
               </>
