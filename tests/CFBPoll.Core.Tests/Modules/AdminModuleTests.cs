@@ -1489,6 +1489,42 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task GetIncompleteGamesAsync_DelegatesToSeasonModule_WithSeasonTypeFromCalendar()
+    {
+        var fullSchedule = new List<ScheduleGame>
+        {
+            new() { Week = 5, SeasonType = "regular", HomeTeam = "Oklahoma", AwayTeam = "Texas", Completed = false }
+        };
+        var incompleteGames = new List<ScheduleGame> { fullSchedule[0] };
+
+        _mockDataService.Setup(x => x.GetCalendarAsync(2024))
+            .ReturnsAsync(new[] { new CalendarWeek { Week = 5, SeasonType = "regular" } });
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(fullSchedule);
+        _mockSeasonModule.Setup(x => x.GetIncompleteGames(5, "regular", fullSchedule)).Returns(incompleteGames);
+
+        var result = await _adminModule.GetIncompleteGamesAsync(2024, 5);
+
+        var incompleteGame = Assert.Single(result);
+        Assert.Equal("Oklahoma", incompleteGame.HomeTeam);
+        Assert.Equal("Texas", incompleteGame.AwayTeam);
+    }
+
+    [Fact]
+    public async Task GetIncompleteGamesAsync_WithNoMatchingCalendarWeek_UsesEmptySeasonType()
+    {
+        var fullSchedule = new List<ScheduleGame>();
+
+        _mockDataService.Setup(x => x.GetCalendarAsync(2024)).ReturnsAsync(new List<CalendarWeek>());
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(fullSchedule);
+        _mockSeasonModule.Setup(x => x.GetIncompleteGames(5, string.Empty, fullSchedule)).Returns([]);
+
+        var result = await _adminModule.GetIncompleteGamesAsync(2024, 5);
+
+        Assert.Empty(result);
+        _mockSeasonModule.Verify(x => x.GetIncompleteGames(5, string.Empty, fullSchedule), Times.Once);
+    }
+
+    [Fact]
     public async Task GetPredictionsAsync_CallsBothPredictionsModuleMethods()
     {
         _mockPredictionsModule.Setup(x => x.GetAsync(2024, 5))

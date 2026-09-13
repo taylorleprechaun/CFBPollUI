@@ -14,6 +14,7 @@ import {
   downloadExport,
   fetchCacheEntries,
   fetchCfbdUsage,
+  fetchIncompleteGames,
   fetchPrediction,
   fetchPredictionsSummaries,
   fetchRankingsSnapshots,
@@ -630,6 +631,45 @@ describe('Admin API service', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await expect(fetchCfbdUsage('token')).rejects.toThrow('CFBD unreachable');
+    });
+  });
+
+  describe('fetchIncompleteGames', () => {
+    it('returns the parsed incomplete games response', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            games: [{ awayTeam: 'Texas', homeTeam: 'Oklahoma', startDate: null, startTimeTbd: false }],
+            season: 2026,
+            week: 2,
+          }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchIncompleteGames('my-token', 2026, 2);
+
+      expect(result.games).toHaveLength(1);
+      expect(result.games[0].homeTeam).toBe('Oklahoma');
+    });
+
+    it('sends GET to the incomplete-games endpoint with auth header', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ games: [], season: 2026, week: 2 }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await fetchIncompleteGames('my-token', 2026, 2);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/seasons/2026/weeks/2/incomplete-games'),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+          }),
+        })
+      );
     });
   });
 

@@ -86,6 +86,12 @@ public interface IAdminModule
     Task<CFBDUsage> GetCFBDUsageAsync(bool forceRefresh = false);
 
     /// <summary>
+    /// Retrieves the games for the given season and week that have not yet been marked complete,
+    /// explaining why the week is flagged as incomplete.
+    /// </summary>
+    Task<IEnumerable<ScheduleGame>> GetIncompleteGamesAsync(int season, int week);
+
+    /// <summary>
     /// Retrieves the persisted predictions for the given season and week without recalculating or
     /// re-grading, along with publish/grade status flags. Returns null if no predictions exist for
     /// the week.

@@ -199,12 +199,14 @@ public class CFBDataService : ICFBDataService
         {
             config.QueryParameters.Year = season;
             config.QueryParameters.SeasonTypeAsSeasonType = ApiModels.SeasonType.Regular;
+            config.QueryParameters.ClassificationAsDivisionClassification = ApiModels.DivisionClassification.Fbs;
         });
 
         var postseasonGames = await _client.Games.GetAsync(config =>
         {
             config.QueryParameters.Year = season;
             config.QueryParameters.SeasonTypeAsSeasonType = ApiModels.SeasonType.Postseason;
+            config.QueryParameters.ClassificationAsDivisionClassification = ApiModels.DivisionClassification.Fbs;
         });
 
         var allGames = (regularGames ?? []).Select(g => MapScheduleGame(g, "regular"))
@@ -691,7 +693,7 @@ public class CFBDataService : ICFBDataService
             HomeTeam = g.HomeTeam,
             NeutralSite = g.NeutralSite ?? false,
             SeasonType = seasonType,
-            StartDate = g.StartDate?.DateTime,
+            StartDate = g.StartDate?.UtcDateTime,
             StartTimeTbd = g.StartTimeTBD ?? false,
             Venue = g.Venue,
             Week = g.Week

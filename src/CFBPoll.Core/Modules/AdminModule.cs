@@ -381,6 +381,19 @@ public class AdminModule : IAdminModule
         return await _dataService.GetCFBDUsageAsync(forceRefresh).ConfigureAwait(false);
     }
 
+    public async Task<IEnumerable<ScheduleGame>> GetIncompleteGamesAsync(int season, int week)
+    {
+        var calendarTask = _dataService.GetCalendarAsync(season);
+        var fullScheduleTask = _dataService.GetFullSeasonScheduleAsync(season);
+        await Task.WhenAll(calendarTask, fullScheduleTask).ConfigureAwait(false);
+
+        var calendarWeek = (await calendarTask).FirstOrDefault(w => w.Week == week);
+        var fullSchedule = await fullScheduleTask;
+        var seasonType = calendarWeek?.SeasonType ?? string.Empty;
+
+        return _seasonModule.GetIncompleteGames(week, seasonType, fullSchedule);
+    }
+
     public async Task<GetPredictionsResult?> GetPredictionsAsync(int season, int week)
     {
         var predictionsTask = _predictionsModule.GetAsync(season, week);

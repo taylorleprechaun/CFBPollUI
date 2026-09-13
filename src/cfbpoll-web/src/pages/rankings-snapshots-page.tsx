@@ -170,7 +170,9 @@ export function RankingsSnapshotsPage() {
         weeksLoading={weeksLoading}
       />
 
-      {selectedWeek !== null && !isSelectedWeekComplete && <IncompleteWeekBanner variant="ratings" />}
+      {selectedSeason !== null && selectedWeek !== null && !isSelectedWeekComplete && (
+        <IncompleteWeekBanner season={selectedSeason} token={token} variant="ratings" week={selectedWeek} />
+      )}
 
       {existingRankingsSnapshotForSelection && selectedSeason !== null && selectedWeek !== null && (
         <div className="bg-surface border border-border rounded-xl p-4 flex items-center justify-between gap-4 animate-fade-in">

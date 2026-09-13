@@ -109,7 +109,9 @@ export function ExperimentalPage() {
             weeksLoading={weeksLoading}
           />
 
-          {selectedWeek !== null && !isSelectedWeekComplete && <IncompleteWeekBanner variant="ratings" />}
+          {selectedSeason !== null && selectedWeek !== null && !isSelectedWeekComplete && (
+            <IncompleteWeekBanner season={selectedSeason} token={token} variant="ratings" week={selectedWeek} />
+          )}
 
           <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render experimental comparison')} />}>
             <RatingsComparisonSection
@@ -141,7 +143,9 @@ export function ExperimentalPage() {
             weeksLoading={weeksLoading}
           />
 
-          {selectedWeek !== null && !isSelectedWeekComplete && <IncompleteWeekBanner variant="predictions" />}
+          {selectedSeason !== null && selectedWeek !== null && !isSelectedWeekComplete && (
+            <IncompleteWeekBanner season={selectedSeason} token={token} variant="predictions" week={selectedWeek} />
+          )}
 
           <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render experimental predictions comparison')} />}>
             <PredictionsComparisonSection

@@ -10,6 +10,7 @@ export { CompareSeasonWeeksModal } from './compare-season-weeks-modal';
 export { ExperimentalCalculateSection } from './experimental-calculate-section';
 export { ExperimentalPredictionsCalculateSection } from './experimental-predictions-calculate-section';
 export { ExperimentalPredictionsSummarySection } from './experimental-predictions-summary-section';
+export { IncompleteGamesModal } from './incomplete-games-modal';
 export { IncompleteWeekBanner } from './incomplete-week-banner';
 export { PersistedItemsSection } from './persisted-items-section';
 export { PersistedPredictionsSection } from './persisted-predictions-section';

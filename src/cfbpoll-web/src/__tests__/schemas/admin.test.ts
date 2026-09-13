@@ -6,6 +6,8 @@ import {
   CalculateResponseSchema,
   GamePredictionSchema,
   GradePredictionsResponseSchema,
+  IncompleteGameSchema,
+  IncompleteGamesResponseSchema,
   LoginResponseSchema,
   PredictionsResponseSchema,
   PredictionsSummariesResponseSchema,
@@ -270,6 +272,57 @@ describe('Admin schemas', () => {
       };
       const result = GradePredictionsResponseSchema.safeParse(data);
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe('IncompleteGameSchema', () => {
+    it('rejects missing startTimeTbd', () => {
+      const data = { awayTeam: 'Texas', homeTeam: 'Oklahoma', startDate: null };
+      const result = IncompleteGameSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
+    it('validates a game with a null startDate', () => {
+      const data = { awayTeam: 'Texas', homeTeam: 'Oklahoma', startDate: null, startTimeTbd: true };
+      const result = IncompleteGameSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('validates a valid incomplete game', () => {
+      const data = { awayTeam: 'Texas', homeTeam: 'Oklahoma', startDate: '2026-09-12T18:00:00.000Z', startTimeTbd: false };
+      const result = IncompleteGameSchema.safeParse(data);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.homeTeam).toBe('Oklahoma');
+        expect(result.data.awayTeam).toBe('Texas');
+      }
+    });
+  });
+
+  describe('IncompleteGamesResponseSchema', () => {
+    it('rejects missing week', () => {
+      const data = { games: [], season: 2026 };
+      const result = IncompleteGamesResponseSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
+    it('validates a response with an empty games list', () => {
+      const data = { games: [], season: 2026, week: 2 };
+      const result = IncompleteGamesResponseSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('validates a response with games', () => {
+      const data = {
+        games: [{ awayTeam: 'Texas', homeTeam: 'Oklahoma', startDate: null, startTimeTbd: false }],
+        season: 2026,
+        week: 2,
+      };
+      const result = IncompleteGamesResponseSchema.safeParse(data);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.games).toHaveLength(1);
+      }
     });
   });
 
