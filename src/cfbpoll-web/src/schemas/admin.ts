@@ -137,6 +137,19 @@ export const RemoveCacheEntriesResponseSchema = z.object({
   removedCount: z.number(),
 });
 
+export const IncompleteGameSchema = z.object({
+  awayTeam: z.string().nullable(),
+  homeTeam: z.string().nullable(),
+  startDate: z.string().nullable(),
+  startTimeTbd: z.boolean(),
+});
+
+export const IncompleteGamesResponseSchema = z.object({
+  games: z.array(IncompleteGameSchema),
+  season: z.number(),
+  week: z.number(),
+});
+
 export type AdminPredictionsResponse = z.infer<typeof AdminPredictionsResponseSchema>;
 export type AdminRankingsResponse = z.infer<typeof AdminRankingsResponseSchema>;
 export type CacheEntry = z.infer<typeof CacheEntrySchema>;
@@ -148,6 +161,8 @@ export type ExperimentalCalculateResponse = z.infer<typeof ExperimentalCalculate
 export type ExperimentalPredictionsResponse = z.infer<typeof ExperimentalPredictionsResponseSchema>;
 export type GamePrediction = z.infer<typeof GamePredictionSchema>;
 export type GradePredictionsResponse = z.infer<typeof GradePredictionsResponseSchema>;
+export type IncompleteGame = z.infer<typeof IncompleteGameSchema>;
+export type IncompleteGamesResponse = z.infer<typeof IncompleteGamesResponseSchema>;
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 export type PredictionRecordSummary = z.infer<typeof PredictionRecordSummarySchema>;
 export type PredictionsResponse = z.infer<typeof PredictionsResponseSchema>;

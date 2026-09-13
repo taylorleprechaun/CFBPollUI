@@ -27,6 +27,8 @@ import {
   ExperimentalPredictionsResponseSchema,
   type GradePredictionsResponse,
   GradePredictionsResponseSchema,
+  type IncompleteGamesResponse,
+  IncompleteGamesResponseSchema,
   PredictionsSummariesResponseSchema,
   type PredictionsSummary,
   type RankingsSnapshot,
@@ -204,6 +206,18 @@ export async function fetchCfbdUsage(
     withAuth(token)
   );
   return parseResponse(response, CfbdUsageSchema);
+}
+
+export async function fetchIncompleteGames(
+  token: string,
+  season: number,
+  week: number
+): Promise<IncompleteGamesResponse> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/incomplete-games`,
+    withAuth(token)
+  );
+  return parseResponse(response, IncompleteGamesResponseSchema);
 }
 
 export async function fetchPrediction(

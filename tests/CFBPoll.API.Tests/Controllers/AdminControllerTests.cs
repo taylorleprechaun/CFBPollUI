@@ -446,6 +446,39 @@ public class AdminControllerTests
     }
 
     [Fact]
+    public async Task GetIncompleteGames_ReturnsIncompleteGames()
+    {
+        var incompleteGames = new List<ScheduleGame>
+        {
+            new() { HomeTeam = "Oklahoma", AwayTeam = "Texas", Completed = false }
+        };
+
+        _mockAdminModule.Setup(x => x.GetIncompleteGamesAsync(2024, 5)).ReturnsAsync(incompleteGames);
+
+        var result = await _controller.GetIncompleteGames(2024, 5);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<IncompleteGamesResponseDTO>(okResult.Value);
+        Assert.Equal(2024, response.Season);
+        Assert.Equal(5, response.Week);
+        var game = Assert.Single(response.Games);
+        Assert.Equal("Oklahoma", game.HomeTeam);
+        Assert.Equal("Texas", game.AwayTeam);
+    }
+
+    [Fact]
+    public async Task GetIncompleteGames_WithNoIncompleteGames_ReturnsEmptyGamesList()
+    {
+        _mockAdminModule.Setup(x => x.GetIncompleteGamesAsync(2024, 5)).ReturnsAsync([]);
+
+        var result = await _controller.GetIncompleteGames(2024, 5);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<IncompleteGamesResponseDTO>(okResult.Value);
+        Assert.Empty(response.Games);
+    }
+
+    [Fact]
     public async Task GetPrediction_NullResult_ReturnsNotFound()
     {
         _mockAdminModule.Setup(x => x.GetPredictionsAsync(2024, 5)).ReturnsAsync((GetPredictionsResult?)null);

@@ -8,6 +8,15 @@ namespace CFBPoll.Core.Interfaces;
 public interface ISeasonModule
 {
     /// <summary>
+    /// Retrieves the games in a given week that have not yet been marked complete.
+    /// </summary>
+    /// <param name="weekNumber">The week number to check.</param>
+    /// <param name="seasonType">The season type ("regular" or "postseason") the week belongs to.</param>
+    /// <param name="scheduleGames">The full season schedule to check games against.</param>
+    /// <returns>The games matching the week that are not yet completed.</returns>
+    IEnumerable<ScheduleGame> GetIncompleteGames(int weekNumber, string seasonType, IEnumerable<ScheduleGame> scheduleGames);
+
+    /// <summary>
     /// Generates a range of season years from minimum to maximum, in descending order.
     /// </summary>
     /// <param name="minYear">The minimum year to include.</param>

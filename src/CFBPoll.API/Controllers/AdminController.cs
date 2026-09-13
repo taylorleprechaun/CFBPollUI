@@ -280,6 +280,18 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
+    /// Retrieves the games for the specified season and week that have not yet been marked complete,
+    /// explaining why the "week incomplete" warning is showing.
+    /// </summary>
+    [HttpGet("seasons/{season}/weeks/{week}/incomplete-games")]
+    public async Task<ActionResult<IncompleteGamesResponseDTO>> GetIncompleteGames(int season, int week)
+    {
+        var games = await _adminModule.GetIncompleteGamesAsync(season, week);
+
+        return Ok(IncompleteGamesMapper.ToResponseDTO(season, week, games));
+    }
+
+    /// <summary>
     /// Retrieves the persisted predictions for the specified season and week without recalculating
     /// or re-grading. Returns full grade detail whenever the week has been graded, regardless of
     /// public publish state.

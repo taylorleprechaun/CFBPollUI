@@ -7,6 +7,11 @@ public class SeasonModule : ISeasonModule
 {
     private readonly StringComparison _scoic = StringComparison.OrdinalIgnoreCase;
 
+    public IEnumerable<ScheduleGame> GetIncompleteGames(int weekNumber, string seasonType, IEnumerable<ScheduleGame> scheduleGames)
+    {
+        return GetWeekGames(weekNumber, seasonType, scheduleGames).Where(g => !g.Completed);
+    }
+
     public IEnumerable<int> GetSeasonRange(int minYear, int maxYear)
     {
         return Enumerable.Range(minYear, maxYear - minYear + 1).Reverse();
@@ -29,12 +34,17 @@ public class SeasonModule : ISeasonModule
 
     public bool IsWeekComplete(int weekNumber, string seasonType, IEnumerable<ScheduleGame> scheduleGames)
     {
-        var isPostseason = seasonType.Equals("postseason", _scoic);
-
-        var weekGames = scheduleGames.Where(g => isPostseason
-            ? g.SeasonType is not null && g.SeasonType.Equals("postseason", _scoic)
-            : g.SeasonType is not null && g.SeasonType.Equals("regular", _scoic) && g.Week == weekNumber);
+        var weekGames = GetWeekGames(weekNumber, seasonType, scheduleGames).ToList();
 
         return weekGames.Any() && weekGames.All(g => g.Completed);
+    }
+
+    private IEnumerable<ScheduleGame> GetWeekGames(int weekNumber, string seasonType, IEnumerable<ScheduleGame> scheduleGames)
+    {
+        var isPostseason = seasonType.Equals("postseason", _scoic);
+
+        return scheduleGames.Where(g => isPostseason
+            ? g.SeasonType is not null && g.SeasonType.Equals("postseason", _scoic)
+            : g.SeasonType is not null && g.SeasonType.Equals("regular", _scoic) && g.Week == weekNumber);
     }
 }

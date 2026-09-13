@@ -14,6 +14,66 @@ public class SeasonModuleTests
     }
 
     [Fact]
+    public void GetIncompleteGames_PostseasonWithIncompleteGame_ReturnsOnlyIncompleteGame()
+    {
+        var scheduleGames = new List<ScheduleGame>
+        {
+            new() { Week = 16, SeasonType = "postseason", HomeTeam = "Oklahoma", AwayTeam = "Texas", Completed = true },
+            new() { Week = 17, SeasonType = "postseason", HomeTeam = "Florida", AwayTeam = "Alabama", Completed = false }
+        };
+
+        var result = _seasonModule.GetIncompleteGames(16, "postseason", scheduleGames);
+
+        var incompleteGame = Assert.Single(result);
+        Assert.Equal("Florida", incompleteGame.HomeTeam);
+        Assert.Equal("Alabama", incompleteGame.AwayTeam);
+    }
+
+    [Fact]
+    public void GetIncompleteGames_RegularWeekWithAllGamesCompleted_ReturnsEmpty()
+    {
+        var scheduleGames = new List<ScheduleGame>
+        {
+            new() { Week = 3, SeasonType = "regular", HomeTeam = "Nebraska", AwayTeam = "Iowa", Completed = true },
+            new() { Week = 3, SeasonType = "regular", HomeTeam = "USC", AwayTeam = "Notre Dame", Completed = true }
+        };
+
+        var result = _seasonModule.GetIncompleteGames(3, "regular", scheduleGames);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void GetIncompleteGames_RegularWeekWithMixedCompletion_ReturnsOnlyIncompleteGames()
+    {
+        var scheduleGames = new List<ScheduleGame>
+        {
+            new() { Week = 2, SeasonType = "regular", HomeTeam = "Michigan", AwayTeam = "Ohio State", Completed = true },
+            new() { Week = 2, SeasonType = "regular", HomeTeam = "Texas", AwayTeam = "Oklahoma", Completed = false },
+            new() { Week = 3, SeasonType = "regular", HomeTeam = "Iowa", AwayTeam = "Nebraska", Completed = false }
+        };
+
+        var result = _seasonModule.GetIncompleteGames(2, "regular", scheduleGames);
+
+        var incompleteGame = Assert.Single(result);
+        Assert.Equal("Texas", incompleteGame.HomeTeam);
+        Assert.Equal("Oklahoma", incompleteGame.AwayTeam);
+    }
+
+    [Fact]
+    public void GetIncompleteGames_WithNoMatchingGames_ReturnsEmpty()
+    {
+        var scheduleGames = new List<ScheduleGame>
+        {
+            new() { Week = 2, SeasonType = "regular", HomeTeam = "USC", AwayTeam = "Notre Dame", Completed = false }
+        };
+
+        var result = _seasonModule.GetIncompleteGames(1, "regular", scheduleGames);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
     public void GetSeasonRange_ReturnsYearsInDescendingOrder()
     {
         var result = _seasonModule.GetSeasonRange(2020, 2024);
