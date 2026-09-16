@@ -11,6 +11,7 @@ public static class DatabaseServiceExtensions
         IConfiguration configuration)
     {
         services.Configure<DatabaseOptions>(configuration.GetSection(DatabaseOptions.SECTION_NAME));
+        services.AddSingleton<IGameOverrideData, GameOverrideData>();
         services.AddSingleton<IPageVisibilityData, PageVisibilityData>();
         services.AddSingleton<IPredictionsData, PredictionsData>();
         services.AddSingleton<IRankingsData, RankingsData>();
@@ -20,6 +21,9 @@ public static class DatabaseServiceExtensions
 
     public static async Task InitializeDatabaseAsync(this WebApplication app)
     {
+        var gameOverrideData = app.Services.GetRequiredService<IGameOverrideData>();
+        await gameOverrideData.InitializeAsync().ConfigureAwait(false);
+
         var pageVisibilityData = app.Services.GetRequiredService<IPageVisibilityData>();
         await pageVisibilityData.InitializeAsync().ConfigureAwait(false);
 
