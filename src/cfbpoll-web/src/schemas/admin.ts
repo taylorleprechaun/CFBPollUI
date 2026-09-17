@@ -150,6 +150,40 @@ export const IncompleteGamesResponseSchema = z.object({
   week: z.number(),
 });
 
+export const CompletedGameSchema = z.object({
+  awayPoints: z.number().nullable(),
+  awayTeam: z.string().nullable(),
+  gameID: z.number().nullable(),
+  hasOverride: z.boolean(),
+  homePoints: z.number().nullable(),
+  homeTeam: z.string().nullable(),
+  seasonType: z.string().nullable(),
+});
+
+export const CompletedGamesResponseSchema = z.object({
+  games: z.array(CompletedGameSchema),
+  season: z.number(),
+  week: z.number(),
+});
+
+export const GameOverrideSchema = z.object({
+  awayTeam: z.string(),
+  createdAt: z.string(),
+  gameID: z.number(),
+  homeTeam: z.string(),
+  modifiedAt: z.string(),
+  originalAwayPoints: z.number(),
+  originalHomePoints: z.number(),
+  overrideAwayPoints: z.number(),
+  overrideHomePoints: z.number(),
+  reason: z.string(),
+  season: z.number(),
+  seasonType: z.string(),
+  week: z.number(),
+});
+
+export const GameOverridesResponseSchema = z.array(GameOverrideSchema);
+
 export type AdminPredictionsResponse = z.infer<typeof AdminPredictionsResponseSchema>;
 export type AdminRankingsResponse = z.infer<typeof AdminRankingsResponseSchema>;
 export type CacheEntry = z.infer<typeof CacheEntrySchema>;
@@ -157,8 +191,11 @@ export type CalculatePredictionsResponse = z.infer<typeof CalculatePredictionsRe
 export type CalculateResponse = z.infer<typeof CalculateResponseSchema>;
 export type CfbdTopEndpoint = z.infer<typeof CfbdTopEndpointSchema>;
 export type CfbdUsage = z.infer<typeof CfbdUsageSchema>;
+export type CompletedGame = z.infer<typeof CompletedGameSchema>;
+export type CompletedGamesResponse = z.infer<typeof CompletedGamesResponseSchema>;
 export type ExperimentalCalculateResponse = z.infer<typeof ExperimentalCalculateResponseSchema>;
 export type ExperimentalPredictionsResponse = z.infer<typeof ExperimentalPredictionsResponseSchema>;
+export type GameOverride = z.infer<typeof GameOverrideSchema>;
 export type GamePrediction = z.infer<typeof GamePredictionSchema>;
 export type GradePredictionsResponse = z.infer<typeof GradePredictionsResponseSchema>;
 export type IncompleteGame = z.infer<typeof IncompleteGameSchema>;

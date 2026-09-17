@@ -4,6 +4,10 @@ import {
   AdminPredictionsResponseSchema,
   CalculatePredictionsResponseSchema,
   CalculateResponseSchema,
+  CompletedGameSchema,
+  CompletedGamesResponseSchema,
+  GameOverrideSchema,
+  GameOverridesResponseSchema,
   GamePredictionSchema,
   GradePredictionsResponseSchema,
   IncompleteGameSchema,
@@ -82,6 +86,158 @@ describe('Admin schemas', () => {
         },
       };
       const result = CalculateResponseSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('CompletedGameSchema', () => {
+    it('rejects missing hasOverride', () => {
+      const data = {
+        awayPoints: 21,
+        awayTeam: 'Iowa',
+        gameID: 401234561,
+        homePoints: 24,
+        homeTeam: 'Nebraska',
+        seasonType: 'regular',
+      };
+      const result = CompletedGameSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
+    it('validates a completed game with an existing override', () => {
+      const data = {
+        awayPoints: 21,
+        awayTeam: 'Iowa',
+        gameID: 401234561,
+        hasOverride: true,
+        homePoints: 24,
+        homeTeam: 'Nebraska',
+        seasonType: 'regular',
+      };
+      const result = CompletedGameSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('validates a completed game with null score fields', () => {
+      const data = {
+        awayPoints: null,
+        awayTeam: null,
+        gameID: null,
+        hasOverride: false,
+        homePoints: null,
+        homeTeam: null,
+        seasonType: null,
+      };
+      const result = CompletedGameSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('CompletedGamesResponseSchema', () => {
+    it('rejects missing week', () => {
+      const data = { games: [], season: 2025 };
+      const result = CompletedGamesResponseSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
+    it('validates a response with completed games', () => {
+      const data = {
+        games: [
+          {
+            awayPoints: 21,
+            awayTeam: 'Iowa',
+            gameID: 401234561,
+            hasOverride: false,
+            homePoints: 24,
+            homeTeam: 'Nebraska',
+            seasonType: 'regular',
+          },
+        ],
+        season: 2025,
+        week: 4,
+      };
+      const result = CompletedGamesResponseSchema.safeParse(data);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.games).toHaveLength(1);
+      }
+    });
+  });
+
+  describe('GameOverrideSchema', () => {
+    it('rejects missing reason', () => {
+      const data = {
+        awayTeam: 'Oklahoma',
+        createdAt: '2025-09-20T00:00:00Z',
+        gameID: 401234562,
+        homeTeam: 'Texas',
+        modifiedAt: '2025-09-20T00:00:00Z',
+        originalAwayPoints: 20,
+        originalHomePoints: 24,
+        overrideAwayPoints: 24,
+        overrideHomePoints: 20,
+        season: 2025,
+        seasonType: 'regular',
+        week: 4,
+      };
+      const result = GameOverrideSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
+    it('validates a valid game override', () => {
+      const data = {
+        awayTeam: 'Oklahoma',
+        createdAt: '2025-09-20T00:00:00Z',
+        gameID: 401234562,
+        homeTeam: 'Texas',
+        modifiedAt: '2025-09-20T00:00:00Z',
+        originalAwayPoints: 20,
+        originalHomePoints: 24,
+        overrideAwayPoints: 24,
+        overrideHomePoints: 20,
+        reason: 'A targeting call was missed on the game-deciding play.',
+        season: 2025,
+        seasonType: 'regular',
+        week: 4,
+      };
+      const result = GameOverrideSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('GameOverridesResponseSchema', () => {
+    it('rejects non-array input', () => {
+      const result = GameOverridesResponseSchema.safeParse({ overrides: [] });
+      expect(result.success).toBe(false);
+    });
+
+    it('validates an array of game overrides', () => {
+      const data = [
+        {
+          awayTeam: 'Oklahoma',
+          createdAt: '2025-09-20T00:00:00Z',
+          gameID: 401234562,
+          homeTeam: 'Texas',
+          modifiedAt: '2025-09-20T00:00:00Z',
+          originalAwayPoints: 20,
+          originalHomePoints: 24,
+          overrideAwayPoints: 24,
+          overrideHomePoints: 20,
+          reason: 'A targeting call was missed on the game-deciding play.',
+          season: 2025,
+          seasonType: 'regular',
+          week: 4,
+        },
+      ];
+      const result = GameOverridesResponseSchema.safeParse(data);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).toHaveLength(1);
+      }
+    });
+
+    it('validates an empty array', () => {
+      const result = GameOverridesResponseSchema.safeParse([]);
       expect(result.success).toBe(true);
     });
   });

@@ -40,8 +40,8 @@ function renderTable(entries: React.ComponentProps<typeof RatingsComparisonTable
 describe('RatingsComparisonTable', () => {
   it('renders a download excel button per algorithm column', () => {
     renderTable([
-      { algorithmVersion: 'V1', result: { algorithmVersion: 'V1', rankings: { season: 2024, week: 5, rankings: [createMockTeam()] } } },
-      { algorithmVersion: 'V2', result: { algorithmVersion: 'V2', rankings: { season: 2024, week: 5, rankings: [createMockTeam({ teamName: 'Nebraska' })] } } },
+      { algorithmVersion: 'V1', result: { algorithmVersion: 'V1', rankings: { season: 2024, week: 5, rankings: [createMockTeam()], scoreOverrides: [] } } },
+      { algorithmVersion: 'V2', result: { algorithmVersion: 'V2', rankings: { season: 2024, week: 5, rankings: [createMockTeam({ teamName: 'Nebraska' })], scoreOverrides: [] } } },
     ]);
 
     expect(screen.getAllByText('Download Excel')).toHaveLength(2);
@@ -53,10 +53,10 @@ describe('RatingsComparisonTable', () => {
         algorithmVersion: 'V1',
         result: {
           algorithmVersion: 'V1',
-          rankings: { season: 2024, week: 5, rankings: [createMockTeam(), createMockTeam({ rank: 2, teamName: 'Nebraska' })] },
+          rankings: { season: 2024, week: 5, rankings: [createMockTeam(), createMockTeam({ rank: 2, teamName: 'Nebraska' })], scoreOverrides: [] },
         },
       },
-      { algorithmVersion: 'V2', result: { algorithmVersion: 'V2', rankings: { season: 2024, week: 5, rankings: [createMockTeam({ teamName: 'Michigan' })] } } },
+      { algorithmVersion: 'V2', result: { algorithmVersion: 'V2', rankings: { season: 2024, week: 5, rankings: [createMockTeam({ teamName: 'Michigan' })], scoreOverrides: [] } } },
     ]);
 
     expect(screen.getByText('—')).toBeInTheDocument();
@@ -64,8 +64,8 @@ describe('RatingsComparisonTable', () => {
 
   it('renders rank-indexed rows with each algorithm column showing its own team at that rank', () => {
     renderTable([
-      { algorithmVersion: 'V1', result: { algorithmVersion: 'V1', rankings: { season: 2024, week: 5, rankings: [createMockTeam({ teamName: 'Iowa' })] } } },
-      { algorithmVersion: 'V2', result: { algorithmVersion: 'V2', rankings: { season: 2024, week: 5, rankings: [createMockTeam({ teamName: 'Nebraska' })] } } },
+      { algorithmVersion: 'V1', result: { algorithmVersion: 'V1', rankings: { season: 2024, week: 5, rankings: [createMockTeam({ teamName: 'Iowa' })], scoreOverrides: [] } } },
+      { algorithmVersion: 'V2', result: { algorithmVersion: 'V2', rankings: { season: 2024, week: 5, rankings: [createMockTeam({ teamName: 'Nebraska' })], scoreOverrides: [] } } },
     ]);
 
     expect(screen.getByText('1')).toBeInTheDocument();

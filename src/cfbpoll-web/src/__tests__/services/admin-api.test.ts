@@ -8,12 +8,16 @@ import {
   calculateRankings,
   deleteCacheEntries,
   deleteCacheEntry,
+  deleteGameOverride,
   deletePredictions,
   deleteRankingsSnapshot,
   downloadExperimentalExport,
   downloadExport,
   fetchCacheEntries,
   fetchCfbdUsage,
+  fetchCompletedGames,
+  fetchGameOverride,
+  fetchGameOverrides,
   fetchIncompleteGames,
   fetchPrediction,
   fetchPredictionsSummaries,
@@ -23,6 +27,7 @@ import {
   publishPredictions,
   publishRankingsSnapshot,
   refreshCache,
+  saveGameOverride,
   updatePageVisibility,
 } from '../../services/admin-api';
 
@@ -344,6 +349,39 @@ describe('Admin API service', () => {
     });
   });
 
+  describe('deleteGameOverride', () => {
+    it('sends DELETE to the game override endpoint with auth header', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({}),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await deleteGameOverride('my-token', 401234561);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/game-overrides/401234561'),
+        expect.objectContaining({
+          method: 'DELETE',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+          }),
+        })
+      );
+    });
+
+    it('throws on failed delete', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: () => Promise.resolve({ message: 'Game score override not found' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(deleteGameOverride('token', 401234561)).rejects.toThrow('Game score override not found');
+    });
+  });
+
   describe('deletePredictions', () => {
     it('sends DELETE to prediction endpoint with auth header', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
@@ -631,6 +669,153 @@ describe('Admin API service', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await expect(fetchCfbdUsage('token')).rejects.toThrow('CFBD unreachable');
+    });
+  });
+
+  describe('fetchCompletedGames', () => {
+    it('returns the parsed completed games response', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            games: [
+              {
+                awayPoints: 21,
+                awayTeam: 'Iowa',
+                gameID: 401234561,
+                hasOverride: false,
+                homePoints: 24,
+                homeTeam: 'Nebraska',
+                seasonType: 'regular',
+              },
+            ],
+            season: 2025,
+            week: 4,
+          }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchCompletedGames('my-token', 2025, 4);
+
+      expect(result.games).toHaveLength(1);
+      expect(result.games[0].homeTeam).toBe('Nebraska');
+    });
+
+    it('sends GET to the completed-games endpoint with auth header', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ games: [], season: 2025, week: 4 }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await fetchCompletedGames('my-token', 2025, 4);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/seasons/2025/weeks/4/completed-games'),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+          }),
+        })
+      );
+    });
+  });
+
+  describe('fetchGameOverride', () => {
+    it('sends GET to the game override endpoint with auth header', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            awayTeam: 'Oklahoma',
+            createdAt: '2025-09-20T00:00:00Z',
+            gameID: 401234562,
+            homeTeam: 'Texas',
+            modifiedAt: '2025-09-20T00:00:00Z',
+            originalAwayPoints: 20,
+            originalHomePoints: 24,
+            overrideAwayPoints: 24,
+            overrideHomePoints: 20,
+            reason: 'A targeting call was missed on the game-deciding play.',
+            season: 2025,
+            seasonType: 'regular',
+            week: 4,
+          }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchGameOverride('my-token', 401234562);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/game-overrides/401234562'),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+          }),
+        })
+      );
+      expect(result.homeTeam).toBe('Texas');
+    });
+
+    it('throws on failed fetch', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: () => Promise.resolve({ message: 'Game score override not found' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(fetchGameOverride('token', 401234562)).rejects.toThrow('Game score override not found');
+    });
+  });
+
+  describe('fetchGameOverrides', () => {
+    it('sends GET to the game overrides endpoint with the season query param and auth header', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve([]),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await fetchGameOverrides('my-token', 2025);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/game-overrides?season=2025'),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+          }),
+        })
+      );
+    });
+
+    it('returns the parsed list of game overrides', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve([
+            {
+              awayTeam: 'Oklahoma',
+              createdAt: '2025-09-20T00:00:00Z',
+              gameID: 401234562,
+              homeTeam: 'Texas',
+              modifiedAt: '2025-09-20T00:00:00Z',
+              originalAwayPoints: 20,
+              originalHomePoints: 24,
+              overrideAwayPoints: 24,
+              overrideHomePoints: 20,
+              reason: 'A targeting call was missed on the game-deciding play.',
+              season: 2025,
+              seasonType: 'regular',
+              week: 4,
+            },
+          ]),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchGameOverrides('my-token', 2025);
+
+      expect(result).toHaveLength(1);
     });
   });
 
@@ -1002,6 +1187,63 @@ describe('Admin API service', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await expect(refreshCache('token', 2024, 5)).rejects.toThrow('Connection refused');
+    });
+  });
+
+  describe('saveGameOverride', () => {
+    it('sends PUT to the game override endpoint with the season query param, body, and auth header', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            awayTeam: 'Oklahoma',
+            createdAt: '2025-09-20T00:00:00Z',
+            gameID: 401234562,
+            homeTeam: 'Texas',
+            modifiedAt: '2025-09-20T00:00:00Z',
+            originalAwayPoints: 20,
+            originalHomePoints: 24,
+            overrideAwayPoints: 24,
+            overrideHomePoints: 20,
+            reason: 'A targeting call was missed on the game-deciding play.',
+            season: 2025,
+            seasonType: 'regular',
+            week: 4,
+          }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await saveGameOverride('my-token', 401234562, 2025, 20, 24, 'A targeting call was missed on the game-deciding play.');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/game-overrides/401234562?season=2025'),
+        expect.objectContaining({
+          method: 'PUT',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+            'Content-Type': 'application/json',
+          }),
+          body: JSON.stringify({
+            overrideHomePoints: 20,
+            overrideAwayPoints: 24,
+            reason: 'A targeting call was missed on the game-deciding play.',
+          }),
+        })
+      );
+      expect(result.homeTeam).toBe('Texas');
+    });
+
+    it('throws on failed save', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: () => Promise.resolve({ message: 'Cannot override the score of a game that has not been completed' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(
+        saveGameOverride('token', 401234562, 2025, 20, 24, 'A targeting call was missed on the game-deciding play.')
+      ).rejects.toThrow('Cannot override the score of a game that has not been completed');
     });
   });
 

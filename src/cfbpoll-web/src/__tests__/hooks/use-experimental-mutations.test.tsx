@@ -90,7 +90,7 @@ describe('useCalculateExperimental', () => {
   beforeEach(() => vi.resetAllMocks());
 
   it('calls calculateExperimental with token and params', async () => {
-    const mockResult = { algorithmVersion: 'V2', rankings: { season: 2024, week: 5, rankings: [] } };
+    const mockResult = { algorithmVersion: 'V2', rankings: { season: 2024, week: 5, rankings: [], scoreOverrides: [] } };
     vi.mocked(calculateExperimental).mockResolvedValue(mockResult);
 
     const { result } = renderHook(() => useCalculateExperimental('test-token'), {

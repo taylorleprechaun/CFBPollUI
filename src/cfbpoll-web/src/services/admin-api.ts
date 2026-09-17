@@ -21,10 +21,15 @@ import {
   CalculateResponseSchema,
   type CfbdUsage,
   CfbdUsageSchema,
+  type CompletedGamesResponse,
+  CompletedGamesResponseSchema,
   type ExperimentalCalculateResponse,
   ExperimentalCalculateResponseSchema,
   type ExperimentalPredictionsResponse,
   ExperimentalPredictionsResponseSchema,
+  type GameOverride,
+  GameOverrideSchema,
+  GameOverridesResponseSchema,
   type GradePredictionsResponse,
   GradePredictionsResponseSchema,
   type IncompleteGamesResponse,
@@ -127,6 +132,13 @@ export async function deleteCacheEntry(token: string, cacheKey: string): Promise
   );
 }
 
+export async function deleteGameOverride(token: string, gameId: number): Promise<void> {
+  await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/game-overrides/${gameId}`,
+    withAuth(token, { method: 'DELETE' })
+  );
+}
+
 export async function deletePredictions(
   token: string,
   season: number,
@@ -206,6 +218,34 @@ export async function fetchCfbdUsage(
     withAuth(token)
   );
   return parseResponse(response, CfbdUsageSchema);
+}
+
+export async function fetchCompletedGames(
+  token: string,
+  season: number,
+  week: number
+): Promise<CompletedGamesResponse> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/completed-games`,
+    withAuth(token)
+  );
+  return parseResponse(response, CompletedGamesResponseSchema);
+}
+
+export async function fetchGameOverride(token: string, gameId: number): Promise<GameOverride> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/game-overrides/${gameId}`,
+    withAuth(token)
+  );
+  return parseResponse(response, GameOverrideSchema);
+}
+
+export async function fetchGameOverrides(token: string, season: number): Promise<GameOverride[]> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/game-overrides?season=${season}`,
+    withAuth(token)
+  );
+  return parseResponse(response, GameOverridesResponseSchema);
 }
 
 export async function fetchIncompleteGames(
@@ -333,6 +373,25 @@ export async function refreshCache(
     withAuth(token, { method: 'POST' })
   );
   return parseResponse(response, RefreshCacheResponseSchema);
+}
+
+export async function saveGameOverride(
+  token: string,
+  gameId: number,
+  season: number,
+  overrideHomePoints: number,
+  overrideAwayPoints: number,
+  reason: string
+): Promise<GameOverride> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/game-overrides/${gameId}?season=${season}`,
+    withAuth(token, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ overrideHomePoints, overrideAwayPoints, reason }),
+    })
+  );
+  return parseResponse(response, GameOverrideSchema);
 }
 
 export async function updatePageVisibility(

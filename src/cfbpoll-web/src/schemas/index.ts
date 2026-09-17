@@ -67,15 +67,26 @@ export const RankedTeamSchema = z.object({
   details: TeamDetailsSchema.nullable().optional(),
 });
 
+// Score override disclosure schema
+export const ScoreOverrideDisclosureSchema = z.object({
+  awayTeam: z.string(),
+  gameID: z.number(),
+  homeTeam: z.string(),
+  reason: z.string(),
+  week: z.number(),
+});
+
 export const RankingsResponseSchema = z.object({
   season: z.number(),
   week: z.number(),
   rankings: z.array(RankedTeamSchema),
+  scoreOverrides: z.array(ScoreOverrideDisclosureSchema).default([]),
 });
 
 // Schedule game schema
 export const ScheduleGameSchema = z.object({
   gameDate: z.string().nullable().optional(),
+  gameID: z.number().nullable().optional(),
   isHome: z.boolean(),
   isWin: z.boolean().nullable().optional(),
   neutralSite: z.boolean(),
@@ -84,6 +95,7 @@ export const ScheduleGameSchema = z.object({
   opponentRank: z.number().nullable().optional(),
   opponentRecord: z.string(),
   opponentScore: z.number().nullable().optional(),
+  scoreOverrideReason: z.string().nullable().optional(),
   seasonType: z.string().nullable().optional(),
   startTimeTbd: z.boolean(),
   teamScore: z.number().nullable().optional(),
@@ -274,6 +286,7 @@ export type RankedTeam = z.infer<typeof RankedTeamSchema>;
 export type RankingsResponse = z.infer<typeof RankingsResponseSchema>;
 export type TeamRecord = z.infer<typeof RecordSchema>;
 export type ScheduleGame = z.infer<typeof ScheduleGameSchema>;
+export type ScoreOverrideDisclosure = z.infer<typeof ScoreOverrideDisclosureSchema>;
 export type SeasonTrendRanking = z.infer<typeof SeasonTrendRankingSchema>;
 export type SeasonTrendTeam = z.infer<typeof SeasonTrendTeamSchema>;
 export type SeasonTrendWeek = z.infer<typeof SeasonTrendWeekSchema>;

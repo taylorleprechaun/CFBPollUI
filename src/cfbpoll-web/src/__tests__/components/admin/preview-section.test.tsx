@@ -10,6 +10,7 @@ const defaultResult = {
     season: 2024,
     week: 5,
     rankings: [],
+    scoreOverrides: [],
   },
 };
 

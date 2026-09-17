@@ -62,7 +62,7 @@ describe('RatingsComparisonSection', () => {
         V1: {
           error: null,
           status: 'success',
-          result: { algorithmVersion: 'V1', rankings: { season: 2024, week: 5, rankings: [] } },
+          result: { algorithmVersion: 'V1', rankings: { season: 2024, week: 5, rankings: [], scoreOverrides: [] } },
         },
       }),
     });

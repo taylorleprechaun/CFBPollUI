@@ -6,6 +6,7 @@ import {
   RankedTeamSchema,
   RankingsResponseSchema,
   ScheduleGameSchema,
+  ScoreOverrideDisclosureSchema,
   SeasonsResponseSchema,
   TeamDetailResponseSchema,
   TrackRecordResponseSchema,
@@ -277,6 +278,31 @@ describe('Zod Schemas', () => {
       const result = RankingsResponseSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
+
+    it('defaults scoreOverrides to an empty array when omitted', () => {
+      const data = { season: 2024, week: 5, rankings: [] };
+      const result = RankingsResponseSchema.safeParse(data);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.scoreOverrides).toEqual([]);
+      }
+    });
+
+    it('validates rankings response with score overrides', () => {
+      const data = {
+        season: 2024,
+        week: 5,
+        rankings: [],
+        scoreOverrides: [
+          { awayTeam: 'Iowa', gameID: 401234561, homeTeam: 'Nebraska', reason: 'Targeting was missed on the final play.', week: 3 },
+        ],
+      };
+      const result = RankingsResponseSchema.safeParse(data);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.scoreOverrides).toHaveLength(1);
+      }
+    });
   });
 
   describe('ScheduleGameSchema', () => {
@@ -286,9 +312,32 @@ describe('Zod Schemas', () => {
       expect(result.success).toBe(false);
     });
 
+    it('validates schedule game with an active score override', () => {
+      const data = {
+        gameDate: '2024-09-07T00:00:00',
+        gameID: 401234561,
+        isHome: true,
+        isWin: true,
+        neutralSite: false,
+        opponentLogoURL: 'https://example.com/logo.png',
+        opponentName: 'Nebraska',
+        opponentRecord: '8-2',
+        opponentScore: 21,
+        scoreOverrideReason: 'A targeting call was missed on the game-deciding play.',
+        seasonType: 'regular',
+        startTimeTbd: false,
+        teamScore: 24,
+        venue: 'Kinnick Stadium',
+        week: 1,
+      };
+      const result = ScheduleGameSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
     it('validates schedule game with null optional fields', () => {
       const data = {
         gameDate: null,
+        gameID: null,
         isHome: false,
         isWin: null,
         neutralSite: true,
@@ -296,6 +345,7 @@ describe('Zod Schemas', () => {
         opponentName: 'TBD',
         opponentRecord: '',
         opponentScore: null,
+        scoreOverrideReason: null,
         seasonType: null,
         startTimeTbd: true,
         teamScore: null,
@@ -323,6 +373,26 @@ describe('Zod Schemas', () => {
         week: 1,
       };
       const result = ScheduleGameSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('ScoreOverrideDisclosureSchema', () => {
+    it('rejects a disclosure missing reason', () => {
+      const data = { awayTeam: 'Iowa', gameID: 401234561, homeTeam: 'Nebraska', week: 3 };
+      const result = ScoreOverrideDisclosureSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
+    it('validates a valid score override disclosure', () => {
+      const data = {
+        awayTeam: 'Iowa',
+        gameID: 401234561,
+        homeTeam: 'Nebraska',
+        reason: 'Targeting was missed on the final play.',
+        week: 3,
+      };
+      const result = ScoreOverrideDisclosureSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
   });

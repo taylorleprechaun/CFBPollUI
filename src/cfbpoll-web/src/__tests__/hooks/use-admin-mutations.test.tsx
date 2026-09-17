@@ -211,7 +211,7 @@ describe('useCalculateRankings', () => {
   beforeEach(() => vi.resetAllMocks());
 
   it('calls calculateRankings with token and params', async () => {
-    const mockResult = { isPersisted: true, rankings: { season: 2024, week: 5, rankings: [] } };
+    const mockResult = { isPersisted: true, rankings: { season: 2024, week: 5, rankings: [], scoreOverrides: [] } };
     vi.mocked(calculateRankings).mockResolvedValue(mockResult);
 
     const { result } = renderHook(() => useCalculateRankings('test-token'), {
