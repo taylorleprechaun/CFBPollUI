@@ -1,9 +1,9 @@
 import { useId, useMemo, useState } from 'react';
 
-import type { GameOverrideFormTarget } from '../components/admin';
+import type { ScoreOverrideTarget } from '../components/admin';
 import type { CompletedGame, GameOverride } from '../schemas/admin';
 
-import { CompletedGamesSection, GameOverrideForm, GameOverridesSection, WeekSelect } from '../components/admin';
+import { CompletedGamesSection, GameOverridesSection, ScoreOverrideWizardModal, WeekSelect } from '../components/admin';
 import { SELECT_BASE } from '../components/ui/button-styles';
 import { ConfirmModal } from '../components/ui/confirm-modal';
 import { useAuth } from '../hooks/use-auth';
@@ -15,12 +15,6 @@ import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
 import { SITE_OWNER_NAME } from '../lib/config';
 import { getWeekLabel } from '../lib/week-utils';
-
-interface PendingSave {
-  overrideAwayPoints: number;
-  overrideHomePoints: number;
-  reason: string;
-}
 
 export function AdminScoreOverridesPage() {
   useDocumentTitle(`${SITE_OWNER_NAME} - Score Overrides`);
@@ -53,8 +47,7 @@ export function AdminScoreOverridesPage() {
     saveOverride,
   } = useGameOverrides(token, selectedSeason);
 
-  const [editTarget, setEditTarget] = useState<GameOverrideFormTarget | null>(null);
-  const [pendingSave, setPendingSave] = useState<PendingSave | null>(null);
+  const [wizardTarget, setWizardTarget] = useState<ScoreOverrideTarget | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<GameOverride | null>(null);
 
   function handleSelectGame(game: CompletedGame) {
@@ -63,7 +56,7 @@ export function AdminScoreOverridesPage() {
       return;
     }
 
-    setEditTarget({
+    setWizardTarget({
       awayPoints: game.awayPoints,
       awayTeam: game.awayTeam,
       gameID: game.gameID,
@@ -74,7 +67,7 @@ export function AdminScoreOverridesPage() {
   }
 
   function handleEditOverride(gameOverride: GameOverride) {
-    setEditTarget({
+    setWizardTarget({
       awayPoints: gameOverride.overrideAwayPoints,
       awayTeam: gameOverride.awayTeam,
       gameID: gameOverride.gameID,
@@ -84,22 +77,17 @@ export function AdminScoreOverridesPage() {
     });
   }
 
-  function handleFormSave(overrideHomePoints: number, overrideAwayPoints: number, reason: string) {
-    setPendingSave({ overrideAwayPoints, overrideHomePoints, reason });
-  }
-
-  async function handleConfirmSave() {
-    if (!editTarget || !pendingSave) return;
+  async function handleConfirmWizard(overrideHomePoints: number, overrideAwayPoints: number, reason: string) {
+    if (!wizardTarget) return;
 
     await saveOverride({
-      gameId: editTarget.gameID,
-      overrideAwayPoints: pendingSave.overrideAwayPoints,
-      overrideHomePoints: pendingSave.overrideHomePoints,
-      reason: pendingSave.reason,
+      gameId: wizardTarget.gameID,
+      overrideAwayPoints,
+      overrideHomePoints,
+      reason,
     });
 
-    setPendingSave(null);
-    setEditTarget(null);
+    setWizardTarget(null);
   }
 
   async function handleConfirmDelete() {
@@ -150,15 +138,6 @@ export function AdminScoreOverridesPage() {
         </div>
       </div>
 
-      {editTarget && (
-        <GameOverrideForm
-          isSaving={isSaving}
-          onCancel={() => setEditTarget(null)}
-          onSave={handleFormSave}
-          target={editTarget}
-        />
-      )}
-
       {selectedSeason !== null && selectedWeek !== null && (
         <div className="bg-surface border border-border rounded-xl p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-text-primary mb-4">
@@ -187,13 +166,12 @@ export function AdminScoreOverridesPage() {
         </div>
       )}
 
-      {pendingSave && editTarget && (
-        <ConfirmModal
-          title="Confirm Score Override"
-          message={`Override ${editTarget.awayTeam} @ ${editTarget.homeTeam} to ${pendingSave.overrideAwayPoints}-${pendingSave.overrideHomePoints}? This does not retroactively update already-published rankings or predictions.`}
-          confirmLabel="Confirm"
-          onConfirm={handleConfirmSave}
-          onCancel={() => setPendingSave(null)}
+      {wizardTarget && (
+        <ScoreOverrideWizardModal
+          isSaving={isSaving}
+          onCancel={() => setWizardTarget(null)}
+          onConfirm={handleConfirmWizard}
+          target={wizardTarget}
         />
       )}
 

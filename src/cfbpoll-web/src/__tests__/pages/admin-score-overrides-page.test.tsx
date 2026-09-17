@@ -107,18 +107,23 @@ describe('AdminScoreOverridesPage', () => {
     expect(mockDeleteOverride).toHaveBeenCalledWith(401234562);
   });
 
-  it('calls saveOverride with the edited fields when a save is confirmed', async () => {
+  it('calls saveOverride with the edited fields once the wizard is completed', async () => {
     render(<AdminScoreOverridesPage />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Override Score' }));
+    await userEvent.clear(screen.getByLabelText('Nebraska Score'));
+    await userEvent.type(screen.getByLabelText('Nebraska Score'), '27');
     await userEvent.type(screen.getByLabelText('Reason'), 'Targeting was missed on the final play.');
-    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
-    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Confirm' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+
+    await userEvent.click(screen.getByLabelText('I understand this does not retroactively update published results.'));
+    await userEvent.type(screen.getByLabelText('Type 21-27 to confirm'), '21-27');
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm Override' }));
 
     expect(mockSaveOverride).toHaveBeenCalledWith({
       gameId: 401234561,
       overrideAwayPoints: 21,
-      overrideHomePoints: 24,
+      overrideHomePoints: 27,
       reason: 'Targeting was missed on the final play.',
     });
   });
