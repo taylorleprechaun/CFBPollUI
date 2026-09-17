@@ -26,6 +26,7 @@ const ADMIN_ITEMS: NavItem[] = [
   { label: 'Manage Rankings', to: '/admin/rankings' },
   { label: 'Manage Predictions', to: '/admin/predictions' },
   { label: 'Experimental', to: '/admin/experimental' },
+  { label: 'Score Overrides', to: '/admin/score-overrides' },
   { label: 'Settings', to: '/admin/settings' },
   { label: 'Cache', to: '/admin/cache' },
 ];

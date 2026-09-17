@@ -5,6 +5,7 @@ import { RequireAuth, RequireGuest, RequirePageEnabled } from './components/auth
 import { Layout } from './components/layout/layout';
 import { usePageVisibility } from './hooks/use-page-visibility';
 
+const AdminScoreOverridesPage = lazy(() => import('./pages/admin-score-overrides-page'));
 const AllTimePage = lazy(() => import('./pages/all-time-page'));
 const CachePage = lazy(() => import('./pages/cache-page'));
 const ExperimentalPage = lazy(() => import('./pages/experimental-page'));
@@ -93,6 +94,9 @@ function App() {
           } />
           <Route path="admin/cache" element={
             <LazyPage><CachePage /></LazyPage>
+          } />
+          <Route path="admin/score-overrides" element={
+            <LazyPage><AdminScoreOverridesPage /></LazyPage>
           } />
         </Route>
       </Route>

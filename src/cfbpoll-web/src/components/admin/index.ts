@@ -24,6 +24,10 @@ export { RatingsComparisonColumnHeader } from './ratings-comparison-column-heade
 export { RatingsComparisonSection } from './ratings-comparison-section';
 export type { RatingsComparisonEntry } from './ratings-comparison-table';
 export { RatingsComparisonTable } from './ratings-comparison-table';
+export { CompletedGamesSection } from './score-overrides/completed-games-section';
+export { GameOverrideForm } from './score-overrides/game-override-form';
+export type { GameOverrideFormTarget } from './score-overrides/game-override-form';
+export { GameOverridesSection } from './score-overrides/game-overrides-section';
 export { SeasonPredictionsComparisonSection } from './season-predictions-comparison-section';
 export type { SeasonPredictionsComparisonEntry } from './season-predictions-comparison-table';
 export { SeasonPredictionsComparisonTable } from './season-predictions-comparison-table';
