@@ -44,6 +44,7 @@ try
         builder.Configuration.GetSection(HistoricalDataOptions.SECTION_NAME));
 
     builder.Services.AddDatabase(builder.Configuration);
+    builder.Services.AddSingleton<IGameOverrideModule, GameOverrideModule>();
     builder.Services.AddCFBDataServiceWithCaching(builder.Configuration);
     builder.Services.AddSingleton<RatingModule>();
     builder.Services.AddSingleton<RatingModuleV2>();

@@ -47,6 +47,22 @@ public class DatabaseServiceExtensionsTests
     }
 
     [Fact]
+    public void AddDatabase_RegistersIGameOverrideData()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration();
+
+        services.AddDatabase(configuration);
+
+        var provider = services.BuildServiceProvider();
+        var data = provider.GetService<IGameOverrideData>();
+
+        Assert.NotNull(data);
+        Assert.IsType<GameOverrideData>(data);
+    }
+
+    [Fact]
     public void AddDatabase_RegistersIPageVisibilityData()
     {
         var services = new ServiceCollection();
@@ -109,6 +125,9 @@ public class DatabaseServiceExtensionsTests
     [Fact]
     public async Task InitializeDatabaseAsync_CallsInitializeOnAllDataLayers()
     {
+        var mockGameOverrideData = new Mock<IGameOverrideData>();
+        mockGameOverrideData.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+
         var mockPageVisibilityData = new Mock<IPageVisibilityData>();
         mockPageVisibilityData.Setup(x => x.InitializeAsync()).ReturnsAsync(true);
 
@@ -119,6 +138,7 @@ public class DatabaseServiceExtensionsTests
         mockRankingsData.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
         var builder = WebApplication.CreateBuilder();
+        builder.Services.AddSingleton(mockGameOverrideData.Object);
         builder.Services.AddSingleton(mockPageVisibilityData.Object);
         builder.Services.AddSingleton(mockPredictionsData.Object);
         builder.Services.AddSingleton(mockRankingsData.Object);
@@ -126,6 +146,7 @@ public class DatabaseServiceExtensionsTests
 
         await app.InitializeDatabaseAsync();
 
+        mockGameOverrideData.Verify(x => x.InitializeAsync(), Times.Once);
         mockPageVisibilityData.Verify(x => x.InitializeAsync(), Times.Once);
         mockPredictionsData.Verify(x => x.InitializeAsync(), Times.Once);
         mockRankingsData.Verify(x => x.InitializeAsync(), Times.Once);
