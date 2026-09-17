@@ -1,3 +1,4 @@
+using System.Globalization;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
 using CFBPoll.Core.Options;
@@ -173,8 +174,8 @@ public class GameOverrideData : IGameOverrideData
             OverrideHomePoints = reader.GetInt32(8),
             OverrideAwayPoints = reader.GetInt32(9),
             Reason = reader.GetString(10),
-            CreatedAt = DateTime.Parse(reader.GetString(11)),
-            ModifiedAt = DateTime.Parse(reader.GetString(12))
+            CreatedAt = DateTime.Parse(reader.GetString(11), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
+            ModifiedAt = DateTime.Parse(reader.GetString(12), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
         };
     }
 

@@ -130,6 +130,34 @@ public class PredictionsDataTests
     }
 
     [Fact]
+    public async Task GetAllSummariesAsync_PreservesTimestampsAsUtc()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var beforeSave = DateTime.UtcNow;
+            await data.SaveAsync(CreatePredictionsResult(2024, 1));
+            var afterSave = DateTime.UtcNow;
+
+            var beforeGrade = DateTime.UtcNow;
+            await data.SaveGradedResultAsync(CreatePredictionsResult(2024, 1));
+            var afterGrade = DateTime.UtcNow;
+
+            var summary = (await data.GetAllSummariesAsync()).Single();
+
+            Assert.InRange(summary.CreatedAt, beforeSave.AddSeconds(-1), afterSave.AddSeconds(1));
+            Assert.NotNull(summary.GradedAt);
+            Assert.InRange(summary.GradedAt!.Value, beforeGrade.AddSeconds(-1), afterGrade.AddSeconds(1));
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
     public async Task GetAllSummariesAsync_ReturnsAllSummaries()
     {
         var (data, tempPath) = CreatePredictionsDataWithFile();

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
@@ -79,16 +80,22 @@ public class RankingsData : IRankingsData
         await connection.OpenAsync().ConfigureAwait(false);
 
         await using var command = connection.CreateCommand();
-        command.CommandText = "SELECT RankingsJson FROM RankingsSnapshot WHERE Season = @Season AND Week = @Week AND Published = 1";
+        command.CommandText = "SELECT RankingsJson, PublishedAt FROM RankingsSnapshot WHERE Season = @Season AND Week = @Week AND Published = 1";
         command.Parameters.AddWithValue("@Season", season);
         command.Parameters.AddWithValue("@Week", week);
 
-        var result = await command.ExecuteScalarAsync().ConfigureAwait(false);
+        await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
 
-        if (result is not string json)
+        if (!await reader.ReadAsync().ConfigureAwait(false))
             return null;
 
-        return JsonSerializer.Deserialize<RankingsResult>(json);
+        var result = JsonSerializer.Deserialize<RankingsResult>(reader.GetString(0));
+        if (result is not null && !reader.IsDBNull(1))
+        {
+            result.PublishedAt = DateTime.Parse(reader.GetString(1), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+        }
+
+        return result;
     }
 
     public async Task<IEnumerable<RankingsResult>> GetPublishedRankingsSnapshotsBySeasonRangeAsync(int minSeason, int maxSeason)
@@ -180,7 +187,7 @@ public class RankingsData : IRankingsData
                 Season = reader.GetInt32(0),
                 Week = reader.GetInt32(1),
                 IsPublished = reader.GetInt32(2) == 1,
-                CreatedAt = DateTime.Parse(reader.GetString(3)),
+                CreatedAt = DateTime.Parse(reader.GetString(3), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
                 AlgorithmVersion = Enum.Parse<RatingAlgorithmVersion>(reader.GetString(4))
             });
         }
@@ -210,6 +217,7 @@ public class RankingsData : IRankingsData
         await command.ExecuteNonQueryAsync().ConfigureAwait(false);
 
         await TryAddColumnAsync(connection, "AlgorithmVersion TEXT NOT NULL DEFAULT 'V1'").ConfigureAwait(false);
+        await TryAddColumnAsync(connection, "PublishedAt TEXT NULL").ConfigureAwait(false);
 
         _logger.LogInformation("Database initialized");
     }
@@ -220,9 +228,10 @@ public class RankingsData : IRankingsData
         await connection.OpenAsync().ConfigureAwait(false);
 
         await using var command = connection.CreateCommand();
-        command.CommandText = "UPDATE RankingsSnapshot SET Published = 1 WHERE Season = @Season AND Week = @Week";
+        command.CommandText = "UPDATE RankingsSnapshot SET Published = 1, PublishedAt = @PublishedAt WHERE Season = @Season AND Week = @Week";
         command.Parameters.AddWithValue("@Season", season);
         command.Parameters.AddWithValue("@Week", week);
+        command.Parameters.AddWithValue("@PublishedAt", DateTime.UtcNow.ToString("o"));
 
         var rowsAffected = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
 
@@ -259,22 +268,6 @@ public class RankingsData : IRankingsData
         return rowsAffected > 0;
     }
 
-    private void EnsureDirectoryExists()
-    {
-        var builder = new SqliteConnectionStringBuilder(_connectionString);
-        var dataSource = builder.DataSource;
-
-        if (string.IsNullOrEmpty(dataSource) || dataSource == ":memory:")
-            return;
-
-        var directory = Path.GetDirectoryName(dataSource);
-        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-        {
-            Directory.CreateDirectory(directory);
-            _logger.LogInformation("Created database directory: {Directory}", directory);
-        }
-    }
-
     /// <summary>
     /// Adds a new column to the rankings table if it does not already exist.
     /// This is the de facto migration mechanism for this table since it has no separate migrations folder.
@@ -290,6 +283,22 @@ public class RankingsData : IRankingsData
         catch (SqliteException)
         {
             // Column already exists — safe to ignore
+        }
+    }
+
+    private void EnsureDirectoryExists()
+    {
+        var builder = new SqliteConnectionStringBuilder(_connectionString);
+        var dataSource = builder.DataSource;
+
+        if (string.IsNullOrEmpty(dataSource) || dataSource == ":memory:")
+            return;
+
+        var directory = Path.GetDirectoryName(dataSource);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+            _logger.LogInformation("Created database directory: {Directory}", directory);
         }
     }
 }

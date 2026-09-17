@@ -109,6 +109,8 @@ public class GameOverrideDataTests
             Assert.Equal(gameOverride.OverrideHomePoints, result.OverrideHomePoints);
             Assert.Equal(gameOverride.OverrideAwayPoints, result.OverrideAwayPoints);
             Assert.Equal(gameOverride.Reason, result.Reason);
+            Assert.Equal(gameOverride.CreatedAt, result.CreatedAt);
+            Assert.Equal(gameOverride.ModifiedAt, result.ModifiedAt);
         }
         finally
         {

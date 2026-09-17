@@ -157,27 +157,6 @@ public class RankingsDataTests
     }
 
     [Fact]
-    public async Task GetPreviousPublishedRankingsSnapshotAsync_ReturnsNull_WhenNoPreviousExists()
-    {
-        var (data, tempPath) = CreateRankingsDataWithFile();
-        try
-        {
-            await data.InitializeAsync();
-
-            await data.SaveRankingsSnapshotAsync(CreateRankingsResult(2024, 1, "USC"), RatingAlgorithmVersion.V1);
-            await data.PublishRankingsSnapshotAsync(2024, 1);
-
-            var result = await data.GetPreviousPublishedRankingsSnapshotAsync(2024, 1);
-
-            Assert.Null(result);
-        }
-        finally
-        {
-            CleanupFile(tempPath);
-        }
-    }
-
-    [Fact]
     public async Task GetPreviousPublishedRankingsSnapshotAsync_ReturnsNull_WhenNonePublished()
     {
         var (data, tempPath) = CreateRankingsDataWithFile();
@@ -197,6 +176,26 @@ public class RankingsDataTests
         }
     }
 
+    [Fact]
+    public async Task GetPreviousPublishedRankingsSnapshotAsync_ReturnsNull_WhenNoPreviousExists()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveRankingsSnapshotAsync(CreateRankingsResult(2024, 1, "USC"), RatingAlgorithmVersion.V1);
+            await data.PublishRankingsSnapshotAsync(2024, 1);
+
+            var result = await data.GetPreviousPublishedRankingsSnapshotAsync(2024, 1);
+
+            Assert.Null(result);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
     [Fact]
     public async Task GetPreviousPublishedRankingsSnapshotAsync_ReturnsPreviousPublished()
     {
@@ -286,6 +285,7 @@ public class RankingsDataTests
             Assert.NotNull(result);
             Assert.Equal(2024, result.Season);
             Assert.Equal(5, result.Week);
+            Assert.NotNull(result.PublishedAt);
         }
         finally
         {
@@ -460,6 +460,29 @@ public class RankingsDataTests
     }
 
     [Fact]
+    public async Task GetRankingsSnapshotsAsync_PreservesCreatedAtAsUtc()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var beforeSave = DateTime.UtcNow;
+            await data.SaveRankingsSnapshotAsync(CreateRankingsResult(2024, 1), RatingAlgorithmVersion.V1);
+            var afterSave = DateTime.UtcNow;
+
+            var weeks = (await data.GetRankingsSnapshotsAsync()).ToList();
+
+            var week = Assert.Single(weeks);
+            Assert.InRange(week.CreatedAt, beforeSave.AddSeconds(-1), afterSave.AddSeconds(1));
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
     public async Task GetRankingsSnapshotsAsync_ReturnsAllSnapshots()
     {
         var (data, tempPath) = CreateRankingsDataWithFile();
@@ -550,6 +573,32 @@ public class RankingsDataTests
     }
 
     [Fact]
+    public async Task PublishRankingsSnapshotAsync_RepublishUpdatesTimestamp()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+            await data.SaveRankingsSnapshotAsync(CreateRankingsResult(2024, 5), RatingAlgorithmVersion.V1);
+
+            await data.PublishRankingsSnapshotAsync(2024, 5);
+            var firstPublish = (await data.GetPublishedRankingsSnapshotAsync(2024, 5))!.PublishedAt;
+
+            await Task.Delay(TimeSpan.FromMilliseconds(50));
+            await data.PublishRankingsSnapshotAsync(2024, 5);
+            var secondPublish = (await data.GetPublishedRankingsSnapshotAsync(2024, 5))!.PublishedAt;
+
+            Assert.NotNull(firstPublish);
+            Assert.NotNull(secondPublish);
+            Assert.True(secondPublish > firstPublish);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
     public async Task PublishRankingsSnapshotAsync_ReturnsFalse_WhenNotFound()
     {
         var (data, tempPath) = CreateRankingsDataWithFile();
@@ -560,6 +609,30 @@ public class RankingsDataTests
             var published = await data.PublishRankingsSnapshotAsync(2024, 5);
 
             Assert.False(published);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task PublishRankingsSnapshotAsync_SetsPublishedAtTimestamp()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var beforePublish = DateTime.UtcNow;
+            await data.SaveRankingsSnapshotAsync(CreateRankingsResult(2024, 5), RatingAlgorithmVersion.V1);
+            await data.PublishRankingsSnapshotAsync(2024, 5);
+
+            var result = await data.GetPublishedRankingsSnapshotAsync(2024, 5);
+
+            Assert.NotNull(result);
+            Assert.NotNull(result.PublishedAt);
+            Assert.True(result.PublishedAt >= beforePublish.AddSeconds(-1));
         }
         finally
         {

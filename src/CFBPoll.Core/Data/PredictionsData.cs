@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
@@ -71,11 +72,13 @@ public class PredictionsData : IPredictionsData
                 Season = reader.GetInt32(0),
                 Week = reader.GetInt32(1),
                 IsPublished = reader.GetInt32(2) == 1,
-                CreatedAt = DateTime.Parse(reader.GetString(3)),
+                CreatedAt = DateTime.Parse(reader.GetString(3), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
                 GameCount = reader.GetInt32(4),
                 IsGraded = reader.GetInt32(5) == 1,
                 ResultsPublished = reader.GetInt32(6) == 1,
-                GradedAt = reader.IsDBNull(7) ? null : DateTime.Parse(reader.GetString(7))
+                GradedAt = reader.IsDBNull(7)
+                    ? null
+                    : DateTime.Parse(reader.GetString(7), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
             });
         }
 
