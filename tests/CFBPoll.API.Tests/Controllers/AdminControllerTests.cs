@@ -327,6 +327,26 @@ public class AdminControllerTests
     }
 
     [Fact]
+    public async Task DeleteGameOverride_Found_ReturnsOk()
+    {
+        _mockAdminModule.Setup(x => x.DeleteGameOverrideAsync(401123456)).ReturnsAsync(true);
+
+        var result = await _controller.DeleteGameOverride(401123456);
+
+        Assert.IsType<OkResult>(result);
+    }
+
+    [Fact]
+    public async Task DeleteGameOverride_NotFound_ReturnsNotFound()
+    {
+        _mockAdminModule.Setup(x => x.DeleteGameOverrideAsync(401123456)).ReturnsAsync(false);
+
+        var result = await _controller.DeleteGameOverride(401123456);
+
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
     public async Task DeletePrediction_Found_ReturnsOk()
     {
         _mockAdminModule.Setup(x => x.DeletePredictionsAsync(2024, 5)).ReturnsAsync(true);
@@ -443,6 +463,71 @@ public class AdminControllerTests
         var response = Assert.IsType<CFBDUsageDTO>(okResult.Value);
         Assert.Equal(150, response.RemainingCalls);
         Assert.Equal("Patron", response.TierName);
+    }
+
+    [Fact]
+    public async Task GetCompletedGames_ReturnsMappedResponse()
+    {
+        var completedGames = new List<ScheduleGame>
+        {
+            new() { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame", HomePoints = 24, AwayPoints = 20, Completed = true, SeasonType = "regular" }
+        };
+
+        _mockAdminModule.Setup(x => x.GetCompletedGamesAsync(2024, 5)).ReturnsAsync(completedGames);
+
+        var result = await _controller.GetCompletedGames(2024, 5);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<CompletedGamesResponseDTO>(okResult.Value);
+        Assert.Equal(2024, response.Season);
+        Assert.Equal(5, response.Week);
+        var game = Assert.Single(response.Games);
+        Assert.Equal("USC", game.HomeTeam);
+        Assert.Equal("Notre Dame", game.AwayTeam);
+        Assert.False(game.HasOverride);
+    }
+
+    [Fact]
+    public async Task GetGameOverride_Found_ReturnsOk()
+    {
+        var gameOverride = new GameOverride { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame", Reason = "Corrected after review." };
+
+        _mockAdminModule.Setup(x => x.GetGameOverrideAsync(401123456)).ReturnsAsync(gameOverride);
+
+        var result = await _controller.GetGameOverride(401123456);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<GameOverrideDTO>(okResult.Value);
+        Assert.Equal("USC", response.HomeTeam);
+        Assert.Equal("Corrected after review.", response.Reason);
+    }
+
+    [Fact]
+    public async Task GetGameOverride_NotFound_ReturnsNotFound()
+    {
+        _mockAdminModule.Setup(x => x.GetGameOverrideAsync(401123456)).ReturnsAsync((GameOverride?)null);
+
+        var result = await _controller.GetGameOverride(401123456);
+
+        Assert.IsType<NotFoundObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task GetGameOverrides_ReturnsMappedList()
+    {
+        var overrides = new List<GameOverride>
+        {
+            new() { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame", Reason = "Corrected after review." }
+        };
+
+        _mockAdminModule.Setup(x => x.GetGameOverridesAsync(2024)).ReturnsAsync(overrides);
+
+        var result = await _controller.GetGameOverrides(2024);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsAssignableFrom<IEnumerable<GameOverrideDTO>>(okResult.Value);
+        var dto = Assert.Single(response);
+        Assert.Equal("USC", dto.HomeTeam);
     }
 
     [Fact]
@@ -719,6 +804,72 @@ public class AdminControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var response = Assert.IsType<RefreshCacheResponseDTO>(okResult.Value);
         Assert.Equal(0, response.RemovedCount);
+    }
+
+    [Fact]
+    public async Task SaveGameOverride_EmptyReason_ReturnsBadRequest()
+    {
+        var request = new SaveGameOverrideRequestDTO { OverrideHomePoints = 20, OverrideAwayPoints = 24, Reason = "   " };
+
+        var result = await _controller.SaveGameOverride(401123456, 2024, request);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        _mockAdminModule.Verify(
+            x => x.SaveGameOverrideAsync(It.IsAny<long>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task SaveGameOverride_GameNotCompleted_ReturnsBadRequest()
+    {
+        var request = new SaveGameOverrideRequestDTO { OverrideHomePoints = 20, OverrideAwayPoints = 24, Reason = "Corrected after review." };
+        _mockAdminModule
+            .Setup(x => x.SaveGameOverrideAsync(401123456, 2024, 20, 24, "Corrected after review."))
+            .ReturnsAsync(SaveGameOverrideOutcome.GameNotCompleted);
+
+        var result = await _controller.SaveGameOverride(401123456, 2024, request);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task SaveGameOverride_GameNotFound_ReturnsNotFound()
+    {
+        var request = new SaveGameOverrideRequestDTO { OverrideHomePoints = 20, OverrideAwayPoints = 24, Reason = "Corrected after review." };
+        _mockAdminModule
+            .Setup(x => x.SaveGameOverrideAsync(401123456, 2024, 20, 24, "Corrected after review."))
+            .ReturnsAsync(SaveGameOverrideOutcome.GameNotFound);
+
+        var result = await _controller.SaveGameOverride(401123456, 2024, request);
+
+        Assert.IsType<NotFoundObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task SaveGameOverride_NullRequest_ReturnsBadRequest()
+    {
+        var result = await _controller.SaveGameOverride(401123456, 2024, null);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task SaveGameOverride_Saved_ReturnsOkWithDTO()
+    {
+        var request = new SaveGameOverrideRequestDTO { OverrideHomePoints = 20, OverrideAwayPoints = 24, Reason = "Corrected after review." };
+        var savedOverride = new GameOverride { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame", Reason = "Corrected after review." };
+
+        _mockAdminModule
+            .Setup(x => x.SaveGameOverrideAsync(401123456, 2024, 20, 24, "Corrected after review."))
+            .ReturnsAsync(SaveGameOverrideOutcome.Saved);
+        _mockAdminModule.Setup(x => x.GetGameOverrideAsync(401123456)).ReturnsAsync(savedOverride);
+
+        var result = await _controller.SaveGameOverride(401123456, 2024, request);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<GameOverrideDTO>(okResult.Value);
+        Assert.Equal("USC", response.HomeTeam);
+        Assert.Equal("Corrected after review.", response.Reason);
     }
 
     [Fact]

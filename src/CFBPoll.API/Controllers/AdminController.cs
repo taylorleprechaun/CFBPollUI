@@ -13,6 +13,7 @@ namespace CFBPoll.API.Controllers;
 public class AdminController : ControllerBase
 {
     private const string CACHE_ENTRY_NOT_FOUND = "Cache entry not found";
+    private const string GAME_OVERRIDE_NOT_FOUND = "Game score override not found";
     private const string PREDICTION_NOT_FOUND = "Prediction not found";
     private const string RANKING_NOT_FOUND = "Ranking not found";
     private const string RANKING_WEEK_INCOMPLETE = "Cannot publish rankings for a week that has not been fully played yet";
@@ -186,6 +187,23 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
+    /// Deletes the manual score override for the specified game, reverting it to the officially
+    /// recorded CollegeFootballData score.
+    /// </summary>
+    [HttpDelete("game-overrides/{gameId}")]
+    public async Task<ActionResult> DeleteGameOverride(long gameId)
+    {
+        _logger.LogInformation("Admin deleting game score override for game {GameID}", gameId);
+
+        var deleted = await _adminModule.DeleteGameOverrideAsync(gameId);
+
+        if (!deleted)
+            return NotFound(new ErrorResponseDTO { Message = GAME_OVERRIDE_NOT_FOUND, StatusCode = 404 });
+
+        return Ok();
+    }
+
+    /// <summary>
     /// Deletes predictions for the specified season and week.
     /// </summary>
     [HttpDelete("seasons/{season}/weeks/{week}/prediction")]
@@ -277,6 +295,43 @@ public class AdminController : ControllerBase
         var usage = await _adminModule.GetCFBDUsageAsync(forceRefresh);
 
         return Ok(CFBDUsageMapper.ToDTO(usage));
+    }
+
+    /// <summary>
+    /// Retrieves the completed games for the specified season and week, for use in the manual score
+    /// override picker.
+    /// </summary>
+    [HttpGet("seasons/{season}/weeks/{week}/completed-games")]
+    public async Task<ActionResult<CompletedGamesResponseDTO>> GetCompletedGames(int season, int week)
+    {
+        var games = await _adminModule.GetCompletedGamesAsync(season, week);
+
+        return Ok(GameOverrideMapper.ToCompletedGamesResponseDTO(season, week, games));
+    }
+
+    /// <summary>
+    /// Retrieves the manual score override for the specified game, if one exists.
+    /// </summary>
+    [HttpGet("game-overrides/{gameId}")]
+    public async Task<ActionResult<GameOverrideDTO>> GetGameOverride(long gameId)
+    {
+        var gameOverride = await _adminModule.GetGameOverrideAsync(gameId);
+
+        if (gameOverride is null)
+            return NotFound(new ErrorResponseDTO { Message = GAME_OVERRIDE_NOT_FOUND, StatusCode = 404 });
+
+        return Ok(GameOverrideMapper.ToDTO(gameOverride));
+    }
+
+    /// <summary>
+    /// Retrieves every manual score override recorded for the specified season.
+    /// </summary>
+    [HttpGet("game-overrides")]
+    public async Task<ActionResult<IEnumerable<GameOverrideDTO>>> GetGameOverrides([FromQuery] int season)
+    {
+        var overrides = await _adminModule.GetGameOverridesAsync(season);
+
+        return Ok(overrides.Select(GameOverrideMapper.ToDTO));
     }
 
     /// <summary>
@@ -401,6 +456,36 @@ public class AdminController : ControllerBase
         var removedCount = await _adminModule.RefreshSeasonCacheAsync(season, week);
 
         return Ok(new RefreshCacheResponseDTO { RemovedCount = removedCount, Season = season, Week = week });
+    }
+
+    /// <summary>
+    /// Creates or replaces the manual score override for the specified completed game. Preserves the
+    /// originally recorded score across edits.
+    /// </summary>
+    [HttpPut("game-overrides/{gameId}")]
+    public async Task<ActionResult<GameOverrideDTO>> SaveGameOverride(
+        long gameId, [FromQuery] int season, [FromBody] SaveGameOverrideRequestDTO? request)
+    {
+        if (request is null)
+            return BadRequest(new ErrorResponseDTO { Message = "Request body is required", StatusCode = 400 });
+
+        if (string.IsNullOrWhiteSpace(request.Reason))
+            return BadRequest(new ErrorResponseDTO { Message = "Reason is required", StatusCode = 400 });
+
+        _logger.LogInformation("Admin saving game score override for game {GameID} in season {Season}", gameId, season);
+
+        var outcome = await _adminModule.SaveGameOverrideAsync(
+            gameId, season, request.OverrideHomePoints, request.OverrideAwayPoints, request.Reason);
+
+        if (outcome == SaveGameOverrideOutcome.GameNotFound)
+            return NotFound(new ErrorResponseDTO { Message = "Game not found in the specified season", StatusCode = 404 });
+
+        if (outcome == SaveGameOverrideOutcome.GameNotCompleted)
+            return BadRequest(new ErrorResponseDTO { Message = "Cannot override the score of a game that has not been completed", StatusCode = 400 });
+
+        var saved = await _adminModule.GetGameOverrideAsync(gameId);
+
+        return Ok(GameOverrideMapper.ToDTO(saved!));
     }
 
     /// <summary>
