@@ -8,6 +8,15 @@ namespace CFBPoll.Core.Interfaces;
 public interface ISeasonModule
 {
     /// <summary>
+    /// Retrieves the games in a given week that have already been marked complete.
+    /// </summary>
+    /// <param name="weekNumber">The week number to check.</param>
+    /// <param name="seasonType">The season type ("regular" or "postseason") the week belongs to.</param>
+    /// <param name="scheduleGames">The full season schedule to check games against.</param>
+    /// <returns>The games matching the week that are completed.</returns>
+    IEnumerable<ScheduleGame> GetCompletedGames(int weekNumber, string seasonType, IEnumerable<ScheduleGame> scheduleGames);
+
+    /// <summary>
     /// Retrieves the games in a given week that have not yet been marked complete.
     /// </summary>
     /// <param name="weekNumber">The week number to check.</param>

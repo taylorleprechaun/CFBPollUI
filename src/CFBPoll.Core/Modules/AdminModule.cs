@@ -17,6 +17,7 @@ public class AdminModule : IAdminModule
     private readonly IPersistentCache _cache;
     private readonly ICFBDataService _dataService;
     private readonly IExcelExportModule _excelExportModule;
+    private readonly IGameOverrideModule _gameOverrideModule;
     private readonly ILogger<AdminModule> _logger;
     private readonly IPollLeadersModule _pollLeadersModule;
     private readonly IPredictionAlgorithmResolver _predictionAlgorithmResolver;
@@ -32,6 +33,7 @@ public class AdminModule : IAdminModule
     public AdminModule(
         ICFBDataService dataService,
         IExcelExportModule excelExportModule,
+        IGameOverrideModule gameOverrideModule,
         IPersistentCache cache,
         IPollLeadersModule pollLeadersModule,
         IPredictionAlgorithmResolver predictionAlgorithmResolver,
@@ -48,6 +50,7 @@ public class AdminModule : IAdminModule
         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
         _dataService = dataService ?? throw new ArgumentNullException(nameof(dataService));
         _excelExportModule = excelExportModule ?? throw new ArgumentNullException(nameof(excelExportModule));
+        _gameOverrideModule = gameOverrideModule ?? throw new ArgumentNullException(nameof(gameOverrideModule));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _pollLeadersModule = pollLeadersModule ?? throw new ArgumentNullException(nameof(pollLeadersModule));
         _predictionAlgorithmResolver = predictionAlgorithmResolver ?? throw new ArgumentNullException(nameof(predictionAlgorithmResolver));
@@ -305,6 +308,13 @@ public class AdminModule : IAdminModule
         };
     }
 
+    public async Task<bool> DeleteGameOverrideAsync(long gameID)
+    {
+        _logger.LogInformation("Deleting game score override for game {GameID}", gameID);
+
+        return await _gameOverrideModule.DeleteGameOverrideAsync(gameID).ConfigureAwait(false);
+    }
+
     public async Task<bool> DeletePredictionsAsync(int season, int week)
     {
         _logger.LogInformation("Deleting predictions for season {Season}, week {Week}", season, week);
@@ -379,6 +389,29 @@ public class AdminModule : IAdminModule
     public async Task<CFBDUsage> GetCFBDUsageAsync(bool forceRefresh = false)
     {
         return await _dataService.GetCFBDUsageAsync(forceRefresh).ConfigureAwait(false);
+    }
+
+    public async Task<IEnumerable<ScheduleGame>> GetCompletedGamesAsync(int season, int week)
+    {
+        var calendarTask = _dataService.GetCalendarAsync(season);
+        var fullScheduleTask = _dataService.GetFullSeasonScheduleAsync(season);
+        await Task.WhenAll(calendarTask, fullScheduleTask).ConfigureAwait(false);
+
+        var calendarWeek = (await calendarTask).FirstOrDefault(w => w.Week == week);
+        var fullSchedule = await fullScheduleTask;
+        var seasonType = calendarWeek?.SeasonType ?? string.Empty;
+
+        return _seasonModule.GetCompletedGames(week, seasonType, fullSchedule);
+    }
+
+    public async Task<GameOverride?> GetGameOverrideAsync(long gameID)
+    {
+        return await _gameOverrideModule.GetGameOverrideAsync(gameID).ConfigureAwait(false);
+    }
+
+    public async Task<IEnumerable<GameOverride>> GetGameOverridesAsync(int season)
+    {
+        return await _gameOverrideModule.GetGameOverridesBySeasonAsync(season).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<ScheduleGame>> GetIncompleteGamesAsync(int season, int week)
@@ -527,6 +560,51 @@ public class AdminModule : IAdminModule
     public async Task<bool> RemoveCacheEntryAsync(string key)
     {
         return await _cache.RemoveAsync(key).ConfigureAwait(false);
+    }
+
+    public async Task<SaveGameOverrideOutcome> SaveGameOverrideAsync(
+        long gameID, int season, int overrideHomePoints, int overrideAwayPoints, string reason)
+    {
+        _logger.LogInformation("Saving game score override for game {GameID} in season {Season}", gameID, season);
+
+        var fullSchedule = await _dataService.GetFullSeasonScheduleAsync(season).ConfigureAwait(false);
+        var game = fullSchedule.FirstOrDefault(g => g.GameID == gameID);
+
+        if (game is null)
+        {
+            _logger.LogWarning("Refused to save game score override: game {GameID} not found in season {Season}", gameID, season);
+            return SaveGameOverrideOutcome.GameNotFound;
+        }
+
+        if (!game.Completed || !game.HomePoints.HasValue || !game.AwayPoints.HasValue)
+        {
+            _logger.LogWarning("Refused to save game score override: game {GameID} has not been completed", gameID);
+            return SaveGameOverrideOutcome.GameNotCompleted;
+        }
+
+        var existingOverride = await _gameOverrideModule.GetGameOverrideAsync(gameID).ConfigureAwait(false);
+        var now = DateTime.UtcNow;
+
+        var gameOverride = new GameOverride
+        {
+            AwayTeam = game.AwayTeam ?? string.Empty,
+            CreatedAt = existingOverride?.CreatedAt ?? now,
+            GameID = gameID,
+            HomeTeam = game.HomeTeam ?? string.Empty,
+            ModifiedAt = now,
+            OriginalAwayPoints = existingOverride?.OriginalAwayPoints ?? game.AwayPoints.Value,
+            OriginalHomePoints = existingOverride?.OriginalHomePoints ?? game.HomePoints.Value,
+            OverrideAwayPoints = overrideAwayPoints,
+            OverrideHomePoints = overrideHomePoints,
+            Reason = reason,
+            Season = season,
+            SeasonType = game.SeasonType ?? string.Empty,
+            Week = game.Week ?? 0
+        };
+
+        await _gameOverrideModule.SaveGameOverrideAsync(gameOverride).ConfigureAwait(false);
+
+        return SaveGameOverrideOutcome.Saved;
     }
 
     private async Task<ExperimentalPredictionsResult> CalculateThrottledExperimentalPredictionsAsync(

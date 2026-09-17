@@ -7,6 +7,11 @@ public class SeasonModule : ISeasonModule
 {
     private readonly StringComparison _scoic = StringComparison.OrdinalIgnoreCase;
 
+    public IEnumerable<ScheduleGame> GetCompletedGames(int weekNumber, string seasonType, IEnumerable<ScheduleGame> scheduleGames)
+    {
+        return GetWeekGames(weekNumber, seasonType, scheduleGames).Where(g => g.Completed);
+    }
+
     public IEnumerable<ScheduleGame> GetIncompleteGames(int weekNumber, string seasonType, IEnumerable<ScheduleGame> scheduleGames)
     {
         return GetWeekGames(weekNumber, seasonType, scheduleGames).Where(g => !g.Completed);

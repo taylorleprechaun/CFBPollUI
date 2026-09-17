@@ -14,6 +14,7 @@ public class AdminModuleTests
     private readonly Mock<IPersistentCache> _mockCache;
     private readonly Mock<ICFBDataService> _mockDataService;
     private readonly Mock<IExcelExportModule> _mockExcelExportModule;
+    private readonly Mock<IGameOverrideModule> _mockGameOverrideModule;
     private readonly Mock<ILogger<AdminModule>> _mockLogger;
     private readonly Mock<IPollLeadersModule> _mockPollLeadersModule;
     private readonly Mock<IPredictionAlgorithmResolver> _mockPredictionAlgorithmResolver;
@@ -33,6 +34,7 @@ public class AdminModuleTests
         _mockCache = new Mock<IPersistentCache>();
         _mockDataService = new Mock<ICFBDataService>();
         _mockExcelExportModule = new Mock<IExcelExportModule>();
+        _mockGameOverrideModule = new Mock<IGameOverrideModule>();
         _mockLogger = new Mock<ILogger<AdminModule>>();
         _mockPollLeadersModule = new Mock<IPollLeadersModule>();
         _mockPredictionCalculatorModule = new Mock<IPredictionCalculatorModule>();
@@ -60,6 +62,7 @@ public class AdminModuleTests
         _adminModule = new AdminModule(
             _mockDataService.Object,
             _mockExcelExportModule.Object,
+            _mockGameOverrideModule.Object,
             _mockCache.Object,
             _mockPollLeadersModule.Object,
             _mockPredictionAlgorithmResolver.Object,
@@ -957,6 +960,7 @@ public class AdminModuleTests
             () => new AdminModule(
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
+                _mockGameOverrideModule.Object,
                 null!,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
@@ -978,6 +982,7 @@ public class AdminModuleTests
             () => new AdminModule(
                 null!,
                 _mockExcelExportModule.Object,
+                _mockGameOverrideModule.Object,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
@@ -998,6 +1003,29 @@ public class AdminModuleTests
         Assert.Throws<ArgumentNullException>(
             () => new AdminModule(
                 _mockDataService.Object,
+                null!,
+                _mockGameOverrideModule.Object,
+                _mockCache.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionAlgorithmResolver.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingAlgorithmResolver.Object,
+                _mockSeasonModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTeamPredictionRecordModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullGameOverrideModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
                 null!,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
@@ -1020,6 +1048,7 @@ public class AdminModuleTests
             () => new AdminModule(
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
+                _mockGameOverrideModule.Object,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
@@ -1041,6 +1070,7 @@ public class AdminModuleTests
             () => new AdminModule(
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
+                _mockGameOverrideModule.Object,
                 _mockCache.Object,
                 null!,
                 _mockPredictionAlgorithmResolver.Object,
@@ -1062,6 +1092,7 @@ public class AdminModuleTests
             () => new AdminModule(
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
+                _mockGameOverrideModule.Object,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
                 null!,
@@ -1083,6 +1114,7 @@ public class AdminModuleTests
             () => new AdminModule(
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
+                _mockGameOverrideModule.Object,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
@@ -1104,6 +1136,7 @@ public class AdminModuleTests
             () => new AdminModule(
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
+                _mockGameOverrideModule.Object,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
@@ -1125,6 +1158,7 @@ public class AdminModuleTests
             () => new AdminModule(
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
+                _mockGameOverrideModule.Object,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
@@ -1146,6 +1180,7 @@ public class AdminModuleTests
             () => new AdminModule(
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
+                _mockGameOverrideModule.Object,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
@@ -1167,6 +1202,7 @@ public class AdminModuleTests
             () => new AdminModule(
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
+                _mockGameOverrideModule.Object,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
@@ -1188,6 +1224,7 @@ public class AdminModuleTests
             () => new AdminModule(
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
+                _mockGameOverrideModule.Object,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
@@ -1209,6 +1246,7 @@ public class AdminModuleTests
             () => new AdminModule(
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
+                _mockGameOverrideModule.Object,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
@@ -1230,6 +1268,7 @@ public class AdminModuleTests
             () => new AdminModule(
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
+                _mockGameOverrideModule.Object,
                 _mockCache.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
@@ -1242,6 +1281,17 @@ public class AdminModuleTests
                 _mockTeamPredictionRecordModule.Object,
                 null!,
                 _mockLogger.Object));
+    }
+
+    [Fact]
+    public async Task DeleteGameOverrideAsync_DelegatesToGameOverrideModule()
+    {
+        _mockGameOverrideModule.Setup(x => x.DeleteGameOverrideAsync(401123456)).ReturnsAsync(true);
+
+        var result = await _adminModule.DeleteGameOverrideAsync(401123456);
+
+        Assert.True(result);
+        _mockGameOverrideModule.Verify(x => x.DeleteGameOverrideAsync(401123456), Times.Once);
     }
 
     [Fact]
@@ -1486,6 +1536,64 @@ public class AdminModuleTests
 
         Assert.Equal(42, result.RemainingCalls);
         _mockDataService.Verify(x => x.GetCFBDUsageAsync(true), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetCompletedGamesAsync_DelegatesToSeasonModule_WithSeasonTypeFromCalendar()
+    {
+        var fullSchedule = new List<ScheduleGame>
+        {
+            new() { Week = 5, SeasonType = "regular", HomeTeam = "USC", AwayTeam = "Notre Dame", Completed = true }
+        };
+        var completedGames = new List<ScheduleGame> { fullSchedule[0] };
+
+        _mockDataService.Setup(x => x.GetCalendarAsync(2024))
+            .ReturnsAsync(new[] { new CalendarWeek { Week = 5, SeasonType = "regular" } });
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(fullSchedule);
+        _mockSeasonModule.Setup(x => x.GetCompletedGames(5, "regular", fullSchedule)).Returns(completedGames);
+
+        var result = await _adminModule.GetCompletedGamesAsync(2024, 5);
+
+        var completedGame = Assert.Single(result);
+        Assert.Equal("USC", completedGame.HomeTeam);
+        Assert.Equal("Notre Dame", completedGame.AwayTeam);
+    }
+
+    [Fact]
+    public async Task GetCompletedGamesAsync_WithNoMatchingCalendarWeek_UsesEmptySeasonType()
+    {
+        var fullSchedule = new List<ScheduleGame>();
+
+        _mockDataService.Setup(x => x.GetCalendarAsync(2024)).ReturnsAsync(new List<CalendarWeek>());
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(fullSchedule);
+        _mockSeasonModule.Setup(x => x.GetCompletedGames(5, string.Empty, fullSchedule)).Returns([]);
+
+        var result = await _adminModule.GetCompletedGamesAsync(2024, 5);
+
+        Assert.Empty(result);
+        _mockSeasonModule.Verify(x => x.GetCompletedGames(5, string.Empty, fullSchedule), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetGameOverrideAsync_DelegatesToGameOverrideModule()
+    {
+        var gameOverride = new GameOverride { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame" };
+        _mockGameOverrideModule.Setup(x => x.GetGameOverrideAsync(401123456)).ReturnsAsync(gameOverride);
+
+        var result = await _adminModule.GetGameOverrideAsync(401123456);
+
+        Assert.Same(gameOverride, result);
+    }
+
+    [Fact]
+    public async Task GetGameOverridesAsync_DelegatesToGameOverrideModule()
+    {
+        var overrides = new List<GameOverride> { new() { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame" } };
+        _mockGameOverrideModule.Setup(x => x.GetGameOverridesBySeasonAsync(2024)).ReturnsAsync(overrides);
+
+        var result = await _adminModule.GetGameOverridesAsync(2024);
+
+        Assert.Same(overrides, result);
     }
 
     [Fact]
@@ -1894,6 +2002,99 @@ public class AdminModuleTests
 
         Assert.True(result);
         _mockCache.Verify(x => x.RemoveAsync("teams_2024"), Times.Once);
+    }
+
+    [Fact]
+    public async Task SaveGameOverrideAsync_ExistingOverride_PreservesStoredOriginalScore()
+    {
+        var fullSchedule = new List<ScheduleGame>
+        {
+            new() { GameID = 401123456, Week = 3, SeasonType = "regular", HomeTeam = "USC", AwayTeam = "Notre Dame", HomePoints = 24, AwayPoints = 20, Completed = true }
+        };
+        var existingOverride = new GameOverride
+        {
+            GameID = 401123456,
+            OriginalHomePoints = 17,
+            OriginalAwayPoints = 20,
+            CreatedAt = new DateTime(2026, 9, 1)
+        };
+
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2026)).ReturnsAsync(fullSchedule);
+        _mockGameOverrideModule.Setup(x => x.GetGameOverrideAsync(401123456)).ReturnsAsync(existingOverride);
+
+        GameOverride? saved = null;
+        _mockGameOverrideModule
+            .Setup(x => x.SaveGameOverrideAsync(It.IsAny<GameOverride>()))
+            .Callback<GameOverride>(g => saved = g)
+            .ReturnsAsync(true);
+
+        var outcome = await _adminModule.SaveGameOverrideAsync(401123456, 2026, 20, 24, "Corrected after review.");
+
+        Assert.Equal(SaveGameOverrideOutcome.Saved, outcome);
+        Assert.NotNull(saved);
+        Assert.Equal(17, saved!.OriginalHomePoints);
+        Assert.Equal(20, saved.OriginalAwayPoints);
+        Assert.Equal(existingOverride.CreatedAt, saved.CreatedAt);
+    }
+
+    [Fact]
+    public async Task SaveGameOverrideAsync_GameNotCompleted_ReturnsGameNotCompleted()
+    {
+        var fullSchedule = new List<ScheduleGame>
+        {
+            new() { GameID = 401123456, Week = 3, SeasonType = "regular", HomeTeam = "USC", AwayTeam = "Notre Dame", Completed = false }
+        };
+
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2026)).ReturnsAsync(fullSchedule);
+
+        var outcome = await _adminModule.SaveGameOverrideAsync(401123456, 2026, 20, 24, "Corrected after review.");
+
+        Assert.Equal(SaveGameOverrideOutcome.GameNotCompleted, outcome);
+        _mockGameOverrideModule.Verify(x => x.SaveGameOverrideAsync(It.IsAny<GameOverride>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SaveGameOverrideAsync_GameNotFound_ReturnsGameNotFound()
+    {
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2026)).ReturnsAsync(new List<ScheduleGame>());
+
+        var outcome = await _adminModule.SaveGameOverrideAsync(401123456, 2026, 20, 24, "Corrected after review.");
+
+        Assert.Equal(SaveGameOverrideOutcome.GameNotFound, outcome);
+        _mockGameOverrideModule.Verify(x => x.SaveGameOverrideAsync(It.IsAny<GameOverride>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SaveGameOverrideAsync_NewOverride_UsesCfbdScoreAsOriginal()
+    {
+        var fullSchedule = new List<ScheduleGame>
+        {
+            new() { GameID = 401123456, Week = 3, SeasonType = "regular", HomeTeam = "USC", AwayTeam = "Notre Dame", HomePoints = 24, AwayPoints = 20, Completed = true }
+        };
+
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2026)).ReturnsAsync(fullSchedule);
+        _mockGameOverrideModule.Setup(x => x.GetGameOverrideAsync(401123456)).ReturnsAsync((GameOverride?)null);
+
+        GameOverride? saved = null;
+        _mockGameOverrideModule
+            .Setup(x => x.SaveGameOverrideAsync(It.IsAny<GameOverride>()))
+            .Callback<GameOverride>(g => saved = g)
+            .ReturnsAsync(true);
+
+        var outcome = await _adminModule.SaveGameOverrideAsync(401123456, 2026, 20, 24, "Corrected after review.");
+
+        Assert.Equal(SaveGameOverrideOutcome.Saved, outcome);
+        Assert.NotNull(saved);
+        Assert.Equal(24, saved!.OriginalHomePoints);
+        Assert.Equal(20, saved.OriginalAwayPoints);
+        Assert.Equal(20, saved.OverrideHomePoints);
+        Assert.Equal(24, saved.OverrideAwayPoints);
+        Assert.Equal("USC", saved.HomeTeam);
+        Assert.Equal("Notre Dame", saved.AwayTeam);
+        Assert.Equal("Corrected after review.", saved.Reason);
+        Assert.Equal(3, saved.Week);
+        Assert.Equal("regular", saved.SeasonType);
+        Assert.Equal(2026, saved.Season);
     }
 
     private void SetUpCompleteWeek(int season, int week)

@@ -45,6 +45,12 @@ public interface IAdminModule
     Task<CalculateRankingsResult> CalculateRankingsAsync(int season, int week);
 
     /// <summary>
+    /// Deletes the manual score override for the given game, if one exists, reverting it to the
+    /// officially recorded CollegeFootballData score.
+    /// </summary>
+    Task<bool> DeleteGameOverrideAsync(long gameID);
+
+    /// <summary>
     /// Deletes predictions for the given season and week.
     /// </summary>
     Task<bool> DeletePredictionsAsync(int season, int week);
@@ -84,6 +90,22 @@ public interface IAdminModule
     /// <param name="forceRefresh">Whether to bypass any cached value and fetch live data.</param>
     /// <returns>The current CFBD API usage snapshot.</returns>
     Task<CFBDUsage> GetCFBDUsageAsync(bool forceRefresh = false);
+
+    /// <summary>
+    /// Retrieves the completed games for the given season and week, for use in the manual score
+    /// override picker.
+    /// </summary>
+    Task<IEnumerable<ScheduleGame>> GetCompletedGamesAsync(int season, int week);
+
+    /// <summary>
+    /// Retrieves the manual score override for the given game, if one exists.
+    /// </summary>
+    Task<GameOverride?> GetGameOverrideAsync(long gameID);
+
+    /// <summary>
+    /// Retrieves every manual score override recorded for the given season.
+    /// </summary>
+    Task<IEnumerable<GameOverride>> GetGameOverridesAsync(int season);
 
     /// <summary>
     /// Retrieves the games for the given season and week that have not yet been marked complete,
@@ -155,4 +177,11 @@ public interface IAdminModule
     /// </summary>
     /// <returns>True if an entry was removed; otherwise false.</returns>
     Task<bool> RemoveCacheEntryAsync(string key);
+
+    /// <summary>
+    /// Creates or replaces the manual score override for the given completed game. Preserves the
+    /// originally recorded score across edits rather than re-deriving it, since a subsequent lookup
+    /// of the game would otherwise return the already-overridden score.
+    /// </summary>
+    Task<SaveGameOverrideOutcome> SaveGameOverrideAsync(long gameID, int season, int overrideHomePoints, int overrideAwayPoints, string reason);
 }

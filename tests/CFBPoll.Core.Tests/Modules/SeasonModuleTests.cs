@@ -14,6 +14,66 @@ public class SeasonModuleTests
     }
 
     [Fact]
+    public void GetCompletedGames_PostseasonWithIncompleteGame_ReturnsOnlyCompletedGame()
+    {
+        var scheduleGames = new List<ScheduleGame>
+        {
+            new() { Week = 16, SeasonType = "postseason", HomeTeam = "Ohio State", AwayTeam = "USC", Completed = true },
+            new() { Week = 17, SeasonType = "postseason", HomeTeam = "Notre Dame", AwayTeam = "Nebraska", Completed = false }
+        };
+
+        var result = _seasonModule.GetCompletedGames(16, "postseason", scheduleGames);
+
+        var completedGame = Assert.Single(result);
+        Assert.Equal("Ohio State", completedGame.HomeTeam);
+        Assert.Equal("USC", completedGame.AwayTeam);
+    }
+
+    [Fact]
+    public void GetCompletedGames_RegularWeekWithAllGamesCompleted_ReturnsAllGames()
+    {
+        var scheduleGames = new List<ScheduleGame>
+        {
+            new() { Week = 3, SeasonType = "regular", HomeTeam = "Iowa", AwayTeam = "Nebraska", Completed = true },
+            new() { Week = 3, SeasonType = "regular", HomeTeam = "Texas", AwayTeam = "Oklahoma", Completed = true }
+        };
+
+        var result = _seasonModule.GetCompletedGames(3, "regular", scheduleGames);
+
+        Assert.Equal(2, result.Count());
+    }
+
+    [Fact]
+    public void GetCompletedGames_RegularWeekWithMixedCompletion_ReturnsOnlyCompletedGames()
+    {
+        var scheduleGames = new List<ScheduleGame>
+        {
+            new() { Week = 2, SeasonType = "regular", HomeTeam = "Florida", AwayTeam = "Alabama", Completed = true },
+            new() { Week = 2, SeasonType = "regular", HomeTeam = "Michigan", AwayTeam = "Ohio State", Completed = false },
+            new() { Week = 3, SeasonType = "regular", HomeTeam = "USC", AwayTeam = "Notre Dame", Completed = false }
+        };
+
+        var result = _seasonModule.GetCompletedGames(2, "regular", scheduleGames);
+
+        var completedGame = Assert.Single(result);
+        Assert.Equal("Florida", completedGame.HomeTeam);
+        Assert.Equal("Alabama", completedGame.AwayTeam);
+    }
+
+    [Fact]
+    public void GetCompletedGames_WithNoMatchingGames_ReturnsEmpty()
+    {
+        var scheduleGames = new List<ScheduleGame>
+        {
+            new() { Week = 2, SeasonType = "regular", HomeTeam = "Texas", AwayTeam = "Oklahoma", Completed = true }
+        };
+
+        var result = _seasonModule.GetCompletedGames(1, "regular", scheduleGames);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
     public void GetIncompleteGames_PostseasonWithIncompleteGame_ReturnsOnlyIncompleteGame()
     {
         var scheduleGames = new List<ScheduleGame>
