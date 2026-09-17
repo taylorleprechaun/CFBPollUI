@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { ErrorAlert } from '../components/error';
 import { ConferenceFilter } from '../components/rankings/conference-filter';
 import { RankingsTable } from '../components/rankings/rankings-table';
+import { ScoreOverrideDisclaimer } from '../components/rankings/score-override-disclaimer';
 import { SeasonSelector } from '../components/rankings/season-selector';
 import { WeekSelector } from '../components/rankings/week-selector';
 import { useConferences } from '../hooks/use-conferences';
@@ -108,6 +109,7 @@ export function RankingsPage() {
             onWeekChange={setSelectedWeek}
             isLoading={weeksLoading}
           />
+          <ScoreOverrideDisclaimer scoreOverrides={rankingsData?.scoreOverrides ?? []} />
         </div>
         <div className="mt-4">
           <ConferenceFilter

@@ -9,6 +9,7 @@ export type {
   RankedTeam,
   RankingsResponse,
   ScheduleGame,
+  ScoreOverrideDisclosure,
   SeasonsResponse,
   SeasonTrendRanking,
   SeasonTrendsResponse,
