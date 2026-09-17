@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { ScheduleGame } from '../../types';
 
 import { TeamLogo } from '../rankings/team-logo';
+import { InfoTooltip } from '../ui/info-tooltip';
 
 interface ScheduleRowProps {
   fbsTeamNames: Set<string>;
@@ -86,8 +87,13 @@ export function ScheduleRow({
       </td>
       <td className="px-4 py-3 whitespace-nowrap text-sm">
         {game.isWin != null && game.teamScore != null && game.opponentScore != null ? (
-          <span className={game.isWin ? 'text-green-600 dark:text-green-400 font-medium' : 'text-red-600 dark:text-red-400 font-medium'}>
-            {game.isWin ? 'W' : 'L'} {game.teamScore}-{game.opponentScore}
+          <span className="inline-flex items-center gap-1.5">
+            <span className={game.isWin ? 'text-green-600 dark:text-green-400 font-medium' : 'text-red-600 dark:text-red-400 font-medium'}>
+              {game.isWin ? 'W' : 'L'} {game.teamScore}-{game.opponentScore}
+            </span>
+            {game.scoreOverrideReason && (
+              <InfoTooltip statName="Score override" summary={game.scoreOverrideReason} />
+            )}
           </span>
         ) : null}
       </td>
