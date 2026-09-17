@@ -33,6 +33,20 @@ public static class GameOverrideMapper
         };
     }
 
+    public static ScoreOverrideDisclosureDTO ToDisclosureDTO(GameOverride gameOverride)
+    {
+        ArgumentNullException.ThrowIfNull(gameOverride);
+
+        return new ScoreOverrideDisclosureDTO
+        {
+            AwayTeam = gameOverride.AwayTeam,
+            GameID = gameOverride.GameID,
+            HomeTeam = gameOverride.HomeTeam,
+            Reason = gameOverride.Reason,
+            Week = gameOverride.Week
+        };
+    }
+
     public static GameOverrideDTO ToDTO(GameOverride gameOverride)
     {
         ArgumentNullException.ThrowIfNull(gameOverride);

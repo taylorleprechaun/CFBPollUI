@@ -82,6 +82,7 @@ public static class TeamDetailMapper
         return new ScheduleGameDTO
         {
             GameDate = game.StartDate,
+            GameID = game.GameID,
             IsHome = isHome,
             IsWin = isWin,
             NeutralSite = game.NeutralSite,
@@ -90,6 +91,7 @@ public static class TeamDetailMapper
             OpponentRank = opponentRank,
             OpponentRecord = opponentRecord,
             OpponentScore = game.Completed ? opponentScore : null,
+            ScoreOverrideReason = game.ScoreOverrideReason,
             SeasonType = game.SeasonType,
             StartTimeTbd = game.StartTimeTbd,
             TeamScore = game.Completed ? teamScore : null,

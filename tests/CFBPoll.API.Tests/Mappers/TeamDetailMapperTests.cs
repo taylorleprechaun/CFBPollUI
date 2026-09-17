@@ -103,6 +103,22 @@ public class TeamDetailMapperTests
     }
 
     [Fact]
+    public void ToResponseDTO_MapsGameID()
+    {
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var schedule = CreateDefaultScheduleGames();
+        var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
+
+        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
+
+        var games = result.Schedule.ToList();
+        Assert.Single(games);
+        Assert.Equal(1, games[0].GameID);
+    }
+
+    [Fact]
     public void ToResponseDTO_MapsOpponentInfoFromAllTeams()
     {
         var rankedTeam = CreateDefaultRankedTeam();
@@ -167,6 +183,36 @@ public class TeamDetailMapperTests
         Assert.Equal("regular", games[0].SeasonType);
         Assert.Equal("Sanford Stadium", games[0].Venue);
         Assert.Equal(new DateTime(2023, 9, 2), games[0].GameDate);
+    }
+
+    [Fact]
+    public void ToResponseDTO_MapsScoreOverrideReasonWhenPresent()
+    {
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
+
+        var schedule = new List<ScheduleGame>
+        {
+            new ScheduleGame
+            {
+                HomeTeam = "Florida",
+                AwayTeam = "USC",
+                Completed = true,
+                HomePoints = 27,
+                AwayPoints = 30,
+                ScoreOverrideReason = "Pass interference was not flagged on the game-ending play.",
+                SeasonType = "regular",
+                Week = 1
+            }
+        };
+
+        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
+
+        var games = result.Schedule.ToList();
+        Assert.Single(games);
+        Assert.Equal("Pass interference was not flagged on the game-ending play.", games[0].ScoreOverrideReason);
     }
 
     [Fact]
