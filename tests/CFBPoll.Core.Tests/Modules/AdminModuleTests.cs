@@ -116,6 +116,55 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task CalculateExperimentalPredictionsAsync_GameHasOverriddenScore_GradesAgainstOverriddenScore()
+    {
+        var fbsTeams = new Dictionary<string, TeamInfo>
+        {
+            ["Notre Dame"] = new(),
+            ["USC"] = new()
+        };
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = fbsTeams };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var schedule = new List<ScheduleGame>
+        {
+            new() { Week = 6, SeasonType = "regular", HomeTeam = "Notre Dame", AwayTeam = "USC" }
+        };
+        var predictions = new List<GamePrediction>
+        {
+            new() { HomeTeam = "Notre Dame", AwayTeam = "USC", PredictedWinner = "Notre Dame", PredictedMargin = 3 }
+        };
+
+        // Simulates what CachingCFBDataService.GetGamesAsync returns once a manual score override has
+        // been applied - grading has no override-specific logic of its own and should trust it as-is.
+        var overriddenGame = new Game
+        {
+            AwayPoints = 24,
+            AwayTeam = "USC",
+            HomePoints = 17,
+            HomeTeam = "Notre Dame",
+            ScoreOverrideReason = "A targeting call was missed on the decisive fourth-down stop.",
+            SeasonType = "regular",
+            Week = 6
+        };
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(schedule);
+        _mockDataService.Setup(x => x.GetGamesAsync(2024, "regular")).ReturnsAsync(new List<Game> { overriddenGame });
+        _mockPredictionAlgorithmResolver.Setup(x => x.Resolve(RatingAlgorithmVersion.V2)).Returns(_mockPredictionCalculatorModule.Object);
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(predictions);
+
+        var result = await _adminModule.CalculateExperimentalPredictionsAsync(2024, 5, RatingAlgorithmVersion.V2);
+
+        var graded = Assert.Single(result.Predictions);
+        Assert.Equal(17, graded.ActualHomeScore);
+        Assert.Equal(24, graded.ActualAwayScore);
+        Assert.Equal(PredictionGradeStatus.Incorrect, graded.WinnerGrade);
+    }
+
+    [Fact]
     public async Task CalculateExperimentalPredictionsAsync_GradesAgainstActualScores_ReturnsSummary()
     {
         var fbsTeams = new Dictionary<string, TeamInfo>

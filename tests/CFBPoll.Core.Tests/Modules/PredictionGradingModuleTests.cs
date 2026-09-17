@@ -60,6 +60,25 @@ public class PredictionGradingModuleTests
     }
 
     [Fact]
+    public async Task GradeAsync_GameHasOverriddenScore_GradesAgainstOverriddenScore()
+    {
+        // Simulates what CachingCFBDataService.GetGamesAsync returns once a manual score override has
+        // been applied - grading has no override-specific logic of its own and should trust it as-is.
+        var overriddenGame = BuildGame("Iowa", "Nebraska", homePoints: 24, awayPoints: 21);
+        overriddenGame.ScoreOverrideReason = "A targeting penalty on the game-ending interception return was picked up late.";
+
+        SetupRegularSeasonWeek(2024, 5, BuildPrediction(homeTeam: "Iowa", awayTeam: "Nebraska", predictedWinner: "Iowa"),
+            overriddenGame);
+
+        var result = await _module.GradeAsync(2024, 5);
+
+        var graded = Assert.Single(result!.Predictions.Predictions);
+        Assert.Equal(24, graded.ActualHomeScore);
+        Assert.Equal(21, graded.ActualAwayScore);
+        Assert.Equal(PredictionGradeStatus.Correct, graded.WinnerGrade);
+    }
+
+    [Fact]
     public async Task GradeAsync_NoBettingOverUnder_SetsOverUnderGradeNotApplicable()
     {
         SetupRegularSeasonWeek(2024, 5, BuildPrediction(bettingOverUnder: null, myOverUnderPick: string.Empty),
