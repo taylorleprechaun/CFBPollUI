@@ -12,6 +12,7 @@ public class Game
     public int? HomePoints { get; set; }
     public string? HomeTeam { get; set; }
     public bool NeutralSite { get; set; }
+    public string? ScoreOverrideReason { get; set; }
     public string? SeasonType { get; set; }
     public int? Week { get; set; }
 }

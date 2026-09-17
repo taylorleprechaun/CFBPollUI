@@ -189,6 +189,30 @@ public class SeasonDataAssemblerTests
     }
 
     [Fact]
+    public void AttachAdvancedStats_PreservesScoreOverrideReason()
+    {
+        var games = new List<Game>
+        {
+            new Game
+            {
+                GameID = 100,
+                Week = 1,
+                HomeTeam = "Alabama",
+                AwayTeam = "Florida",
+                HomePoints = 28,
+                AwayPoints = 24,
+                SeasonType = "regular",
+                ScoreOverrideReason = "Officiating crew misapplied the targeting rule on the final drive."
+            }
+        };
+
+        var result = SeasonDataAssembler.AttachAdvancedStats(games, [], [], 1, 15).ToList();
+
+        Assert.Single(result);
+        Assert.Equal("Officiating crew misapplied the targeting rule on the final drive.", result[0].ScoreOverrideReason);
+    }
+
+    [Fact]
     public void AttachGameTeamStats_HandlesMissingStats()
     {
         var games = new List<Game>

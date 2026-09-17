@@ -74,6 +74,7 @@ public class GameOverrideModule : IGameOverrideModule
             HomePoints = gameOverride.OverrideHomePoints,
             HomeTeam = game.HomeTeam,
             NeutralSite = game.NeutralSite,
+            ScoreOverrideReason = gameOverride.Reason,
             SeasonType = game.SeasonType,
             Week = game.Week
         };
@@ -93,6 +94,7 @@ public class GameOverrideModule : IGameOverrideModule
             HomePoints = gameOverride.OverrideHomePoints,
             HomeTeam = game.HomeTeam,
             NeutralSite = game.NeutralSite,
+            ScoreOverrideReason = gameOverride.Reason,
             SeasonType = game.SeasonType,
             StartDate = game.StartDate,
             StartTimeTbd = game.StartTimeTbd,

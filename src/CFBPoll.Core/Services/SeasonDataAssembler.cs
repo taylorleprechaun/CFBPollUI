@@ -72,6 +72,7 @@ public static class SeasonDataAssembler
                 HomePoints = game.HomePoints,
                 HomeTeam = game.HomeTeam,
                 NeutralSite = game.NeutralSite,
+                ScoreOverrideReason = game.ScoreOverrideReason,
                 SeasonType = game.SeasonType,
                 Week = game.Week
             };

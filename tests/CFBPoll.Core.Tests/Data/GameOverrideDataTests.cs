@@ -275,7 +275,7 @@ public class GameOverrideDataTests
         int week = 3,
         int overrideHomePoints = 27,
         int overrideAwayPoints = 30,
-        string reason = "Replay procedures were not properly followed.")
+        string reason = "Targeting call was missed on the game-deciding play.")
     {
         var now = DateTime.UtcNow;
 

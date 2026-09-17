@@ -46,6 +46,7 @@ public class GameOverrideModuleTests
         var overriddenGame = Assert.Single(result);
         Assert.Equal(21, overriddenGame.HomePoints);
         Assert.Equal(24, overriddenGame.AwayPoints);
+        Assert.Equal(gameOverride.Reason, overriddenGame.ScoreOverrideReason);
     }
 
     [Fact]
@@ -132,6 +133,7 @@ public class GameOverrideModuleTests
         Assert.Equal(21, overriddenGame.HomePoints);
         Assert.Equal(24, overriddenGame.AwayPoints);
         Assert.True(overriddenGame.Completed);
+        Assert.Equal(gameOverride.Reason, overriddenGame.ScoreOverrideReason);
     }
 
     [Fact]
@@ -247,7 +249,7 @@ public class GameOverrideModuleTests
             OriginalHomePoints = 21,
             OverrideAwayPoints = overrideAwayPoints,
             OverrideHomePoints = overrideHomePoints,
-            Reason = "Replay procedures were not properly followed.",
+            Reason = "Clock did not stop for an incomplete pass with 4 seconds remaining.",
             Season = 2026,
             SeasonType = "regular",
             Week = 3
