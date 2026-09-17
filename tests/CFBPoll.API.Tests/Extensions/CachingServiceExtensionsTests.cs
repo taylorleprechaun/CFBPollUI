@@ -22,6 +22,7 @@ public class CachingServiceExtensionsTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddSingleton(new Mock<IGameOverrideModule>().Object);
         var configuration = BuildConfiguration(apiKey: "test-api-key");
 
         services.AddCFBDataServiceWithCaching(configuration);
@@ -136,6 +137,7 @@ public class CachingServiceExtensionsTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddSingleton(new Mock<IGameOverrideModule>().Object);
         var configuration = BuildConfiguration(apiKey: "test-api-key");
 
         services.AddCFBDataServiceWithCaching(configuration);
@@ -184,6 +186,7 @@ public class CachingServiceExtensionsTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddSingleton(new Mock<IGameOverrideModule>().Object);
         var configuration = BuildConfiguration(apiKey: "test-api-key");
 
         services.AddCFBDataServiceWithCaching(configuration);

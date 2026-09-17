@@ -41,8 +41,9 @@ public static class CachingServiceExtensions
             var cache = sp.GetRequiredService<IPersistentCache>();
             var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<CacheOptions>>();
             var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<CachingCFBDataService>>();
+            var gameOverrideModule = sp.GetRequiredService<IGameOverrideModule>();
 
-            return new CachingCFBDataService(innerService, cache, options, logger);
+            return new CachingCFBDataService(innerService, cache, options, logger, gameOverrideModule);
         });
 
         return services;

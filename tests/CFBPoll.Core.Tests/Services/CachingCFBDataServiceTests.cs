@@ -13,6 +13,7 @@ namespace CFBPoll.Core.Tests.Services;
 public class CachingCFBDataServiceTests
 {
     private readonly Mock<IPersistentCache> _mockCache;
+    private readonly Mock<IGameOverrideModule> _mockGameOverrideModule;
     private readonly Mock<ICFBDataService> _mockInnerService;
     private readonly Mock<ILogger<CachingCFBDataService>> _mockLogger;
     private readonly Mock<IOptions<CacheOptions>> _mockOptions;
@@ -24,6 +25,7 @@ public class CachingCFBDataServiceTests
         _mockCache = new Mock<IPersistentCache>();
         _mockOptions = new Mock<IOptions<CacheOptions>>();
         _mockLogger = new Mock<ILogger<CachingCFBDataService>>();
+        _mockGameOverrideModule = new Mock<IGameOverrideModule>();
 
         _mockOptions.Setup(x => x.Value).Returns(new CacheOptions
         {
@@ -32,39 +34,54 @@ public class CachingCFBDataServiceTests
             SeasonDataExpirationHours = 24
         });
 
+        _mockGameOverrideModule
+            .Setup(x => x.ApplyOverridesAsync(It.IsAny<IEnumerable<Game>>(), It.IsAny<int>()))
+            .ReturnsAsync((IEnumerable<Game> games, int _) => games);
+        _mockGameOverrideModule
+            .Setup(x => x.ApplyOverridesAsync(It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<int>()))
+            .ReturnsAsync((IEnumerable<ScheduleGame> games, int _) => games);
+
         _service = new CachingCFBDataService(
             _mockInnerService.Object,
             _mockCache.Object,
             _mockOptions.Object,
-            _mockLogger.Object);
+            _mockLogger.Object,
+            _mockGameOverrideModule.Object);
     }
 
     [Fact]
     public void Constructor_ThrowsOnNullCache()
     {
         Assert.Throws<ArgumentNullException>(() =>
-            new CachingCFBDataService(_mockInnerService.Object, null!, _mockOptions.Object, _mockLogger.Object));
+            new CachingCFBDataService(_mockInnerService.Object, null!, _mockOptions.Object, _mockLogger.Object, _mockGameOverrideModule.Object));
+    }
+
+    [Fact]
+    public void Constructor_ThrowsOnNullGameOverrideModule()
+    {
+        Assert.Throws<ArgumentNullException>(() =>
+            new CachingCFBDataService(_mockInnerService.Object, _mockCache.Object, _mockOptions.Object, _mockLogger.Object, null!));
     }
 
     [Fact]
     public void Constructor_ThrowsOnNullInnerService()
     {
         Assert.Throws<ArgumentNullException>(() =>
-            new CachingCFBDataService(null!, _mockCache.Object, _mockOptions.Object, _mockLogger.Object));
+            new CachingCFBDataService(null!, _mockCache.Object, _mockOptions.Object, _mockLogger.Object, _mockGameOverrideModule.Object));
     }
 
     [Fact]
     public void Constructor_ThrowsOnNullLogger()
     {
         Assert.Throws<ArgumentNullException>(() =>
-            new CachingCFBDataService(_mockInnerService.Object, _mockCache.Object, _mockOptions.Object, null!));
+            new CachingCFBDataService(_mockInnerService.Object, _mockCache.Object, _mockOptions.Object, null!, _mockGameOverrideModule.Object));
     }
 
     [Fact]
     public void Constructor_ThrowsOnNullOptions()
     {
         Assert.Throws<ArgumentNullException>(() =>
-            new CachingCFBDataService(_mockInnerService.Object, _mockCache.Object, null!, _mockLogger.Object));
+            new CachingCFBDataService(_mockInnerService.Object, _mockCache.Object, null!, _mockLogger.Object, _mockGameOverrideModule.Object));
     }
 
     [Fact]
@@ -445,6 +462,74 @@ public class CachingCFBDataServiceTests
     }
 
     [Fact]
+    public async Task GetFullSeasonScheduleAsync_AppliesGameOverrideModule_OnCacheHit()
+    {
+        var cachedData = new List<ScheduleGame>
+        {
+            new ScheduleGame { GameID = 1, Week = 3, HomeTeam = "USC", AwayTeam = "Notre Dame", HomePoints = 20, AwayPoints = 24, Completed = true }
+        };
+        var overriddenData = new List<ScheduleGame>
+        {
+            new ScheduleGame
+            {
+                GameID = 1,
+                Week = 3,
+                HomeTeam = "USC",
+                AwayTeam = "Notre Dame",
+                HomePoints = 24,
+                AwayPoints = 20,
+                Completed = true,
+                ScoreOverrideReason = "A scoring error on the final drive was corrected after review."
+            }
+        };
+
+        _mockCache.Setup(x => x.GetAsync<List<ScheduleGame>>("fullSchedule_2024"))
+            .ReturnsAsync(cachedData);
+        _mockGameOverrideModule
+            .Setup(x => x.ApplyOverridesAsync(cachedData, 2024))
+            .ReturnsAsync(overriddenData);
+
+        var result = await _service.GetFullSeasonScheduleAsync(2024);
+
+        Assert.Same(overriddenData, result);
+    }
+
+    [Fact]
+    public async Task GetFullSeasonScheduleAsync_AppliesGameOverrideModule_OnCacheMiss()
+    {
+        var apiData = new List<ScheduleGame>
+        {
+            new ScheduleGame { GameID = 1, Week = 3, HomeTeam = "USC", AwayTeam = "Notre Dame", HomePoints = 20, AwayPoints = 24, Completed = true }
+        };
+        var overriddenData = new List<ScheduleGame>
+        {
+            new ScheduleGame
+            {
+                GameID = 1,
+                Week = 3,
+                HomeTeam = "USC",
+                AwayTeam = "Notre Dame",
+                HomePoints = 24,
+                AwayPoints = 20,
+                Completed = true,
+                ScoreOverrideReason = "A scoring error on the final drive was corrected after review."
+            }
+        };
+
+        _mockCache.Setup(x => x.GetAsync<List<ScheduleGame>>("fullSchedule_2024"))
+            .ReturnsAsync((List<ScheduleGame>?)null);
+        _mockInnerService.Setup(x => x.GetFullSeasonScheduleAsync(2024))
+            .ReturnsAsync(apiData);
+        _mockGameOverrideModule
+            .Setup(x => x.ApplyOverridesAsync(It.Is<IEnumerable<ScheduleGame>>(g => g.SequenceEqual(apiData)), 2024))
+            .ReturnsAsync(overriddenData);
+
+        var result = await _service.GetFullSeasonScheduleAsync(2024);
+
+        Assert.Same(overriddenData, result);
+    }
+
+    [Fact]
     public async Task GetFullSeasonScheduleAsync_FetchesFromInnerService_WhenCacheMiss()
     {
         var apiData = new List<ScheduleGame>
@@ -545,6 +630,70 @@ public class CachingCFBDataServiceTests
 
         var hoursUntilExpiration = (capturedExpiration - DateTime.UtcNow).TotalHours;
         Assert.True(hoursUntilExpiration <= 144);
+    }
+
+    [Fact]
+    public async Task GetGamesAsync_AppliesGameOverrideModule_OnCacheHit()
+    {
+        var cachedData = new List<Game>
+        {
+            new Game { GameID = 1, HomeTeam = "USC", AwayTeam = "Notre Dame", HomePoints = 20, AwayPoints = 24 }
+        };
+        var overriddenData = new List<Game>
+        {
+            new Game
+            {
+                GameID = 1,
+                HomeTeam = "USC",
+                AwayTeam = "Notre Dame",
+                HomePoints = 24,
+                AwayPoints = 20,
+                ScoreOverrideReason = "A scoring error on the final drive was corrected after review."
+            }
+        };
+
+        _mockCache.Setup(x => x.GetAsync<List<Game>>("games_2024_regular"))
+            .ReturnsAsync(cachedData);
+        _mockGameOverrideModule
+            .Setup(x => x.ApplyOverridesAsync(cachedData, 2024))
+            .ReturnsAsync(overriddenData);
+
+        var result = await _service.GetGamesAsync(2024, "regular");
+
+        Assert.Same(overriddenData, result);
+    }
+
+    [Fact]
+    public async Task GetGamesAsync_AppliesGameOverrideModule_OnCacheMiss()
+    {
+        var apiData = new List<Game>
+        {
+            new Game { GameID = 1, HomeTeam = "USC", AwayTeam = "Notre Dame", HomePoints = 20, AwayPoints = 24 }
+        };
+        var overriddenData = new List<Game>
+        {
+            new Game
+            {
+                GameID = 1,
+                HomeTeam = "USC",
+                AwayTeam = "Notre Dame",
+                HomePoints = 24,
+                AwayPoints = 20,
+                ScoreOverrideReason = "A scoring error on the final drive was corrected after review."
+            }
+        };
+
+        _mockCache.Setup(x => x.GetAsync<List<Game>>("games_2024_regular"))
+            .ReturnsAsync((List<Game>?)null);
+        _mockInnerService.Setup(x => x.GetGamesAsync(2024, "regular"))
+            .ReturnsAsync(apiData);
+        _mockGameOverrideModule
+            .Setup(x => x.ApplyOverridesAsync(It.Is<IEnumerable<Game>>(g => g.SequenceEqual(apiData)), 2024))
+            .ReturnsAsync(overriddenData);
+
+        var result = await _service.GetGamesAsync(2024, "regular");
+
+        Assert.Same(overriddenData, result);
     }
 
     [Fact]

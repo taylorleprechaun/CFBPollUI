@@ -10,6 +10,7 @@ namespace CFBPoll.Core.Services;
 public class CachingCFBDataService : ICFBDataService
 {
     private readonly IPersistentCache _cache;
+    private readonly IGameOverrideModule _gameOverrideModule;
     private readonly ICFBDataService _innerService;
     private readonly ILogger<CachingCFBDataService> _logger;
     private readonly CacheOptions _options;
@@ -18,12 +19,14 @@ public class CachingCFBDataService : ICFBDataService
         ICFBDataService innerService,
         IPersistentCache cache,
         IOptions<CacheOptions> options,
-        ILogger<CachingCFBDataService> logger)
+        ILogger<CachingCFBDataService> logger,
+        IGameOverrideModule gameOverrideModule)
     {
         _innerService = innerService ?? throw new ArgumentNullException(nameof(innerService));
         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
+        _gameOverrideModule = gameOverrideModule ?? throw new ArgumentNullException(nameof(gameOverrideModule));
     }
 
     public async Task<IEnumerable<AdvancedGameStats>> GetAdvancedGameStatsAsync(int season, string seasonType)
@@ -97,19 +100,23 @@ public class CachingCFBDataService : ICFBDataService
     public async Task<IEnumerable<ScheduleGame>> GetFullSeasonScheduleAsync(int season)
     {
         var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
-        return await GetOrCacheListAsync(
+        var games = await GetOrCacheListAsync(
             CacheKeys.FullSchedule(season),
             () => _innerService.GetFullSeasonScheduleAsync(season),
             expiresAt).ConfigureAwait(false);
+
+        return await _gameOverrideModule.ApplyOverridesAsync(games, season).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<Game>> GetGamesAsync(int season, string seasonType)
     {
         var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
-        return await GetOrCacheListAsync(
+        var games = await GetOrCacheListAsync(
             CacheKeys.Games(season, seasonType),
             () => _innerService.GetGamesAsync(season, seasonType),
             expiresAt).ConfigureAwait(false);
+
+        return await _gameOverrideModule.ApplyOverridesAsync(games, season).ConfigureAwait(false);
     }
 
     public async Task<IEnumerable<GameTeamStats>> GetGameTeamStatsAsync(int season, string seasonType)
