@@ -153,10 +153,12 @@ export const IncompleteGamesResponseSchema = z.object({
 export const CompletedGameSchema = z.object({
   awayPoints: z.number().nullable(),
   awayTeam: z.string().nullable(),
+  awayTeamLogoURL: z.string().nullable(),
   gameID: z.number().nullable(),
   hasOverride: z.boolean(),
   homePoints: z.number().nullable(),
   homeTeam: z.string().nullable(),
+  homeTeamLogoURL: z.string().nullable(),
   seasonType: z.string().nullable(),
 });
 
@@ -168,9 +170,11 @@ export const CompletedGamesResponseSchema = z.object({
 
 export const GameOverrideSchema = z.object({
   awayTeam: z.string(),
+  awayTeamLogoURL: z.string().nullable(),
   createdAt: z.string(),
   gameID: z.number(),
   homeTeam: z.string(),
+  homeTeamLogoURL: z.string().nullable(),
   modifiedAt: z.string(),
   originalAwayPoints: z.number(),
   originalHomePoints: z.number(),

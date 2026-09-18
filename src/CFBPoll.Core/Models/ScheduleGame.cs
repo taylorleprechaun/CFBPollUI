@@ -4,10 +4,12 @@ public class ScheduleGame
 {
     public int? AwayPoints { get; set; }
     public string? AwayTeam { get; set; }
+    public string? AwayTeamLogoURL { get; set; }
     public bool Completed { get; set; }
     public long? GameID { get; set; }
     public int? HomePoints { get; set; }
     public string? HomeTeam { get; set; }
+    public string? HomeTeamLogoURL { get; set; }
     public bool NeutralSite { get; set; }
     public int? OriginalAwayPoints { get; set; }
     public int? OriginalHomePoints { get; set; }

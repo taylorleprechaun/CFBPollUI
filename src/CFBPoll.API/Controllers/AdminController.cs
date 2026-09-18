@@ -190,12 +190,12 @@ public class AdminController : ControllerBase
     /// Deletes the manual score override for the specified game, reverting it to the officially
     /// recorded CollegeFootballData score.
     /// </summary>
-    [HttpDelete("game-overrides/{gameId}")]
-    public async Task<ActionResult> DeleteGameOverride(long gameId)
+    [HttpDelete("game-overrides/{gameID}")]
+    public async Task<ActionResult> DeleteGameOverride(long gameID)
     {
-        _logger.LogInformation("Admin deleting game score override for game {GameID}", gameId);
+        _logger.LogInformation("Admin deleting game score override for game {GameID}", gameID);
 
-        var deleted = await _adminModule.DeleteGameOverrideAsync(gameId);
+        var deleted = await _adminModule.DeleteGameOverrideAsync(gameID);
 
         if (!deleted)
             return NotFound(new ErrorResponseDTO { Message = GAME_OVERRIDE_NOT_FOUND, StatusCode = 404 });
@@ -312,10 +312,10 @@ public class AdminController : ControllerBase
     /// <summary>
     /// Retrieves the manual score override for the specified game, if one exists.
     /// </summary>
-    [HttpGet("game-overrides/{gameId}")]
-    public async Task<ActionResult<GameOverrideDTO>> GetGameOverride(long gameId)
+    [HttpGet("game-overrides/{gameID}")]
+    public async Task<ActionResult<GameOverrideDTO>> GetGameOverride(long gameID)
     {
-        var gameOverride = await _adminModule.GetGameOverrideAsync(gameId);
+        var gameOverride = await _adminModule.GetGameOverrideAsync(gameID);
 
         if (gameOverride is null)
             return NotFound(new ErrorResponseDTO { Message = GAME_OVERRIDE_NOT_FOUND, StatusCode = 404 });
@@ -462,9 +462,9 @@ public class AdminController : ControllerBase
     /// Creates or replaces the manual score override for the specified completed game. Preserves the
     /// originally recorded score across edits.
     /// </summary>
-    [HttpPut("game-overrides/{gameId}")]
+    [HttpPut("game-overrides/{gameID}")]
     public async Task<ActionResult<GameOverrideDTO>> SaveGameOverride(
-        long gameId, [FromQuery] int season, [FromBody] SaveGameOverrideRequestDTO? request)
+        long gameID, [FromQuery] int season, [FromBody] SaveGameOverrideRequestDTO? request)
     {
         if (request is null)
             return BadRequest(new ErrorResponseDTO { Message = "Request body is required", StatusCode = 400 });
@@ -472,10 +472,10 @@ public class AdminController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Reason))
             return BadRequest(new ErrorResponseDTO { Message = "Reason is required", StatusCode = 400 });
 
-        _logger.LogInformation("Admin saving game score override for game {GameID} in season {Season}", gameId, season);
+        _logger.LogInformation("Admin saving game score override for game {GameID} in season {Season}", gameID, season);
 
         var outcome = await _adminModule.SaveGameOverrideAsync(
-            gameId, season, request.OverrideHomePoints, request.OverrideAwayPoints, request.Reason);
+            gameID, season, request.OverrideHomePoints, request.OverrideAwayPoints, request.Reason);
 
         if (outcome == SaveGameOverrideOutcome.GameNotFound)
             return NotFound(new ErrorResponseDTO { Message = "Game not found in the specified season", StatusCode = 404 });
@@ -483,7 +483,7 @@ public class AdminController : ControllerBase
         if (outcome == SaveGameOverrideOutcome.GameNotCompleted)
             return BadRequest(new ErrorResponseDTO { Message = "Cannot override the score of a game that has not been completed", StatusCode = 400 });
 
-        var saved = await _adminModule.GetGameOverrideAsync(gameId);
+        var saved = await _adminModule.GetGameOverrideAsync(gameID);
 
         return Ok(GameOverrideMapper.ToDTO(saved!));
     }

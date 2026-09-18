@@ -6,9 +6,11 @@ import { GameOverridesSection } from '../../../../components/admin';
 
 const mockOverride = {
   awayTeam: 'Texas',
+  awayTeamLogoURL: 'https://example.com/texas.png',
   createdAt: '2025-09-20T00:00:00Z',
   gameID: 401234562,
   homeTeam: 'Oklahoma',
+  homeTeamLogoURL: 'https://example.com/oklahoma.png',
   modifiedAt: '2025-09-20T00:00:00Z',
   originalAwayPoints: 20,
   originalHomePoints: 24,
@@ -45,6 +47,13 @@ describe('GameOverridesSection', () => {
     expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled();
   });
 
+  it('renders a fallback initial when a team has no logo URL', () => {
+    const overrideWithoutLogos = { ...mockOverride, awayTeamLogoURL: null, homeTeamLogoURL: null };
+    render(<GameOverridesSection isDeleting={false} isLoading={false} onDelete={vi.fn()} onEdit={vi.fn()} overrides={[overrideWithoutLogos]} />);
+
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
+
   it('renders a skeleton while loading', () => {
     render(<GameOverridesSection isDeleting={false} isLoading={true} onDelete={vi.fn()} onEdit={vi.fn()} overrides={[mockOverride]} />);
 
@@ -55,6 +64,13 @@ describe('GameOverridesSection', () => {
     render(<GameOverridesSection isDeleting={false} isLoading={false} onDelete={vi.fn()} onEdit={vi.fn()} overrides={[]} />);
 
     expect(screen.getByText('No manual score overrides for this season.')).toBeInTheDocument();
+  });
+
+  it('renders team logos for both teams', () => {
+    render(<GameOverridesSection isDeleting={false} isLoading={false} onDelete={vi.fn()} onEdit={vi.fn()} overrides={[mockOverride]} />);
+
+    expect(screen.getByRole('img', { name: 'Texas logo' })).toHaveAttribute('src', 'https://example.com/texas.png');
+    expect(screen.getByRole('img', { name: 'Oklahoma logo' })).toHaveAttribute('src', 'https://example.com/oklahoma.png');
   });
 
   it('renders the matchup, original score, and override score', () => {

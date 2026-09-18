@@ -395,23 +395,40 @@ public class AdminModule : IAdminModule
     {
         var calendarTask = _dataService.GetCalendarAsync(season);
         var fullScheduleTask = _dataService.GetFullSeasonScheduleAsync(season);
-        await Task.WhenAll(calendarTask, fullScheduleTask).ConfigureAwait(false);
+        var teamLogosTask = GetTeamLogosByNameAsync(season);
+        await Task.WhenAll(calendarTask, fullScheduleTask, teamLogosTask).ConfigureAwait(false);
 
         var calendarWeek = (await calendarTask).FirstOrDefault(w => w.Week == week);
         var fullSchedule = await fullScheduleTask;
         var seasonType = calendarWeek?.SeasonType ?? string.Empty;
+        var teamLogosByName = await teamLogosTask;
 
-        return _seasonModule.GetCompletedGames(week, seasonType, fullSchedule);
+        var completedGames = _seasonModule.GetCompletedGames(week, seasonType, fullSchedule);
+
+        return completedGames.Select(g => WithTeamLogos(g, teamLogosByName));
     }
 
     public async Task<GameOverride?> GetGameOverrideAsync(long gameID)
     {
-        return await _gameOverrideModule.GetGameOverrideAsync(gameID).ConfigureAwait(false);
+        var gameOverride = await _gameOverrideModule.GetGameOverrideAsync(gameID).ConfigureAwait(false);
+        if (gameOverride is null)
+            return null;
+
+        var teamLogosByName = await GetTeamLogosByNameAsync(gameOverride.Season).ConfigureAwait(false);
+
+        return WithTeamLogos(gameOverride, teamLogosByName);
     }
 
     public async Task<IEnumerable<GameOverride>> GetGameOverridesAsync(int season)
     {
-        return await _gameOverrideModule.GetGameOverridesBySeasonAsync(season).ConfigureAwait(false);
+        var overridesTask = _gameOverrideModule.GetGameOverridesBySeasonAsync(season);
+        var teamLogosTask = GetTeamLogosByNameAsync(season);
+        await Task.WhenAll(overridesTask, teamLogosTask).ConfigureAwait(false);
+
+        var overrides = await overridesTask;
+        var teamLogosByName = await teamLogosTask;
+
+        return overrides.Select(o => WithTeamLogos(o, teamLogosByName));
     }
 
     public async Task<IEnumerable<ScheduleGame>> GetIncompleteGamesAsync(int season, int week)
@@ -619,5 +636,60 @@ public class AdminModule : IAdminModule
         {
             throttle.Release();
         }
+    }
+
+    private async Task<IReadOnlyDictionary<string, string>> GetTeamLogosByNameAsync(int season)
+    {
+        var teams = await _dataService.GetFBSTeamsAsync(season).ConfigureAwait(false);
+
+        return teams
+            .GroupBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().LogoURL, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static GameOverride WithTeamLogos(GameOverride gameOverride, IReadOnlyDictionary<string, string> teamLogosByName)
+    {
+        return new GameOverride
+        {
+            AwayTeam = gameOverride.AwayTeam,
+            AwayTeamLogoURL = teamLogosByName.GetValueOrDefault(gameOverride.AwayTeam),
+            CreatedAt = gameOverride.CreatedAt,
+            GameID = gameOverride.GameID,
+            HomeTeam = gameOverride.HomeTeam,
+            HomeTeamLogoURL = teamLogosByName.GetValueOrDefault(gameOverride.HomeTeam),
+            ModifiedAt = gameOverride.ModifiedAt,
+            OriginalAwayPoints = gameOverride.OriginalAwayPoints,
+            OriginalHomePoints = gameOverride.OriginalHomePoints,
+            OverrideAwayPoints = gameOverride.OverrideAwayPoints,
+            OverrideHomePoints = gameOverride.OverrideHomePoints,
+            Reason = gameOverride.Reason,
+            Season = gameOverride.Season,
+            SeasonType = gameOverride.SeasonType,
+            Week = gameOverride.Week
+        };
+    }
+
+    private static ScheduleGame WithTeamLogos(ScheduleGame scheduleGame, IReadOnlyDictionary<string, string> teamLogosByName)
+    {
+        return new ScheduleGame
+        {
+            AwayPoints = scheduleGame.AwayPoints,
+            AwayTeam = scheduleGame.AwayTeam,
+            AwayTeamLogoURL = scheduleGame.AwayTeam is not null ? teamLogosByName.GetValueOrDefault(scheduleGame.AwayTeam) : null,
+            Completed = scheduleGame.Completed,
+            GameID = scheduleGame.GameID,
+            HomePoints = scheduleGame.HomePoints,
+            HomeTeam = scheduleGame.HomeTeam,
+            HomeTeamLogoURL = scheduleGame.HomeTeam is not null ? teamLogosByName.GetValueOrDefault(scheduleGame.HomeTeam) : null,
+            NeutralSite = scheduleGame.NeutralSite,
+            OriginalAwayPoints = scheduleGame.OriginalAwayPoints,
+            OriginalHomePoints = scheduleGame.OriginalHomePoints,
+            ScoreOverrideReason = scheduleGame.ScoreOverrideReason,
+            SeasonType = scheduleGame.SeasonType,
+            StartDate = scheduleGame.StartDate,
+            StartTimeTbd = scheduleGame.StartTimeTbd,
+            Venue = scheduleGame.Venue,
+            Week = scheduleGame.Week
+        };
     }
 }

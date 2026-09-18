@@ -93,17 +93,19 @@ public interface IAdminModule
 
     /// <summary>
     /// Retrieves the completed games for the given season and week, for use in the manual score
-    /// override picker.
+    /// override picker. Each game includes team logo URLs alongside the schedule data.
     /// </summary>
     Task<IEnumerable<ScheduleGame>> GetCompletedGamesAsync(int season, int week);
 
     /// <summary>
-    /// Retrieves the manual score override for the given game, if one exists.
+    /// Retrieves the manual score override for the given game, if one exists, with team logo URLs
+    /// included alongside the override data.
     /// </summary>
     Task<GameOverride?> GetGameOverrideAsync(long gameID);
 
     /// <summary>
-    /// Retrieves every manual score override recorded for the given season.
+    /// Retrieves every manual score override recorded for the given season. Each override includes
+    /// team logo URLs alongside the override data.
     /// </summary>
     Task<IEnumerable<GameOverride>> GetGameOverridesAsync(int season);
 

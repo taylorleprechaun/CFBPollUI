@@ -24,9 +24,11 @@ function createWrapper(
 
 const mockOverride = {
   awayTeam: 'Texas',
+  awayTeamLogoURL: 'https://example.com/texas.png',
   createdAt: '2025-09-20T00:00:00Z',
   gameID: 401234562,
   homeTeam: 'Oklahoma',
+  homeTeamLogoURL: 'https://example.com/oklahoma.png',
   modifiedAt: '2025-09-20T00:00:00Z',
   originalAwayPoints: 20,
   originalHomePoints: 24,

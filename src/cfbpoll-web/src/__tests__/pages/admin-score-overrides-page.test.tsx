@@ -40,10 +40,12 @@ vi.mock('../../hooks/use-weeks', () => ({
 const mockCompletedGame = {
   awayPoints: 21,
   awayTeam: 'Iowa',
+  awayTeamLogoURL: 'https://example.com/iowa.png',
   gameID: 401234561,
   hasOverride: false,
   homePoints: 24,
   homeTeam: 'Nebraska',
+  homeTeamLogoURL: 'https://example.com/nebraska.png',
   seasonType: 'regular',
 };
 
@@ -59,9 +61,11 @@ vi.mock('../../hooks/use-completed-games', () => ({
 
 const mockOverride = {
   awayTeam: 'Texas',
+  awayTeamLogoURL: 'https://example.com/texas.png',
   createdAt: '2025-09-20T00:00:00Z',
   gameID: 401234562,
   homeTeam: 'Oklahoma',
+  homeTeamLogoURL: 'https://example.com/oklahoma.png',
   modifiedAt: '2025-09-20T00:00:00Z',
   originalAwayPoints: 20,
   originalHomePoints: 24,

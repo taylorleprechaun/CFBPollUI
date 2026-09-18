@@ -3,9 +3,11 @@ namespace CFBPoll.Core.Models;
 public class GameOverride
 {
     public string AwayTeam { get; set; } = string.Empty;
+    public string? AwayTeamLogoURL { get; set; }
     public DateTime CreatedAt { get; set; }
     public long GameID { get; set; }
     public string HomeTeam { get; set; } = string.Empty;
+    public string? HomeTeamLogoURL { get; set; }
     public DateTime ModifiedAt { get; set; }
     public int OriginalAwayPoints { get; set; }
     public int OriginalHomePoints { get; set; }

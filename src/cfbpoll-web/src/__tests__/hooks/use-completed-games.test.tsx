@@ -26,10 +26,12 @@ const mockResponse = {
     {
       awayPoints: 21,
       awayTeam: 'Iowa',
+      awayTeamLogoURL: 'https://example.com/iowa.png',
       gameID: 401234561,
       hasOverride: false,
       homePoints: 24,
       homeTeam: 'Nebraska',
+      homeTeamLogoURL: 'https://example.com/nebraska.png',
       seasonType: 'regular',
     },
   ],

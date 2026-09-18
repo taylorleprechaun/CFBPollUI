@@ -1599,6 +1599,7 @@ public class AdminModuleTests
         _mockDataService.Setup(x => x.GetCalendarAsync(2024))
             .ReturnsAsync(new[] { new CalendarWeek { Week = 5, SeasonType = "regular" } });
         _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(fullSchedule);
+        _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024)).ReturnsAsync([]);
         _mockSeasonModule.Setup(x => x.GetCompletedGames(5, "regular", fullSchedule)).Returns(completedGames);
 
         var result = await _adminModule.GetCompletedGamesAsync(2024, 5);
@@ -1609,12 +1610,39 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task GetCompletedGamesAsync_IncludesTeamLogoURLsFromFBSTeams()
+    {
+        var fullSchedule = new List<ScheduleGame>
+        {
+            new() { Week = 5, SeasonType = "regular", HomeTeam = "USC", AwayTeam = "Notre Dame", Completed = true }
+        };
+        var completedGames = new List<ScheduleGame> { fullSchedule[0] };
+
+        _mockDataService.Setup(x => x.GetCalendarAsync(2024))
+            .ReturnsAsync(new[] { new CalendarWeek { Week = 5, SeasonType = "regular" } });
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(fullSchedule);
+        _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
+            .ReturnsAsync([
+                new FBSTeam { Name = "USC", LogoURL = "https://example.com/usc.png" },
+                new FBSTeam { Name = "Notre Dame", LogoURL = "https://example.com/notre-dame.png" }
+            ]);
+        _mockSeasonModule.Setup(x => x.GetCompletedGames(5, "regular", fullSchedule)).Returns(completedGames);
+
+        var result = await _adminModule.GetCompletedGamesAsync(2024, 5);
+
+        var completedGame = Assert.Single(result);
+        Assert.Equal("https://example.com/usc.png", completedGame.HomeTeamLogoURL);
+        Assert.Equal("https://example.com/notre-dame.png", completedGame.AwayTeamLogoURL);
+    }
+
+    [Fact]
     public async Task GetCompletedGamesAsync_WithNoMatchingCalendarWeek_UsesEmptySeasonType()
     {
         var fullSchedule = new List<ScheduleGame>();
 
         _mockDataService.Setup(x => x.GetCalendarAsync(2024)).ReturnsAsync(new List<CalendarWeek>());
         _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(fullSchedule);
+        _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024)).ReturnsAsync([]);
         _mockSeasonModule.Setup(x => x.GetCompletedGames(5, string.Empty, fullSchedule)).Returns([]);
 
         var result = await _adminModule.GetCompletedGamesAsync(2024, 5);
@@ -1626,12 +1654,44 @@ public class AdminModuleTests
     [Fact]
     public async Task GetGameOverrideAsync_DelegatesToGameOverrideModule()
     {
-        var gameOverride = new GameOverride { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame" };
+        var gameOverride = new GameOverride { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame", Season = 2024 };
         _mockGameOverrideModule.Setup(x => x.GetGameOverrideAsync(401123456)).ReturnsAsync(gameOverride);
+        _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024)).ReturnsAsync([]);
 
         var result = await _adminModule.GetGameOverrideAsync(401123456);
 
-        Assert.Same(gameOverride, result);
+        Assert.NotNull(result);
+        Assert.Equal("USC", result.HomeTeam);
+        Assert.Equal("Notre Dame", result.AwayTeam);
+    }
+
+    [Fact]
+    public async Task GetGameOverrideAsync_IncludesTeamLogoURLsFromFBSTeams()
+    {
+        var gameOverride = new GameOverride { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame", Season = 2024 };
+        _mockGameOverrideModule.Setup(x => x.GetGameOverrideAsync(401123456)).ReturnsAsync(gameOverride);
+        _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
+            .ReturnsAsync([
+                new FBSTeam { Name = "USC", LogoURL = "https://example.com/usc.png" },
+                new FBSTeam { Name = "Notre Dame", LogoURL = "https://example.com/notre-dame.png" }
+            ]);
+
+        var result = await _adminModule.GetGameOverrideAsync(401123456);
+
+        Assert.NotNull(result);
+        Assert.Equal("https://example.com/usc.png", result.HomeTeamLogoURL);
+        Assert.Equal("https://example.com/notre-dame.png", result.AwayTeamLogoURL);
+    }
+
+    [Fact]
+    public async Task GetGameOverrideAsync_NoMatchingOverride_ReturnsNullWithoutFetchingTeamLogos()
+    {
+        _mockGameOverrideModule.Setup(x => x.GetGameOverrideAsync(401123456)).ReturnsAsync((GameOverride?)null);
+
+        var result = await _adminModule.GetGameOverrideAsync(401123456);
+
+        Assert.Null(result);
+        _mockDataService.Verify(x => x.GetFBSTeamsAsync(It.IsAny<int>()), Times.Never);
     }
 
     [Fact]
@@ -1639,10 +1699,31 @@ public class AdminModuleTests
     {
         var overrides = new List<GameOverride> { new() { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame" } };
         _mockGameOverrideModule.Setup(x => x.GetGameOverridesBySeasonAsync(2024)).ReturnsAsync(overrides);
+        _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024)).ReturnsAsync([]);
 
         var result = await _adminModule.GetGameOverridesAsync(2024);
 
-        Assert.Same(overrides, result);
+        var gameOverride = Assert.Single(result);
+        Assert.Equal("USC", gameOverride.HomeTeam);
+        Assert.Equal("Notre Dame", gameOverride.AwayTeam);
+    }
+
+    [Fact]
+    public async Task GetGameOverridesAsync_IncludesTeamLogoURLsFromFBSTeams()
+    {
+        var overrides = new List<GameOverride> { new() { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame" } };
+        _mockGameOverrideModule.Setup(x => x.GetGameOverridesBySeasonAsync(2024)).ReturnsAsync(overrides);
+        _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024))
+            .ReturnsAsync([
+                new FBSTeam { Name = "USC", LogoURL = "https://example.com/usc.png" },
+                new FBSTeam { Name = "Notre Dame", LogoURL = "https://example.com/notre-dame.png" }
+            ]);
+
+        var result = await _adminModule.GetGameOverridesAsync(2024);
+
+        var gameOverride = Assert.Single(result);
+        Assert.Equal("https://example.com/usc.png", gameOverride.HomeTeamLogoURL);
+        Assert.Equal("https://example.com/notre-dame.png", gameOverride.AwayTeamLogoURL);
     }
 
     [Fact]

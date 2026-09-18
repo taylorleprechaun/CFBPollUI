@@ -1,5 +1,6 @@
 import type { CompletedGame } from '../../../schemas/admin';
 
+import { TeamLogo } from '../../rankings/team-logo';
 import { BUTTON_GHOST } from '../../ui/button-styles';
 import { EmptyState } from '../../ui/empty-state';
 import { TableSkeleton } from '../../ui/table-skeleton';
@@ -43,7 +44,11 @@ export function CompletedGamesSection({ games, isLoading, onSelectGame }: Comple
             return (
               <tr key={game.gameID ?? `${game.homeTeam}-${game.awayTeam}`} className="even:bg-surface-alt/50">
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-text-primary">
-                  {game.awayTeam ?? 'TBD'} @ {game.homeTeam ?? 'TBD'}
+                  <div className="flex items-center gap-2">
+                    <TeamLogo logoURL={game.awayTeamLogoURL ?? ''} teamName={game.awayTeam ?? 'TBD'} />
+                    <span>{game.awayTeam ?? 'TBD'} @ {game.homeTeam ?? 'TBD'}</span>
+                    <TeamLogo logoURL={game.homeTeamLogoURL ?? ''} teamName={game.homeTeam ?? 'TBD'} />
+                  </div>
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-text-muted">
                   {game.awayPoints ?? '—'} - {game.homePoints ?? '—'}

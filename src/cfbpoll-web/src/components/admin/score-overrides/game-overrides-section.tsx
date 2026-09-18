@@ -1,6 +1,7 @@
 import type { GameOverride } from '../../../schemas/admin';
 
 import { getRawWeekLabel } from '../../../lib/week-utils';
+import { TeamLogo } from '../../rankings/team-logo';
 import { BUTTON_DANGER_GHOST, BUTTON_GHOST } from '../../ui/button-styles';
 import { EmptyState } from '../../ui/empty-state';
 import { TableSkeleton } from '../../ui/table-skeleton';
@@ -44,7 +45,11 @@ export function GameOverridesSection({ isDeleting, isLoading, onDelete, onEdit, 
                 {getRawWeekLabel(gameOverride.week, gameOverride.seasonType === 'postseason')}
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-text-primary">
-                {gameOverride.awayTeam} @ {gameOverride.homeTeam}
+                <div className="flex items-center gap-2">
+                  <TeamLogo logoURL={gameOverride.awayTeamLogoURL ?? ''} teamName={gameOverride.awayTeam} />
+                  <span>{gameOverride.awayTeam} @ {gameOverride.homeTeam}</span>
+                  <TeamLogo logoURL={gameOverride.homeTeamLogoURL ?? ''} teamName={gameOverride.homeTeam} />
+                </div>
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-text-muted">
                 {gameOverride.originalAwayPoints} - {gameOverride.originalHomePoints}

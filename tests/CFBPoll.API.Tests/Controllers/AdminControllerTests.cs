@@ -470,7 +470,18 @@ public class AdminControllerTests
     {
         var completedGames = new List<ScheduleGame>
         {
-            new() { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame", HomePoints = 24, AwayPoints = 20, Completed = true, SeasonType = "regular" }
+            new()
+            {
+                GameID = 401123456,
+                HomeTeam = "USC",
+                HomeTeamLogoURL = "https://example.com/usc.png",
+                AwayTeam = "Notre Dame",
+                AwayTeamLogoURL = "https://example.com/notre-dame.png",
+                HomePoints = 24,
+                AwayPoints = 20,
+                Completed = true,
+                SeasonType = "regular"
+            }
         };
 
         _mockAdminModule.Setup(x => x.GetCompletedGamesAsync(2024, 5)).ReturnsAsync(completedGames);
@@ -483,14 +494,24 @@ public class AdminControllerTests
         Assert.Equal(5, response.Week);
         var game = Assert.Single(response.Games);
         Assert.Equal("USC", game.HomeTeam);
+        Assert.Equal("https://example.com/usc.png", game.HomeTeamLogoURL);
         Assert.Equal("Notre Dame", game.AwayTeam);
+        Assert.Equal("https://example.com/notre-dame.png", game.AwayTeamLogoURL);
         Assert.False(game.HasOverride);
     }
 
     [Fact]
     public async Task GetGameOverride_Found_ReturnsOk()
     {
-        var gameOverride = new GameOverride { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame", Reason = "Corrected after review." };
+        var gameOverride = new GameOverride
+        {
+            GameID = 401123456,
+            HomeTeam = "USC",
+            HomeTeamLogoURL = "https://example.com/usc.png",
+            AwayTeam = "Notre Dame",
+            Reason = "Corrected after review.",
+            Season = 2024
+        };
 
         _mockAdminModule.Setup(x => x.GetGameOverrideAsync(401123456)).ReturnsAsync(gameOverride);
 
@@ -499,6 +520,7 @@ public class AdminControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var response = Assert.IsType<GameOverrideDTO>(okResult.Value);
         Assert.Equal("USC", response.HomeTeam);
+        Assert.Equal("https://example.com/usc.png", response.HomeTeamLogoURL);
         Assert.Equal("Corrected after review.", response.Reason);
     }
 
@@ -517,7 +539,7 @@ public class AdminControllerTests
     {
         var overrides = new List<GameOverride>
         {
-            new() { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame", Reason = "Corrected after review." }
+            new() { GameID = 401123456, HomeTeam = "USC", HomeTeamLogoURL = "https://example.com/usc.png", AwayTeam = "Notre Dame", Reason = "Corrected after review." }
         };
 
         _mockAdminModule.Setup(x => x.GetGameOverridesAsync(2024)).ReturnsAsync(overrides);
@@ -528,6 +550,7 @@ public class AdminControllerTests
         var response = Assert.IsAssignableFrom<IEnumerable<GameOverrideDTO>>(okResult.Value);
         var dto = Assert.Single(response);
         Assert.Equal("USC", dto.HomeTeam);
+        Assert.Equal("https://example.com/usc.png", dto.HomeTeamLogoURL);
     }
 
     [Fact]
@@ -857,7 +880,7 @@ public class AdminControllerTests
     public async Task SaveGameOverride_Saved_ReturnsOkWithDTO()
     {
         var request = new SaveGameOverrideRequestDTO { OverrideHomePoints = 20, OverrideAwayPoints = 24, Reason = "Corrected after review." };
-        var savedOverride = new GameOverride { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame", Reason = "Corrected after review." };
+        var savedOverride = new GameOverride { GameID = 401123456, HomeTeam = "USC", HomeTeamLogoURL = "https://example.com/usc.png", AwayTeam = "Notre Dame", Reason = "Corrected after review.", Season = 2024 };
 
         _mockAdminModule
             .Setup(x => x.SaveGameOverrideAsync(401123456, 2024, 20, 24, "Corrected after review."))
@@ -869,6 +892,7 @@ public class AdminControllerTests
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var response = Assert.IsType<GameOverrideDTO>(okResult.Value);
         Assert.Equal("USC", response.HomeTeam);
+        Assert.Equal("https://example.com/usc.png", response.HomeTeamLogoURL);
         Assert.Equal("Corrected after review.", response.Reason);
     }
 

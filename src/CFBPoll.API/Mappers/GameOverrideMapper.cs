@@ -13,10 +13,12 @@ public static class GameOverrideMapper
         {
             AwayPoints = scheduleGame.AwayPoints,
             AwayTeam = scheduleGame.AwayTeam,
+            AwayTeamLogoURL = scheduleGame.AwayTeamLogoURL,
             GameID = scheduleGame.GameID,
             HasOverride = scheduleGame.ScoreOverrideReason is not null,
             HomePoints = scheduleGame.HomePoints,
             HomeTeam = scheduleGame.HomeTeam,
+            HomeTeamLogoURL = scheduleGame.HomeTeamLogoURL,
             SeasonType = scheduleGame.SeasonType
         };
     }
@@ -54,9 +56,11 @@ public static class GameOverrideMapper
         return new GameOverrideDTO
         {
             AwayTeam = gameOverride.AwayTeam,
+            AwayTeamLogoURL = gameOverride.AwayTeamLogoURL,
             CreatedAt = gameOverride.CreatedAt,
             GameID = gameOverride.GameID,
             HomeTeam = gameOverride.HomeTeam,
+            HomeTeamLogoURL = gameOverride.HomeTeamLogoURL,
             ModifiedAt = gameOverride.ModifiedAt,
             OriginalAwayPoints = gameOverride.OriginalAwayPoints,
             OriginalHomePoints = gameOverride.OriginalHomePoints,

@@ -95,9 +95,11 @@ describe('Admin schemas', () => {
       const data = {
         awayPoints: 21,
         awayTeam: 'Iowa',
+        awayTeamLogoURL: 'https://example.com/iowa.png',
         gameID: 401234561,
         homePoints: 24,
         homeTeam: 'Nebraska',
+        homeTeamLogoURL: 'https://example.com/nebraska.png',
         seasonType: 'regular',
       };
       const result = CompletedGameSchema.safeParse(data);
@@ -108,10 +110,12 @@ describe('Admin schemas', () => {
       const data = {
         awayPoints: 21,
         awayTeam: 'Iowa',
+        awayTeamLogoURL: 'https://example.com/iowa.png',
         gameID: 401234561,
         hasOverride: true,
         homePoints: 24,
         homeTeam: 'Nebraska',
+        homeTeamLogoURL: 'https://example.com/nebraska.png',
         seasonType: 'regular',
       };
       const result = CompletedGameSchema.safeParse(data);
@@ -122,10 +126,12 @@ describe('Admin schemas', () => {
       const data = {
         awayPoints: null,
         awayTeam: null,
+        awayTeamLogoURL: null,
         gameID: null,
         hasOverride: false,
         homePoints: null,
         homeTeam: null,
+        homeTeamLogoURL: null,
         seasonType: null,
       };
       const result = CompletedGameSchema.safeParse(data);
@@ -146,10 +152,12 @@ describe('Admin schemas', () => {
           {
             awayPoints: 21,
             awayTeam: 'Iowa',
+            awayTeamLogoURL: 'https://example.com/iowa.png',
             gameID: 401234561,
             hasOverride: false,
             homePoints: 24,
             homeTeam: 'Nebraska',
+            homeTeamLogoURL: 'https://example.com/nebraska.png',
             seasonType: 'regular',
           },
         ],
@@ -168,9 +176,11 @@ describe('Admin schemas', () => {
     it('rejects missing reason', () => {
       const data = {
         awayTeam: 'Oklahoma',
+        awayTeamLogoURL: 'https://example.com/oklahoma.png',
         createdAt: '2025-09-20T00:00:00Z',
         gameID: 401234562,
         homeTeam: 'Texas',
+        homeTeamLogoURL: 'https://example.com/texas.png',
         modifiedAt: '2025-09-20T00:00:00Z',
         originalAwayPoints: 20,
         originalHomePoints: 24,
@@ -187,9 +197,11 @@ describe('Admin schemas', () => {
     it('validates a valid game override', () => {
       const data = {
         awayTeam: 'Oklahoma',
+        awayTeamLogoURL: 'https://example.com/oklahoma.png',
         createdAt: '2025-09-20T00:00:00Z',
         gameID: 401234562,
         homeTeam: 'Texas',
+        homeTeamLogoURL: 'https://example.com/texas.png',
         modifiedAt: '2025-09-20T00:00:00Z',
         originalAwayPoints: 20,
         originalHomePoints: 24,
@@ -215,9 +227,11 @@ describe('Admin schemas', () => {
       const data = [
         {
           awayTeam: 'Oklahoma',
+          awayTeamLogoURL: 'https://example.com/oklahoma.png',
           createdAt: '2025-09-20T00:00:00Z',
           gameID: 401234562,
           homeTeam: 'Texas',
+          homeTeamLogoURL: 'https://example.com/texas.png',
           modifiedAt: '2025-09-20T00:00:00Z',
           originalAwayPoints: 20,
           originalHomePoints: 24,
