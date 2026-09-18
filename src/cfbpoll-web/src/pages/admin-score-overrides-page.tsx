@@ -60,6 +60,7 @@ export function AdminScoreOverridesPage() {
   } = useGameOverrides(token, selectedSeason);
 
   const [wizardTarget, setWizardTarget] = useState<ScoreOverrideTarget | null>(null);
+  const [isEditingWizardTarget, setIsEditingWizardTarget] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<GameOverride | null>(null);
 
   function handleSelectGame(game: CompletedGame) {
@@ -76,6 +77,7 @@ export function AdminScoreOverridesPage() {
       homeTeam: game.homeTeam,
       reason: '',
     });
+    setIsEditingWizardTarget(false);
   }
 
   function handleEditOverride(gameOverride: GameOverride) {
@@ -87,6 +89,7 @@ export function AdminScoreOverridesPage() {
       homeTeam: gameOverride.homeTeam,
       reason: gameOverride.reason,
     });
+    setIsEditingWizardTarget(true);
   }
 
   async function handleConfirmWizard(overrideHomePoints: number, overrideAwayPoints: number, reason: string) {
@@ -180,6 +183,7 @@ export function AdminScoreOverridesPage() {
 
       {wizardTarget && (
         <ScoreOverrideWizardModal
+          isEditing={isEditingWizardTarget}
           isSaving={isSaving}
           onCancel={() => setWizardTarget(null)}
           onConfirm={handleConfirmWizard}

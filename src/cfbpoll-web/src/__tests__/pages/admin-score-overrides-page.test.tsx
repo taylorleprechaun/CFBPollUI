@@ -137,21 +137,23 @@ describe('AdminScoreOverridesPage', () => {
     expect(mockDeleteOverride).not.toHaveBeenCalled();
   });
 
-  it('opens the form pre-filled with the current override score and reason when Edit is clicked', async () => {
+  it('opens the form in edit mode with no score inputs when Edit is clicked', async () => {
     render(<AdminScoreOverridesPage />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Edit' }));
 
     expect(screen.getByRole('heading', { name: 'Override Score: Texas @ Oklahoma' })).toBeInTheDocument();
     expect(screen.getByLabelText('Reason')).toHaveValue('A targeting call was missed on the game-deciding play.');
+    expect(screen.queryByLabelText('Oklahoma Score')).not.toBeInTheDocument();
   });
 
-  it('opens the form pre-filled with the current score when Override Score is clicked', async () => {
+  it('opens the form with editable score inputs when Override Score is clicked', async () => {
     render(<AdminScoreOverridesPage />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Override Score' }));
 
     expect(screen.getByRole('heading', { name: 'Override Score: Iowa @ Nebraska' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Nebraska Score')).toBeInTheDocument();
   });
 
   it('renders the page heading', () => {

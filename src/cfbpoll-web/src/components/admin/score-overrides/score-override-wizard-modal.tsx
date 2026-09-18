@@ -17,13 +17,14 @@ export interface ScoreOverrideTarget {
 type WizardStep = 'edit' | 'review';
 
 interface ScoreOverrideWizardModalProps {
+  isEditing: boolean;
   isSaving: boolean;
   onCancel: () => void;
   onConfirm: (overrideHomePoints: number, overrideAwayPoints: number, reason: string) => void;
   target: ScoreOverrideTarget;
 }
 
-export function ScoreOverrideWizardModal({ isSaving, onCancel, onConfirm, target }: ScoreOverrideWizardModalProps) {
+export function ScoreOverrideWizardModal({ isEditing, isSaving, onCancel, onConfirm, target }: ScoreOverrideWizardModalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedRef = useRef<Element | null>(null);
 
@@ -63,10 +64,14 @@ export function ScoreOverrideWizardModal({ isSaving, onCancel, onConfirm, target
   }, [onCancel]);
 
   const scoreChanged = homePoints !== target.homePoints || awayPoints !== target.awayPoints;
-  const canProceedToReview = reason.trim().length > 0 && scoreChanged;
+  const canProceedToReview = isEditing
+    ? reason.trim().length > 0 && reason.trim() !== target.reason
+    : reason.trim().length > 0 && scoreChanged;
 
   const expectedTypedScore = `${awayPoints}-${homePoints}`;
-  const canConfirm = understood && typedScore.trim() === expectedTypedScore && !isSaving;
+  const canConfirm = isEditing
+    ? understood && !isSaving
+    : understood && typedScore.trim() === expectedTypedScore && !isSaving;
 
   function handleConfirm() {
     onConfirm(homePoints, awayPoints, reason.trim());
@@ -91,32 +96,41 @@ export function ScoreOverrideWizardModal({ isSaving, onCancel, onConfirm, target
 
         {step === 'edit' && (
           <>
-            <div className="flex flex-wrap gap-4 items-end">
-              <div>
-                <label htmlFor={awayId} className="block text-sm font-medium text-text-secondary mb-1">
-                  {target.awayTeam} Score
-                </label>
-                <input
-                  id={awayId}
-                  type="number"
-                  value={awayPoints}
-                  onChange={(e) => setAwayPoints(Number(e.target.value))}
-                  className={`w-24 ${INPUT_CLASS}`}
-                />
+            {isEditing ? (
+              <p className="text-sm text-text-secondary">
+                Current override score:{' '}
+                <span className="font-medium text-text-primary">
+                  {target.awayTeam} {awayPoints} - {homePoints} {target.homeTeam}
+                </span>
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-4 items-end">
+                <div>
+                  <label htmlFor={awayId} className="block text-sm font-medium text-text-secondary mb-1">
+                    {target.awayTeam} Score
+                  </label>
+                  <input
+                    id={awayId}
+                    type="number"
+                    value={awayPoints}
+                    onChange={(e) => setAwayPoints(Number(e.target.value))}
+                    className={`w-24 ${INPUT_CLASS}`}
+                  />
+                </div>
+                <div>
+                  <label htmlFor={homeId} className="block text-sm font-medium text-text-secondary mb-1">
+                    {target.homeTeam} Score
+                  </label>
+                  <input
+                    id={homeId}
+                    type="number"
+                    value={homePoints}
+                    onChange={(e) => setHomePoints(Number(e.target.value))}
+                    className={`w-24 ${INPUT_CLASS}`}
+                  />
+                </div>
               </div>
-              <div>
-                <label htmlFor={homeId} className="block text-sm font-medium text-text-secondary mb-1">
-                  {target.homeTeam} Score
-                </label>
-                <input
-                  id={homeId}
-                  type="number"
-                  value={homePoints}
-                  onChange={(e) => setHomePoints(Number(e.target.value))}
-                  className={`w-24 ${INPUT_CLASS}`}
-                />
-              </div>
-            </div>
+            )}
 
             <div>
               <label htmlFor={reasonId} className="block text-sm font-medium text-text-secondary mb-1">
@@ -146,14 +160,22 @@ export function ScoreOverrideWizardModal({ isSaving, onCancel, onConfirm, target
         {step === 'review' && (
           <>
             <div className="text-sm text-text-secondary space-y-1">
-              <p>
-                <span className="font-medium text-text-primary">{target.awayTeam}:</span>{' '}
-                {target.awayPoints} &rarr; {awayPoints}
-              </p>
-              <p>
-                <span className="font-medium text-text-primary">{target.homeTeam}:</span>{' '}
-                {target.homePoints} &rarr; {homePoints}
-              </p>
+              {isEditing ? (
+                <p>
+                  <span className="font-medium text-text-primary">Score:</span> {awayPoints}-{homePoints} (unchanged)
+                </p>
+              ) : (
+                <>
+                  <p>
+                    <span className="font-medium text-text-primary">{target.awayTeam}:</span>{' '}
+                    {target.awayPoints} &rarr; {awayPoints}
+                  </p>
+                  <p>
+                    <span className="font-medium text-text-primary">{target.homeTeam}:</span>{' '}
+                    {target.homePoints} &rarr; {homePoints}
+                  </p>
+                </>
+              )}
               <p className="pt-1">
                 <span className="font-medium text-text-primary">Reason:</span> {reason.trim()}
               </p>
@@ -177,18 +199,20 @@ export function ScoreOverrideWizardModal({ isSaving, onCancel, onConfirm, target
               </label>
             </div>
 
-            <div>
-              <label htmlFor={typedScoreId} className="block text-sm font-medium text-text-secondary mb-1">
-                Type {expectedTypedScore} to confirm
-              </label>
-              <input
-                id={typedScoreId}
-                type="text"
-                value={typedScore}
-                onChange={(e) => setTypedScore(e.target.value)}
-                className={INPUT_CLASS}
-              />
-            </div>
+            {!isEditing && (
+              <div>
+                <label htmlFor={typedScoreId} className="block text-sm font-medium text-text-secondary mb-1">
+                  Type {expectedTypedScore} to confirm
+                </label>
+                <input
+                  id={typedScoreId}
+                  type="text"
+                  value={typedScore}
+                  onChange={(e) => setTypedScore(e.target.value)}
+                  className={INPUT_CLASS}
+                />
+              </div>
+            )}
 
             <div className="flex justify-end gap-3">
               <button onClick={() => setStep('edit')} className={BUTTON_SECONDARY}>
