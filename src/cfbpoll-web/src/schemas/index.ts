@@ -95,6 +95,8 @@ export const ScheduleGameSchema = z.object({
   opponentRank: z.number().nullable().optional(),
   opponentRecord: z.string(),
   opponentScore: z.number().nullable().optional(),
+  originalOpponentScore: z.number().nullable().optional(),
+  originalTeamScore: z.number().nullable().optional(),
   scoreOverrideReason: z.string().nullable().optional(),
   seasonType: z.string().nullable().optional(),
   startTimeTbd: z.boolean(),

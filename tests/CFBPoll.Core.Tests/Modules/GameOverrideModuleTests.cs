@@ -132,6 +132,8 @@ public class GameOverrideModuleTests
         var overriddenGame = Assert.Single(result);
         Assert.Equal(21, overriddenGame.HomePoints);
         Assert.Equal(24, overriddenGame.AwayPoints);
+        Assert.Equal(21, overriddenGame.OriginalAwayPoints);
+        Assert.Equal(24, overriddenGame.OriginalHomePoints);
         Assert.True(overriddenGame.Completed);
         Assert.Equal(gameOverride.Reason, overriddenGame.ScoreOverrideReason);
     }
@@ -162,6 +164,8 @@ public class GameOverrideModuleTests
         var unchangedGame = Assert.Single(result);
         Assert.Equal(24, unchangedGame.HomePoints);
         Assert.Equal(21, unchangedGame.AwayPoints);
+        Assert.Null(unchangedGame.OriginalAwayPoints);
+        Assert.Null(unchangedGame.OriginalHomePoints);
     }
 
     [Fact]

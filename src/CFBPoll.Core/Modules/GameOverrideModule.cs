@@ -94,6 +94,8 @@ public class GameOverrideModule : IGameOverrideModule
             HomePoints = gameOverride.OverrideHomePoints,
             HomeTeam = game.HomeTeam,
             NeutralSite = game.NeutralSite,
+            OriginalAwayPoints = game.AwayPoints,
+            OriginalHomePoints = game.HomePoints,
             ScoreOverrideReason = gameOverride.Reason,
             SeasonType = game.SeasonType,
             StartDate = game.StartDate,

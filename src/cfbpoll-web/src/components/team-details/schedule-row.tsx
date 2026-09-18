@@ -91,6 +91,11 @@ export function ScheduleRow({
             <span className={game.isWin ? 'text-green-600 dark:text-green-400 font-medium' : 'text-red-600 dark:text-red-400 font-medium'}>
               {game.isWin ? 'W' : 'L'} {game.teamScore}-{game.opponentScore}
             </span>
+            {game.scoreOverrideReason && game.originalTeamScore != null && game.originalOpponentScore != null && (
+              <span className="text-text-muted line-through text-xs">
+                {game.originalTeamScore}-{game.originalOpponentScore}
+              </span>
+            )}
             {game.scoreOverrideReason && (
               <InfoTooltip statName="Score override" summary={game.scoreOverrideReason} />
             )}

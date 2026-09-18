@@ -12,6 +12,8 @@ public class ScheduleGameDTO
     public int? OpponentRank { get; set; }
     public string OpponentRecord { get; set; } = string.Empty;
     public int? OpponentScore { get; set; }
+    public int? OriginalOpponentScore { get; set; }
+    public int? OriginalTeamScore { get; set; }
     public string? ScoreOverrideReason { get; set; }
     public string? SeasonType { get; set; }
     public bool StartTimeTbd { get; set; }

@@ -62,6 +62,9 @@ public static class TeamDetailMapper
         var teamScore = isHome ? game.HomePoints : game.AwayPoints;
         var opponentScore = isHome ? game.AwayPoints : game.HomePoints;
 
+        var originalTeamScore = isHome ? game.OriginalHomePoints : game.OriginalAwayPoints;
+        var originalOpponentScore = isHome ? game.OriginalAwayPoints : game.OriginalHomePoints;
+
         bool? isWin = null;
         if (game.Completed && teamScore.HasValue && opponentScore.HasValue)
         {
@@ -91,6 +94,8 @@ public static class TeamDetailMapper
             OpponentRank = opponentRank,
             OpponentRecord = opponentRecord,
             OpponentScore = game.Completed ? opponentScore : null,
+            OriginalOpponentScore = game.Completed ? originalOpponentScore : null,
+            OriginalTeamScore = game.Completed ? originalTeamScore : null,
             ScoreOverrideReason = game.ScoreOverrideReason,
             SeasonType = game.SeasonType,
             StartTimeTbd = game.StartTimeTbd,

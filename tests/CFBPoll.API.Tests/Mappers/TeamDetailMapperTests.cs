@@ -152,6 +152,54 @@ public class TeamDetailMapperTests
     }
 
     [Fact]
+    public void ToResponseDTO_MapsOriginalScoresWhenOverridden()
+    {
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
+
+        var schedule = new List<ScheduleGame>
+        {
+            new ScheduleGame
+            {
+                HomeTeam = "Florida",
+                AwayTeam = "USC",
+                Completed = true,
+                HomePoints = 27,
+                AwayPoints = 30,
+                OriginalHomePoints = 24,
+                OriginalAwayPoints = 21,
+                ScoreOverrideReason = "Pass interference was not flagged on the game-ending play.",
+                SeasonType = "regular",
+                Week = 1
+            },
+            new ScheduleGame
+            {
+                HomeTeam = "USC",
+                AwayTeam = "Florida",
+                Completed = true,
+                HomePoints = 14,
+                AwayPoints = 38,
+                OriginalHomePoints = 10,
+                OriginalAwayPoints = 41,
+                ScoreOverrideReason = "A targeting call was missed on the game-deciding play.",
+                SeasonType = "regular",
+                Week = 5
+            }
+        };
+
+        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
+
+        var games = result.Schedule.ToList();
+        Assert.Equal(2, games.Count);
+        Assert.Equal(24, games[0].OriginalTeamScore);
+        Assert.Equal(21, games[0].OriginalOpponentScore);
+        Assert.Equal(41, games[1].OriginalTeamScore);
+        Assert.Equal(10, games[1].OriginalOpponentScore);
+    }
+
+    [Fact]
     public void ToResponseDTO_MapsRecord()
     {
         var rankedTeam = CreateDefaultRankedTeam();
@@ -360,6 +408,23 @@ public class TeamDetailMapperTests
         var games = result.Schedule.ToList();
         Assert.Single(games);
         Assert.Null(games[0].OpponentRank);
+    }
+
+    [Fact]
+    public void ToResponseDTO_SetsNullOriginalScoresWhenNotOverridden()
+    {
+        var rankedTeam = CreateDefaultRankedTeam();
+        var teamInfo = CreateDefaultTeamInfo();
+        var schedule = CreateDefaultScheduleGames();
+        var allTeams = CreateDefaultAllTeams();
+        var rankings = CreateDefaultRankings();
+
+        var result = TeamDetailMapper.ToResponseDTO(rankedTeam, teamInfo, schedule, allTeams, rankings);
+
+        var games = result.Schedule.ToList();
+        Assert.Single(games);
+        Assert.Null(games[0].OriginalTeamScore);
+        Assert.Null(games[0].OriginalOpponentScore);
     }
 
     [Fact]
