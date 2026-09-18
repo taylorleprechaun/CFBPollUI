@@ -10,6 +10,7 @@ This was created using Claude Code with a lot of guidelines to follow my code st
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
+- [Architecture](#architecture)
 - [Prerequisites](#prerequisites)
 - [Setup](#setup)
 - [Running the Application](#running-the-application)
@@ -45,6 +46,10 @@ Last Updated 8/6/2026
 - **Interactive UI**: Sortable rankings table with team logos and colors
 - **Game Predictions**: Generate game predictions with spread and over/under picks using team ratings and betting line data
 - **Admin Dashboard**: JWT-authenticated admin panel to calculate, preview, and publish rankings and predictions with a two-step draft/publish workflow
+- **Manual Score Override**: Admin tool to correct a completed game's recorded final score with a documented reason, affecting new calculations without retroactively altering already-published rankings/predictions; shown to the public via a rankings-page disclaimer (with team logos and the original-vs-corrected score) and inline indicators on the rankings table and team-details schedule
+- **Incomplete Week Warnings**: Admin banner shown when a week's games aren't all played yet, with a modal listing which games are still pending
+- **Cache Management**: Admin page to view and clear individual persistent cache entries, grouped by family/season/detail
+- **CFBD API Usage Tracking**: Admin dashboard showing CollegeFootballData.com API quota status (remaining/used calls, tier, reset date), cached server-side with a manual force-refresh option
 - **Experimental Rating & Prediction Comparison**: Admin-only calculation of rankings and predictions against multiple algorithm versions at once for any season/week, compared side-by-side, without persisting or publishing — used to validate a candidate algorithm against the current one before it becomes a season's default. A "Compare Season" mode extends this to predictions across an admin-selected subset of a season's weeks at once, showing a season-overall summary plus a per-week breakdown per algorithm version
 - **Excel Export**: Download rankings and predictions as Excel spreadsheets with rating breakdowns and pick/grade detail
 - **SQLite Persistence**: Rankings and predictions snapshots stored in SQLite for fast retrieval without redundant API calls
@@ -56,8 +61,9 @@ Last Updated 8/6/2026
 ### Backend
 - ASP.NET Core 10.0 Web API
 - SQLite via Microsoft.Data.Sqlite
-- JWT authentication
+- JWT authentication with BCrypt password hashing
 - EPPlus for Excel export
+- Serilog structured logging (console + file sinks)
 - College Football Data API integration
 - Swagger/OpenAPI documentation
 
@@ -95,15 +101,17 @@ Controllers (Presentation)         Modules (Business Logic)          Data Layer
 AdminController                    AdminModule
   -> IAdminModule                    -> ICFBDataService
   -> IRankingsModule                  -> IExcelExportModule
+                                     -> IGameOverrideModule
                                      -> IPersistentCache
                                      -> IPollLeadersModule
-                                     -> IPredictionCalculatorModule
+                                     -> IPredictionAlgorithmResolver
                                      -> IPredictionGradingModule
                                      -> IPredictionsModule
                                      -> IRankingsModule
                                      -> IRatingAlgorithmResolver
                                      -> ISeasonModule
                                      -> ISeasonTrendsModule
+                                     -> ITeamPredictionRecordModule
                                      -> ITrackRecordModule
 
 AllTimeController                  AllTimeModule
@@ -120,32 +128,44 @@ ConferencesController
                                    CacheModule (IPersistentCache)    CacheData
                                      -> ICacheData                     -> SQLite
 
+                                   GameOverrideModule                GameOverrideData
+                                     -> IGameOverrideData               -> SQLite
+
 PageVisibilityController           PageVisibilityModule
   -> IPageVisibilityModule           -> IPageVisibilityData           PageVisibilityData
                                                                        -> SQLite
 
 PollLeadersController              PollLeadersModule
   -> IPollLeadersModule              -> ICFBDataService
+                                     -> IOptions<CacheOptions>
                                      -> IPersistentCache
                                      -> IRankingsModule
 
 PredictionsController              PredictionsModule
   -> IPredictionsModule              -> IPredictionsData              PredictionsData
-                                                                       -> SQLite
+  -> ITeamPredictionRecordModule                                      -> SQLite
+
+                                   TeamPredictionRecordModule
+                                     -> IOptions<CacheOptions>
+                                     -> IPersistentCache
+                                     -> IPredictionsModule
 
 RankingsController                 RankingsModule
   -> ICFBDataService                 -> IRankingsData                 RankingsData
-  -> IRankingsModule                                                  -> SQLite
+  -> IGameOverrideModule                                               -> SQLite
+  -> IRankingsModule
   -> IRatingAlgorithmResolver
 
 SeasonsController
   -> ICFBDataService
+  -> IOptions<HistoricalDataOptions>
   -> IPredictionsModule
   -> IRankingsModule
   -> ISeasonModule
 
 SeasonTrendsController             SeasonTrendsModule
   -> ISeasonTrendsModule             -> ICFBDataService
+                                     -> IOptions<CacheOptions>
                                      -> IPersistentCache
                                      -> IRankingsModule
                                      -> ISeasonModule
@@ -156,11 +176,12 @@ TeamsController                    TeamsModule
                                      -> IRatingAlgorithmResolver
 
 TrackRecordController              TrackRecordModule
-  -> ITrackRecordModule              -> IPersistentCache
+  -> ITrackRecordModule              -> IOptions<CacheOptions>
+                                     -> IPersistentCache
                                      -> IPredictionsModule
 ```
 
-Only `RankingsModule` has a direct dependency on `IRankingsData`, only `PredictionsModule` has a direct dependency on `IPredictionsData`, only `CacheModule` has a direct dependency on `ICacheData`, and only `PageVisibilityModule` has a direct dependency on `IPageVisibilityData`. Controllers never reference data-layer interfaces. `IPredictionGradingModule` (grading logic) and `IConferenceModule` (conference data transformation) have no further module or data-layer dependencies of their own.
+Only `RankingsModule` has a direct dependency on `IRankingsData`, only `PredictionsModule` has a direct dependency on `IPredictionsData`, only `CacheModule` has a direct dependency on `ICacheData`, only `PageVisibilityModule` has a direct dependency on `IPageVisibilityData`, and only `GameOverrideModule` has a direct dependency on `IGameOverrideData`. Controllers never reference data-layer interfaces. `IConferenceModule` (conference data transformation) has no further module or data-layer dependencies of its own; `IPredictionGradingModule` (grading logic) depends on `IPredictionsModule` for stored predictions but owns no data layer of its own. `IGameOverrideModule` is a shared dependency: both `AdminModule` and `RankingsController` use it directly, and the `ICFBDataService` decorator that applies overrides to fetched schedules depends on it internally.
 
 ## Prerequisites
 
@@ -315,13 +336,18 @@ The frontend runs at `http://localhost:5173`.
 |----------|-------------|
 | `DELETE /api/v1/admin/cache` | Removes the persistent cache entries matching the given keys |
 | `DELETE /api/v1/admin/cache/{key}` | Removes a single persistent cache entry by key |
+| `DELETE /api/v1/admin/game-overrides/{gameID}` | Deletes the manual score override for a game, reverting it to the officially recorded score |
 | `DELETE /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Delete a prediction |
 | `DELETE /api/v1/admin/seasons/{season}/weeks/{week}/ranking` | Delete a persisted ranking |
 | `GET /api/v1/admin/cache` | Retrieves every persistent cache entry, grouped into a display-friendly family/season/detail summary for the admin cache management page |
 | `GET /api/v1/admin/cfbd-usage` | Get the site's CollegeFootballData.com API account status (remaining/used calls, tier, reset date, request totals), cached server-side for 24 hours; pass `?forceRefresh=true` to bypass the cache |
+| `GET /api/v1/admin/game-overrides` | Lists every manual score override recorded for a season |
+| `GET /api/v1/admin/game-overrides/{gameID}` | Retrieves the manual score override for a game, if one exists |
 | `GET /api/v1/admin/predictions` | List all persisted prediction summaries |
 | `GET /api/v1/admin/rankings` | List all persisted rankings |
+| `GET /api/v1/admin/seasons/{season}/weeks/{week}/completed-games` | Lists completed games for a season/week, for use in the manual score override picker |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/export` | Download experimental rankings as Excel for a chosen algorithm version, without persisting or publishing |
+| `GET /api/v1/admin/seasons/{season}/weeks/{week}/incomplete-games` | Lists games for a season/week that have not yet been marked complete, explaining why the week is flagged as incomplete |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Retrieve persisted predictions for a season/week without recalculating or re-grading |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction/export` | Download predictions as Excel |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/ranking` | Retrieve the persisted rankings snapshot for a season/week without recalculating |
@@ -337,6 +363,7 @@ The frontend runs at `http://localhost:5173`.
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Calculate predictions for a season/week and save as draft |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction/grade` | Grade predictions against actual final scores and save as draft |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/ranking` | Calculate rankings for a season/week and save as draft |
+| `PUT /api/v1/admin/game-overrides/{gameID}` | Creates or replaces the manual score override for a completed game |
 | `PUT /api/v1/page-visibility` | Update page visibility settings |
 
 ## Code Conventions
