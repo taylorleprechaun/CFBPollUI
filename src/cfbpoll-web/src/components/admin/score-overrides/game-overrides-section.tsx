@@ -1,6 +1,6 @@
 import type { GameOverride } from '../../../schemas/admin';
 
-import { getWeekLabel } from '../../../lib/week-utils';
+import { getRawWeekLabel } from '../../../lib/week-utils';
 import { BUTTON_DANGER_GHOST, BUTTON_GHOST } from '../../ui/button-styles';
 import { EmptyState } from '../../ui/empty-state';
 import { TableSkeleton } from '../../ui/table-skeleton';
@@ -40,7 +40,9 @@ export function GameOverridesSection({ isDeleting, isLoading, onDelete, onEdit, 
         <tbody className="bg-surface divide-y divide-border">
           {overrides.map((gameOverride) => (
             <tr key={gameOverride.gameID} className="even:bg-surface-alt/50">
-              <td className="px-4 py-3 whitespace-nowrap text-sm text-text-muted">{getWeekLabel(gameOverride.week)}</td>
+              <td className="px-4 py-3 whitespace-nowrap text-sm text-text-muted">
+                {getRawWeekLabel(gameOverride.week, gameOverride.seasonType === 'postseason')}
+              </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-text-primary">
                 {gameOverride.awayTeam} @ {gameOverride.homeTeam}
               </td>

@@ -14,7 +14,7 @@ import { useSeason } from '../hooks/use-season';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
 import { SITE_OWNER_NAME } from '../lib/config';
-import { getWeekLabel } from '../lib/week-utils';
+import { getRawWeekLabel } from '../lib/week-utils';
 
 export function AdminScoreOverridesPage() {
   useDocumentTitle(`${SITE_OWNER_NAME} - Score Overrides`);
@@ -30,6 +30,18 @@ export function AdminScoreOverridesPage() {
 
   const { data: weeksData, isLoading: weeksLoading } = useWeeks(selectedSeason);
   const { selectedWeek, setSelectedWeek } = useWeekSelection(weeksData?.weeks);
+
+  // The admin is picking games by the week they were actually played, not the rankings
+  // week they feed into, so this page shows the raw week number rather than the shared
+  // WeekSelect's rankings-shifted label. SeasonModule.GetWeekLabels only ever emits the
+  // literal string "Postseason" for a postseason week, so that's a safe signal to key off.
+  const rawWeeks = useMemo(
+    () => (weeksData?.weeks ?? []).map((w) => ({
+      ...w,
+      label: getRawWeekLabel(w.weekNumber, w.label === 'Postseason'),
+    })),
+    [weeksData?.weeks]
+  );
 
   const { data: completedGamesData, isLoading: completedGamesLoading } = useCompletedGames(
     token,
@@ -132,7 +144,7 @@ export function AdminScoreOverridesPage() {
           <WeekSelect
             onWeekChange={setSelectedWeek}
             selectedWeek={selectedWeek}
-            weeks={weeksData?.weeks ?? []}
+            weeks={rawWeeks}
             weeksLoading={weeksLoading}
           />
         </div>
@@ -141,7 +153,7 @@ export function AdminScoreOverridesPage() {
       {selectedSeason !== null && selectedWeek !== null && (
         <div className="bg-surface border border-border rounded-xl p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-text-primary mb-4">
-            Completed Games - {selectedSeason} {getWeekLabel(selectedWeek)}
+            Completed Games - {selectedSeason} {rawWeeks.find((w) => w.weekNumber === selectedWeek)?.label ?? `Week ${selectedWeek}`}
           </h2>
           <CompletedGamesSection
             games={completedGamesData?.games ?? []}

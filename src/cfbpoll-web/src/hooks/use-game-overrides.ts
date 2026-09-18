@@ -26,6 +26,7 @@ export function useGameOverrides(token: string | null, season: number | null) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: ['completed-games'] });
     },
   });
 
@@ -36,6 +37,7 @@ export function useGameOverrides(token: string | null, season: number | null) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
+      queryClient.invalidateQueries({ queryKey: ['completed-games'] });
     },
   });
 

@@ -159,4 +159,16 @@ describe('AdminScoreOverridesPage', () => {
 
     expect(screen.getByRole('heading', { name: 'Score Overrides' })).toBeInTheDocument();
   });
+
+  it('renders the raw week label in the Completed Games header, not the rankings-shifted one', () => {
+    render(<AdminScoreOverridesPage />);
+
+    expect(screen.getByText('Completed Games - 2025 Week 3')).toBeInTheDocument();
+  });
+
+  it('shows the raw week number in the week selector, not the rankings-shifted label', () => {
+    render(<AdminScoreOverridesPage />);
+
+    expect(screen.getByRole('option', { name: 'Week 3' })).toBeInTheDocument();
+  });
 });

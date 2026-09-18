@@ -14,10 +14,9 @@ vi.mock('../../services/admin-api', () => ({
 
 import { deleteGameOverride, fetchGameOverrides, saveGameOverride } from '../../services/admin-api';
 
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
+function createWrapper(
+  queryClient: QueryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+) {
   return ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
@@ -48,8 +47,11 @@ describe('useGameOverrides', () => {
     vi.mocked(fetchGameOverrides).mockResolvedValue([mockOverride]);
     vi.mocked(deleteGameOverride).mockResolvedValue(undefined);
 
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
     const { result } = renderHook(() => useGameOverrides('test-token', 2025), {
-      wrapper: createWrapper(),
+      wrapper: createWrapper(queryClient),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -60,6 +62,7 @@ describe('useGameOverrides', () => {
 
     expect(deleteGameOverride).toHaveBeenCalledWith('test-token', 401234562);
     expect(fetchGameOverrides).toHaveBeenCalledTimes(2);
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['completed-games'] });
   });
 
   it('deleteOverride() rejects when there is no token', async () => {
@@ -100,8 +103,11 @@ describe('useGameOverrides', () => {
     vi.mocked(fetchGameOverrides).mockResolvedValue([mockOverride]);
     vi.mocked(saveGameOverride).mockResolvedValue(mockOverride);
 
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
     const { result } = renderHook(() => useGameOverrides('test-token', 2025), {
-      wrapper: createWrapper(),
+      wrapper: createWrapper(queryClient),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -124,6 +130,7 @@ describe('useGameOverrides', () => {
       'A targeting call was missed on the game-deciding play.'
     );
     expect(fetchGameOverrides).toHaveBeenCalledTimes(2);
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['completed-games'] });
   });
 
   it('saveOverride() rejects when there is no token', async () => {

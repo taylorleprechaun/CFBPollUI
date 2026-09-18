@@ -64,4 +64,10 @@ describe('GameOverridesSection', () => {
     expect(screen.getByText('20 - 24')).toBeInTheDocument();
     expect(screen.getByText('24 - 20')).toBeInTheDocument();
   });
+
+  it('renders the raw week number, not the rankings-shifted label', () => {
+    render(<GameOverridesSection isDeleting={false} isLoading={false} onDelete={vi.fn()} onEdit={vi.fn()} overrides={[mockOverride]} />);
+
+    expect(screen.getByText('Week 3')).toBeInTheDocument();
+  });
 });
