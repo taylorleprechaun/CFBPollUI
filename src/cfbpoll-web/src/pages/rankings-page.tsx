@@ -129,6 +129,7 @@ export function RankingsPage() {
         <RankingsTable
           rankings={rankingsData?.rankings ?? []}
           isLoading={rankingsLoading}
+          scoreOverrides={rankingsData?.scoreOverrides ?? []}
           selectedConference={selectedConference}
           selectedSeason={selectedSeason}
         />

@@ -294,7 +294,19 @@ describe('Zod Schemas', () => {
         week: 5,
         rankings: [],
         scoreOverrides: [
-          { awayTeam: 'Iowa', gameID: 401234561, homeTeam: 'Nebraska', reason: 'Targeting was missed on the final play.', week: 3 },
+          {
+            awayTeam: 'Iowa',
+            awayTeamLogoURL: 'https://example.com/iowa.png',
+            gameID: 401234561,
+            homeTeam: 'Nebraska',
+            homeTeamLogoURL: 'https://example.com/nebraska.png',
+            originalAwayPoints: 20,
+            originalHomePoints: 24,
+            overrideAwayPoints: 24,
+            overrideHomePoints: 20,
+            reason: 'Targeting was missed on the final play.',
+            week: 3,
+          },
         ],
       };
       const result = RankingsResponseSchema.safeParse(data);
@@ -379,7 +391,18 @@ describe('Zod Schemas', () => {
 
   describe('ScoreOverrideDisclosureSchema', () => {
     it('rejects a disclosure missing reason', () => {
-      const data = { awayTeam: 'Iowa', gameID: 401234561, homeTeam: 'Nebraska', week: 3 };
+      const data = {
+        awayTeam: 'Iowa',
+        awayTeamLogoURL: 'https://example.com/iowa.png',
+        gameID: 401234561,
+        homeTeam: 'Nebraska',
+        homeTeamLogoURL: 'https://example.com/nebraska.png',
+        originalAwayPoints: 20,
+        originalHomePoints: 24,
+        overrideAwayPoints: 24,
+        overrideHomePoints: 20,
+        week: 3,
+      };
       const result = ScoreOverrideDisclosureSchema.safeParse(data);
       expect(result.success).toBe(false);
     });
@@ -387,8 +410,14 @@ describe('Zod Schemas', () => {
     it('validates a valid score override disclosure', () => {
       const data = {
         awayTeam: 'Iowa',
+        awayTeamLogoURL: 'https://example.com/iowa.png',
         gameID: 401234561,
         homeTeam: 'Nebraska',
+        homeTeamLogoURL: 'https://example.com/nebraska.png',
+        originalAwayPoints: 20,
+        originalHomePoints: 24,
+        overrideAwayPoints: 24,
+        overrideHomePoints: 20,
         reason: 'Targeting was missed on the final play.',
         week: 3,
       };

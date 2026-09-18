@@ -70,8 +70,14 @@ export const RankedTeamSchema = z.object({
 // Score override disclosure schema
 export const ScoreOverrideDisclosureSchema = z.object({
   awayTeam: z.string(),
+  awayTeamLogoURL: z.string().nullable(),
   gameID: z.number(),
   homeTeam: z.string(),
+  homeTeamLogoURL: z.string().nullable(),
+  originalAwayPoints: z.number(),
+  originalHomePoints: z.number(),
+  overrideAwayPoints: z.number(),
+  overrideHomePoints: z.number(),
   reason: z.string(),
   week: z.number(),
 });

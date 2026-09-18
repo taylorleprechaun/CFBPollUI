@@ -1,6 +1,7 @@
 using CFBPoll.Core.Caching;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
+using CFBPoll.Core.Services;
 using Microsoft.Extensions.Logging;
 
 namespace CFBPoll.Core.Modules;
@@ -395,7 +396,7 @@ public class AdminModule : IAdminModule
     {
         var calendarTask = _dataService.GetCalendarAsync(season);
         var fullScheduleTask = _dataService.GetFullSeasonScheduleAsync(season);
-        var teamLogosTask = GetTeamLogosByNameAsync(season);
+        var teamLogosTask = TeamLogoLookup.GetTeamLogosByNameAsync(_dataService, season);
         await Task.WhenAll(calendarTask, fullScheduleTask, teamLogosTask).ConfigureAwait(false);
 
         var calendarWeek = (await calendarTask).FirstOrDefault(w => w.Week == week);
@@ -405,7 +406,7 @@ public class AdminModule : IAdminModule
 
         var completedGames = _seasonModule.GetCompletedGames(week, seasonType, fullSchedule);
 
-        return completedGames.Select(g => WithTeamLogos(g, teamLogosByName));
+        return completedGames.Select(g => TeamLogoLookup.WithTeamLogos(g, teamLogosByName));
     }
 
     public async Task<GameOverride?> GetGameOverrideAsync(long gameID)
@@ -414,21 +415,20 @@ public class AdminModule : IAdminModule
         if (gameOverride is null)
             return null;
 
-        var teamLogosByName = await GetTeamLogosByNameAsync(gameOverride.Season).ConfigureAwait(false);
+        var teamLogosByName = await TeamLogoLookup.GetTeamLogosByNameAsync(_dataService, gameOverride.Season).ConfigureAwait(false);
 
-        return WithTeamLogos(gameOverride, teamLogosByName);
+        return TeamLogoLookup.WithTeamLogos(gameOverride, teamLogosByName);
     }
 
     public async Task<IEnumerable<GameOverride>> GetGameOverridesAsync(int season)
     {
-        var overridesTask = _gameOverrideModule.GetGameOverridesBySeasonAsync(season);
-        var teamLogosTask = GetTeamLogosByNameAsync(season);
-        await Task.WhenAll(overridesTask, teamLogosTask).ConfigureAwait(false);
+        var overrides = (await _gameOverrideModule.GetGameOverridesBySeasonAsync(season).ConfigureAwait(false)).ToList();
+        if (overrides.Count == 0)
+            return overrides;
 
-        var overrides = await overridesTask;
-        var teamLogosByName = await teamLogosTask;
+        var teamLogosByName = await TeamLogoLookup.GetTeamLogosByNameAsync(_dataService, season).ConfigureAwait(false);
 
-        return overrides.Select(o => WithTeamLogos(o, teamLogosByName));
+        return overrides.Select(o => TeamLogoLookup.WithTeamLogos(o, teamLogosByName));
     }
 
     public async Task<IEnumerable<ScheduleGame>> GetIncompleteGamesAsync(int season, int week)
@@ -625,7 +625,7 @@ public class AdminModule : IAdminModule
     }
 
     private async Task<ExperimentalPredictionsResult> CalculateThrottledExperimentalPredictionsAsync(
-        int season, int week, RatingAlgorithmVersion algorithmVersion, SemaphoreSlim throttle)
+            int season, int week, RatingAlgorithmVersion algorithmVersion, SemaphoreSlim throttle)
     {
         await throttle.WaitAsync().ConfigureAwait(false);
         try
@@ -638,58 +638,4 @@ public class AdminModule : IAdminModule
         }
     }
 
-    private async Task<IReadOnlyDictionary<string, string>> GetTeamLogosByNameAsync(int season)
-    {
-        var teams = await _dataService.GetFBSTeamsAsync(season).ConfigureAwait(false);
-
-        return teams
-            .GroupBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.First().LogoURL, StringComparer.OrdinalIgnoreCase);
-    }
-
-    private static GameOverride WithTeamLogos(GameOverride gameOverride, IReadOnlyDictionary<string, string> teamLogosByName)
-    {
-        return new GameOverride
-        {
-            AwayTeam = gameOverride.AwayTeam,
-            AwayTeamLogoURL = teamLogosByName.GetValueOrDefault(gameOverride.AwayTeam),
-            CreatedAt = gameOverride.CreatedAt,
-            GameID = gameOverride.GameID,
-            HomeTeam = gameOverride.HomeTeam,
-            HomeTeamLogoURL = teamLogosByName.GetValueOrDefault(gameOverride.HomeTeam),
-            ModifiedAt = gameOverride.ModifiedAt,
-            OriginalAwayPoints = gameOverride.OriginalAwayPoints,
-            OriginalHomePoints = gameOverride.OriginalHomePoints,
-            OverrideAwayPoints = gameOverride.OverrideAwayPoints,
-            OverrideHomePoints = gameOverride.OverrideHomePoints,
-            Reason = gameOverride.Reason,
-            Season = gameOverride.Season,
-            SeasonType = gameOverride.SeasonType,
-            Week = gameOverride.Week
-        };
-    }
-
-    private static ScheduleGame WithTeamLogos(ScheduleGame scheduleGame, IReadOnlyDictionary<string, string> teamLogosByName)
-    {
-        return new ScheduleGame
-        {
-            AwayPoints = scheduleGame.AwayPoints,
-            AwayTeam = scheduleGame.AwayTeam,
-            AwayTeamLogoURL = scheduleGame.AwayTeam is not null ? teamLogosByName.GetValueOrDefault(scheduleGame.AwayTeam) : null,
-            Completed = scheduleGame.Completed,
-            GameID = scheduleGame.GameID,
-            HomePoints = scheduleGame.HomePoints,
-            HomeTeam = scheduleGame.HomeTeam,
-            HomeTeamLogoURL = scheduleGame.HomeTeam is not null ? teamLogosByName.GetValueOrDefault(scheduleGame.HomeTeam) : null,
-            NeutralSite = scheduleGame.NeutralSite,
-            OriginalAwayPoints = scheduleGame.OriginalAwayPoints,
-            OriginalHomePoints = scheduleGame.OriginalHomePoints,
-            ScoreOverrideReason = scheduleGame.ScoreOverrideReason,
-            SeasonType = scheduleGame.SeasonType,
-            StartDate = scheduleGame.StartDate,
-            StartTimeTbd = scheduleGame.StartTimeTbd,
-            Venue = scheduleGame.Venue,
-            Week = scheduleGame.Week
-        };
-    }
 }

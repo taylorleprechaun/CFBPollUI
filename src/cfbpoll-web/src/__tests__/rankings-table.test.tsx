@@ -1,9 +1,9 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 
-import type { RankedTeam } from '../types';
+import type { RankedTeam, ScoreOverrideDisclosure } from '../types';
 
 import { RankingsTable } from '../components/rankings/rankings-table';
 
@@ -73,6 +73,7 @@ const mockRankings: RankedTeam[] = [
 function renderTable(props: {
   isLoading?: boolean;
   rankings?: RankedTeam[];
+  scoreOverrides?: ScoreOverrideDisclosure[];
   selectedConference?: string | null;
   selectedSeason?: number | null;
   showRatingZScore?: boolean;
@@ -83,6 +84,7 @@ function renderTable(props: {
       <RankingsTable
         rankings={props.rankings ?? mockRankings}
         isLoading={props.isLoading ?? false}
+        scoreOverrides={props.scoreOverrides ?? []}
         selectedConference={props.selectedConference ?? null}
         selectedSeason={'selectedSeason' in props ? props.selectedSeason ?? null : 2024}
         showRatingZScore={props.showRatingZScore ?? false}
@@ -304,6 +306,62 @@ describe('RankingsTable', () => {
       expect(screen.getByText('(0.00)')).toBeInTheDocument();
       expect(screen.getByText('30.0000')).toBeInTheDocument();
       expect(screen.getByText('(-1.22)')).toBeInTheDocument();
+    });
+  });
+
+  describe('score overrides', () => {
+    const uscOverride: ScoreOverrideDisclosure = {
+      awayTeam: 'Texas',
+      awayTeamLogoURL: 'https://example.com/texas.png',
+      gameID: 401234561,
+      homeTeam: 'USC',
+      homeTeamLogoURL: 'https://example.com/usc.png',
+      originalAwayPoints: 17,
+      originalHomePoints: 21,
+      overrideAwayPoints: 21,
+      overrideHomePoints: 17,
+      reason: 'A targeting call was missed on the game-deciding play.',
+      week: 3,
+    };
+
+    it('does not render a tooltip for a team with no score override', () => {
+      renderTable({ scoreOverrides: [uscOverride] });
+
+      const ohioStateRow = screen.getByText('Ohio State').closest('tr')!;
+      expect(within(ohioStateRow).queryByRole('button', { name: 'About Manual score override' })).not.toBeInTheDocument();
+    });
+
+    it('joins multiple overrides for the same team in one tooltip', async () => {
+      const secondUscOverride: ScoreOverrideDisclosure = {
+        awayTeam: 'USC',
+        awayTeamLogoURL: 'https://example.com/usc.png',
+        gameID: 401234562,
+        homeTeam: 'Notre Dame',
+        homeTeamLogoURL: 'https://example.com/notre-dame.png',
+        originalAwayPoints: 14,
+        originalHomePoints: 10,
+        overrideAwayPoints: 10,
+        overrideHomePoints: 14,
+        reason: 'A muffed punt was ruled a fumble recovery that should have been dead.',
+        week: 5,
+      };
+
+      renderTable({ scoreOverrides: [uscOverride, secondUscOverride] });
+
+      const uscRow = screen.getByText('USC').closest('tr')!;
+      await userEvent.click(within(uscRow).getByRole('button', { name: 'About Manual score override' }));
+
+      expect(screen.getByText(/17-21 corrected to 21-17/)).toBeInTheDocument();
+      expect(screen.getByText(/14-10 corrected to 10-14/)).toBeInTheDocument();
+    });
+
+    it('renders a tooltip next to a team involved in a score override', async () => {
+      renderTable({ scoreOverrides: [uscOverride] });
+
+      const uscRow = screen.getByText('USC').closest('tr')!;
+      await userEvent.click(within(uscRow).getByRole('button', { name: 'About Manual score override' }));
+
+      expect(screen.getByText(/17-21 corrected to 21-17/)).toBeInTheDocument();
     });
   });
 

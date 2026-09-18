@@ -214,6 +214,54 @@ public class RankingsControllerTests
     }
 
     [Fact]
+    public async Task GetRankings_LiveCalculation_ScoreOverridesIncludeOriginalAndOverrideScores()
+    {
+        _mockRankingsModule
+            .Setup(x => x.GetPublishedRankingsSnapshotAsync(2025, 6))
+            .ReturnsAsync((RankingsResult?)null);
+
+        var seasonData = new SeasonData
+        {
+            Season = 2025,
+            Week = 6,
+            Teams = new Dictionary<string, TeamInfo>(),
+            Games = []
+        };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var rankingsResult = new RankingsResult { Season = 2025, Week = 6, Rankings = [] };
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2025, 6)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankingsResult);
+        _mockRankingsModule
+            .Setup(x => x.GetRankDeltasAsync(2025, 6, rankingsResult.Rankings))
+            .ReturnsAsync(new Dictionary<string, int?>());
+
+        var gameOverride = CreateGameOverride(
+            gameID: 401234561, week: 2, createdAt: new DateTime(2025, 9, 10, 0, 0, 0, DateTimeKind.Utc));
+        _mockGameOverrideModule
+            .Setup(x => x.GetGameOverridesBySeasonAsync(2025))
+            .ReturnsAsync(new List<GameOverride> { gameOverride });
+        _mockDataService.Setup(x => x.GetFBSTeamsAsync(2025))
+            .ReturnsAsync([
+                new FBSTeam { Name = "Iowa", LogoURL = "https://example.com/iowa.png" },
+                new FBSTeam { Name = "Oklahoma", LogoURL = "https://example.com/oklahoma.png" }
+            ]);
+
+        var result = await _controller.GetRankings(2025, 6);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<RankingsResponseDTO>(okResult.Value);
+        var disclosedOverride = Assert.Single(response.ScoreOverrides);
+        Assert.Equal(24, disclosedOverride.OriginalAwayPoints);
+        Assert.Equal(20, disclosedOverride.OriginalHomePoints);
+        Assert.Equal(20, disclosedOverride.OverrideAwayPoints);
+        Assert.Equal(24, disclosedOverride.OverrideHomePoints);
+        Assert.Equal("https://example.com/iowa.png", disclosedOverride.AwayTeamLogoURL);
+        Assert.Equal("https://example.com/oklahoma.png", disclosedOverride.HomeTeamLogoURL);
+    }
+
+    [Fact]
     public async Task GetRankings_NoPersistedRankingsSnapshot_FallsBackToLiveCalculation()
     {
         _mockRankingsModule
@@ -432,9 +480,11 @@ public class RankingsControllerTests
         return new GameOverride
         {
             AwayTeam = "Iowa",
+            AwayTeamLogoURL = "https://example.com/iowa.png",
             CreatedAt = createdAt,
             GameID = gameID,
             HomeTeam = "Oklahoma",
+            HomeTeamLogoURL = "https://example.com/oklahoma.png",
             ModifiedAt = createdAt,
             OriginalAwayPoints = 24,
             OriginalHomePoints = 20,

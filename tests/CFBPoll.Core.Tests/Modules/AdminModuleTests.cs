@@ -1709,6 +1709,17 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task GetGameOverridesAsync_EmptySeason_DoesNotFetchTeamLogos()
+    {
+        _mockGameOverrideModule.Setup(x => x.GetGameOverridesBySeasonAsync(2024)).ReturnsAsync([]);
+
+        var result = await _adminModule.GetGameOverridesAsync(2024);
+
+        Assert.Empty(result);
+        _mockDataService.Verify(x => x.GetFBSTeamsAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
     public async Task GetGameOverridesAsync_IncludesTeamLogoURLsFromFBSTeams()
     {
         var overrides = new List<GameOverride> { new() { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame" } };

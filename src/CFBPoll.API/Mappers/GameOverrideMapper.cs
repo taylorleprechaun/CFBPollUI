@@ -42,8 +42,14 @@ public static class GameOverrideMapper
         return new ScoreOverrideDisclosureDTO
         {
             AwayTeam = gameOverride.AwayTeam,
+            AwayTeamLogoURL = gameOverride.AwayTeamLogoURL,
             GameID = gameOverride.GameID,
             HomeTeam = gameOverride.HomeTeam,
+            HomeTeamLogoURL = gameOverride.HomeTeamLogoURL,
+            OriginalAwayPoints = gameOverride.OriginalAwayPoints,
+            OriginalHomePoints = gameOverride.OriginalHomePoints,
+            OverrideAwayPoints = gameOverride.OverrideAwayPoints,
+            OverrideHomePoints = gameOverride.OverrideHomePoints,
             Reason = gameOverride.Reason,
             Week = gameOverride.Week
         };

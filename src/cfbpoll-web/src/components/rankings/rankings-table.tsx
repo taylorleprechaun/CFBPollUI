@@ -2,15 +2,18 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 
-import type { RankedTeam } from '../../types';
+import type { RankedTeam, ScoreOverrideDisclosure } from '../../types';
 
+import { formatScoreOverrideSummary } from '../../lib/score-override-summary';
 import { calculateZScores } from '../../lib/stats-utils';
+import { InfoTooltip } from '../ui/info-tooltip';
 import { SortableTable } from '../ui/sortable-table';
 import { TeamLogo } from './team-logo';
 
 interface RankingsTableProps {
   isLoading: boolean;
   rankings: RankedTeam[];
+  scoreOverrides?: ScoreOverrideDisclosure[];
   selectedConference: string | null;
   selectedSeason: number | null;
   showRatingZScore?: boolean;
@@ -30,11 +33,29 @@ const columnHelper = createColumnHelper<DisplayRankedTeam>();
 export function RankingsTable({
   rankings,
   isLoading,
+  scoreOverrides = [],
   selectedConference,
   selectedSeason,
   showRatingZScore = false,
   showWeightedSOS = false,
 }: RankingsTableProps) {
+  const overridesByTeamName = useMemo(() => {
+    const map = new Map<string, ScoreOverrideDisclosure[]>();
+
+    for (const override of scoreOverrides) {
+      for (const teamName of [override.awayTeam, override.homeTeam]) {
+        const existing = map.get(teamName);
+        if (existing) {
+          existing.push(override);
+        } else {
+          map.set(teamName, [override]);
+        }
+      }
+    }
+
+    return map;
+  }, [scoreOverrides]);
+
   const displayData: DisplayRankedTeam[] = useMemo(() => {
     const zScores = showRatingZScore ? calculateZScores(rankings.map((t) => t.rating)) : null;
     const zScoreMap = zScores
@@ -89,6 +110,7 @@ export function RankingsTable({
         const teamDetailUrl = selectedSeason
           ? `/team-details?team=${encodeURIComponent(info.getValue())}&season=${selectedSeason}`
           : `/team-details?team=${encodeURIComponent(info.getValue())}`;
+        const teamOverrides = overridesByTeamName.get(info.getValue());
         return (
           <div className="flex items-center space-x-3">
             <TeamLogo logoURL={team.logoURL} teamName={info.getValue()} />
@@ -98,6 +120,12 @@ export function RankingsTable({
             >
               {info.getValue()}
             </Link>
+            {teamOverrides && (
+              <InfoTooltip
+                statName="Manual score override"
+                summary={teamOverrides.map(formatScoreOverrideSummary).join(' ')}
+              />
+            )}
           </div>
         );
       },
@@ -179,7 +207,7 @@ export function RankingsTable({
         return a - b;
       },
     }),
-  ], [selectedSeason, showRatingZScore, showWeightedSOS]);
+  ], [overridesByTeamName, selectedSeason, showRatingZScore, showWeightedSOS]);
 
   return (
     <SortableTable

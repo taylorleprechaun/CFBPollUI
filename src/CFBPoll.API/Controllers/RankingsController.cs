@@ -3,6 +3,7 @@ using CFBPoll.API.Filters;
 using CFBPoll.API.Mappers;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
+using CFBPoll.Core.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CFBPoll.API.Controllers;
@@ -66,7 +67,12 @@ public class RankingsController : ControllerBase
     private async Task<IEnumerable<ScoreOverrideDisclosureDTO>> GetScoreOverrideDisclosuresAsync(
         int season, Func<GameOverride, bool> isApplicable)
     {
-        var overrides = await _gameOverrideModule.GetGameOverridesBySeasonAsync(season);
-        return overrides.Where(isApplicable).Select(GameOverrideMapper.ToDisclosureDTO);
+        var overrides = (await _gameOverrideModule.GetGameOverridesBySeasonAsync(season)).Where(isApplicable).ToList();
+        if (overrides.Count == 0)
+            return [];
+
+        var teamLogosByName = await TeamLogoLookup.GetTeamLogosByNameAsync(_dataService, season);
+
+        return overrides.Select(o => GameOverrideMapper.ToDisclosureDTO(TeamLogoLookup.WithTeamLogos(o, teamLogosByName)));
     }
 }

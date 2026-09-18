@@ -57,6 +57,56 @@ public class GameOverrideMapperTests
     }
 
     [Fact]
+    public void ToDisclosureDTO_MapsOriginalAndOverrideScores()
+    {
+        var gameOverride = new GameOverride
+        {
+            AwayTeam = "Alabama",
+            GameID = 401234564,
+            HomeTeam = "Florida",
+            OriginalAwayPoints = 17,
+            OriginalHomePoints = 21,
+            OverrideAwayPoints = 24,
+            OverrideHomePoints = 21,
+            Reason = "A muffed punt was ruled a fumble recovery that should have been dead.",
+            Week = 7
+        };
+
+        var result = GameOverrideMapper.ToDisclosureDTO(gameOverride);
+
+        Assert.Equal(17, result.OriginalAwayPoints);
+        Assert.Equal(21, result.OriginalHomePoints);
+        Assert.Equal(24, result.OverrideAwayPoints);
+        Assert.Equal(21, result.OverrideHomePoints);
+    }
+
+    [Fact]
+    public void ToDisclosureDTO_MapsTeamLogoURLsFromGameOverride()
+    {
+        var gameOverride = new GameOverride
+        {
+            AwayTeam = "Alabama",
+            AwayTeamLogoURL = "https://example.com/alabama.png",
+            GameID = 401234564,
+            HomeTeam = "Florida",
+            HomeTeamLogoURL = "https://example.com/florida.png",
+            Reason = "A muffed punt was ruled a fumble recovery that should have been dead.",
+            Week = 7
+        };
+
+        var result = GameOverrideMapper.ToDisclosureDTO(gameOverride);
+
+        Assert.Equal("https://example.com/alabama.png", result.AwayTeamLogoURL);
+        Assert.Equal("https://example.com/florida.png", result.HomeTeamLogoURL);
+    }
+
+    [Fact]
+    public void ToDisclosureDTO_NullGameOverride_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => GameOverrideMapper.ToDisclosureDTO(null!));
+    }
+
+    [Fact]
     public void ToDTO_MapsTeamLogoURLsFromGameOverride()
     {
         var gameOverride = new GameOverride
