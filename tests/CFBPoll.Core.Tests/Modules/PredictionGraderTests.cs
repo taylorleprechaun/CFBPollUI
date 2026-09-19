@@ -15,6 +15,46 @@ public class PredictionGraderTests
     }
 
     [Fact]
+    public void Grade_GameWithOverriddenScore_GradesAgainstOfficialScoreAndFlagsOverride()
+    {
+        var prediction = new GamePrediction { HomeTeam = "Iowa", AwayTeam = "Nebraska", PredictedWinner = "Iowa" };
+        var game = new Game
+        {
+            AwayPoints = 27,
+            HomePoints = 21,
+            OriginalAwayPoints = 20,
+            OriginalHomePoints = 24,
+            ScoreOverrideReason = "A targeting penalty on the game-ending interception return was picked up late."
+        };
+
+        PredictionGrader.Grade(prediction, game);
+
+        Assert.Equal(24, prediction.ActualHomeScore);
+        Assert.Equal(20, prediction.ActualAwayScore);
+        Assert.Equal(PredictionGradeStatus.Correct, prediction.WinnerGrade);
+        Assert.Equal(game.ScoreOverrideReason, prediction.ScoreOverrideReason);
+    }
+
+    [Fact]
+    public void Grade_GameWithoutOverride_GradesAgainstFinalScoreAndClearsFlag()
+    {
+        var prediction = new GamePrediction
+        {
+            HomeTeam = "Iowa",
+            AwayTeam = "Nebraska",
+            PredictedWinner = "Iowa",
+            ScoreOverrideReason = "Left over from an earlier grading pass."
+        };
+        var game = new Game { AwayPoints = 10, HomePoints = 24 };
+
+        PredictionGrader.Grade(prediction, game);
+
+        Assert.Equal(24, prediction.ActualHomeScore);
+        Assert.Equal(10, prediction.ActualAwayScore);
+        Assert.Null(prediction.ScoreOverrideReason);
+    }
+
+    [Fact]
     public void Grade_HomeTeamWins_PredictedWinnerMatches_SetsWinnerGradeCorrect()
     {
         var prediction = new GamePrediction { HomeTeam = "Iowa", AwayTeam = "Nebraska", PredictedWinner = "Iowa" };

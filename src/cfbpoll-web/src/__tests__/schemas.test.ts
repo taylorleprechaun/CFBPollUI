@@ -18,6 +18,35 @@ import {
 
 describe('Zod Schemas', () => {
   describe('GamePredictionPublicSchema', () => {
+    it('allows a score override reason', () => {
+      const data = {
+        actualAwayScore: 20,
+        actualHomeScore: 24,
+        actualOverUnderResult: 'Under',
+        actualSpreadCoveringTeam: 'USC',
+        actualWinner: 'USC',
+        awayLogoURL: '',
+        awayTeam: 'Florida',
+        awayTeamScore: 17,
+        bettingOverUnder: 45.5,
+        bettingSpread: -3.5,
+        homeLogoURL: '',
+        homeTeam: 'USC',
+        homeTeamScore: 28,
+        myOverUnderPick: 'Over',
+        mySpreadPick: 'USC',
+        neutralSite: false,
+        overUnderGrade: 'Incorrect',
+        predictedMargin: 11,
+        predictedWinner: 'USC',
+        scoreOverrideReason: 'A targeting call was missed on the decisive fourth-down stop.',
+        spreadGrade: 'Incorrect',
+        winnerGrade: 'Correct',
+      };
+      const result = GamePredictionPublicSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
     it('allows null betting lines', () => {
       const data = {
         actualAwayScore: null,

@@ -52,6 +52,7 @@ public static class PredictionsMapper
             OverUnderGrade = (includeGradeDetails ? prediction.OverUnderGrade : PredictionGradeStatus.Ungraded).ToString(),
             PredictedMargin = prediction.PredictedMargin,
             PredictedWinner = prediction.PredictedWinner,
+            ScoreOverrideReason = includeGradeDetails ? prediction.ScoreOverrideReason : null,
             SpreadGrade = (includeGradeDetails ? prediction.SpreadGrade : PredictionGradeStatus.Ungraded).ToString(),
             WinnerGrade = (includeGradeDetails ? prediction.WinnerGrade : PredictionGradeStatus.Ungraded).ToString()
         };

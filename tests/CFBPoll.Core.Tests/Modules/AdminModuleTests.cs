@@ -116,7 +116,7 @@ public class AdminModuleTests
     }
 
     [Fact]
-    public async Task CalculateExperimentalPredictionsAsync_GameHasOverriddenScore_GradesAgainstOverriddenScore()
+    public async Task CalculateExperimentalPredictionsAsync_GameHasOverriddenScore_GradesAgainstOfficialScore()
     {
         var fbsTeams = new Dictionary<string, TeamInfo>
         {
@@ -135,13 +135,15 @@ public class AdminModuleTests
         };
 
         // Simulates what CachingCFBDataService.GetGamesAsync returns once a manual score override has
-        // been applied - grading has no override-specific logic of its own and should trust it as-is.
+        // been applied: the overridden score, with the official score preserved alongside it.
         var overriddenGame = new Game
         {
             AwayPoints = 24,
             AwayTeam = "USC",
             HomePoints = 17,
             HomeTeam = "Notre Dame",
+            OriginalAwayPoints = 17,
+            OriginalHomePoints = 24,
             ScoreOverrideReason = "A targeting call was missed on the decisive fourth-down stop.",
             SeasonType = "regular",
             Week = 6
@@ -159,9 +161,10 @@ public class AdminModuleTests
         var result = await _adminModule.CalculateExperimentalPredictionsAsync(2024, 5, RatingAlgorithmVersion.V2);
 
         var graded = Assert.Single(result.Predictions);
-        Assert.Equal(17, graded.ActualHomeScore);
-        Assert.Equal(24, graded.ActualAwayScore);
-        Assert.Equal(PredictionGradeStatus.Incorrect, graded.WinnerGrade);
+        Assert.Equal(24, graded.ActualHomeScore);
+        Assert.Equal(17, graded.ActualAwayScore);
+        Assert.Equal(PredictionGradeStatus.Correct, graded.WinnerGrade);
+        Assert.Equal("A targeting call was missed on the decisive fourth-down stop.", graded.ScoreOverrideReason);
     }
 
     [Fact]

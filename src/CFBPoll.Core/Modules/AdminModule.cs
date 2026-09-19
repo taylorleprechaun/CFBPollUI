@@ -134,7 +134,7 @@ public class AdminModule : IAdminModule
         foreach (var prediction in predictions)
         {
             if (resultsByGame.TryGetValue(PredictionGrader.BuildMatchKey(prediction.HomeTeam, prediction.AwayTeam), out var game))
-                PredictionGrader.Grade(prediction, game.HomePoints!.Value, game.AwayPoints!.Value);
+                PredictionGrader.Grade(prediction, game);
         }
 
         return new ExperimentalPredictionsResult

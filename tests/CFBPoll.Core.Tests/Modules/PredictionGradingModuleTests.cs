@@ -60,11 +60,13 @@ public class PredictionGradingModuleTests
     }
 
     [Fact]
-    public async Task GradeAsync_GameHasOverriddenScore_GradesAgainstOverriddenScore()
+    public async Task GradeAsync_GameHasOverriddenScore_GradesAgainstOfficialScore()
     {
         // Simulates what CachingCFBDataService.GetGamesAsync returns once a manual score override has
-        // been applied - grading has no override-specific logic of its own and should trust it as-is.
-        var overriddenGame = BuildGame("Iowa", "Nebraska", homePoints: 24, awayPoints: 21);
+        // been applied: the overridden score, with the official score preserved alongside it.
+        var overriddenGame = BuildGame("Iowa", "Nebraska", homePoints: 21, awayPoints: 24);
+        overriddenGame.OriginalAwayPoints = 21;
+        overriddenGame.OriginalHomePoints = 24;
         overriddenGame.ScoreOverrideReason = "A targeting penalty on the game-ending interception return was picked up late.";
 
         SetupRegularSeasonWeek(2024, 5, BuildPrediction(homeTeam: "Iowa", awayTeam: "Nebraska", predictedWinner: "Iowa"),
@@ -76,6 +78,7 @@ public class PredictionGradingModuleTests
         Assert.Equal(24, graded.ActualHomeScore);
         Assert.Equal(21, graded.ActualAwayScore);
         Assert.Equal(PredictionGradeStatus.Correct, graded.WinnerGrade);
+        Assert.Equal(overriddenGame.ScoreOverrideReason, graded.ScoreOverrideReason);
     }
 
     [Fact]

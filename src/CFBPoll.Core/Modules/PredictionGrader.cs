@@ -15,6 +15,19 @@ internal static class PredictionGrader
     public static string BuildMatchKey(string homeTeam, string awayTeam) =>
         $"{homeTeam}|{awayTeam}".ToUpperInvariant();
 
+    /// <summary>
+    /// Grades against the officially recorded score, which is what sportsbooks settle on, even when a
+    /// manual score override has replaced it elsewhere in the poll. Flags the prediction when it did.
+    /// </summary>
+    public static void Grade(GamePrediction prediction, Game game)
+    {
+        var officialHomeScore = game.OriginalHomePoints ?? game.HomePoints!.Value;
+        var officialAwayScore = game.OriginalAwayPoints ?? game.AwayPoints!.Value;
+
+        Grade(prediction, officialHomeScore, officialAwayScore);
+        prediction.ScoreOverrideReason = game.ScoreOverrideReason;
+    }
+
     public static void Grade(GamePrediction prediction, int actualHomeScore, int actualAwayScore)
     {
         var scoic = StringComparison.OrdinalIgnoreCase;

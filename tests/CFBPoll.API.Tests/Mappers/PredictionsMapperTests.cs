@@ -61,12 +61,14 @@ public class PredictionsMapperTests
             ActualSpreadCoveringTeam = "Ohio State",
             ActualWinner = "Ohio State",
             OverUnderGrade = PredictionGradeStatus.Correct,
+            ScoreOverrideReason = "A targeting call was missed on the decisive fourth-down stop.",
             SpreadGrade = PredictionGradeStatus.Correct,
             WinnerGrade = PredictionGradeStatus.Correct
         };
 
         var result = PredictionsMapper.ToDTO(prediction, includeGradeDetails: false);
 
+        Assert.Null(result.ScoreOverrideReason);
         Assert.Null(result.ActualAwayScore);
         Assert.Null(result.ActualHomeScore);
         Assert.Null(result.ActualOverUnderResult);
@@ -188,6 +190,21 @@ public class PredictionsMapperTests
     public void ToDTO_NullInput_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(() => PredictionsMapper.ToDTO((GamePrediction)null!));
+    }
+
+    [Fact]
+    public void ToDTO_ScoreOverrideReason_MapsWhenGradeDetailsIncluded()
+    {
+        var prediction = new GamePrediction
+        {
+            AwayTeam = "Michigan",
+            HomeTeam = "Ohio State",
+            ScoreOverrideReason = "A targeting call was missed on the decisive fourth-down stop."
+        };
+
+        var result = PredictionsMapper.ToDTO(prediction);
+
+        Assert.Equal("A targeting call was missed on the decisive fourth-down stop.", result.ScoreOverrideReason);
     }
 
     [Fact]

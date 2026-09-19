@@ -9,6 +9,7 @@ import { PredictionsTable } from '../predictions/predictions-table';
 import { BUTTON_PRIMARY, BUTTON_SUCCESS } from '../ui/button-styles';
 import { CollapsibleContent } from '../ui/collapsible-content';
 import { CollapsibleTrigger } from '../ui/collapsible-trigger';
+import { ConfirmModal } from '../ui/confirm-modal';
 import { StatusBadge } from '../ui/status-badge';
 import { FeedbackIndicator } from './feedback-indicator';
 
@@ -50,18 +51,31 @@ export function ActivePredictionViewSection({
   view,
 }: ActivePredictionViewSectionProps) {
   const [expanded, setExpanded] = useState(true);
+  const [isRegradeConfirmOpen, setIsRegradeConfirmOpen] = useState(false);
 
   const { predictions } = view;
   const sourceLabel = SOURCE_LABELS[view.source];
   const stage = derivePredictionStage(view);
-  const hasUngradedGames = predictions.predictions.some((p) => p.winnerGrade === 'Ungraded');
-  const showGrade = !view.isGraded || hasUngradedGames;
   const showPublish = !view.isPublished;
   const showPublishResults = view.isGraded && view.isPublished && !view.resultsPublished;
   const gradeKey = `grade-${predictions.season}-${predictions.week}`;
   const publishKey = `active-view-publish-${predictions.season}-${predictions.week}`;
   const publishResultsKey = `publish-results-${predictions.season}-${predictions.week}`;
   const contentId = `active-view-${predictions.season}-${predictions.week}`;
+
+  function handleGradeClick() {
+    if (view.resultsPublished) {
+      setIsRegradeConfirmOpen(true);
+      return;
+    }
+
+    onGrade(predictions.season, predictions.week);
+  }
+
+  function handleRegradeConfirm() {
+    setIsRegradeConfirmOpen(false);
+    onGrade(predictions.season, predictions.week);
+  }
 
   return (
     <div className="bg-surface shadow-md rounded-xl overflow-hidden">
@@ -102,18 +116,14 @@ export function ActivePredictionViewSection({
                 <FeedbackIndicator feedback={publishFeedback} feedbackKey={publishKey} onClear={onClearPublishFeedback} />
               </>
             )}
-            {showGrade && (
-              <>
-                <button
-                  onClick={() => onGrade(predictions.season, predictions.week)}
-                  disabled={isActionPending}
-                  className={BUTTON_PRIMARY}
-                >
-                  {isGrading ? 'Grading...' : view.isGraded ? 'Re-grade' : 'Grade'}
-                </button>
-                <FeedbackIndicator feedback={gradeFeedback} feedbackKey={gradeKey} onClear={onClearGradeFeedback} />
-              </>
-            )}
+            <button
+              onClick={handleGradeClick}
+              disabled={isActionPending}
+              className={BUTTON_PRIMARY}
+            >
+              {isGrading ? 'Grading...' : view.isGraded ? 'Re-grade' : 'Grade'}
+            </button>
+            <FeedbackIndicator feedback={gradeFeedback} feedbackKey={gradeKey} onClear={onClearGradeFeedback} />
             {showPublishResults && (
               <>
                 <button
@@ -142,6 +152,15 @@ export function ActivePredictionViewSection({
       <CollapsibleContent id={contentId} isOpen={expanded}>
         <PredictionsTable predictions={predictions.predictions} showGrades={view.isGraded} />
       </CollapsibleContent>
+      {isRegradeConfirmOpen && (
+        <ConfirmModal
+          title="Re-grade Published Results"
+          message={`The results for ${predictions.season} ${getWeekLabel(predictions.week)} are already published. Re-grading replaces the graded results shown on the public predictions page right away. Continue?`}
+          confirmLabel="Re-grade"
+          onConfirm={handleRegradeConfirm}
+          onCancel={() => setIsRegradeConfirmOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -181,6 +181,7 @@ export const GamePredictionPublicSchema = z.object({
   overUnderGrade: GameGradeSchema,
   predictedMargin: z.number(),
   predictedWinner: z.string(),
+  scoreOverrideReason: z.string().nullable().optional(),
   spreadGrade: GameGradeSchema,
   winnerGrade: GameGradeSchema,
 });

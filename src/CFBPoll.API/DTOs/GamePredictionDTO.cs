@@ -21,6 +21,7 @@ public class GamePredictionDTO
     public string OverUnderGrade { get; set; } = string.Empty;
     public double PredictedMargin { get; set; }
     public string PredictedWinner { get; set; } = string.Empty;
+    public string? ScoreOverrideReason { get; set; }
     public string SpreadGrade { get; set; } = string.Empty;
     public string WinnerGrade { get; set; } = string.Empty;
 }

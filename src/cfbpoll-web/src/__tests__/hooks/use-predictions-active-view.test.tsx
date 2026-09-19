@@ -109,6 +109,34 @@ describe('usePredictionsActiveView', () => {
     expect(queryClient.getQueryData(['admin-prediction', 2024, 5])).toMatchObject({ isPublished: true });
   });
 
+  it('applyGraded keeps resultsPublished true for a week whose results were already published', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData(['admin-prediction', 2024, 5], {
+      isPublished: true,
+      predictions: { ...predictions, isGraded: true, resultsPublished: true },
+    });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter>{children}</MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => usePredictionsActiveView('test-token'), { wrapper });
+
+    act(() => {
+      result.current.applyGraded({
+        isPersisted: true,
+        predictions: { ...predictions, isGraded: true, resultsPublished: false },
+        unmatchedGameCount: 0,
+      });
+    });
+
+    // The grade response always reports resultsPublished as false, so re-grading must not flip the
+    // stage back to Graded or bring Publish Results back.
+    await waitFor(() => expect(result.current.view).not.toBeNull());
+    expect(result.current.view?.resultsPublished).toBe(true);
+  });
+
   it('applyGraded primes the query cache and sets source to graded with unmatchedGameCount', async () => {
     const { result } = renderHook(() => usePredictionsActiveView('test-token'), {
       wrapper: createWrapper(),

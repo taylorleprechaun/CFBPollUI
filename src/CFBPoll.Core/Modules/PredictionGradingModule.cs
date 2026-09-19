@@ -50,7 +50,7 @@ public class PredictionGradingModule : IPredictionGradingModule
                 continue;
             }
 
-            PredictionGrader.Grade(prediction, game.HomePoints!.Value, game.AwayPoints!.Value);
+            PredictionGrader.Grade(prediction, game);
         }
 
         var gradedResult = new PredictionsResult

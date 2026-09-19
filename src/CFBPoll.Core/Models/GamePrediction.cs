@@ -21,6 +21,7 @@ public class GamePrediction
     public PredictionGradeStatus OverUnderGrade { get; set; } = PredictionGradeStatus.Ungraded;
     public double PredictedMargin { get; set; }
     public string PredictedWinner { get; set; } = string.Empty;
+    public string? ScoreOverrideReason { get; set; }
     public PredictionGradeStatus SpreadGrade { get; set; } = PredictionGradeStatus.Ungraded;
     public PredictionGradeStatus WinnerGrade { get; set; } = PredictionGradeStatus.Ungraded;
 }

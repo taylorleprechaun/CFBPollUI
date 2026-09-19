@@ -70,7 +70,12 @@ export function usePredictionsActiveView(token: string | null) {
     const { season: s, week: w } = result.predictions;
     queryClient.setQueryData(
       ['admin-prediction', s, w],
-      (old: AdminPredictionsResponse | undefined) => ({ isPublished: old?.isPublished ?? false, predictions: result.predictions }),
+      // The grade response always reports resultsPublished as false; keep whatever the week already was
+      // so re-grading a week with published results doesn't make it look unpublished.
+      (old: AdminPredictionsResponse | undefined) => ({
+        isPublished: old?.isPublished ?? false,
+        predictions: { ...result.predictions, resultsPublished: old?.predictions.resultsPublished ?? false },
+      }),
     );
     setMeta({
       isPersisted: result.isPersisted,
