@@ -70,4 +70,13 @@ public class PredictionsModule : IPredictionsModule
 
         return await _predictionsData.SaveGradedResultAsync(gradedPredictions).ConfigureAwait(false);
     }
+
+    public async Task<int> UpdateScoreOverrideReasonAsync(int season, string homeTeam, string awayTeam, string reason)
+    {
+        ArgumentNullException.ThrowIfNull(homeTeam);
+        ArgumentNullException.ThrowIfNull(awayTeam);
+        ArgumentNullException.ThrowIfNull(reason);
+
+        return await _predictionsData.UpdateScoreOverrideReasonAsync(season, homeTeam, awayTeam, reason).ConfigureAwait(false);
+    }
 }

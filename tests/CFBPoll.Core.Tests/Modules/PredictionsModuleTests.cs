@@ -112,4 +112,26 @@ public class PredictionsModuleTests
     {
         await Assert.ThrowsAsync<ArgumentNullException>(() => _predictionsModule.SaveAsync(null!));
     }
+
+    [Fact]
+    public async Task UpdateScoreOverrideReasonAsync_DelegatesToData()
+    {
+        _mockPredictionsData.Setup(x => x.UpdateScoreOverrideReasonAsync(2024, "Florida", "Iowa", "Edited reason.")).ReturnsAsync(2);
+
+        var result = await _predictionsModule.UpdateScoreOverrideReasonAsync(2024, "Florida", "Iowa", "Edited reason.");
+
+        Assert.Equal(2, result);
+        _mockPredictionsData.Verify(x => x.UpdateScoreOverrideReasonAsync(2024, "Florida", "Iowa", "Edited reason."), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateScoreOverrideReasonAsync_NullArgument_ThrowsArgumentNullException()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => _predictionsModule.UpdateScoreOverrideReasonAsync(2024, null!, "Iowa", "Edited reason."));
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => _predictionsModule.UpdateScoreOverrideReasonAsync(2024, "Florida", null!, "Edited reason."));
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => _predictionsModule.UpdateScoreOverrideReasonAsync(2024, "Florida", "Iowa", null!));
+    }
 }

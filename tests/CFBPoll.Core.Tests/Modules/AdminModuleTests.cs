@@ -2372,6 +2372,34 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task SaveGameOverrideAsync_ExistingOverride_PropagatesReasonToRankingsAndPredictions()
+    {
+        var fullSchedule = new List<ScheduleGame>
+        {
+            new() { GameID = 401123457, Week = 5, SeasonType = "regular", HomeTeam = "Florida", AwayTeam = "Iowa", HomePoints = 24, AwayPoints = 20, Completed = true }
+        };
+        var existingOverride = new GameOverride
+        {
+            GameID = 401123457,
+            OriginalHomePoints = 20,
+            OriginalAwayPoints = 24,
+            OverrideHomePoints = 24,
+            OverrideAwayPoints = 20,
+            Reason = "Original reason."
+        };
+
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2026)).ReturnsAsync(fullSchedule);
+        _mockGameOverrideModule.Setup(x => x.GetGameOverrideAsync(401123457)).ReturnsAsync(existingOverride);
+        _mockGameOverrideModule.Setup(x => x.SaveGameOverrideAsync(It.IsAny<GameOverride>())).ReturnsAsync(true);
+
+        var outcome = await _adminModule.SaveGameOverrideAsync(401123457, 2026, 24, 20, "Clarified reason.");
+
+        Assert.Equal(SaveGameOverrideOutcome.Saved, outcome);
+        _mockRankingsModule.Verify(x => x.UpdateScoreOverrideReasonAsync(2026, 401123457, "Clarified reason."), Times.Once);
+        _mockPredictionsModule.Verify(x => x.UpdateScoreOverrideReasonAsync(2026, "Florida", "Iowa", "Clarified reason."), Times.Once);
+    }
+
+    [Fact]
     public async Task SaveGameOverrideAsync_GameNotCompleted_ReturnsGameNotCompleted()
     {
         var fullSchedule = new List<ScheduleGame>
@@ -2396,6 +2424,24 @@ public class AdminModuleTests
 
         Assert.Equal(SaveGameOverrideOutcome.GameNotFound, outcome);
         _mockGameOverrideModule.Verify(x => x.SaveGameOverrideAsync(It.IsAny<GameOverride>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SaveGameOverrideAsync_NewOverride_DoesNotPropagateReason()
+    {
+        var fullSchedule = new List<ScheduleGame>
+        {
+            new() { GameID = 401123457, Week = 5, SeasonType = "regular", HomeTeam = "Florida", AwayTeam = "Iowa", HomePoints = 24, AwayPoints = 20, Completed = true }
+        };
+
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2026)).ReturnsAsync(fullSchedule);
+        _mockGameOverrideModule.Setup(x => x.GetGameOverrideAsync(401123457)).ReturnsAsync((GameOverride?)null);
+        _mockGameOverrideModule.Setup(x => x.SaveGameOverrideAsync(It.IsAny<GameOverride>())).ReturnsAsync(true);
+
+        await _adminModule.SaveGameOverrideAsync(401123457, 2026, 20, 24, "Corrected after review.");
+
+        _mockRankingsModule.Verify(x => x.UpdateScoreOverrideReasonAsync(It.IsAny<int>(), It.IsAny<long>(), It.IsAny<string>()), Times.Never);
+        _mockPredictionsModule.Verify(x => x.UpdateScoreOverrideReasonAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
     [Fact]

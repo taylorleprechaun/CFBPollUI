@@ -69,4 +69,11 @@ public interface IPredictionsData
     /// Saves graded results for the given season and week without changing publish state.
     /// </summary>
     Task<bool> SaveGradedResultAsync(PredictionsResult gradedPredictions);
+
+    /// <summary>
+    /// Replaces the score override reason on graded predictions for the given matchup in every stored
+    /// week of the season. Nothing else in the stored predictions changes.
+    /// </summary>
+    /// <returns>The number of stored weeks that were updated.</returns>
+    Task<int> UpdateScoreOverrideReasonAsync(int season, string homeTeam, string awayTeam, string reason);
 }

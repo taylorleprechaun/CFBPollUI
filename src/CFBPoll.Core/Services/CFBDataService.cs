@@ -212,7 +212,7 @@ public class CFBDataService : ICFBDataService
         var allGames = (regularGames ?? []).Select(g => MapScheduleGame(g, "regular"))
             .Concat((postseasonGames ?? []).Select(g => MapScheduleGame(g, "postseason")));
 
-        return allGames;
+        return ScheduleGameDeduplicator.Deduplicate(allGames);
     }
 
     public async Task<IEnumerable<Game>> GetGamesAsync(int season, string seasonType)

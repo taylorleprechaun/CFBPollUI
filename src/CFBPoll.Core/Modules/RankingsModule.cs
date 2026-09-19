@@ -155,6 +155,13 @@ public class RankingsModule : IRankingsModule
         return await _rankingsData.SaveRankingsSnapshotAsync(rankings, algorithmVersion).ConfigureAwait(false);
     }
 
+    public async Task<int> UpdateScoreOverrideReasonAsync(int season, long gameID, string reason)
+    {
+        ArgumentNullException.ThrowIfNull(reason);
+
+        return await _rankingsData.UpdateScoreOverrideReasonAsync(season, gameID, reason).ConfigureAwait(false);
+    }
+
     private IEnumerable<AppliedScoreOverride> BuildScoreOverrides(SeasonData seasonData)
     {
         return seasonData.Games

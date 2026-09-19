@@ -675,6 +675,17 @@ public class AdminModule : IAdminModule
 
         await _gameOverrideModule.SaveGameOverrideAsync(gameOverride).ConfigureAwait(false);
 
+        if (existingOverride is not null)
+        {
+            // Rankings and graded predictions record the reason they were produced with. Only an edit can
+            // leave those copies out of date, and running on every edit, not just when the text changed,
+            // lets a retry repair a previous partial failure.
+            await Task.WhenAll(
+                _rankingsModule.UpdateScoreOverrideReasonAsync(season, gameID, reason),
+                _predictionsModule.UpdateScoreOverrideReasonAsync(season, gameOverride.HomeTeam, gameOverride.AwayTeam, reason))
+                .ConfigureAwait(false);
+        }
+
         return SaveGameOverrideOutcome.Saved;
     }
 

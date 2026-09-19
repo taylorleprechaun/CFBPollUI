@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
 using CFBPoll.Core.Options;
@@ -289,6 +290,57 @@ public class PredictionsData : IPredictionsData
         return rowsAffected > 0;
     }
 
+    public async Task<int> UpdateScoreOverrideReasonAsync(int season, string homeTeam, string awayTeam, string reason)
+    {
+        ArgumentNullException.ThrowIfNull(homeTeam);
+        ArgumentNullException.ThrowIfNull(awayTeam);
+        ArgumentNullException.ThrowIfNull(reason);
+
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
+        await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync().ConfigureAwait(false);
+
+        List<(int Week, string Json)> updates = [];
+
+        await using (var selectCommand = connection.CreateCommand())
+        {
+            selectCommand.Transaction = transaction;
+            selectCommand.CommandText = "SELECT Week, PredictionsJson FROM PredictionsSnapshot WHERE Season = @Season AND Graded = 1";
+            selectCommand.Parameters.AddWithValue("@Season", season);
+
+            await using var reader = await selectCommand.ExecuteReaderAsync().ConfigureAwait(false);
+
+            while (await reader.ReadAsync().ConfigureAwait(false))
+            {
+                var updatedJson = ReplaceScoreOverrideReason(reader.GetString(1), homeTeam, awayTeam, reason);
+                if (updatedJson is not null)
+                {
+                    updates.Add((reader.GetInt32(0), updatedJson));
+                }
+            }
+        }
+
+        foreach (var (week, json) in updates)
+        {
+            await using var updateCommand = connection.CreateCommand();
+            updateCommand.Transaction = transaction;
+            updateCommand.CommandText = "UPDATE PredictionsSnapshot SET PredictionsJson = @PredictionsJson WHERE Season = @Season AND Week = @Week";
+            updateCommand.Parameters.AddWithValue("@PredictionsJson", json);
+            updateCommand.Parameters.AddWithValue("@Season", season);
+            updateCommand.Parameters.AddWithValue("@Week", week);
+            await updateCommand.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
+
+        await transaction.CommitAsync().ConfigureAwait(false);
+
+        _logger.LogInformation(
+            "Updated the score override reason for {AwayTeam} at {HomeTeam} in {Count} predictions snapshots for season {Season}",
+            awayTeam, homeTeam, updates.Count, season);
+
+        return updates.Count;
+    }
+
     private void EnsureDirectoryExists()
     {
         var builder = new SqliteConnectionStringBuilder(_connectionString);
@@ -303,6 +355,38 @@ public class PredictionsData : IPredictionsData
             Directory.CreateDirectory(directory);
             _logger.LogInformation("Created database directory: {Directory}", directory);
         }
+    }
+
+    /// <summary>
+    /// Edits only the reason on predictions for the given matchup that were graded as overridden, leaving
+    /// the rest of the stored predictions exactly as saved. Predictions carry no game ID, so a matchup is
+    /// identified by its teams; two overridden games between the same teams in one season would share a
+    /// reason. Returns null when nothing needed to change.
+    /// </summary>
+    private static string? ReplaceScoreOverrideReason(string predictionsJson, string homeTeam, string awayTeam, string reason)
+    {
+        var root = JsonNode.Parse(predictionsJson);
+        if (root?["Predictions"] is not JsonArray predictions)
+            return null;
+
+        var changed = false;
+
+        foreach (var entry in predictions.OfType<JsonObject>())
+        {
+            var currentReason = (string?)entry["ScoreOverrideReason"];
+            if (currentReason is null || currentReason == reason)
+                continue;
+
+            var isSameMatchup = string.Equals((string?)entry["HomeTeam"], homeTeam, StringComparison.OrdinalIgnoreCase)
+                && string.Equals((string?)entry["AwayTeam"], awayTeam, StringComparison.OrdinalIgnoreCase);
+            if (!isSameMatchup)
+                continue;
+
+            entry["ScoreOverrideReason"] = reason;
+            changed = true;
+        }
+
+        return changed ? root.ToJsonString() : null;
     }
 
     /// <summary>

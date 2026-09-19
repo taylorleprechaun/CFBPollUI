@@ -820,6 +820,144 @@ public class PredictionsDataTests
         }
     }
 
+    [Fact]
+    public async Task UpdateScoreOverrideReasonAsync_LeavesGradesAndPublishedStateUntouched()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var graded = CreatePredictionsResultWithReasons(2024, 5, ("Florida", "Iowa", "Original reason."));
+            graded.Predictions[0].WinnerGrade = PredictionGradeStatus.Correct;
+            await data.SaveAsync(graded);
+            await data.SaveGradedResultAsync(graded);
+            await data.PublishAsync(2024, 5);
+            await data.PublishGradedResultsAsync(2024, 5);
+
+            await data.UpdateScoreOverrideReasonAsync(2024, "Florida", "Iowa", "Edited reason.");
+
+            var published = await data.GetPublishedAsync(2024, 5);
+            Assert.NotNull(published);
+            Assert.True(published.Value.ResultsPublished);
+            var prediction = Assert.Single(published.Value.Predictions.Predictions);
+            Assert.Equal("Edited reason.", prediction.ScoreOverrideReason);
+            Assert.Equal(PredictionGradeStatus.Correct, prediction.WinnerGrade);
+            Assert.Equal(28, prediction.HomeTeamScore);
+
+            var summary = (await data.GetAllSummariesAsync()).Single(s => s.Season == 2024 && s.Week == 5);
+            Assert.True(summary.IsGraded);
+            Assert.NotNull(summary.GradedAt);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateScoreOverrideReasonAsync_NullArgument_ThrowsArgumentNullException()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await Assert.ThrowsAsync<ArgumentNullException>(() => data.UpdateScoreOverrideReasonAsync(2024, null!, "Iowa", "Reason."));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => data.UpdateScoreOverrideReasonAsync(2024, "Florida", null!, "Reason."));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => data.UpdateScoreOverrideReasonAsync(2024, "Florida", "Iowa", null!));
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateScoreOverrideReasonAsync_NoPredictionForTheMatchup_ReturnsZero()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var graded = CreatePredictionsResultWithReasons(2024, 5, ("Florida", "Iowa", "Original reason."));
+            await data.SaveAsync(graded);
+            await data.SaveGradedResultAsync(graded);
+
+            var updated = await data.UpdateScoreOverrideReasonAsync(2024, "Texas", "Nebraska", "Edited reason.");
+
+            Assert.Equal(0, updated);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateScoreOverrideReasonAsync_ReasonAlreadyCurrent_ReturnsZero()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var graded = CreatePredictionsResultWithReasons(2024, 5, ("Florida", "Iowa", "Same reason."));
+            await data.SaveAsync(graded);
+            await data.SaveGradedResultAsync(graded);
+
+            var updated = await data.UpdateScoreOverrideReasonAsync(2024, "Florida", "Iowa", "Same reason.");
+
+            Assert.Equal(0, updated);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateScoreOverrideReasonAsync_UpdatesOnlyOverriddenPredictionsForTheMatchupInTheSeason()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var weekFive = CreatePredictionsResultWithReasons(
+                2024, 5, ("Florida", "Iowa", "Original reason."), ("Texas", "Nebraska", "Other game reason."));
+            await data.SaveAsync(weekFive);
+            await data.SaveGradedResultAsync(weekFive);
+
+            var weekSix = CreatePredictionsResultWithReasons(2024, 6, ("Florida", "Iowa", null));
+            await data.SaveAsync(weekSix);
+            await data.SaveGradedResultAsync(weekSix);
+
+            var otherSeason = CreatePredictionsResultWithReasons(2023, 5, ("Florida", "Iowa", "Original reason."));
+            await data.SaveAsync(otherSeason);
+            await data.SaveGradedResultAsync(otherSeason);
+
+            var updated = await data.UpdateScoreOverrideReasonAsync(2024, "florida", "IOWA", "Edited reason.");
+
+            Assert.Equal(1, updated);
+
+            var week5 = await data.GetAsync(2024, 5);
+            Assert.Equal("Edited reason.", week5!.Predictions.Single(p => p.HomeTeam == "Florida").ScoreOverrideReason);
+            Assert.Equal("Other game reason.", week5.Predictions.Single(p => p.HomeTeam == "Texas").ScoreOverrideReason);
+
+            var week6 = await data.GetAsync(2024, 6);
+            Assert.Null(Assert.Single(week6!.Predictions).ScoreOverrideReason);
+
+            var season2023 = await data.GetAsync(2023, 5);
+            Assert.Equal("Original reason.", Assert.Single(season2023!.Predictions).ScoreOverrideReason);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
     private static void CleanupFile(string filePath)
     {
         SqliteConnection.ClearAllPools();
@@ -868,6 +1006,28 @@ public class PredictionsDataTests
                     PredictedWinner = homeTeam
                 }
             ]
+        };
+    }
+
+    private static PredictionsResult CreatePredictionsResultWithReasons(
+        int season, int week, params (string HomeTeam, string AwayTeam, string? Reason)[] matchups)
+    {
+        return new PredictionsResult
+        {
+            Season = season,
+            Week = week,
+            Predictions = matchups
+                .Select(m => new GamePrediction
+                {
+                    AwayTeam = m.AwayTeam,
+                    AwayTeamScore = 17,
+                    HomeTeam = m.HomeTeam,
+                    HomeTeamScore = 28,
+                    PredictedMargin = 10.5,
+                    PredictedWinner = m.HomeTeam,
+                    ScoreOverrideReason = m.Reason
+                })
+                .ToList()
         };
     }
 }

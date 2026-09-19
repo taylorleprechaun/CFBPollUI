@@ -832,6 +832,141 @@ public class RankingsDataTests
         }
     }
 
+    [Fact]
+    public async Task UpdateScoreOverrideReasonAsync_LeavesRestOfSnapshotAndPublishedStateUntouched()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveRankingsSnapshotAsync(
+                CreateRankingsResultWithScoreOverrides(2025, 6, (401000001, "Original reason.")),
+                RatingAlgorithmVersion.V1);
+            await data.PublishRankingsSnapshotAsync(2025, 6);
+
+            await data.UpdateScoreOverrideReasonAsync(2025, 401000001, "Edited reason.");
+
+            var snapshot = await data.GetPublishedRankingsSnapshotAsync(2025, 6);
+            Assert.NotNull(snapshot);
+            var team = Assert.Single(snapshot.Rankings);
+            Assert.Equal("Team A", team.TeamName);
+            Assert.Equal(90.0, team.Rating);
+            var scoreOverride = Assert.Single(snapshot.ScoreOverrides);
+            Assert.Equal("Edited reason.", scoreOverride.Reason);
+            Assert.Equal(24, scoreOverride.OverrideHomePoints);
+            Assert.Equal(20, scoreOverride.OverrideAwayPoints);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateScoreOverrideReasonAsync_NoSnapshotEmbedsTheGame_ReturnsZero()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveRankingsSnapshotAsync(
+                CreateRankingsResultWithScoreOverrides(2025, 6, (401000001, "Original reason.")),
+                RatingAlgorithmVersion.V1);
+            await data.SaveRankingsSnapshotAsync(CreateRankingsResult(2025, 7), RatingAlgorithmVersion.V1);
+
+            var updated = await data.UpdateScoreOverrideReasonAsync(2025, 999, "Edited reason.");
+
+            Assert.Equal(0, updated);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateScoreOverrideReasonAsync_NullReason_ThrowsArgumentNullException()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await Assert.ThrowsAsync<ArgumentNullException>(() => data.UpdateScoreOverrideReasonAsync(2025, 401000001, null!));
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateScoreOverrideReasonAsync_ReasonAlreadyCurrent_ReturnsZero()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveRankingsSnapshotAsync(
+                CreateRankingsResultWithScoreOverrides(2025, 6, (401000001, "Same reason.")),
+                RatingAlgorithmVersion.V1);
+
+            var updated = await data.UpdateScoreOverrideReasonAsync(2025, 401000001, "Same reason.");
+
+            Assert.Equal(0, updated);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateScoreOverrideReasonAsync_UpdatesEverySnapshotOfTheSeasonEmbeddingTheGame()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveRankingsSnapshotAsync(
+                CreateRankingsResultWithScoreOverrides(2025, 6, (401000001, "Original reason.")),
+                RatingAlgorithmVersion.V1);
+            await data.SaveRankingsSnapshotAsync(
+                CreateRankingsResultWithScoreOverrides(2025, 7, (401000001, "Original reason."), (401000002, "Other game reason.")),
+                RatingAlgorithmVersion.V1);
+            await data.PublishRankingsSnapshotAsync(2025, 7);
+            await data.SaveRankingsSnapshotAsync(CreateRankingsResult(2025, 8), RatingAlgorithmVersion.V1);
+            await data.SaveRankingsSnapshotAsync(
+                CreateRankingsResultWithScoreOverrides(2024, 6, (401000001, "Original reason.")),
+                RatingAlgorithmVersion.V1);
+
+            var updated = await data.UpdateScoreOverrideReasonAsync(2025, 401000001, "Edited reason.");
+
+            Assert.Equal(2, updated);
+
+            var draft = await data.GetRankingsSnapshotAsync(2025, 6);
+            Assert.Equal("Edited reason.", Assert.Single(draft!.ScoreOverrides).Reason);
+
+            var published = await data.GetRankingsSnapshotAsync(2025, 7);
+            Assert.Equal("Edited reason.", published!.ScoreOverrides.Single(o => o.GameID == 401000001).Reason);
+            Assert.Equal("Other game reason.", published.ScoreOverrides.Single(o => o.GameID == 401000002).Reason);
+
+            var withoutOverrides = await data.GetRankingsSnapshotAsync(2025, 8);
+            Assert.Empty(withoutOverrides!.ScoreOverrides);
+
+            var otherSeason = await data.GetRankingsSnapshotAsync(2024, 6);
+            Assert.Equal("Original reason.", Assert.Single(otherSeason!.ScoreOverrides).Reason);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
     private static void CleanupFile(string filePath)
     {
         SqliteConnection.ClearAllPools();
@@ -881,5 +1016,28 @@ public class RankingsDataTests
                 }
             ]
         };
+    }
+
+    private static RankingsResult CreateRankingsResultWithScoreOverrides(
+        int season, int week, params (long GameID, string Reason)[] scoreOverrides)
+    {
+        var result = CreateRankingsResult(season, week);
+        result.ScoreOverrides = scoreOverrides
+            .Select(o => new AppliedScoreOverride
+            {
+                AwayTeam = "Iowa",
+                GameID = o.GameID,
+                HomeTeam = "Nebraska",
+                OriginalAwayPoints = 24,
+                OriginalHomePoints = 20,
+                OverrideAwayPoints = 20,
+                OverrideHomePoints = 24,
+                Reason = o.Reason,
+                SeasonType = "regular",
+                Week = 3
+            })
+            .ToList();
+
+        return result;
     }
 }

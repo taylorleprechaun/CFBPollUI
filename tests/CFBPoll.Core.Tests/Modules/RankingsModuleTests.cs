@@ -999,6 +999,24 @@ public class RankingsModuleTests
             () => _rankingsModule.SaveRankingsSnapshotAsync(null!, RatingAlgorithmVersion.V1));
     }
 
+    [Fact]
+    public async Task UpdateScoreOverrideReasonAsync_DelegatesToRankingsData()
+    {
+        _mockRankingsData.Setup(x => x.UpdateScoreOverrideReasonAsync(2024, 401000001, "Edited reason.")).ReturnsAsync(3);
+
+        var result = await _rankingsModule.UpdateScoreOverrideReasonAsync(2024, 401000001, "Edited reason.");
+
+        Assert.Equal(3, result);
+        _mockRankingsData.Verify(x => x.UpdateScoreOverrideReasonAsync(2024, 401000001, "Edited reason."), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateScoreOverrideReasonAsync_NullReason_ThrowsArgumentNullException()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(
+            () => _rankingsModule.UpdateScoreOverrideReasonAsync(2024, 401000001, null!));
+    }
+
     private static RatingDetails CreateRatingDetails(
         double rating = 0.0,
         int wins = 0,

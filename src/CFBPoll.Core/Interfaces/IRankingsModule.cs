@@ -71,4 +71,11 @@ public interface IRankingsModule
     /// Saves a rankings result as a draft rankings snapshot, tagged with the algorithm version that produced it.
     /// </summary>
     Task<bool> SaveRankingsSnapshotAsync(RankingsResult rankings, RatingAlgorithmVersion algorithmVersion);
+
+    /// <summary>
+    /// Replaces the reason recorded for a game's score override in every snapshot of the season that
+    /// embeds it, regardless of published status. Scores and rankings are left as calculated.
+    /// </summary>
+    /// <returns>The number of snapshots that were updated.</returns>
+    Task<int> UpdateScoreOverrideReasonAsync(int season, long gameID, string reason);
 }

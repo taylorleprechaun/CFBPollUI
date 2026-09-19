@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
 using CFBPoll.Core.Options;
@@ -291,6 +292,82 @@ public class RankingsData : IRankingsData
         _logger.LogInformation("Saved rankings snapshot for season {Season}, week {Week}", rankings.Season, rankings.Week);
 
         return rowsAffected > 0;
+    }
+
+    public async Task<int> UpdateScoreOverrideReasonAsync(int season, long gameID, string reason)
+    {
+        ArgumentNullException.ThrowIfNull(reason);
+
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
+        await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync().ConfigureAwait(false);
+
+        List<(int Week, string Json)> updates = [];
+
+        await using (var selectCommand = connection.CreateCommand())
+        {
+            selectCommand.Transaction = transaction;
+            selectCommand.CommandText = """
+                SELECT Week, RankingsJson FROM RankingsSnapshot
+                WHERE Season = @Season AND json_array_length(RankingsJson, '$.ScoreOverrides') > 0
+                """;
+            selectCommand.Parameters.AddWithValue("@Season", season);
+
+            await using var reader = await selectCommand.ExecuteReaderAsync().ConfigureAwait(false);
+
+            while (await reader.ReadAsync().ConfigureAwait(false))
+            {
+                var updatedJson = ReplaceScoreOverrideReason(reader.GetString(1), gameID, reason);
+                if (updatedJson is not null)
+                {
+                    updates.Add((reader.GetInt32(0), updatedJson));
+                }
+            }
+        }
+
+        foreach (var (week, json) in updates)
+        {
+            await using var updateCommand = connection.CreateCommand();
+            updateCommand.Transaction = transaction;
+            updateCommand.CommandText = "UPDATE RankingsSnapshot SET RankingsJson = @RankingsJson WHERE Season = @Season AND Week = @Week";
+            updateCommand.Parameters.AddWithValue("@RankingsJson", json);
+            updateCommand.Parameters.AddWithValue("@Season", season);
+            updateCommand.Parameters.AddWithValue("@Week", week);
+            await updateCommand.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
+
+        await transaction.CommitAsync().ConfigureAwait(false);
+
+        _logger.LogInformation(
+            "Updated the score override reason for game {GameID} in {Count} rankings snapshots for season {Season}",
+            gameID, updates.Count, season);
+
+        return updates.Count;
+    }
+
+    /// <summary>
+    /// Edits only the reason of the matching embedded override, leaving the rest of the snapshot exactly
+    /// as stored. Returns null when nothing needed to change.
+    /// </summary>
+    private static string? ReplaceScoreOverrideReason(string rankingsJson, long gameID, string reason)
+    {
+        var root = JsonNode.Parse(rankingsJson);
+        if (root?["ScoreOverrides"] is not JsonArray scoreOverrides)
+            return null;
+
+        var changed = false;
+
+        foreach (var entry in scoreOverrides.OfType<JsonObject>())
+        {
+            if ((long?)entry["GameID"] != gameID || (string?)entry["Reason"] == reason)
+                continue;
+
+            entry["Reason"] = reason;
+            changed = true;
+        }
+
+        return changed ? root.ToJsonString() : null;
     }
 
     /// <summary>
