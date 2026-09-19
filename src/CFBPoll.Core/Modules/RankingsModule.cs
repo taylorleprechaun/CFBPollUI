@@ -72,7 +72,8 @@ public class RankingsModule : IRankingsModule
         {
             Season = seasonData.Season,
             Week = seasonData.Week,
-            Rankings = rankedTeams
+            Rankings = rankedTeams,
+            ScoreOverrides = BuildScoreOverrides(seasonData)
         });
     }
 
@@ -149,6 +150,37 @@ public class RankingsModule : IRankingsModule
         return await _rankingsData.SaveRankingsSnapshotAsync(rankings, algorithmVersion).ConfigureAwait(false);
     }
 
+    private IEnumerable<AppliedScoreOverride> BuildScoreOverrides(SeasonData seasonData)
+    {
+        return seasonData.Games
+            .Where(g => g.GameID.HasValue
+                && g.ScoreOverrideReason is not null
+                && g.HomeTeam is not null
+                && g.AwayTeam is not null
+                && g.HomePoints.HasValue
+                && g.AwayPoints.HasValue
+                && g.OriginalHomePoints.HasValue
+                && g.OriginalAwayPoints.HasValue)
+            .OrderBy(g => g.Week)
+            .ThenBy(g => g.GameID)
+            .Select(g => new AppliedScoreOverride
+            {
+                AwayTeam = g.AwayTeam!,
+                AwayTeamLogoURL = GetLogoURL(seasonData, g.AwayTeam!),
+                GameID = g.GameID!.Value,
+                HomeTeam = g.HomeTeam!,
+                HomeTeamLogoURL = GetLogoURL(seasonData, g.HomeTeam!),
+                OriginalAwayPoints = g.OriginalAwayPoints!.Value,
+                OriginalHomePoints = g.OriginalHomePoints!.Value,
+                OverrideAwayPoints = g.AwayPoints!.Value,
+                OverrideHomePoints = g.HomePoints!.Value,
+                Reason = g.ScoreOverrideReason!,
+                SeasonType = g.SeasonType ?? string.Empty,
+                Week = g.Week ?? 0
+            })
+            .ToList();
+    }
+
     private TeamDetails CalculateTeamDetails(
         string teamName,
         IEnumerable<Game> games,
@@ -173,6 +205,11 @@ public class RankingsModule : IRankingsModule
         }
 
         return details;
+    }
+
+    private string? GetLogoURL(SeasonData seasonData, string teamName)
+    {
+        return seasonData.Teams.TryGetValue(teamName, out var teamInfo) ? teamInfo.LogoURL : null;
     }
 
     private int GetOpponentTier(string opponentName, IDictionary<string, int> teamRankLookup)

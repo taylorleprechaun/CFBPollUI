@@ -13,7 +13,6 @@ public class RankingsControllerTests
 {
     private readonly RankingsController _controller;
     private readonly Mock<ICFBDataService> _mockDataService;
-    private readonly Mock<IGameOverrideModule> _mockGameOverrideModule;
     private readonly Mock<ILogger<RankingsController>> _mockLogger;
     private readonly Mock<IRankingsModule> _mockRankingsModule;
     private readonly Mock<IRatingAlgorithmResolver> _mockRatingAlgorithmResolver;
@@ -22,10 +21,6 @@ public class RankingsControllerTests
     public RankingsControllerTests()
     {
         _mockDataService = new Mock<ICFBDataService>();
-        _mockGameOverrideModule = new Mock<IGameOverrideModule>();
-        _mockGameOverrideModule
-            .Setup(x => x.GetGameOverridesBySeasonAsync(It.IsAny<int>()))
-            .ReturnsAsync(Enumerable.Empty<GameOverride>());
         _mockLogger = new Mock<ILogger<RankingsController>>();
         _mockRankingsModule = new Mock<IRankingsModule>();
         _mockRatingModule = new Mock<IRatingModule>();
@@ -34,7 +29,6 @@ public class RankingsControllerTests
 
         _controller = new RankingsController(
             _mockDataService.Object,
-            _mockGameOverrideModule.Object,
             _mockRankingsModule.Object,
             _mockRatingAlgorithmResolver.Object,
             _mockLogger.Object);
@@ -45,19 +39,6 @@ public class RankingsControllerTests
     {
         Assert.Throws<ArgumentNullException>(
             () => new RankingsController(
-                null!,
-                new Mock<IGameOverrideModule>().Object,
-                new Mock<IRankingsModule>().Object,
-                new Mock<IRatingAlgorithmResolver>().Object,
-                new Mock<ILogger<RankingsController>>().Object));
-    }
-
-    [Fact]
-    public void Constructor_NullGameOverrideModule_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(
-            () => new RankingsController(
-                new Mock<ICFBDataService>().Object,
                 null!,
                 new Mock<IRankingsModule>().Object,
                 new Mock<IRatingAlgorithmResolver>().Object,
@@ -70,7 +51,6 @@ public class RankingsControllerTests
         Assert.Throws<ArgumentNullException>(
             () => new RankingsController(
                 new Mock<ICFBDataService>().Object,
-                new Mock<IGameOverrideModule>().Object,
                 new Mock<IRankingsModule>().Object,
                 new Mock<IRatingAlgorithmResolver>().Object,
                 null!));
@@ -82,7 +62,6 @@ public class RankingsControllerTests
         Assert.Throws<ArgumentNullException>(
             () => new RankingsController(
                 new Mock<ICFBDataService>().Object,
-                new Mock<IGameOverrideModule>().Object,
                 null!,
                 new Mock<IRatingAlgorithmResolver>().Object,
                 new Mock<ILogger<RankingsController>>().Object));
@@ -94,7 +73,6 @@ public class RankingsControllerTests
         Assert.Throws<ArgumentNullException>(
             () => new RankingsController(
                 new Mock<ICFBDataService>().Object,
-                new Mock<IGameOverrideModule>().Object,
                 new Mock<IRankingsModule>().Object,
                 null!,
                 new Mock<ILogger<RankingsController>>().Object));
@@ -129,45 +107,6 @@ public class RankingsControllerTests
 
         _mockRankingsModule.Verify(x => x.SaveRankingsSnapshotAsync(It.IsAny<RankingsResult>(), It.IsAny<RatingAlgorithmVersion>()), Times.Never);
         _mockRankingsModule.Verify(x => x.PublishRankingsSnapshotAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task GetRankings_LiveCalculation_IncludesAllSeasonScoreOverrides()
-    {
-        _mockRankingsModule
-            .Setup(x => x.GetPublishedRankingsSnapshotAsync(2025, 6))
-            .ReturnsAsync((RankingsResult?)null);
-
-        var seasonData = new SeasonData
-        {
-            Season = 2025,
-            Week = 6,
-            Teams = new Dictionary<string, TeamInfo>(),
-            Games = []
-        };
-        var ratings = new Dictionary<string, RatingDetails>();
-        var rankingsResult = new RankingsResult { Season = 2025, Week = 6, Rankings = [] };
-
-        _mockDataService.Setup(x => x.GetSeasonDataAsync(2025, 6)).ReturnsAsync(seasonData);
-        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
-        _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankingsResult);
-        _mockRankingsModule
-            .Setup(x => x.GetRankDeltasAsync(2025, 6, rankingsResult.Rankings))
-            .ReturnsAsync(new Dictionary<string, int?>());
-
-        var earlyOverride = CreateGameOverride(
-            gameID: 401234561, week: 2, createdAt: new DateTime(2025, 9, 10, 0, 0, 0, DateTimeKind.Utc));
-        var lateOverride = CreateGameOverride(
-            gameID: 401234562, week: 5, createdAt: new DateTime(2025, 10, 20, 0, 0, 0, DateTimeKind.Utc));
-        _mockGameOverrideModule
-            .Setup(x => x.GetGameOverridesBySeasonAsync(2025))
-            .ReturnsAsync(new List<GameOverride> { earlyOverride, lateOverride });
-
-        var result = await _controller.GetRankings(2025, 6);
-
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var response = Assert.IsType<RankingsResponseDTO>(okResult.Value);
-        Assert.Equal(2, response.ScoreOverrides.Count());
     }
 
     [Fact]
@@ -214,21 +153,21 @@ public class RankingsControllerTests
     }
 
     [Fact]
-    public async Task GetRankings_LiveCalculation_ScoreOverridesIncludeOriginalAndOverrideScores()
+    public async Task GetRankings_LiveCalculation_MapsScoreOverridesFromGeneratedRankings()
     {
         _mockRankingsModule
             .Setup(x => x.GetPublishedRankingsSnapshotAsync(2025, 6))
             .ReturnsAsync((RankingsResult?)null);
 
-        var seasonData = new SeasonData
+        var seasonData = new SeasonData { Season = 2025, Week = 6, Teams = new Dictionary<string, TeamInfo>(), Games = [] };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var rankingsResult = new RankingsResult
         {
             Season = 2025,
             Week = 6,
-            Teams = new Dictionary<string, TeamInfo>(),
-            Games = []
+            Rankings = [],
+            ScoreOverrides = [CreateAppliedScoreOverride(gameID: 401234561)]
         };
-        var ratings = new Dictionary<string, RatingDetails>();
-        var rankingsResult = new RankingsResult { Season = 2025, Week = 6, Rankings = [] };
 
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2025, 6)).ReturnsAsync(seasonData);
         _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
@@ -237,28 +176,14 @@ public class RankingsControllerTests
             .Setup(x => x.GetRankDeltasAsync(2025, 6, rankingsResult.Rankings))
             .ReturnsAsync(new Dictionary<string, int?>());
 
-        var gameOverride = CreateGameOverride(
-            gameID: 401234561, week: 2, createdAt: new DateTime(2025, 9, 10, 0, 0, 0, DateTimeKind.Utc));
-        _mockGameOverrideModule
-            .Setup(x => x.GetGameOverridesBySeasonAsync(2025))
-            .ReturnsAsync(new List<GameOverride> { gameOverride });
-        _mockDataService.Setup(x => x.GetFBSTeamsAsync(2025))
-            .ReturnsAsync([
-                new FBSTeam { Name = "Iowa", LogoURL = "https://example.com/iowa.png" },
-                new FBSTeam { Name = "Oklahoma", LogoURL = "https://example.com/oklahoma.png" }
-            ]);
-
         var result = await _controller.GetRankings(2025, 6);
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var response = Assert.IsType<RankingsResponseDTO>(okResult.Value);
         var disclosedOverride = Assert.Single(response.ScoreOverrides);
+        Assert.Equal(401234561, disclosedOverride.GameID);
         Assert.Equal(24, disclosedOverride.OriginalAwayPoints);
-        Assert.Equal(20, disclosedOverride.OriginalHomePoints);
-        Assert.Equal(20, disclosedOverride.OverrideAwayPoints);
         Assert.Equal(24, disclosedOverride.OverrideHomePoints);
-        Assert.Equal("https://example.com/iowa.png", disclosedOverride.AwayTeamLogoURL);
-        Assert.Equal("https://example.com/oklahoma.png", disclosedOverride.HomeTeamLogoURL);
     }
 
     [Fact]
@@ -340,73 +265,6 @@ public class RankingsControllerTests
     }
 
     [Fact]
-    public async Task GetRankings_PersistedRankingsSnapshot_ExcludesAllOverridesWhenPublishedAtIsNull()
-    {
-        var persistedResult = new RankingsResult
-        {
-            Season = 2025,
-            Week = 4,
-            PublishedAt = null,
-            Rankings = new List<RankedTeam>
-            {
-                new RankedTeam { TeamName = "Oklahoma", Rank = 1, Details = new TeamDetails() }
-            }
-        };
-
-        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotAsync(2025, 4)).ReturnsAsync(persistedResult);
-        _mockRankingsModule
-            .Setup(x => x.GetRankDeltasAsync(2025, 4, persistedResult.Rankings))
-            .ReturnsAsync(new Dictionary<string, int?> { ["Oklahoma"] = 0 });
-
-        var gameOverride = CreateGameOverride(
-            gameID: 401234563, week: 3, createdAt: new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc));
-        _mockGameOverrideModule
-            .Setup(x => x.GetGameOverridesBySeasonAsync(2025))
-            .ReturnsAsync(new List<GameOverride> { gameOverride });
-
-        var result = await _controller.GetRankings(2025, 4);
-
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var response = Assert.IsType<RankingsResponseDTO>(okResult.Value);
-        Assert.Empty(response.ScoreOverrides);
-    }
-
-    [Fact]
-    public async Task GetRankings_PersistedRankingsSnapshot_IncludesOnlyOverridesCreatedBeforePublish()
-    {
-        var persistedResult = new RankingsResult
-        {
-            Season = 2025,
-            Week = 4,
-            PublishedAt = new DateTime(2025, 10, 1, 0, 0, 0, DateTimeKind.Utc),
-            Rankings = new List<RankedTeam>
-            {
-                new RankedTeam { TeamName = "Oklahoma", Rank = 1, Details = new TeamDetails() }
-            }
-        };
-
-        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotAsync(2025, 4)).ReturnsAsync(persistedResult);
-        _mockRankingsModule
-            .Setup(x => x.GetRankDeltasAsync(2025, 4, persistedResult.Rankings))
-            .ReturnsAsync(new Dictionary<string, int?> { ["Oklahoma"] = 0 });
-
-        var overrideBeforePublish = CreateGameOverride(
-            gameID: 401234564, week: 2, createdAt: new DateTime(2025, 9, 15, 0, 0, 0, DateTimeKind.Utc));
-        var overrideAfterPublish = CreateGameOverride(
-            gameID: 401234565, week: 3, createdAt: new DateTime(2025, 10, 15, 0, 0, 0, DateTimeKind.Utc));
-        _mockGameOverrideModule
-            .Setup(x => x.GetGameOverridesBySeasonAsync(2025))
-            .ReturnsAsync(new List<GameOverride> { overrideBeforePublish, overrideAfterPublish });
-
-        var result = await _controller.GetRankings(2025, 4);
-
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var response = Assert.IsType<RankingsResponseDTO>(okResult.Value);
-        var disclosedOverride = Assert.Single(response.ScoreOverrides);
-        Assert.Equal(401234564, disclosedOverride.GameID);
-    }
-
-    [Fact]
     public async Task GetRankings_PersistedRankingsSnapshot_IncludesRankDeltas()
     {
         var persistedResult = new RankingsResult
@@ -434,6 +292,34 @@ public class RankingsControllerTests
         var rankings = response.Rankings.ToList();
         Assert.Equal(3, rankings[0].RankDelta);
         Assert.Equal(-1, rankings[1].RankDelta);
+    }
+
+    [Fact]
+    public async Task GetRankings_PersistedRankingsSnapshot_MapsScoreOverridesFromSnapshot()
+    {
+        var persistedResult = new RankingsResult
+        {
+            Season = 2025,
+            Week = 4,
+            Rankings = new List<RankedTeam>
+            {
+                new RankedTeam { TeamName = "Oklahoma", Rank = 1, Details = new TeamDetails() }
+            },
+            ScoreOverrides = [CreateAppliedScoreOverride(gameID: 401234564)]
+        };
+
+        _mockRankingsModule.Setup(x => x.GetPublishedRankingsSnapshotAsync(2025, 4)).ReturnsAsync(persistedResult);
+        _mockRankingsModule
+            .Setup(x => x.GetRankDeltasAsync(2025, 4, persistedResult.Rankings))
+            .ReturnsAsync(new Dictionary<string, int?> { ["Oklahoma"] = 0 });
+
+        var result = await _controller.GetRankings(2025, 4);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<RankingsResponseDTO>(okResult.Value);
+        var disclosedOverride = Assert.Single(response.ScoreOverrides);
+        Assert.Equal(401234564, disclosedOverride.GameID);
+        Assert.Equal("https://example.com/iowa.png", disclosedOverride.AwayTeamLogoURL);
     }
 
     [Fact]
@@ -475,25 +361,22 @@ public class RankingsControllerTests
         _mockDataService.Verify(x => x.GetSeasonDataAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
     }
 
-    private static GameOverride CreateGameOverride(long gameID, int week, DateTime createdAt)
+    private static AppliedScoreOverride CreateAppliedScoreOverride(long gameID)
     {
-        return new GameOverride
+        return new AppliedScoreOverride
         {
             AwayTeam = "Iowa",
             AwayTeamLogoURL = "https://example.com/iowa.png",
-            CreatedAt = createdAt,
             GameID = gameID,
             HomeTeam = "Oklahoma",
             HomeTeamLogoURL = "https://example.com/oklahoma.png",
-            ModifiedAt = createdAt,
             OriginalAwayPoints = 24,
             OriginalHomePoints = 20,
             OverrideAwayPoints = 20,
             OverrideHomePoints = 24,
             Reason = "A targeting penalty on the final defensive snap should have extended the drive.",
-            Season = 2025,
             SeasonType = "regular",
-            Week = week
+            Week = 2
         };
     }
 }

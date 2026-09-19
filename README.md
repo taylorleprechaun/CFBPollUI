@@ -46,7 +46,7 @@ Last Updated 8/6/2026
 - **Interactive UI**: Sortable rankings table with team logos and colors
 - **Game Predictions**: Generate game predictions with spread and over/under picks using team ratings and betting line data
 - **Admin Dashboard**: JWT-authenticated admin panel to calculate, preview, and publish rankings and predictions with a two-step draft/publish workflow
-- **Manual Score Override**: Admin tool to correct a completed game's recorded final score with a documented reason, affecting new calculations without retroactively altering already-published rankings/predictions; shown to the public via a rankings-page disclaimer (with team logos and the original-vs-corrected score) and inline indicators on the rankings table and team-details schedule
+- **Manual Score Override**: Admin tool to correct a completed game's recorded final score with a documented reason, affecting new calculations without retroactively altering already-published rankings/predictions; shown to the public via a rankings-page disclaimer (with team logos and the original-vs-corrected score, stored with each rankings snapshot so it reflects what that snapshot was calculated with) and inline indicators on the rankings table and team-details schedule; predictions are graded against the official score, with an "Official score" marker on affected games
 - **Incomplete Week Warnings**: Admin banner shown when a week's games aren't all played yet, with a modal listing which games are still pending
 - **Cache Management**: Admin page to view and clear individual persistent cache entries, grouped by family/season/detail
 - **CFBD API Usage Tracking**: Admin dashboard showing CollegeFootballData.com API quota status (remaining/used calls, tier, reset date), cached server-side with a manual force-refresh option
@@ -152,8 +152,7 @@ PredictionsController              PredictionsModule
 
 RankingsController                 RankingsModule
   -> ICFBDataService                 -> IRankingsData                 RankingsData
-  -> IGameOverrideModule                                               -> SQLite
-  -> IRankingsModule
+  -> IRankingsModule                                                   -> SQLite
   -> IRatingAlgorithmResolver
 
 SeasonsController
@@ -181,7 +180,7 @@ TrackRecordController              TrackRecordModule
                                      -> IPredictionsModule
 ```
 
-Only `RankingsModule` has a direct dependency on `IRankingsData`, only `PredictionsModule` has a direct dependency on `IPredictionsData`, only `CacheModule` has a direct dependency on `ICacheData`, only `PageVisibilityModule` has a direct dependency on `IPageVisibilityData`, and only `GameOverrideModule` has a direct dependency on `IGameOverrideData`. Controllers never reference data-layer interfaces. `IConferenceModule` (conference data transformation) has no further module or data-layer dependencies of its own; `IPredictionGradingModule` (grading logic) depends on `IPredictionsModule` for stored predictions but owns no data layer of its own. `IGameOverrideModule` is a shared dependency: both `AdminModule` and `RankingsController` use it directly, and the `ICFBDataService` decorator that applies overrides to fetched schedules depends on it internally.
+Only `RankingsModule` has a direct dependency on `IRankingsData`, only `PredictionsModule` has a direct dependency on `IPredictionsData`, only `CacheModule` has a direct dependency on `ICacheData`, only `PageVisibilityModule` has a direct dependency on `IPageVisibilityData`, and only `GameOverrideModule` has a direct dependency on `IGameOverrideData`. Controllers never reference data-layer interfaces. `IConferenceModule` (conference data transformation) has no further module or data-layer dependencies of its own; `IPredictionGradingModule` (grading logic) depends on `IPredictionsModule` for stored predictions but owns no data layer of its own. `IGameOverrideModule` is used directly by `AdminModule`, and the `ICFBDataService` decorator that applies overrides to fetched schedules depends on it internally.
 
 ## Prerequisites
 

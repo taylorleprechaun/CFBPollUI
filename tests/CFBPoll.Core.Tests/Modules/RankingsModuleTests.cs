@@ -72,6 +72,60 @@ public class RankingsModuleTests
     }
 
     [Fact]
+    public async Task GenerateRankingsAsync_GamesWithScoreOverrides_ReturnsAppliedOverridesOrderedByWeek()
+    {
+        var seasonData = CreateSeasonDataWithTeams("Iowa", "Nebraska", "Oklahoma");
+        seasonData.Teams["Iowa"].LogoURL = "https://example.com/iowa.png";
+        seasonData.Teams["Nebraska"].LogoURL = "https://example.com/nebraska.png";
+        seasonData.Games =
+        [
+            new Game
+            {
+                AwayPoints = 17,
+                AwayTeam = "Oklahoma",
+                GameID = 401234570,
+                HomePoints = 20,
+                HomeTeam = "Nebraska",
+                OriginalAwayPoints = 20,
+                OriginalHomePoints = 17,
+                ScoreOverrideReason = "Later game reason.",
+                SeasonType = "regular",
+                Week = 5
+            },
+            new Game { AwayPoints = 10, AwayTeam = "Iowa", GameID = 401234571, HomePoints = 30, HomeTeam = "Oklahoma", Week = 3 },
+            new Game
+            {
+                AwayPoints = 24,
+                AwayTeam = "Iowa",
+                GameID = 401234569,
+                HomePoints = 21,
+                HomeTeam = "Nebraska",
+                OriginalAwayPoints = 21,
+                OriginalHomePoints = 24,
+                ScoreOverrideReason = "Earlier game reason.",
+                SeasonType = "regular",
+                Week = 2
+            }
+        ];
+        var ratings = new Dictionary<string, RatingDetails> { ["Iowa"] = CreateRatingDetails(rating: 80.0) };
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        var overrides = result.ScoreOverrides.ToList();
+        Assert.Equal([401234569L, 401234570L], overrides.Select(o => o.GameID));
+        Assert.Equal("Iowa", overrides[0].AwayTeam);
+        Assert.Equal("https://example.com/iowa.png", overrides[0].AwayTeamLogoURL);
+        Assert.Equal("https://example.com/nebraska.png", overrides[0].HomeTeamLogoURL);
+        Assert.Equal(21, overrides[0].OriginalAwayPoints);
+        Assert.Equal(24, overrides[0].OriginalHomePoints);
+        Assert.Equal(24, overrides[0].OverrideAwayPoints);
+        Assert.Equal(21, overrides[0].OverrideHomePoints);
+        Assert.Equal("Earlier game reason.", overrides[0].Reason);
+        Assert.Equal("regular", overrides[0].SeasonType);
+        Assert.Equal(2, overrides[0].Week);
+    }
+
+    [Fact]
     public async Task GenerateRankingsAsync_HandlesCaseInsensitiveTeamNameMatching()
     {
         var game = new Game { HomeTeam = "TEAM A", AwayTeam = "team b", HomePoints = 28, AwayPoints = 14, NeutralSite = false };
@@ -125,6 +179,18 @@ public class RankingsModuleTests
         Assert.Equal("https://example.com/logo.png", team.LogoURL);
         Assert.Equal(5, team.Wins);
         Assert.Equal(2, team.Losses);
+    }
+
+    [Fact]
+    public async Task GenerateRankingsAsync_NoScoreOverrides_ReturnsEmptyScoreOverrides()
+    {
+        var seasonData = CreateSeasonDataWithTeams("Team A");
+        seasonData.Games = [new Game { AwayPoints = 10, AwayTeam = "Team B", GameID = 1, HomePoints = 20, HomeTeam = "Team A", Week = 1 }];
+        var ratings = new Dictionary<string, RatingDetails> { ["Team A"] = CreateRatingDetails(rating: 80.0) };
+
+        var result = await _rankingsModule.GenerateRankingsAsync(seasonData, ratings);
+
+        Assert.Empty(result.ScoreOverrides);
     }
 
     [Fact]

@@ -35,23 +35,24 @@ public static class GameOverrideMapper
         };
     }
 
-    public static ScoreOverrideDisclosureDTO ToDisclosureDTO(GameOverride gameOverride)
+    public static ScoreOverrideDisclosureDTO ToDisclosureDTO(AppliedScoreOverride scoreOverride)
     {
-        ArgumentNullException.ThrowIfNull(gameOverride);
+        ArgumentNullException.ThrowIfNull(scoreOverride);
 
         return new ScoreOverrideDisclosureDTO
         {
-            AwayTeam = gameOverride.AwayTeam,
-            AwayTeamLogoURL = gameOverride.AwayTeamLogoURL,
-            GameID = gameOverride.GameID,
-            HomeTeam = gameOverride.HomeTeam,
-            HomeTeamLogoURL = gameOverride.HomeTeamLogoURL,
-            OriginalAwayPoints = gameOverride.OriginalAwayPoints,
-            OriginalHomePoints = gameOverride.OriginalHomePoints,
-            OverrideAwayPoints = gameOverride.OverrideAwayPoints,
-            OverrideHomePoints = gameOverride.OverrideHomePoints,
-            Reason = gameOverride.Reason,
-            Week = gameOverride.Week
+            AwayTeam = scoreOverride.AwayTeam,
+            AwayTeamLogoURL = scoreOverride.AwayTeamLogoURL,
+            GameID = scoreOverride.GameID,
+            HomeTeam = scoreOverride.HomeTeam,
+            HomeTeamLogoURL = scoreOverride.HomeTeamLogoURL,
+            OriginalAwayPoints = scoreOverride.OriginalAwayPoints,
+            OriginalHomePoints = scoreOverride.OriginalHomePoints,
+            OverrideAwayPoints = scoreOverride.OverrideAwayPoints,
+            OverrideHomePoints = scoreOverride.OverrideHomePoints,
+            Reason = scoreOverride.Reason,
+            SeasonType = scoreOverride.SeasonType,
+            Week = scoreOverride.Week
         };
     }
 

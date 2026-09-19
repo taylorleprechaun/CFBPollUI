@@ -82,6 +82,7 @@ public static class RankingsMapper
         return new RankingsResponseDTO
         {
             Rankings = result.Rankings.Select(ToDTO),
+            ScoreOverrides = result.ScoreOverrides.Select(GameOverrideMapper.ToDisclosureDTO),
             Season = result.Season,
             Week = result.Week
         };
@@ -95,6 +96,7 @@ public static class RankingsMapper
         return new RankingsResponseDTO
         {
             Rankings = result.Rankings.Select(team => ToDTO(team, rankDeltas)),
+            ScoreOverrides = result.ScoreOverrides.Select(GameOverrideMapper.ToDisclosureDTO),
             Season = result.Season,
             Week = result.Week
         };

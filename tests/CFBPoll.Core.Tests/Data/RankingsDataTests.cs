@@ -251,6 +251,36 @@ public class RankingsDataTests
     }
 
     [Fact]
+    public async Task GetPublishedRankingsSnapshotAsync_LegacySnapshotWithoutScoreOverrides_ReturnsEmptyScoreOverrides()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await using (var connection = new SqliteConnection($"Data Source={tempPath};Pooling=false"))
+            {
+                await connection.OpenAsync();
+                await using var command = connection.CreateCommand();
+                command.CommandText = """
+                    INSERT INTO RankingsSnapshot (Season, Week, RankingsJson, Published, CreatedAt)
+                    VALUES (2024, 5, '{"Rankings":[],"Season":2024,"Week":5}', 1, '2024-10-01T00:00:00.0000000Z')
+                    """;
+                await command.ExecuteNonQueryAsync();
+            }
+
+            var result = await data.GetPublishedRankingsSnapshotAsync(2024, 5);
+
+            Assert.NotNull(result);
+            Assert.Empty(result.ScoreOverrides);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
     public async Task GetPublishedRankingsSnapshotAsync_ReturnsNull_ForDrafts()
     {
         var (data, tempPath) = CreateRankingsDataWithFile();
@@ -285,7 +315,6 @@ public class RankingsDataTests
             Assert.NotNull(result);
             Assert.Equal(2024, result.Season);
             Assert.Equal(5, result.Week);
-            Assert.NotNull(result.PublishedAt);
         }
         finally
         {
@@ -573,32 +602,6 @@ public class RankingsDataTests
     }
 
     [Fact]
-    public async Task PublishRankingsSnapshotAsync_RepublishUpdatesTimestamp()
-    {
-        var (data, tempPath) = CreateRankingsDataWithFile();
-        try
-        {
-            await data.InitializeAsync();
-            await data.SaveRankingsSnapshotAsync(CreateRankingsResult(2024, 5), RatingAlgorithmVersion.V1);
-
-            await data.PublishRankingsSnapshotAsync(2024, 5);
-            var firstPublish = (await data.GetPublishedRankingsSnapshotAsync(2024, 5))!.PublishedAt;
-
-            await Task.Delay(TimeSpan.FromMilliseconds(50));
-            await data.PublishRankingsSnapshotAsync(2024, 5);
-            var secondPublish = (await data.GetPublishedRankingsSnapshotAsync(2024, 5))!.PublishedAt;
-
-            Assert.NotNull(firstPublish);
-            Assert.NotNull(secondPublish);
-            Assert.True(secondPublish > firstPublish);
-        }
-        finally
-        {
-            CleanupFile(tempPath);
-        }
-    }
-
-    [Fact]
     public async Task PublishRankingsSnapshotAsync_ReturnsFalse_WhenNotFound()
     {
         var (data, tempPath) = CreateRankingsDataWithFile();
@@ -609,30 +612,6 @@ public class RankingsDataTests
             var published = await data.PublishRankingsSnapshotAsync(2024, 5);
 
             Assert.False(published);
-        }
-        finally
-        {
-            CleanupFile(tempPath);
-        }
-    }
-
-    [Fact]
-    public async Task PublishRankingsSnapshotAsync_SetsPublishedAtTimestamp()
-    {
-        var (data, tempPath) = CreateRankingsDataWithFile();
-        try
-        {
-            await data.InitializeAsync();
-
-            var beforePublish = DateTime.UtcNow;
-            await data.SaveRankingsSnapshotAsync(CreateRankingsResult(2024, 5), RatingAlgorithmVersion.V1);
-            await data.PublishRankingsSnapshotAsync(2024, 5);
-
-            var result = await data.GetPublishedRankingsSnapshotAsync(2024, 5);
-
-            Assert.NotNull(result);
-            Assert.NotNull(result.PublishedAt);
-            Assert.True(result.PublishedAt >= beforePublish.AddSeconds(-1));
         }
         finally
         {
@@ -655,6 +634,50 @@ public class RankingsDataTests
 
             var result = await data.GetPublishedRankingsSnapshotAsync(2024, 5);
             Assert.NotNull(result);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task SaveRankingsSnapshotAsync_AndGetRankingsSnapshotAsync_PreservesScoreOverrides()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var rankings = CreateRankingsResult(2024, 5);
+            rankings.ScoreOverrides =
+            [
+                new AppliedScoreOverride
+                {
+                    AwayTeam = "Iowa",
+                    AwayTeamLogoURL = "https://example.com/iowa.png",
+                    GameID = 401234561,
+                    HomeTeam = "Nebraska",
+                    OriginalAwayPoints = 24,
+                    OriginalHomePoints = 20,
+                    OverrideAwayPoints = 20,
+                    OverrideHomePoints = 24,
+                    Reason = "A targeting penalty on the final defensive snap should have extended the drive.",
+                    SeasonType = "regular",
+                    Week = 3
+                }
+            ];
+            await data.SaveRankingsSnapshotAsync(rankings, RatingAlgorithmVersion.V1);
+
+            var result = await data.GetRankingsSnapshotAsync(2024, 5);
+
+            var scoreOverride = Assert.Single(result!.ScoreOverrides);
+            Assert.Equal(401234561, scoreOverride.GameID);
+            Assert.Equal("https://example.com/iowa.png", scoreOverride.AwayTeamLogoURL);
+            Assert.Equal(24, scoreOverride.OriginalAwayPoints);
+            Assert.Equal(24, scoreOverride.OverrideHomePoints);
+            Assert.Equal("regular", scoreOverride.SeasonType);
+            Assert.Equal(3, scoreOverride.Week);
         }
         finally
         {

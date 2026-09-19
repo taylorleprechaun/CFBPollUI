@@ -1,13 +1,13 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import type { RankedTeam, ScoreOverrideDisclosure } from '../../types';
 
-import { formatScoreOverrideSummary } from '../../lib/score-override-summary';
 import { calculateZScores } from '../../lib/stats-utils';
-import { InfoTooltip } from '../ui/info-tooltip';
+import { InfoIcon } from '../ui/icons';
 import { SortableTable } from '../ui/sortable-table';
+import { ScoreOverrideModal } from './score-override-modal';
 import { TeamLogo } from './team-logo';
 
 interface RankingsTableProps {
@@ -39,6 +39,8 @@ export function RankingsTable({
   showRatingZScore = false,
   showWeightedSOS = false,
 }: RankingsTableProps) {
+  const [modalOverrides, setModalOverrides] = useState<ScoreOverrideDisclosure[] | null>(null);
+
   const overridesByTeamName = useMemo(() => {
     const map = new Map<string, ScoreOverrideDisclosure[]>();
 
@@ -121,10 +123,14 @@ export function RankingsTable({
               {info.getValue()}
             </Link>
             {teamOverrides && (
-              <InfoTooltip
-                statName="Manual score override"
-                summary={teamOverrides.map(formatScoreOverrideSummary).join(' ')}
-              />
+              <button
+                type="button"
+                aria-label={`Show manually corrected scores for ${info.getValue()}`}
+                onClick={() => setModalOverrides(teamOverrides)}
+                className="shrink-0 rounded-full p-1 text-amber-600 hover:text-amber-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 [&>svg]:h-5 [&>svg]:w-5"
+              >
+                <InfoIcon />
+              </button>
             )}
           </div>
         );
@@ -210,11 +216,16 @@ export function RankingsTable({
   ], [overridesByTeamName, selectedSeason, showRatingZScore, showWeightedSOS]);
 
   return (
-    <SortableTable
-      columns={columns}
-      data={displayData}
-      emptyMessage="Select a season and week to view rankings."
-      isLoading={isLoading}
-    />
+    <>
+      <SortableTable
+        columns={columns}
+        data={displayData}
+        emptyMessage="Select a season and week to view rankings."
+        isLoading={isLoading}
+      />
+      {modalOverrides && (
+        <ScoreOverrideModal onClose={() => setModalOverrides(null)} scoreOverrides={modalOverrides} />
+      )}
+    </>
   );
 }

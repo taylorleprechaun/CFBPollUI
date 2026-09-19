@@ -171,6 +171,21 @@ public class RankingsMapperTests
     }
 
     [Fact]
+    public void ToDTO_WithoutDeltas_RankDeltaDefaultsToNull()
+    {
+        var team = new RankedTeam
+        {
+            TeamName = "Alabama",
+            Rank = 1,
+            Details = new TeamDetails()
+        };
+
+        var result = RankingsMapper.ToDTO(team);
+
+        Assert.Null(result.RankDelta);
+    }
+
+    [Fact]
     public void ToDTO_WithRankDeltas_NegativeDelta_SetsCorrectly()
     {
         var team = new RankedTeam
@@ -249,20 +264,38 @@ public class RankingsMapperTests
 
         Assert.Null(result.RankDelta);
     }
-
     [Fact]
-    public void ToDTO_WithoutDeltas_RankDeltaDefaultsToNull()
+    public void ToResponseDTO_MapsScoreOverrides()
     {
-        var team = new RankedTeam
+        var result = new RankingsResult
         {
-            TeamName = "Alabama",
-            Rank = 1,
-            Details = new TeamDetails()
+            Rankings = [],
+            ScoreOverrides =
+            [
+                new AppliedScoreOverride
+                {
+                    AwayTeam = "Iowa",
+                    GameID = 401234561,
+                    HomeTeam = "Nebraska",
+                    OriginalAwayPoints = 24,
+                    OriginalHomePoints = 20,
+                    OverrideAwayPoints = 20,
+                    OverrideHomePoints = 24,
+                    Reason = "A targeting penalty on the final defensive snap should have extended the drive.",
+                    SeasonType = "regular",
+                    Week = 3
+                }
+            ],
+            Season = 2025,
+            Week = 4
         };
 
-        var result = RankingsMapper.ToDTO(team);
+        var dto = RankingsMapper.ToResponseDTO(result);
 
-        Assert.Null(result.RankDelta);
+        var disclosed = Assert.Single(dto.ScoreOverrides);
+        Assert.Equal(401234561, disclosed.GameID);
+        Assert.Equal("Iowa", disclosed.AwayTeam);
+        Assert.Equal(24, disclosed.OverrideHomePoints);
     }
 
     [Fact]
@@ -338,6 +371,22 @@ public class RankingsMapperTests
         Assert.Equal(5, dto.Week);
         Assert.Equal(3, rankings[0].RankDelta);
         Assert.Equal(-1, rankings[1].RankDelta);
+    }
+
+    [Fact]
+    public void ToResponseDTO_WithDeltas_MapsScoreOverrides()
+    {
+        var result = new RankingsResult
+        {
+            Rankings = [],
+            ScoreOverrides = [new AppliedScoreOverride { AwayTeam = "Iowa", GameID = 401234561, HomeTeam = "Nebraska" }],
+            Season = 2025,
+            Week = 4
+        };
+
+        var dto = RankingsMapper.ToResponseDTO(result, new Dictionary<string, int?>());
+
+        Assert.Equal(401234561, Assert.Single(dto.ScoreOverrides).GameID);
     }
 
     [Fact]

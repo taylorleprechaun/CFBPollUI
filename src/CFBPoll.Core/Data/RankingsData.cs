@@ -80,22 +80,16 @@ public class RankingsData : IRankingsData
         await connection.OpenAsync().ConfigureAwait(false);
 
         await using var command = connection.CreateCommand();
-        command.CommandText = "SELECT RankingsJson, PublishedAt FROM RankingsSnapshot WHERE Season = @Season AND Week = @Week AND Published = 1";
+        command.CommandText = "SELECT RankingsJson FROM RankingsSnapshot WHERE Season = @Season AND Week = @Week AND Published = 1";
         command.Parameters.AddWithValue("@Season", season);
         command.Parameters.AddWithValue("@Week", week);
 
-        await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
+        var result = await command.ExecuteScalarAsync().ConfigureAwait(false);
 
-        if (!await reader.ReadAsync().ConfigureAwait(false))
+        if (result is not string json)
             return null;
 
-        var result = JsonSerializer.Deserialize<RankingsResult>(reader.GetString(0));
-        if (result is not null && !reader.IsDBNull(1))
-        {
-            result.PublishedAt = DateTime.Parse(reader.GetString(1), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
-        }
-
-        return result;
+        return JsonSerializer.Deserialize<RankingsResult>(json);
     }
 
     public async Task<IEnumerable<RankingsResult>> GetPublishedRankingsSnapshotsBySeasonRangeAsync(int minSeason, int maxSeason)
@@ -217,7 +211,6 @@ public class RankingsData : IRankingsData
         await command.ExecuteNonQueryAsync().ConfigureAwait(false);
 
         await TryAddColumnAsync(connection, "AlgorithmVersion TEXT NOT NULL DEFAULT 'V1'").ConfigureAwait(false);
-        await TryAddColumnAsync(connection, "PublishedAt TEXT NULL").ConfigureAwait(false);
 
         _logger.LogInformation("Database initialized");
     }
@@ -228,10 +221,9 @@ public class RankingsData : IRankingsData
         await connection.OpenAsync().ConfigureAwait(false);
 
         await using var command = connection.CreateCommand();
-        command.CommandText = "UPDATE RankingsSnapshot SET Published = 1, PublishedAt = @PublishedAt WHERE Season = @Season AND Week = @Week";
+        command.CommandText = "UPDATE RankingsSnapshot SET Published = 1 WHERE Season = @Season AND Week = @Week";
         command.Parameters.AddWithValue("@Season", season);
         command.Parameters.AddWithValue("@Week", week);
-        command.Parameters.AddWithValue("@PublishedAt", DateTime.UtcNow.ToString("o"));
 
         var rowsAffected = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
 

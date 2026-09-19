@@ -8,6 +8,14 @@ export function getRawWeekLabel(weekNumber: number, isPostseason: boolean): stri
 }
 
 /**
+ * Labels a score override by the week its game was actually played in (no rankings "+1" offset),
+ * or "Postseason" for postseason games, whose week number restarts.
+ */
+export function getScoreOverrideWeekLabel(override: { seasonType?: string; week: number }): string {
+  return getRawWeekLabel(override.week, override.seasonType?.toLowerCase() === 'postseason');
+}
+
+/**
  * Converts a raw week number to its display label.
  * Raw week numbers represent the week games are played;
  * labels reflect rankings after those games, hence the +1 offset.

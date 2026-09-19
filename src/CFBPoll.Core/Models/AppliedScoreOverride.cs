@@ -1,6 +1,11 @@
-namespace CFBPoll.API.DTOs;
+namespace CFBPoll.Core.Models;
 
-public class ScoreOverrideDisclosureDTO
+/// <summary>
+/// A manual score override that was in effect for the games a set of rankings was calculated from.
+/// Stored inside the rankings snapshot so what the poll discloses matches what it actually used,
+/// regardless of later changes to the override table.
+/// </summary>
+public class AppliedScoreOverride
 {
     public string AwayTeam { get; set; } = string.Empty;
     public string? AwayTeamLogoURL { get; set; }

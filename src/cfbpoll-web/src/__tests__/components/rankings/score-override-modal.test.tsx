@@ -74,6 +74,12 @@ describe('ScoreOverrideModal', () => {
     expect(screen.getByRole('img', { name: 'Nebraska logo' })).toHaveAttribute('src', 'https://example.com/nebraska.png');
   });
 
+  it('shows Postseason as the week label for a postseason override', () => {
+    render(<ScoreOverrideModal onClose={vi.fn()} scoreOverrides={[{ ...iowaOverride, seasonType: 'postseason', week: 1 }]} />);
+
+    expect(screen.getByText('Postseason')).toBeInTheDocument();
+  });
+
   it('shows the corrected score alongside the original score', () => {
     render(<ScoreOverrideModal onClose={vi.fn()} scoreOverrides={[iowaOverride]} />);
 
@@ -89,6 +95,6 @@ describe('ScoreOverrideModal', () => {
   it('shows the week label', () => {
     render(<ScoreOverrideModal onClose={vi.fn()} scoreOverrides={[iowaOverride]} />);
 
-    expect(screen.getByText('Week 4')).toBeInTheDocument();
+    expect(screen.getByText('Week 3')).toBeInTheDocument();
   });
 });

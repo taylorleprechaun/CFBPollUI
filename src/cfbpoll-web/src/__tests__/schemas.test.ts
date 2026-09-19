@@ -436,6 +436,25 @@ describe('Zod Schemas', () => {
       expect(result.success).toBe(false);
     });
 
+    it('accepts a seasonType on a score override disclosure', () => {
+      const data = {
+        awayTeam: 'Iowa',
+        awayTeamLogoURL: 'https://example.com/iowa.png',
+        gameID: 401234561,
+        homeTeam: 'Nebraska',
+        homeTeamLogoURL: 'https://example.com/nebraska.png',
+        originalAwayPoints: 20,
+        originalHomePoints: 24,
+        overrideAwayPoints: 24,
+        overrideHomePoints: 20,
+        reason: 'Targeting was missed on the final play.',
+        seasonType: 'postseason',
+        week: 1,
+      };
+      const result = ScoreOverrideDisclosureSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
     it('validates a valid score override disclosure', () => {
       const data = {
         awayTeam: 'Iowa',

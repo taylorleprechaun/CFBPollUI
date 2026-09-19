@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 
 import type { ScoreOverrideDisclosure } from '../../types';
 
-import { getWeekLabel } from '../../lib/week-utils';
+import { getScoreOverrideWeekLabel } from '../../lib/week-utils';
 import { BUTTON_SECONDARY } from '../ui/button-styles';
 import { TeamLogo } from './team-logo';
 
@@ -63,7 +63,7 @@ export function ScoreOverrideModal({ onClose, scoreOverrides }: ScoreOverrideMod
                 <span className="text-text-muted">@</span>
                 <TeamLogo logoURL={override.homeTeamLogoURL ?? ''} teamName={override.homeTeam} />
                 <span className="font-medium text-text-primary">{override.homeTeam}</span>
-                <span className="text-text-muted text-xs ml-auto">{getWeekLabel(override.week)}</span>
+                <span className="text-text-muted text-xs ml-auto">{getScoreOverrideWeekLabel(override)}</span>
               </div>
               <p className="text-sm text-text-secondary">
                 <span className="font-medium text-text-primary">Score:</span>{' '}

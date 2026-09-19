@@ -79,6 +79,7 @@ export const ScoreOverrideDisclosureSchema = z.object({
   overrideAwayPoints: z.number(),
   overrideHomePoints: z.number(),
   reason: z.string(),
+  seasonType: z.string().optional(),
   week: z.number(),
 });
 

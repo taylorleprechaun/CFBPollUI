@@ -324,14 +324,24 @@ describe('RankingsTable', () => {
       week: 3,
     };
 
-    it('does not render a tooltip for a team with no score override', () => {
+    it('closes the modal when Close is clicked', async () => {
+      renderTable({ scoreOverrides: [uscOverride] });
+
+      const uscRow = screen.getByText('USC').closest('tr')!;
+      await userEvent.click(within(uscRow).getByRole('button', { name: 'Show manually corrected scores for USC' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('does not render an override button for a team with no score override', () => {
       renderTable({ scoreOverrides: [uscOverride] });
 
       const ohioStateRow = screen.getByText('Ohio State').closest('tr')!;
-      expect(within(ohioStateRow).queryByRole('button', { name: 'About Manual score override' })).not.toBeInTheDocument();
+      expect(within(ohioStateRow).queryByRole('button', { name: /Show manually corrected scores/ })).not.toBeInTheDocument();
     });
 
-    it('joins multiple overrides for the same team in one tooltip', async () => {
+    it('lists every override for the same team in one modal', async () => {
       const secondUscOverride: ScoreOverrideDisclosure = {
         awayTeam: 'USC',
         awayTeamLogoURL: 'https://example.com/usc.png',
@@ -349,19 +359,47 @@ describe('RankingsTable', () => {
       renderTable({ scoreOverrides: [uscOverride, secondUscOverride] });
 
       const uscRow = screen.getByText('USC').closest('tr')!;
-      await userEvent.click(within(uscRow).getByRole('button', { name: 'About Manual score override' }));
+      await userEvent.click(within(uscRow).getByRole('button', { name: 'Show manually corrected scores for USC' }));
 
-      expect(screen.getByText(/17-21 corrected to 21-17/)).toBeInTheDocument();
-      expect(screen.getByText(/14-10 corrected to 10-14/)).toBeInTheDocument();
+      const dialog = screen.getByRole('dialog');
+      expect(within(dialog).getByText(uscOverride.reason)).toBeInTheDocument();
+      expect(within(dialog).getByText(secondUscOverride.reason)).toBeInTheDocument();
     });
 
-    it('renders a tooltip next to a team involved in a score override', async () => {
+    it('lists only the overrides for the clicked team in the modal', async () => {
+      const otherOverride: ScoreOverrideDisclosure = {
+        awayTeam: 'Ohio State',
+        awayTeamLogoURL: 'https://example.com/ohio-state.png',
+        gameID: 401234563,
+        homeTeam: 'Michigan',
+        homeTeamLogoURL: 'https://example.com/michigan.png',
+        originalAwayPoints: 30,
+        originalHomePoints: 27,
+        overrideAwayPoints: 27,
+        overrideHomePoints: 30,
+        reason: 'A different reason that should not show for USC.',
+        week: 6,
+      };
+
+      renderTable({ scoreOverrides: [uscOverride, otherOverride] });
+
+      const uscRow = screen.getByText('USC').closest('tr')!;
+      await userEvent.click(within(uscRow).getByRole('button', { name: 'Show manually corrected scores for USC' }));
+
+      const dialog = screen.getByRole('dialog');
+      expect(within(dialog).getByText(uscOverride.reason)).toBeInTheDocument();
+      expect(within(dialog).queryByText(otherOverride.reason)).not.toBeInTheDocument();
+    });
+
+    it('opens a modal with the corrected score details when the override button is clicked', async () => {
       renderTable({ scoreOverrides: [uscOverride] });
 
       const uscRow = screen.getByText('USC').closest('tr')!;
-      await userEvent.click(within(uscRow).getByRole('button', { name: 'About Manual score override' }));
+      await userEvent.click(within(uscRow).getByRole('button', { name: 'Show manually corrected scores for USC' }));
 
-      expect(screen.getByText(/17-21 corrected to 21-17/)).toBeInTheDocument();
+      const dialog = screen.getByRole('dialog', { name: 'Manually Corrected Scores' });
+      expect(within(dialog).getByText(/17-21.*21-17/)).toBeInTheDocument();
+      expect(within(dialog).getByText(uscOverride.reason)).toBeInTheDocument();
     });
   });
 
