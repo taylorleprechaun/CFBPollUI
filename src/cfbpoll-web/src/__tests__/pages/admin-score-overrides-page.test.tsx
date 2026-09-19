@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -46,6 +46,18 @@ const mockCompletedGame = {
   homePoints: 24,
   homeTeam: 'Nebraska',
   homeTeamLogoURL: 'https://example.com/nebraska.png',
+  seasonType: 'regular',
+};
+
+const mockOverriddenCompletedGame = {
+  awayPoints: 24,
+  awayTeam: 'Texas',
+  awayTeamLogoURL: 'https://example.com/texas.png',
+  gameID: 401234562,
+  hasOverride: true,
+  homePoints: 20,
+  homeTeam: 'Oklahoma',
+  homeTeamLogoURL: 'https://example.com/oklahoma.png',
   seasonType: 'regular',
 };
 
@@ -132,6 +144,27 @@ describe('AdminScoreOverridesPage', () => {
     });
   });
 
+  it('closes the confirmation and shows the error when deleting fails', async () => {
+    mockDeleteOverride.mockRejectedValueOnce(new Error('Server unavailable'));
+    render(<AdminScoreOverridesPage />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Server unavailable');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('closes the confirmation dialog when a delete succeeds', async () => {
+    render(<AdminScoreOverridesPage />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('keeps the wizard open and shows the error when saving fails', async () => {
     mockSaveOverride.mockRejectedValueOnce(new Error('The scores of an existing override cannot be changed'));
     render(<AdminScoreOverridesPage />);
@@ -156,6 +189,27 @@ describe('AdminScoreOverridesPage', () => {
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel' }));
 
     expect(mockDeleteOverride).not.toHaveBeenCalled();
+  });
+
+  it('does not open a wizard when Edit Override is clicked before the overrides have loaded', async () => {
+    mockCompletedGamesData = { games: [mockOverriddenCompletedGame] };
+    mockOverridesData = undefined;
+    render(<AdminScoreOverridesPage />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Edit Override' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('opens the edit wizard with no score inputs when Edit Override is clicked on an overridden game', async () => {
+    mockCompletedGamesData = { games: [mockOverriddenCompletedGame] };
+    render(<AdminScoreOverridesPage />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Edit Override' }));
+
+    expect(screen.getByRole('heading', { name: 'Override Score: Texas @ Oklahoma' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Reason')).toHaveValue('A targeting call was missed on the game-deciding play.');
+    expect(screen.queryByLabelText('Oklahoma Score')).not.toBeInTheDocument();
   });
 
   it('opens the form in edit mode with no score inputs when Edit is clicked', async () => {
@@ -187,6 +241,25 @@ describe('AdminScoreOverridesPage', () => {
     render(<AdminScoreOverridesPage />);
 
     expect(screen.getByText('Completed Games - 2025 Week 3')).toBeInTheDocument();
+  });
+
+  it('saves the unchanged scores with the new reason when only the note is edited from Completed Games', async () => {
+    mockCompletedGamesData = { games: [mockOverriddenCompletedGame] };
+    render(<AdminScoreOverridesPage />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Edit Override' }));
+    await userEvent.clear(screen.getByLabelText('Reason'));
+    await userEvent.type(screen.getByLabelText('Reason'), 'Clarified the officiating explanation.');
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+    await userEvent.click(screen.getByLabelText('I understand this does not retroactively update published results.'));
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm Override' }));
+
+    expect(mockSaveOverride).toHaveBeenCalledWith({
+      gameId: 401234562,
+      overrideAwayPoints: 24,
+      overrideHomePoints: 20,
+      reason: 'Clarified the officiating explanation.',
+    });
   });
 
   it('shows the raw week number in the week selector, not the rankings-shifted label', () => {

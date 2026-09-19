@@ -2399,6 +2399,41 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task SaveGameOverrideAsync_NewOverride_OnlyOneScoreMatchesOfficialScore_Saves()
+    {
+        var fullSchedule = new List<ScheduleGame>
+        {
+            new() { GameID = 401123457, Week = 5, SeasonType = "regular", HomeTeam = "Florida", AwayTeam = "Iowa", HomePoints = 24, AwayPoints = 20, Completed = true }
+        };
+
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2026)).ReturnsAsync(fullSchedule);
+        _mockGameOverrideModule.Setup(x => x.GetGameOverrideAsync(401123457)).ReturnsAsync((GameOverride?)null);
+        _mockGameOverrideModule.Setup(x => x.SaveGameOverrideAsync(It.IsAny<GameOverride>())).ReturnsAsync(true);
+
+        var outcome = await _adminModule.SaveGameOverrideAsync(401123457, 2026, 24, 27, "Corrected after review.");
+
+        Assert.Equal(SaveGameOverrideOutcome.Saved, outcome);
+        _mockGameOverrideModule.Verify(x => x.SaveGameOverrideAsync(It.IsAny<GameOverride>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SaveGameOverrideAsync_NewOverride_ScoresMatchOfficialScore_ReturnsScoresUnchanged()
+    {
+        var fullSchedule = new List<ScheduleGame>
+        {
+            new() { GameID = 401123457, Week = 5, SeasonType = "regular", HomeTeam = "Florida", AwayTeam = "Iowa", HomePoints = 24, AwayPoints = 20, Completed = true }
+        };
+
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2026)).ReturnsAsync(fullSchedule);
+        _mockGameOverrideModule.Setup(x => x.GetGameOverrideAsync(401123457)).ReturnsAsync((GameOverride?)null);
+
+        var outcome = await _adminModule.SaveGameOverrideAsync(401123457, 2026, 24, 20, "Corrected after review.");
+
+        Assert.Equal(SaveGameOverrideOutcome.ScoresUnchanged, outcome);
+        _mockGameOverrideModule.Verify(x => x.SaveGameOverrideAsync(It.IsAny<GameOverride>()), Times.Never);
+    }
+
+    [Fact]
     public async Task SaveGameOverrideAsync_NewOverride_UsesCfbdScoreAsOriginal()
     {
         var fullSchedule = new List<ScheduleGame>

@@ -938,6 +938,22 @@ public class AdminControllerTests
     }
 
     [Fact]
+    public async Task SaveGameOverride_ScoresUnchanged_ReturnsBadRequest()
+    {
+        var request = new SaveGameOverrideRequestDTO { OverrideHomePoints = 20, OverrideAwayPoints = 24, Reason = "Corrected after review." };
+        _mockAdminModule
+            .Setup(x => x.SaveGameOverrideAsync(401123456, 2024, 20, 24, "Corrected after review."))
+            .ReturnsAsync(SaveGameOverrideOutcome.ScoresUnchanged);
+
+        var result = await _controller.SaveGameOverride(401123456, 2024, request);
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result.Result);
+        var error = Assert.IsType<ErrorResponseDTO>(badRequest.Value);
+        Assert.Equal("Override scores match the officially recorded score", error.Message);
+        _mockAdminModule.Verify(x => x.GetGameOverrideAsync(It.IsAny<long>()), Times.Never);
+    }
+
+    [Fact]
     public async Task SaveGameOverride_TiedScores_ReturnsBadRequest()
     {
         var request = new SaveGameOverrideRequestDTO { OverrideHomePoints = 21, OverrideAwayPoints = 21, Reason = "Corrected after review." };

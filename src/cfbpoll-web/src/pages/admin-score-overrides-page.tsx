@@ -4,6 +4,7 @@ import type { ScoreOverrideTarget } from '../components/admin';
 import type { CompletedGame, GameOverride } from '../schemas/admin';
 
 import { CompletedGamesSection, GameOverridesSection, ScoreOverrideWizardModal, WeekSelect } from '../components/admin';
+import { ErrorAlert } from '../components/error';
 import { SELECT_BASE } from '../components/ui/button-styles';
 import { ConfirmModal } from '../components/ui/confirm-modal';
 import { useAuth } from '../hooks/use-auth';
@@ -14,7 +15,7 @@ import { useSeason } from '../hooks/use-season';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
 import { SITE_OWNER_NAME } from '../lib/config';
-import { toErrorMessage } from '../lib/error-utils';
+import { toError, toErrorMessage } from '../lib/error-utils';
 import { getRawWeekLabel } from '../lib/week-utils';
 
 export function AdminScoreOverridesPage() {
@@ -63,11 +64,21 @@ export function AdminScoreOverridesPage() {
   const [wizardTarget, setWizardTarget] = useState<ScoreOverrideTarget | null>(null);
   const [isEditingWizardTarget, setIsEditingWizardTarget] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<GameOverride | null>(null);
+  const [deleteError, setDeleteError] = useState<Error | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   function handleSelectGame(game: CompletedGame) {
     if (game.gameID === null || game.homeTeam === null || game.awayTeam === null
       || game.homePoints === null || game.awayPoints === null) {
+      return;
+    }
+
+    if (game.hasOverride) {
+      // An overridden game's scores are locked, so only the reason can change; that is the edit wizard.
+      const existingOverride = overrides?.find((o) => o.gameID === game.gameID);
+      if (existingOverride) {
+        handleEditOverride(existingOverride);
+      }
       return;
     }
 
@@ -123,8 +134,20 @@ export function AdminScoreOverridesPage() {
   async function handleConfirmDelete() {
     if (!deleteTarget) return;
 
-    await deleteOverride(deleteTarget.gameID);
-    setDeleteTarget(null);
+    setDeleteError(null);
+
+    try {
+      await deleteOverride(deleteTarget.gameID);
+    } catch (err) {
+      setDeleteError(toError(err, 'Failed to delete the score override'));
+    } finally {
+      setDeleteTarget(null);
+    }
+  }
+
+  function handleRequestDelete(gameOverride: GameOverride) {
+    setDeleteError(null);
+    setDeleteTarget(gameOverride);
   }
 
   return (
@@ -186,10 +209,15 @@ export function AdminScoreOverridesPage() {
           <h2 className="text-lg font-semibold text-text-primary mb-4">
             Existing Overrides - {selectedSeason}
           </h2>
+          {deleteError && (
+            <div className="mb-4">
+              <ErrorAlert error={deleteError} />
+            </div>
+          )}
           <GameOverridesSection
             isDeleting={isDeleting}
             isLoading={overridesLoading}
-            onDelete={setDeleteTarget}
+            onDelete={handleRequestDelete}
             onEdit={handleEditOverride}
             overrides={overrides ?? []}
           />

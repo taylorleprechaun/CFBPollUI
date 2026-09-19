@@ -185,6 +185,8 @@ public interface IAdminModule
     /// originally recorded score across edits rather than re-deriving it, since a subsequent lookup
     /// of the game would otherwise return the already-overridden score. Once an override exists only its
     /// reason can change; submitting different scores returns <see cref="SaveGameOverrideOutcome.ScoresLocked"/>.
+    /// Scores identical to the officially recorded ones would change nothing and return
+    /// <see cref="SaveGameOverrideOutcome.ScoresUnchanged"/>.
     /// </summary>
     Task<SaveGameOverrideOutcome> SaveGameOverrideAsync(long gameID, int season, int overrideHomePoints, int overrideAwayPoints, string reason);
 }

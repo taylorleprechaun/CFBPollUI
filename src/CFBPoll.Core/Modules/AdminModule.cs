@@ -645,6 +645,15 @@ public class AdminModule : IAdminModule
             return SaveGameOverrideOutcome.ScoresLocked;
         }
 
+        var originalAwayPoints = existingOverride?.OriginalAwayPoints ?? game.AwayPoints.Value;
+        var originalHomePoints = existingOverride?.OriginalHomePoints ?? game.HomePoints.Value;
+
+        if (overrideAwayPoints == originalAwayPoints && overrideHomePoints == originalHomePoints)
+        {
+            _logger.LogWarning("Refused to save game score override: scores for game {GameID} match the officially recorded score", gameID);
+            return SaveGameOverrideOutcome.ScoresUnchanged;
+        }
+
         var now = DateTime.UtcNow;
 
         var gameOverride = new GameOverride
@@ -654,8 +663,8 @@ public class AdminModule : IAdminModule
             GameID = gameID,
             HomeTeam = game.HomeTeam ?? string.Empty,
             ModifiedAt = now,
-            OriginalAwayPoints = existingOverride?.OriginalAwayPoints ?? game.AwayPoints.Value,
-            OriginalHomePoints = existingOverride?.OriginalHomePoints ?? game.HomePoints.Value,
+            OriginalAwayPoints = originalAwayPoints,
+            OriginalHomePoints = originalHomePoints,
             OverrideAwayPoints = overrideAwayPoints,
             OverrideHomePoints = overrideHomePoints,
             Reason = reason,

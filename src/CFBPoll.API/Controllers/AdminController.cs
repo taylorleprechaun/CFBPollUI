@@ -496,6 +496,9 @@ public class AdminController : ControllerBase
         if (outcome == SaveGameOverrideOutcome.ScoresLocked)
             return BadRequest(new ErrorResponseDTO { Message = "The scores of an existing override cannot be changed; delete the override and create a new one", StatusCode = 400 });
 
+        if (outcome == SaveGameOverrideOutcome.ScoresUnchanged)
+            return BadRequest(new ErrorResponseDTO { Message = "Override scores match the officially recorded score", StatusCode = 400 });
+
         var saved = await _adminModule.GetGameOverrideAsync(gameID);
 
         return Ok(GameOverrideMapper.ToDTO(saved!));
