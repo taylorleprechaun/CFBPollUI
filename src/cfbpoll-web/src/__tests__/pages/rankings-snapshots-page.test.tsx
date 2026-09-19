@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { RankingsSnapshot } from '../../schemas/admin';
+
 import { RankingsSnapshotsPage } from '../../pages/rankings-snapshots-page';
 
 let mockToken: string | null = 'test-token';
@@ -83,7 +85,7 @@ vi.mock('../../hooks/use-admin-mutations', () => ({
   }),
 }));
 
-let mockRankingsSnapshotsData: { createdAt: string; isPublished: boolean; season: number; week: number; }[] | undefined = [];
+let mockRankingsSnapshotsData: RankingsSnapshot[] | undefined = [];
 let mockRankingsSnapshotsError: Error | null = null;
 let mockRankingsSnapshotsLoading = false;
 
@@ -134,6 +136,28 @@ describe('RankingsSnapshotsPage', () => {
     mockExportIsPending = false;
     mockRefreshCacheIsPending = false;
     mockViewIsPending = false;
+  });
+
+  it('asks for confirmation before publishing a draft with stale score overrides', async () => {
+    mockRankingsSnapshotsData = [
+      {
+        season: 2024,
+        week: 1,
+        isPublished: false,
+        createdAt: '2024-09-01T00:00:00Z',
+        staleScoreOverrides: [{ awayTeam: 'Iowa', gameID: 401234561, homeTeam: 'Nebraska', kind: 'Added' }],
+      },
+    ];
+    mockPublishMutateAsync.mockResolvedValue(undefined);
+
+    renderRankingsSnapshotsPage();
+
+    await userEvent.click(screen.getByText('2024 Season'));
+    await userEvent.click(screen.getByRole('button', { name: 'Publish' }));
+
+    expect(mockPublishMutateAsync).not.toHaveBeenCalled();
+    expect(screen.getByText('Publish Stale Rankings')).toBeInTheDocument();
+    expect(screen.getByText(/Iowa @ Nebraska \(Added since calculation\)/)).toBeInTheDocument();
   });
 
   it('calculates after confirming the overwrite of a published rankings snapshot', async () => {
@@ -439,6 +463,27 @@ describe('RankingsSnapshotsPage', () => {
     expect(mockDeleteMutateAsync).not.toHaveBeenCalled();
   });
 
+  it('does not publish a stale draft when the confirmation is cancelled', async () => {
+    mockRankingsSnapshotsData = [
+      {
+        season: 2024,
+        week: 1,
+        isPublished: false,
+        createdAt: '2024-09-01T00:00:00Z',
+        staleScoreOverrides: [{ awayTeam: 'Iowa', gameID: 401234561, homeTeam: 'Nebraska', kind: 'Added' }],
+      },
+    ];
+
+    renderRankingsSnapshotsPage();
+
+    await userEvent.click(screen.getByText('2024 Season'));
+    await userEvent.click(screen.getByRole('button', { name: 'Publish' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(mockPublishMutateAsync).not.toHaveBeenCalled();
+    expect(screen.queryByText('Publish Stale Rankings')).not.toBeInTheDocument();
+  });
+
   it('does not show the already-published banner when nothing exists for the selected week', () => {
     renderRankingsSnapshotsPage();
 
@@ -551,6 +596,29 @@ describe('RankingsSnapshotsPage', () => {
 
     const previewSection = screen.getByText(/Preview: 2024 Week 6/).closest('div.bg-surface');
     expect(previewSection?.querySelector('[aria-label="Success"]')).toBeInTheDocument();
+  });
+
+  it('publishes a stale draft after confirming the warning', async () => {
+    mockRankingsSnapshotsData = [
+      {
+        season: 2024,
+        week: 1,
+        isPublished: false,
+        createdAt: '2024-09-01T00:00:00Z',
+        staleScoreOverrides: [{ awayTeam: 'Iowa', gameID: 401234561, homeTeam: 'Nebraska', kind: 'Added' }],
+      },
+    ];
+    mockPublishMutateAsync.mockResolvedValue(undefined);
+
+    renderRankingsSnapshotsPage();
+
+    await userEvent.click(screen.getByText('2024 Season'));
+    await userEvent.click(screen.getByRole('button', { name: 'Publish' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Publish anyway' }));
+
+    await waitFor(() => {
+      expect(mockPublishMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 1 });
+    });
   });
 
   it('renders calculate button', () => {

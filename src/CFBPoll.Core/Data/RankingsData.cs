@@ -189,6 +189,39 @@ public class RankingsData : IRankingsData
         return results;
     }
 
+    public async Task<IEnumerable<RankingsSnapshotScoreOverrides>> GetSnapshotScoreOverridesAsync()
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT Season, Week, json_extract(RankingsJson, '$.ScoreOverrides')
+            FROM RankingsSnapshot
+            WHERE json_array_length(RankingsJson, '$.ScoreOverrides') > 0
+            ORDER BY Season, Week
+            """;
+
+        await using var reader = await command.ExecuteReaderAsync().ConfigureAwait(false);
+        List<RankingsSnapshotScoreOverrides> results = [];
+
+        while (await reader.ReadAsync().ConfigureAwait(false))
+        {
+            var scoreOverrides = JsonSerializer.Deserialize<List<AppliedScoreOverride>>(reader.GetString(2));
+            if (scoreOverrides is null)
+                continue;
+
+            results.Add(new RankingsSnapshotScoreOverrides
+            {
+                ScoreOverrides = scoreOverrides,
+                Season = reader.GetInt32(0),
+                Week = reader.GetInt32(1)
+            });
+        }
+
+        return results;
+    }
+
     public async Task InitializeAsync()
     {
         EnsureDirectoryExists();

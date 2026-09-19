@@ -141,6 +141,20 @@ describe('PersistedRankingsSnapshotsSection', () => {
     expect(screen.getByText('Delete')).toBeDisabled();
   });
 
+  it('does not show a stale badge when a snapshot has no stale score overrides', () => {
+    render(
+      <PersistedRankingsSnapshotsSection
+        {...defaultProps}
+        rankingsSnapshots={[
+          { season: 2024, week: 1, isPublished: false, createdAt: '2024-09-01T00:00:00Z', staleScoreOverrides: [] },
+        ]}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: 'Stale' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Overrides changed' })).not.toBeInTheDocument();
+  });
+
   it('does not show a View button since onView is not passed', () => {
     render(
       <PersistedRankingsSnapshotsSection
@@ -186,6 +200,33 @@ describe('PersistedRankingsSnapshotsSection', () => {
     expect(screen.getByText('(Viewing)')).toBeInTheDocument();
   });
 
+  it('opens a modal listing the differences when the stale badge is clicked', async () => {
+    render(
+      <PersistedRankingsSnapshotsSection
+        {...defaultProps}
+        rankingsSnapshots={[
+          {
+            season: 2024,
+            week: 1,
+            isPublished: false,
+            createdAt: '2024-09-01T00:00:00Z',
+            staleScoreOverrides: [{ awayTeam: 'Iowa', gameID: 401234561, homeTeam: 'Nebraska', kind: 'Added' }],
+          },
+        ]}
+      />
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Stale' }));
+
+    const dialog = screen.getByRole('dialog', { name: 'Score Override Changes' });
+    expect(dialog).toHaveTextContent('Iowa @ Nebraska');
+    expect(dialog).toHaveTextContent('Added since calculation');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
   it('renders heading', () => {
     render(<PersistedRankingsSnapshotsSection {...defaultProps} />);
 
@@ -228,6 +269,46 @@ describe('PersistedRankingsSnapshotsSection', () => {
     render(<PersistedRankingsSnapshotsSection {...defaultProps} isLoading={true} />);
 
     expect(screen.queryByText('No persisted rankings found.')).not.toBeInTheDocument();
+  });
+
+  it('shows a Stale badge for a draft with stale score overrides', () => {
+    render(
+      <PersistedRankingsSnapshotsSection
+        {...defaultProps}
+        rankingsSnapshots={[
+          {
+            season: 2024,
+            week: 1,
+            isPublished: false,
+            createdAt: '2024-09-01T00:00:00Z',
+            staleScoreOverrides: [{ awayTeam: 'Iowa', gameID: 401234561, homeTeam: 'Nebraska', kind: 'Added' }],
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByText('Draft')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Stale' })).toBeInTheDocument();
+  });
+
+  it('shows an Overrides changed badge for a published snapshot with stale score overrides', () => {
+    render(
+      <PersistedRankingsSnapshotsSection
+        {...defaultProps}
+        rankingsSnapshots={[
+          {
+            season: 2024,
+            week: 1,
+            isPublished: true,
+            createdAt: '2024-09-01T00:00:00Z',
+            staleScoreOverrides: [{ awayTeam: 'Texas', gameID: 401234562, homeTeam: 'Oklahoma', kind: 'Removed' }],
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByText('Published')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Overrides changed' })).toBeInTheDocument();
   });
 
   it('shows collapsed indicator when season is collapsed', () => {

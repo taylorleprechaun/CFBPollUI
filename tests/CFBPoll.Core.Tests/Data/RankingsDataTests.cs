@@ -560,6 +560,66 @@ public class RankingsDataTests
     }
 
     [Fact]
+    public async Task GetSnapshotScoreOverridesAsync_NoSnapshots_ReturnsEmpty()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var result = await data.GetSnapshotScoreOverridesAsync();
+
+            Assert.Empty(result);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task GetSnapshotScoreOverridesAsync_SnapshotsWithScoreOverrides_ReturnsOnlyThoseSnapshots()
+    {
+        var (data, tempPath) = CreateRankingsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var withOverride = CreateRankingsResult(2025, 6);
+            withOverride.ScoreOverrides =
+            [
+                new AppliedScoreOverride { AwayTeam = "Iowa", GameID = 401234561, HomeTeam = "Nebraska", OverrideAwayPoints = 20, OverrideHomePoints = 24, Reason = "A reason.", SeasonType = "regular", Week = 3 }
+            ];
+            await data.SaveRankingsSnapshotAsync(withOverride, RatingAlgorithmVersion.V1);
+            await data.SaveRankingsSnapshotAsync(CreateRankingsResult(2025, 7), RatingAlgorithmVersion.V1);
+
+            await using (var connection = new SqliteConnection($"Data Source={tempPath};Pooling=false"))
+            {
+                await connection.OpenAsync();
+                await using var command = connection.CreateCommand();
+                command.CommandText = """
+                    INSERT INTO RankingsSnapshot (Season, Week, RankingsJson, Published, CreatedAt)
+                    VALUES (2024, 5, '{"Rankings":[],"Season":2024,"Week":5}', 1, '2024-10-01T00:00:00.0000000Z')
+                    """;
+                await command.ExecuteNonQueryAsync();
+            }
+
+            var result = (await data.GetSnapshotScoreOverridesAsync()).ToList();
+
+            var snapshot = Assert.Single(result);
+            Assert.Equal(2025, snapshot.Season);
+            Assert.Equal(6, snapshot.Week);
+            var scoreOverride = Assert.Single(snapshot.ScoreOverrides);
+            Assert.Equal(401234561, scoreOverride.GameID);
+            Assert.Equal(24, scoreOverride.OverrideHomePoints);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
     public async Task InitializeAsync_CalledTwice_DoesNotThrow()
     {
         var (data, tempPath) = CreateRankingsDataWithFile();

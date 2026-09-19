@@ -28,9 +28,42 @@ public class RankingsSnapshotMapperTests
     }
 
     [Fact]
+    public void ToDTO_MapsStaleScoreOverrides()
+    {
+        var summary = new RankingsSnapshotSummary
+        {
+            Season = 2025,
+            StaleScoreOverrides =
+            [
+                new ScoreOverrideDifference { AwayTeam = "Iowa", GameID = 401234561, HomeTeam = "Nebraska", Kind = ScoreOverrideDifferenceKind.Added },
+                new ScoreOverrideDifference { AwayTeam = "Texas", GameID = 401234562, HomeTeam = "Oklahoma", Kind = ScoreOverrideDifferenceKind.Removed }
+            ],
+            Week = 6
+        };
+
+        var result = RankingsSnapshotMapper.ToDTO(summary);
+
+        var differences = result.StaleScoreOverrides.ToList();
+        Assert.Equal(2, differences.Count);
+        Assert.Equal("Added", differences[0].Kind);
+        Assert.Equal(401234561, differences[0].GameID);
+        Assert.Equal("Iowa", differences[0].AwayTeam);
+        Assert.Equal("Nebraska", differences[0].HomeTeam);
+        Assert.Equal("Removed", differences[1].Kind);
+    }
+
+    [Fact]
     public void ToDTO_NullInput_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(() => RankingsSnapshotMapper.ToDTO(null!));
+    }
+
+    [Fact]
+    public void ToDTO_SnapshotWithoutStaleScoreOverrides_MapsEmptyList()
+    {
+        var result = RankingsSnapshotMapper.ToDTO(new RankingsSnapshotSummary { Season = 2025, Week = 6 });
+
+        Assert.Empty(result.StaleScoreOverrides);
     }
 
     [Fact]
@@ -65,5 +98,11 @@ public class RankingsSnapshotMapperTests
         var result = RankingsSnapshotMapper.ToDTO(summary);
 
         Assert.Equal("V2", result.AlgorithmVersion);
+    }
+
+    [Fact]
+    public void ToStaleScoreOverrideDTO_NullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => RankingsSnapshotMapper.ToStaleScoreOverrideDTO(null!));
     }
 }

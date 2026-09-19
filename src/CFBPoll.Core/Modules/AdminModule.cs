@@ -426,9 +426,21 @@ public class AdminModule : IAdminModule
         if (overrides.Count == 0)
             return overrides;
 
-        var teamLogosByName = await TeamLogoLookup.GetTeamLogosByNameAsync(_dataService, season).ConfigureAwait(false);
+        var teamLogosTask = TeamLogoLookup.GetTeamLogosByNameAsync(_dataService, season);
+        var fullScheduleTask = _dataService.GetFullSeasonScheduleAsync(season);
+        await Task.WhenAll(teamLogosTask, fullScheduleTask).ConfigureAwait(false);
 
-        return overrides.Select(o => TeamLogoLookup.WithTeamLogos(o, teamLogosByName));
+        var scheduleGamesByID = fullScheduleTask.Result
+            .Where(g => g.GameID.HasValue)
+            .GroupBy(g => g.GameID!.Value)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        return overrides.Select(o =>
+        {
+            var enriched = TeamLogoLookup.WithTeamLogos(o, teamLogosTask.Result);
+            enriched.SourceScoreChanged = HasSourceScoreChanged(o, scheduleGamesByID);
+            return enriched;
+        }).ToList();
     }
 
     public async Task<IEnumerable<ScheduleGame>> GetIncompleteGamesAsync(int season, int week)
@@ -491,7 +503,33 @@ public class AdminModule : IAdminModule
 
     public async Task<IEnumerable<RankingsSnapshotSummary>> GetRankingsSnapshotsAsync()
     {
-        return await _rankingsModule.GetRankingsSnapshotsAsync().ConfigureAwait(false);
+        var summariesTask = _rankingsModule.GetRankingsSnapshotsAsync();
+        var embeddedOverridesTask = _rankingsModule.GetSnapshotScoreOverridesAsync();
+        await Task.WhenAll(summariesTask, embeddedOverridesTask).ConfigureAwait(false);
+
+        var summaries = summariesTask.Result.ToList();
+        var embeddedBySnapshot = embeddedOverridesTask.Result.ToDictionary(e => (e.Season, e.Week), e => e.ScoreOverrides);
+
+        var seasons = summaries.Select(s => s.Season).Distinct().ToList();
+        var currentOverrideTasks = seasons.ToDictionary(s => s, s => _gameOverrideModule.GetGameOverridesBySeasonAsync(s));
+        await Task.WhenAll(currentOverrideTasks.Values).ConfigureAwait(false);
+        var currentBySeason = currentOverrideTasks.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Result.ToList());
+
+        var postseasonWeekBySeason = await GetPostseasonWeeksAsync(
+            currentBySeason.Where(kvp => kvp.Value.Any(o => IsPostseason(o))).Select(kvp => kvp.Key)).ConfigureAwait(false);
+
+        foreach (var summary in summaries)
+        {
+            var current = currentBySeason[summary.Season];
+            var embedded = embeddedBySnapshot.TryGetValue((summary.Season, summary.Week), out var scoreOverrides)
+                ? scoreOverrides.ToList()
+                : [];
+
+            summary.StaleScoreOverrides = BuildScoreOverrideDifferences(
+                summary.Week, current, embedded, postseasonWeekBySeason.GetValueOrDefault(summary.Season));
+        }
+
+        return summaries;
     }
 
     public async Task<GradePredictionsResult?> GradePredictionsAsync(int season, int week)
@@ -631,6 +669,40 @@ public class AdminModule : IAdminModule
         return SaveGameOverrideOutcome.Saved;
     }
 
+    private IEnumerable<ScoreOverrideDifference> BuildScoreOverrideDifferences(
+        int snapshotWeek,
+        IReadOnlyCollection<GameOverride> currentOverrides,
+        IReadOnlyCollection<AppliedScoreOverride> embeddedOverrides,
+        int? postseasonWeek)
+    {
+        var embeddedByGameID = embeddedOverrides.ToDictionary(e => e.GameID);
+        var currentByGameID = currentOverrides.ToDictionary(c => c.GameID);
+        List<ScoreOverrideDifference> differences = [];
+
+        foreach (var current in currentOverrides)
+        {
+            var rankingWeek = IsPostseason(current) ? postseasonWeek ?? int.MaxValue : current.Week;
+            if (rankingWeek > snapshotWeek)
+                continue;
+
+            if (!embeddedByGameID.TryGetValue(current.GameID, out var embedded))
+            {
+                differences.Add(CreateDifference(ScoreOverrideDifferenceKind.Added, current.GameID, current.HomeTeam, current.AwayTeam));
+            }
+            else if (embedded.OverrideHomePoints != current.OverrideHomePoints || embedded.OverrideAwayPoints != current.OverrideAwayPoints)
+            {
+                differences.Add(CreateDifference(ScoreOverrideDifferenceKind.Changed, current.GameID, current.HomeTeam, current.AwayTeam));
+            }
+        }
+
+        foreach (var embedded in embeddedOverrides.Where(e => !currentByGameID.ContainsKey(e.GameID)))
+        {
+            differences.Add(CreateDifference(ScoreOverrideDifferenceKind.Removed, embedded.GameID, embedded.HomeTeam, embedded.AwayTeam));
+        }
+
+        return differences;
+    }
+
     private async Task<ExperimentalPredictionsResult> CalculateThrottledExperimentalPredictionsAsync(
         int season, int week, RatingAlgorithmVersion algorithmVersion, SemaphoreSlim throttle)
     {
@@ -643,5 +715,46 @@ public class AdminModule : IAdminModule
         {
             throttle.Release();
         }
+    }
+
+    private ScoreOverrideDifference CreateDifference(ScoreOverrideDifferenceKind kind, long gameID, string homeTeam, string awayTeam)
+    {
+        return new ScoreOverrideDifference
+        {
+            AwayTeam = awayTeam,
+            GameID = gameID,
+            HomeTeam = homeTeam,
+            Kind = kind
+        };
+    }
+
+    private async Task<Dictionary<int, int>> GetPostseasonWeeksAsync(IEnumerable<int> seasons)
+    {
+        var calendarTasks = seasons.ToDictionary(s => s, s => _dataService.GetCalendarAsync(s));
+        await Task.WhenAll(calendarTasks.Values).ConfigureAwait(false);
+
+        Dictionary<int, int> postseasonWeeks = [];
+        foreach (var (season, calendarTask) in calendarTasks)
+        {
+            var postseasonWeek = calendarTask.Result.FirstOrDefault(w => w.SeasonType.Equals("postseason", StringComparison.OrdinalIgnoreCase));
+            if (postseasonWeek is not null)
+                postseasonWeeks[season] = postseasonWeek.Week;
+        }
+
+        return postseasonWeeks;
+    }
+
+    private bool HasSourceScoreChanged(GameOverride gameOverride, IReadOnlyDictionary<long, ScheduleGame> scheduleGamesByID)
+    {
+        if (!scheduleGamesByID.TryGetValue(gameOverride.GameID, out var scheduleGame))
+            return false;
+
+        return scheduleGame.OriginalHomePoints != gameOverride.OriginalHomePoints
+            || scheduleGame.OriginalAwayPoints != gameOverride.OriginalAwayPoints;
+    }
+
+    private bool IsPostseason(GameOverride gameOverride)
+    {
+        return gameOverride.SeasonType.Equals("postseason", StringComparison.OrdinalIgnoreCase);
     }
 }

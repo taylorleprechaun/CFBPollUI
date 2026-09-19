@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -110,6 +110,57 @@ describe('ScoreOverrideWizardModal', () => {
     expect(screen.getByRole('button', { name: 'Confirm Override' })).toBeDisabled();
   });
 
+  it('disables Next and explains why when a score is negative', async () => {
+    render(<ScoreOverrideWizardModal isEditing={false} isSaving={false} onCancel={vi.fn()} onConfirm={vi.fn()} target={target} />);
+
+    fireEvent.change(screen.getByLabelText('Nebraska Score'), { target: { value: '-3' } });
+    await userEvent.type(screen.getByLabelText('Reason'), 'Targeting was missed on the final play.');
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Scores must be whole numbers of zero or more.');
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+  });
+
+  it('disables Next and explains why when a score is not a whole number', async () => {
+    render(<ScoreOverrideWizardModal isEditing={false} isSaving={false} onCancel={vi.fn()} onConfirm={vi.fn()} target={target} />);
+
+    fireEvent.change(screen.getByLabelText('Nebraska Score'), { target: { value: '27.5' } });
+    await userEvent.type(screen.getByLabelText('Reason'), 'Targeting was missed on the final play.');
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Scores must be whole numbers of zero or more.');
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+  });
+
+  it('disables Next and explains why when the scores are tied', async () => {
+    render(<ScoreOverrideWizardModal isEditing={false} isSaving={false} onCancel={vi.fn()} onConfirm={vi.fn()} target={target} />);
+
+    await userEvent.clear(screen.getByLabelText('Nebraska Score'));
+    await userEvent.type(screen.getByLabelText('Nebraska Score'), '21');
+    await userEvent.type(screen.getByLabelText('Reason'), 'Targeting was missed on the final play.');
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Scores cannot be tied.');
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+  });
+
+  it('disables Next and explains why when the reason is longer than 500 characters', async () => {
+    render(<ScoreOverrideWizardModal isEditing={false} isSaving={false} onCancel={vi.fn()} onConfirm={vi.fn()} target={target} />);
+
+    await userEvent.clear(screen.getByLabelText('Nebraska Score'));
+    await userEvent.type(screen.getByLabelText('Nebraska Score'), '27');
+    fireEvent.change(screen.getByLabelText('Reason'), { target: { value: 'x'.repeat(501) } });
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Reason must be 500 characters or fewer.');
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+  });
+
+  it('disables Next and explains why when the reason is longer than 500 characters in edit mode', () => {
+    render(<ScoreOverrideWizardModal isEditing={true} isSaving={false} onCancel={vi.fn()} onConfirm={vi.fn()} target={editTarget} />);
+
+    fireEvent.change(screen.getByLabelText('Reason'), { target: { value: 'x'.repeat(501) } });
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Reason must be 500 characters or fewer.');
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+  });
+
   it('disables Next until at least one score differs from the original', async () => {
     render(<ScoreOverrideWizardModal isEditing={false} isSaving={false} onCancel={vi.fn()} onConfirm={vi.fn()} target={target} />);
 
@@ -133,6 +184,14 @@ describe('ScoreOverrideWizardModal', () => {
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
   });
 
+  it('does not show a validation message for a valid score and reason', async () => {
+    render(<ScoreOverrideWizardModal isEditing={false} isSaving={false} onCancel={vi.fn()} onConfirm={vi.fn()} target={target} />);
+
+    await advanceToReviewStep();
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('does not render score inputs or the typed-confirmation field in edit mode', async () => {
     render(<ScoreOverrideWizardModal isEditing={true} isSaving={false} onCancel={vi.fn()} onConfirm={vi.fn()} target={editTarget} />);
 
@@ -142,6 +201,23 @@ describe('ScoreOverrideWizardModal', () => {
     await advanceToReviewStepInEditMode();
 
     expect(screen.queryByText(/Type .* to confirm/)).not.toBeInTheDocument();
+  });
+
+  it('shows the save error on the review step', async () => {
+    render(
+      <ScoreOverrideWizardModal
+        errorMessage="Override scores cannot be tied"
+        isEditing={false}
+        isSaving={false}
+        onCancel={vi.fn()}
+        onConfirm={vi.fn()}
+        target={target}
+      />
+    );
+
+    await advanceToReviewStep();
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Override scores cannot be tied');
   });
 
   it('returns to the edit step when Back is clicked', async () => {

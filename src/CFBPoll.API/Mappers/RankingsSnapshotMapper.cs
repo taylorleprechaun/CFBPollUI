@@ -15,7 +15,21 @@ public static class RankingsSnapshotMapper
             CreatedAt = summary.CreatedAt,
             IsPublished = summary.IsPublished,
             Season = summary.Season,
+            StaleScoreOverrides = summary.StaleScoreOverrides.Select(ToStaleScoreOverrideDTO),
             Week = summary.Week
+        };
+    }
+
+    public static StaleScoreOverrideDTO ToStaleScoreOverrideDTO(ScoreOverrideDifference difference)
+    {
+        ArgumentNullException.ThrowIfNull(difference);
+
+        return new StaleScoreOverrideDTO
+        {
+            AwayTeam = difference.AwayTeam,
+            GameID = difference.GameID,
+            HomeTeam = difference.HomeTeam,
+            Kind = difference.Kind.ToString()
         };
     }
 }

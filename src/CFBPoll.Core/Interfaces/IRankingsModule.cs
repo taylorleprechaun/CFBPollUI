@@ -57,6 +57,12 @@ public interface IRankingsModule
     Task<IEnumerable<RankingsSnapshotSummary>> GetRankingsSnapshotsAsync();
 
     /// <summary>
+    /// Retrieves the score overrides embedded in each persisted snapshot that has any, regardless of
+    /// published status. Snapshots calculated without overrides are omitted.
+    /// </summary>
+    Task<IEnumerable<RankingsSnapshotScoreOverrides>> GetSnapshotScoreOverridesAsync();
+
+    /// <summary>
     /// Publishes a rankings snapshot for the given season and week.
     /// </summary>
     Task<bool> PublishRankingsSnapshotAsync(int season, int week);

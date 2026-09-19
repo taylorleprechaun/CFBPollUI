@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 
-import type { CalculateResponse } from '../schemas/admin';
+import type { CalculateResponse, StaleScoreOverride } from '../schemas/admin';
 
 import {
   CalculateSection,
@@ -28,6 +28,7 @@ import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
 import { SITE_OWNER_NAME } from '../lib/config';
 import { toError } from '../lib/error-utils';
+import { formatStaleScoreOverride } from '../lib/stale-score-overrides';
 import { getWeekLabel } from '../lib/week-utils';
 
 export function RankingsSnapshotsPage() {
@@ -134,6 +135,18 @@ export function RankingsSnapshotsPage() {
   );
 
   const [calculateConfirm, setCalculateConfirm] = useState<{ season: number; week: number } | null>(null);
+  const [publishConfirm, setPublishConfirm] = useState<
+    { differences: StaleScoreOverride[]; feedbackKey: string; season: number; week: number } | null
+  >(null);
+
+  const handlePublishClick = (season: number, week: number, feedbackKey: string) => {
+    const differences = rankingsSnapshots?.find((s) => s.season === season && s.week === week)?.staleScoreOverrides ?? [];
+    if (differences.length > 0) {
+      setPublishConfirm({ differences, feedbackKey, season, week });
+      return;
+    }
+    handlePublish(season, week, feedbackKey);
+  };
 
   const handleCalculateClick = () => {
     if (existingRankingsSnapshotForSelection?.isPublished && selectedSeason !== null && selectedWeek !== null) {
@@ -198,7 +211,7 @@ export function RankingsSnapshotsPage() {
             isWeekComplete={isSelectedWeekComplete}
             onClearFeedback={clearFeedback}
             onExport={handleExport}
-            onPublish={(season, week) => handlePublish(season, week, 'preview-publish')}
+            onPublish={(season, week) => handlePublishClick(season, week, 'preview-publish')}
           />
         )}
       </ErrorBoundary>
@@ -215,7 +228,7 @@ export function RankingsSnapshotsPage() {
           onDelete={handleDelete}
           onExpandAll={handleExpandAll}
           onExport={handleExport}
-          onPublish={(season, week) => handlePublish(season, week, 'rankings-snapshot-publish')}
+          onPublish={(season, week) => handlePublishClick(season, week, 'rankings-snapshot-publish')}
           onToggleSeason={toggleSeason}
           onView={handleView}
           rankingsSnapshots={rankingsSnapshots ?? []}
@@ -228,6 +241,20 @@ export function RankingsSnapshotsPage() {
           message={`These rankings (${deleteConfirm.season} ${getWeekLabel(deleteConfirm.week)}) are published and visible to users. Are you sure you want to delete them?`}
           onConfirm={() => executeDelete(deleteConfirm.season, deleteConfirm.week)}
           onCancel={() => setDeleteConfirm(null)}
+        />
+      )}
+
+      {publishConfirm && (
+        <ConfirmModal
+          title="Publish Stale Rankings"
+          message={`${publishConfirm.season} ${getWeekLabel(publishConfirm.week)} was calculated with a different set of score overrides than currently apply: ${publishConfirm.differences.map(formatStaleScoreOverride).join('; ')}. Recalculate it first for the numbers to reflect them, or publish it as is. Continue?`}
+          confirmLabel="Publish anyway"
+          onConfirm={() => {
+            const { feedbackKey, season, week } = publishConfirm;
+            setPublishConfirm(null);
+            handlePublish(season, week, feedbackKey);
+          }}
+          onCancel={() => setPublishConfirm(null)}
         />
       )}
 

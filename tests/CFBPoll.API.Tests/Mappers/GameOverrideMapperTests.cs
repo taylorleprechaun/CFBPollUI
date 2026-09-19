@@ -127,6 +127,24 @@ public class GameOverrideMapperTests
     }
 
     [Fact]
+    public void ToDTO_MapsSourceScoreChanged()
+    {
+        var gameOverride = new GameOverride
+        {
+            AwayTeam = "Michigan",
+            GameID = 401234563,
+            HomeTeam = "Ohio State",
+            Reason = "A false start was not called before the game-winning field goal.",
+            Season = 2024,
+            SourceScoreChanged = true
+        };
+
+        var result = GameOverrideMapper.ToDTO(gameOverride);
+
+        Assert.True(result.SourceScoreChanged);
+    }
+
+    [Fact]
     public void ToDTO_MapsTeamLogoURLsFromGameOverride()
     {
         var gameOverride = new GameOverride

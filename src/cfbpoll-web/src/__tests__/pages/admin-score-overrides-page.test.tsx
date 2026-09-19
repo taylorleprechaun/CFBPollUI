@@ -132,6 +132,23 @@ describe('AdminScoreOverridesPage', () => {
     });
   });
 
+  it('keeps the wizard open and shows the error when saving fails', async () => {
+    mockSaveOverride.mockRejectedValueOnce(new Error('The scores of an existing override cannot be changed'));
+    render(<AdminScoreOverridesPage />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Override Score' }));
+    await userEvent.clear(screen.getByLabelText('Nebraska Score'));
+    await userEvent.type(screen.getByLabelText('Nebraska Score'), '27');
+    await userEvent.type(screen.getByLabelText('Reason'), 'Targeting was missed on the final play.');
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+    await userEvent.click(screen.getByLabelText('I understand this does not retroactively update published results.'));
+    await userEvent.type(screen.getByLabelText('Type 21-27 to confirm'), '21-27');
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm Override' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('The scores of an existing override cannot be changed');
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
   it('does not call deleteOverride when the delete confirmation is cancelled', async () => {
     render(<AdminScoreOverridesPage />);
 

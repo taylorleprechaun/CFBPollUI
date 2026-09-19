@@ -138,6 +138,11 @@ public class RankingsModule : IRankingsModule
         return await _rankingsData.GetRankingsSnapshotsAsync().ConfigureAwait(false);
     }
 
+    public async Task<IEnumerable<RankingsSnapshotScoreOverrides>> GetSnapshotScoreOverridesAsync()
+    {
+        return await _rankingsData.GetSnapshotScoreOverridesAsync().ConfigureAwait(false);
+    }
+
     public async Task<bool> PublishRankingsSnapshotAsync(int season, int week)
     {
         return await _rankingsData.PublishRankingsSnapshotAsync(season, week).ConfigureAwait(false);

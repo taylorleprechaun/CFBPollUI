@@ -1723,6 +1723,19 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task GetGameOverridesAsync_GameMissingFromSchedule_DoesNotFlagSourceScoreChanged()
+    {
+        var overrides = new List<GameOverride> { new() { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame", OriginalHomePoints = 24, OriginalAwayPoints = 20 } };
+        _mockGameOverrideModule.Setup(x => x.GetGameOverridesBySeasonAsync(2024)).ReturnsAsync(overrides);
+        _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024)).ReturnsAsync([]);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(new List<ScheduleGame>());
+
+        var result = await _adminModule.GetGameOverridesAsync(2024);
+
+        Assert.False(Assert.Single(result).SourceScoreChanged);
+    }
+
+    [Fact]
     public async Task GetGameOverridesAsync_IncludesTeamLogoURLsFromFBSTeams()
     {
         var overrides = new List<GameOverride> { new() { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame" } };
@@ -1738,6 +1751,40 @@ public class AdminModuleTests
         var gameOverride = Assert.Single(result);
         Assert.Equal("https://example.com/usc.png", gameOverride.HomeTeamLogoURL);
         Assert.Equal("https://example.com/notre-dame.png", gameOverride.AwayTeamLogoURL);
+    }
+
+    [Fact]
+    public async Task GetGameOverridesAsync_ScheduleScoreDiffersFromStoredOriginal_FlagsSourceScoreChanged()
+    {
+        var overrides = new List<GameOverride> { new() { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame", OriginalHomePoints = 24, OriginalAwayPoints = 20 } };
+        var fullSchedule = new List<ScheduleGame>
+        {
+            new() { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame", HomePoints = 20, AwayPoints = 24, OriginalHomePoints = 27, OriginalAwayPoints = 20 }
+        };
+        _mockGameOverrideModule.Setup(x => x.GetGameOverridesBySeasonAsync(2024)).ReturnsAsync(overrides);
+        _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024)).ReturnsAsync([]);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(fullSchedule);
+
+        var result = await _adminModule.GetGameOverridesAsync(2024);
+
+        Assert.True(Assert.Single(result).SourceScoreChanged);
+    }
+
+    [Fact]
+    public async Task GetGameOverridesAsync_ScheduleScoreMatchesStoredOriginal_DoesNotFlagSourceScoreChanged()
+    {
+        var overrides = new List<GameOverride> { new() { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame", OriginalHomePoints = 24, OriginalAwayPoints = 20 } };
+        var fullSchedule = new List<ScheduleGame>
+        {
+            new() { GameID = 401123456, HomeTeam = "USC", AwayTeam = "Notre Dame", HomePoints = 20, AwayPoints = 24, OriginalHomePoints = 24, OriginalAwayPoints = 20 }
+        };
+        _mockGameOverrideModule.Setup(x => x.GetGameOverridesBySeasonAsync(2024)).ReturnsAsync(overrides);
+        _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024)).ReturnsAsync([]);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(fullSchedule);
+
+        var result = await _adminModule.GetGameOverridesAsync(2024);
+
+        Assert.False(Assert.Single(result).SourceScoreChanged);
     }
 
     [Fact]
@@ -1931,6 +1978,122 @@ public class AdminModuleTests
 
         Assert.Single(result);
         _mockRankingsModule.Verify(x => x.GetRankingsSnapshotsAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetRankingsSnapshotsAsync_EmbeddedOverrideDeletedSinceCalculation_ReportsRemoved()
+    {
+        _mockRankingsModule.Setup(x => x.GetRankingsSnapshotsAsync())
+            .ReturnsAsync(new List<RankingsSnapshotSummary> { new() { Season = 2025, Week = 6, IsPublished = true } });
+        _mockRankingsModule.Setup(x => x.GetSnapshotScoreOverridesAsync())
+            .ReturnsAsync(new List<RankingsSnapshotScoreOverrides>
+            {
+                new()
+                {
+                    Season = 2025,
+                    Week = 6,
+                    ScoreOverrides = [new AppliedScoreOverride { GameID = 401123456, HomeTeam = "Nebraska", AwayTeam = "Iowa", OverrideHomePoints = 24, OverrideAwayPoints = 21 }]
+                }
+            });
+        _mockGameOverrideModule.Setup(x => x.GetGameOverridesBySeasonAsync(2025)).ReturnsAsync([]);
+
+        var result = await _adminModule.GetRankingsSnapshotsAsync();
+
+        var difference = Assert.Single(Assert.Single(result).StaleScoreOverrides);
+        Assert.Equal(ScoreOverrideDifferenceKind.Removed, difference.Kind);
+        Assert.Equal(401123456, difference.GameID);
+        Assert.Equal("Nebraska", difference.HomeTeam);
+        Assert.Equal("Iowa", difference.AwayTeam);
+    }
+
+    [Fact]
+    public async Task GetRankingsSnapshotsAsync_EmbeddedOverrideScoresDifferFromCurrent_ReportsChanged()
+    {
+        _mockRankingsModule.Setup(x => x.GetRankingsSnapshotsAsync())
+            .ReturnsAsync(new List<RankingsSnapshotSummary> { new() { Season = 2025, Week = 6 } });
+        _mockRankingsModule.Setup(x => x.GetSnapshotScoreOverridesAsync())
+            .ReturnsAsync(new List<RankingsSnapshotScoreOverrides>
+            {
+                new()
+                {
+                    Season = 2025,
+                    Week = 6,
+                    ScoreOverrides = [new AppliedScoreOverride { GameID = 401123456, HomeTeam = "Nebraska", AwayTeam = "Iowa", OverrideHomePoints = 24, OverrideAwayPoints = 21 }]
+                }
+            });
+        _mockGameOverrideModule.Setup(x => x.GetGameOverridesBySeasonAsync(2025))
+            .ReturnsAsync([new GameOverride { GameID = 401123456, HomeTeam = "Nebraska", AwayTeam = "Iowa", SeasonType = "regular", Week = 3, OverrideHomePoints = 28, OverrideAwayPoints = 21 }]);
+
+        var result = await _adminModule.GetRankingsSnapshotsAsync();
+
+        var difference = Assert.Single(Assert.Single(result).StaleScoreOverrides);
+        Assert.Equal(ScoreOverrideDifferenceKind.Changed, difference.Kind);
+    }
+
+    [Fact]
+    public async Task GetRankingsSnapshotsAsync_OnlyReasonChanged_ReportsNoDifferences()
+    {
+        _mockRankingsModule.Setup(x => x.GetRankingsSnapshotsAsync())
+            .ReturnsAsync(new List<RankingsSnapshotSummary> { new() { Season = 2025, Week = 6 } });
+        _mockRankingsModule.Setup(x => x.GetSnapshotScoreOverridesAsync())
+            .ReturnsAsync(new List<RankingsSnapshotScoreOverrides>
+            {
+                new()
+                {
+                    Season = 2025,
+                    Week = 6,
+                    ScoreOverrides = [new AppliedScoreOverride { GameID = 401123456, Reason = "Old reason.", OverrideHomePoints = 24, OverrideAwayPoints = 21 }]
+                }
+            });
+        _mockGameOverrideModule.Setup(x => x.GetGameOverridesBySeasonAsync(2025))
+            .ReturnsAsync([new GameOverride { GameID = 401123456, Reason = "New reason.", SeasonType = "regular", Week = 3, OverrideHomePoints = 24, OverrideAwayPoints = 21 }]);
+
+        var result = await _adminModule.GetRankingsSnapshotsAsync();
+
+        Assert.Empty(Assert.Single(result).StaleScoreOverrides);
+    }
+
+    [Fact]
+    public async Task GetRankingsSnapshotsAsync_OverrideAddedAfterCalculation_ReportsAddedForSnapshotsFromItsWeekOnward()
+    {
+        _mockRankingsModule.Setup(x => x.GetRankingsSnapshotsAsync())
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
+            {
+                new() { Season = 2025, Week = 2 },
+                new() { Season = 2025, Week = 3 },
+                new() { Season = 2025, Week = 6 }
+            });
+        _mockGameOverrideModule.Setup(x => x.GetGameOverridesBySeasonAsync(2025))
+            .ReturnsAsync([new GameOverride { GameID = 401123456, HomeTeam = "Nebraska", AwayTeam = "Iowa", SeasonType = "regular", Week = 3, OverrideHomePoints = 24, OverrideAwayPoints = 21 }]);
+
+        var result = (await _adminModule.GetRankingsSnapshotsAsync()).ToList();
+
+        Assert.Empty(result.Single(s => s.Week == 2).StaleScoreOverrides);
+        Assert.Equal(ScoreOverrideDifferenceKind.Added, Assert.Single(result.Single(s => s.Week == 3).StaleScoreOverrides).Kind);
+        Assert.Equal(ScoreOverrideDifferenceKind.Added, Assert.Single(result.Single(s => s.Week == 6).StaleScoreOverrides).Kind);
+    }
+
+    [Fact]
+    public async Task GetRankingsSnapshotsAsync_PostseasonOverride_AppliesOnlyFromPostseasonWeekOnward()
+    {
+        _mockRankingsModule.Setup(x => x.GetRankingsSnapshotsAsync())
+            .ReturnsAsync(new List<RankingsSnapshotSummary>
+            {
+                new() { Season = 2025, Week = 3 },
+                new() { Season = 2025, Week = 16 }
+            });
+        _mockGameOverrideModule.Setup(x => x.GetGameOverridesBySeasonAsync(2025))
+            .ReturnsAsync([new GameOverride { GameID = 401123456, HomeTeam = "Nebraska", AwayTeam = "Iowa", SeasonType = "postseason", Week = 1, OverrideHomePoints = 24, OverrideAwayPoints = 21 }]);
+        _mockDataService.Setup(x => x.GetCalendarAsync(2025))
+            .ReturnsAsync([
+                new CalendarWeek { SeasonType = "regular", Week = 3 },
+                new CalendarWeek { SeasonType = "postseason", Week = 16 }
+            ]);
+
+        var result = (await _adminModule.GetRankingsSnapshotsAsync()).ToList();
+
+        Assert.Empty(result.Single(s => s.Week == 3).StaleScoreOverrides);
+        Assert.Single(result.Single(s => s.Week == 16).StaleScoreOverrides);
     }
 
     [Fact]

@@ -173,6 +173,29 @@ describe('Admin schemas', () => {
   });
 
   describe('GameOverrideSchema', () => {
+    it('accepts sourceScoreChanged', () => {
+      const data = {
+        awayTeam: 'Oklahoma',
+        awayTeamLogoURL: 'https://example.com/oklahoma.png',
+        createdAt: '2025-09-20T00:00:00Z',
+        gameID: 401234562,
+        homeTeam: 'Texas',
+        homeTeamLogoURL: 'https://example.com/texas.png',
+        modifiedAt: '2025-09-20T00:00:00Z',
+        originalAwayPoints: 20,
+        originalHomePoints: 24,
+        overrideAwayPoints: 24,
+        overrideHomePoints: 20,
+        reason: 'A targeting call was missed on the game-deciding play.',
+        season: 2025,
+        seasonType: 'regular',
+        sourceScoreChanged: true,
+        week: 4,
+      };
+      const result = GameOverrideSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
     it('rejects missing reason', () => {
       const data = {
         awayTeam: 'Oklahoma',
@@ -656,6 +679,30 @@ describe('Admin schemas', () => {
   });
 
   describe('RankingsSnapshotSchema', () => {
+    it('accepts stale score overrides', () => {
+      const data = {
+        season: 2024,
+        week: 5,
+        isPublished: false,
+        createdAt: '2024-11-01T12:00:00Z',
+        staleScoreOverrides: [{ awayTeam: 'Iowa', gameID: 401234561, homeTeam: 'Nebraska', kind: 'Changed' }],
+      };
+      const result = RankingsSnapshotSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects a stale score override with an unrecognized kind', () => {
+      const data = {
+        season: 2024,
+        week: 5,
+        isPublished: false,
+        createdAt: '2024-11-01T12:00:00Z',
+        staleScoreOverrides: [{ awayTeam: 'Iowa', gameID: 401234561, homeTeam: 'Nebraska', kind: 'Moved' }],
+      };
+      const result = RankingsSnapshotSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
     it('rejects missing isPublished field', () => {
       const data = {
         season: 2024,

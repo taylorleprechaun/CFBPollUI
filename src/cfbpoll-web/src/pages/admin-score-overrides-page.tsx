@@ -14,6 +14,7 @@ import { useSeason } from '../hooks/use-season';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
 import { SITE_OWNER_NAME } from '../lib/config';
+import { toErrorMessage } from '../lib/error-utils';
 import { getRawWeekLabel } from '../lib/week-utils';
 
 export function AdminScoreOverridesPage() {
@@ -62,6 +63,7 @@ export function AdminScoreOverridesPage() {
   const [wizardTarget, setWizardTarget] = useState<ScoreOverrideTarget | null>(null);
   const [isEditingWizardTarget, setIsEditingWizardTarget] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<GameOverride | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   function handleSelectGame(game: CompletedGame) {
     if (game.gameID === null || game.homeTeam === null || game.awayTeam === null
@@ -69,6 +71,7 @@ export function AdminScoreOverridesPage() {
       return;
     }
 
+    setSaveError(null);
     setWizardTarget({
       awayPoints: game.awayPoints,
       awayTeam: game.awayTeam,
@@ -81,6 +84,7 @@ export function AdminScoreOverridesPage() {
   }
 
   function handleEditOverride(gameOverride: GameOverride) {
+    setSaveError(null);
     setWizardTarget({
       awayPoints: gameOverride.overrideAwayPoints,
       awayTeam: gameOverride.awayTeam,
@@ -92,17 +96,28 @@ export function AdminScoreOverridesPage() {
     setIsEditingWizardTarget(true);
   }
 
+  function handleCancelWizard() {
+    setSaveError(null);
+    setWizardTarget(null);
+  }
+
   async function handleConfirmWizard(overrideHomePoints: number, overrideAwayPoints: number, reason: string) {
     if (!wizardTarget) return;
 
-    await saveOverride({
-      gameId: wizardTarget.gameID,
-      overrideAwayPoints,
-      overrideHomePoints,
-      reason,
-    });
+    setSaveError(null);
 
-    setWizardTarget(null);
+    try {
+      await saveOverride({
+        gameId: wizardTarget.gameID,
+        overrideAwayPoints,
+        overrideHomePoints,
+        reason,
+      });
+
+      setWizardTarget(null);
+    } catch (err) {
+      setSaveError(toErrorMessage(err, 'Failed to save the score override'));
+    }
   }
 
   async function handleConfirmDelete() {
@@ -183,9 +198,10 @@ export function AdminScoreOverridesPage() {
 
       {wizardTarget && (
         <ScoreOverrideWizardModal
+          errorMessage={saveError}
           isEditing={isEditingWizardTarget}
           isSaving={isSaving}
-          onCancel={() => setWizardTarget(null)}
+          onCancel={handleCancelWizard}
           onConfirm={handleConfirmWizard}
           target={wizardTarget}
         />

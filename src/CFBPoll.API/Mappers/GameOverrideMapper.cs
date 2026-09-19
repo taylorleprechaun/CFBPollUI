@@ -76,6 +76,7 @@ public static class GameOverrideMapper
             Reason = gameOverride.Reason,
             Season = gameOverride.Season,
             SeasonType = gameOverride.SeasonType,
+            SourceScoreChanged = gameOverride.SourceScoreChanged,
             Week = gameOverride.Week
         };
     }

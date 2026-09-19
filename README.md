@@ -46,7 +46,7 @@ Last Updated 8/6/2026
 - **Interactive UI**: Sortable rankings table with team logos and colors
 - **Game Predictions**: Generate game predictions with spread and over/under picks using team ratings and betting line data
 - **Admin Dashboard**: JWT-authenticated admin panel to calculate, preview, and publish rankings and predictions with a two-step draft/publish workflow
-- **Manual Score Override**: Admin tool to correct a completed game's recorded final score with a documented reason, affecting new calculations without retroactively altering already-published rankings/predictions; shown to the public via a rankings-page disclaimer (with team logos and the original-vs-corrected score, stored with each rankings snapshot so it reflects what that snapshot was calculated with) and inline indicators on the rankings table and team-details schedule; predictions are graded against the official score, with an "Official score" marker on affected games
+- **Manual Score Override**: Admin tool to correct a completed game's recorded final score with a documented reason, affecting new calculations without retroactively altering already-published rankings/predictions; shown to the public via a rankings-page disclaimer (with team logos and the original-vs-corrected score, stored with each rankings snapshot so it reflects what that snapshot was calculated with) and inline indicators on the rankings table and team-details schedule; predictions are graded against the official score, with an "Official score" marker on affected games; the admin rankings list flags snapshots calculated with a different set of overrides than currently apply (warning before publishing a stale draft), and the Score Overrides page flags overrides whose CollegeFootballData source score has since changed
 - **Incomplete Week Warnings**: Admin banner shown when a week's games aren't all played yet, with a modal listing which games are still pending
 - **Cache Management**: Admin page to view and clear individual persistent cache entries, grouped by family/season/detail
 - **CFBD API Usage Tracking**: Admin dashboard showing CollegeFootballData.com API quota status (remaining/used calls, tier, reset date), cached server-side with a manual force-refresh option
@@ -340,10 +340,10 @@ The frontend runs at `http://localhost:5173`.
 | `DELETE /api/v1/admin/seasons/{season}/weeks/{week}/ranking` | Delete a persisted ranking |
 | `GET /api/v1/admin/cache` | Retrieves every persistent cache entry, grouped into a display-friendly family/season/detail summary for the admin cache management page |
 | `GET /api/v1/admin/cfbd-usage` | Get the site's CollegeFootballData.com API account status (remaining/used calls, tier, reset date, request totals), cached server-side for 24 hours; pass `?forceRefresh=true` to bypass the cache |
-| `GET /api/v1/admin/game-overrides` | Lists every manual score override recorded for a season |
+| `GET /api/v1/admin/game-overrides` | Lists every manual score override recorded for a season, flagging any whose source score has changed since it was saved |
 | `GET /api/v1/admin/game-overrides/{gameID}` | Retrieves the manual score override for a game, if one exists |
 | `GET /api/v1/admin/predictions` | List all persisted prediction summaries |
-| `GET /api/v1/admin/rankings` | List all persisted rankings |
+| `GET /api/v1/admin/rankings` | List all persisted rankings, including how each snapshot's score overrides differ from the overrides that currently apply |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/completed-games` | Lists completed games for a season/week, for use in the manual score override picker |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/export` | Download experimental rankings as Excel for a chosen algorithm version, without persisting or publishing |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/incomplete-games` | Lists games for a season/week that have not yet been marked complete, explaining why the week is flagged as incomplete |

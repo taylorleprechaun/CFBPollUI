@@ -2,8 +2,10 @@ import { useEffect, useId, useRef, useState } from 'react';
 
 import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '../../ui/button-styles';
 
+const ERROR_CLASS = 'text-sm text-red-600 dark:text-red-400';
 const INPUT_CLASS =
   'w-full px-3 py-2 border border-border bg-surface text-text-primary rounded-md focus:outline-none focus:ring-2 focus:ring-accent';
+const MAX_REASON_LENGTH = 500;
 
 export interface ScoreOverrideTarget {
   awayPoints: number;
@@ -17,6 +19,7 @@ export interface ScoreOverrideTarget {
 type WizardStep = 'edit' | 'review';
 
 interface ScoreOverrideWizardModalProps {
+  errorMessage?: string | null;
   isEditing: boolean;
   isSaving: boolean;
   onCancel: () => void;
@@ -24,7 +27,7 @@ interface ScoreOverrideWizardModalProps {
   target: ScoreOverrideTarget;
 }
 
-export function ScoreOverrideWizardModal({ isEditing, isSaving, onCancel, onConfirm, target }: ScoreOverrideWizardModalProps) {
+export function ScoreOverrideWizardModal({ errorMessage = null, isEditing, isSaving, onCancel, onConfirm, target }: ScoreOverrideWizardModalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedRef = useRef<Element | null>(null);
 
@@ -64,9 +67,13 @@ export function ScoreOverrideWizardModal({ isEditing, isSaving, onCancel, onConf
   }, [onCancel]);
 
   const scoreChanged = homePoints !== target.homePoints || awayPoints !== target.awayPoints;
-  const canProceedToReview = isEditing
+  const scoreError = isEditing ? null : getScoreError(homePoints, awayPoints);
+  const reasonError = reason.trim().length > MAX_REASON_LENGTH
+    ? `Reason must be ${MAX_REASON_LENGTH} characters or fewer.`
+    : null;
+  const canProceedToReview = !scoreError && !reasonError && (isEditing
     ? reason.trim().length > 0 && reason.trim() !== target.reason
-    : reason.trim().length > 0 && scoreChanged;
+    : reason.trim().length > 0 && scoreChanged);
 
   const expectedTypedScore = `${awayPoints}-${homePoints}`;
   const canConfirm = isEditing
@@ -132,6 +139,12 @@ export function ScoreOverrideWizardModal({ isEditing, isSaving, onCancel, onConf
               </div>
             )}
 
+            {scoreError && (
+              <p role="alert" className={ERROR_CLASS}>
+                {scoreError}
+              </p>
+            )}
+
             <div>
               <label htmlFor={reasonId} className="block text-sm font-medium text-text-secondary mb-1">
                 Reason
@@ -144,6 +157,11 @@ export function ScoreOverrideWizardModal({ isEditing, isSaving, onCancel, onConf
                 className={INPUT_CLASS}
                 placeholder="Explain why this score is being corrected..."
               />
+              {reasonError && (
+                <p role="alert" className={`mt-1 ${ERROR_CLASS}`}>
+                  {reasonError}
+                </p>
+              )}
             </div>
 
             <div className="flex justify-end gap-3">
@@ -214,6 +232,12 @@ export function ScoreOverrideWizardModal({ isEditing, isSaving, onCancel, onConf
               </div>
             )}
 
+            {errorMessage && (
+              <p role="alert" className={ERROR_CLASS}>
+                {errorMessage}
+              </p>
+            )}
+
             <div className="flex justify-end gap-3">
               <button onClick={() => setStep('edit')} className={BUTTON_SECONDARY}>
                 Back
@@ -227,4 +251,16 @@ export function ScoreOverrideWizardModal({ isEditing, isSaving, onCancel, onConf
       </div>
     </div>
   );
+}
+
+function getScoreError(homePoints: number, awayPoints: number): string | null {
+  if (!Number.isInteger(homePoints) || !Number.isInteger(awayPoints) || homePoints < 0 || awayPoints < 0) {
+    return 'Scores must be whole numbers of zero or more.';
+  }
+
+  if (homePoints === awayPoints) {
+    return 'Scores cannot be tied.';
+  }
+
+  return null;
 }

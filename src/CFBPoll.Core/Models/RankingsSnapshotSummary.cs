@@ -6,5 +6,6 @@ public class RankingsSnapshotSummary
     public DateTime CreatedAt { get; set; }
     public bool IsPublished { get; set; }
     public int Season { get; set; }
+    public IEnumerable<ScoreOverrideDifference> StaleScoreOverrides { get; set; } = [];
     public int Week { get; set; }
 }

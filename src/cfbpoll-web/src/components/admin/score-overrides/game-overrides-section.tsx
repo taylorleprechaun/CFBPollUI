@@ -1,9 +1,11 @@
 import type { GameOverride } from '../../../schemas/admin';
 
+import { badgeColorClasses } from '../../../lib/badge-colors';
 import { getRawWeekLabel } from '../../../lib/week-utils';
 import { TeamLogo } from '../../rankings/team-logo';
 import { BUTTON_DANGER_GHOST, BUTTON_GHOST } from '../../ui/button-styles';
 import { EmptyState } from '../../ui/empty-state';
+import { StatusBadge } from '../../ui/status-badge';
 import { TableSkeleton } from '../../ui/table-skeleton';
 
 const COLUMN_COUNT = 6;
@@ -52,7 +54,14 @@ export function GameOverridesSection({ isDeleting, isLoading, onDelete, onEdit, 
                 </div>
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-text-muted">
-                {gameOverride.originalAwayPoints} - {gameOverride.originalHomePoints}
+                <div className="flex flex-col items-start gap-1">
+                  <span>{gameOverride.originalAwayPoints} - {gameOverride.originalHomePoints}</span>
+                  {gameOverride.sourceScoreChanged && (
+                    <span title="The score reported by CollegeFootballData for this game has changed since this override was saved.">
+                      <StatusBadge className={badgeColorClasses('yellow')} label="CFBD score changed" />
+                    </span>
+                  )}
+                </div>
               </td>
               <td className="px-4 py-3 whitespace-nowrap text-sm text-text-primary font-medium">
                 {gameOverride.overrideAwayPoints} - {gameOverride.overrideHomePoints}

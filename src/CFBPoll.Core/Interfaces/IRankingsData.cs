@@ -48,6 +48,12 @@ public interface IRankingsData
     Task<IEnumerable<RankingsSnapshotSummary>> GetRankingsSnapshotsAsync();
 
     /// <summary>
+    /// Retrieves the score overrides embedded in each persisted snapshot that has any, regardless of
+    /// published status. Snapshots calculated without overrides are omitted.
+    /// </summary>
+    Task<IEnumerable<RankingsSnapshotScoreOverrides>> GetSnapshotScoreOverridesAsync();
+
+    /// <summary>
     /// Creates the database table if it does not exist.
     /// </summary>
     Task InitializeAsync();

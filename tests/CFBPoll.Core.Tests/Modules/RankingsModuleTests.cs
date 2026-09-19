@@ -946,6 +946,17 @@ public class RankingsModuleTests
     }
 
     [Fact]
+    public async Task GetSnapshotScoreOverridesAsync_DelegatesToRankingsData()
+    {
+        var expected = new List<RankingsSnapshotScoreOverrides> { new() { Season = 2025, Week = 6 } };
+        _mockRankingsData.Setup(x => x.GetSnapshotScoreOverridesAsync()).ReturnsAsync(expected);
+
+        var result = await _rankingsModule.GetSnapshotScoreOverridesAsync();
+
+        Assert.Same(expected, result);
+    }
+
+    [Fact]
     public async Task PublishRankingsSnapshotAsync_DelegatesToRankingsData()
     {
         _mockRankingsData.Setup(x => x.PublishRankingsSnapshotAsync(2024, 5)).ReturnsAsync(true);

@@ -6,5 +6,6 @@ public class RankingsSnapshotDTO
     public DateTime CreatedAt { get; set; }
     public bool IsPublished { get; set; }
     public int Season { get; set; }
+    public IEnumerable<StaleScoreOverrideDTO> StaleScoreOverrides { get; set; } = [];
     public int Week { get; set; }
 }

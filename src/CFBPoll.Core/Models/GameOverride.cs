@@ -16,5 +16,6 @@ public class GameOverride
     public string Reason { get; set; } = string.Empty;
     public int Season { get; set; }
     public string SeasonType { get; set; } = string.Empty;
+    public bool SourceScoreChanged { get; set; }
     public int Week { get; set; }
 }

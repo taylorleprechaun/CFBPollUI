@@ -47,6 +47,12 @@ describe('GameOverridesSection', () => {
     expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled();
   });
 
+  it('does not show a source-changed badge when the source score is unchanged', () => {
+    render(<GameOverridesSection isDeleting={false} isLoading={false} onDelete={vi.fn()} onEdit={vi.fn()} overrides={[{ ...mockOverride, sourceScoreChanged: false }]} />);
+
+    expect(screen.queryByText('CFBD score changed')).not.toBeInTheDocument();
+  });
+
   it('renders a fallback initial when a team has no logo URL', () => {
     const overrideWithoutLogos = { ...mockOverride, awayTeamLogoURL: null, homeTeamLogoURL: null };
     render(<GameOverridesSection isDeleting={false} isLoading={false} onDelete={vi.fn()} onEdit={vi.fn()} overrides={[overrideWithoutLogos]} />);
@@ -85,5 +91,11 @@ describe('GameOverridesSection', () => {
     render(<GameOverridesSection isDeleting={false} isLoading={false} onDelete={vi.fn()} onEdit={vi.fn()} overrides={[mockOverride]} />);
 
     expect(screen.getByText('Week 3')).toBeInTheDocument();
+  });
+
+  it('shows a CFBD score changed badge when the source score has changed since the override was saved', () => {
+    render(<GameOverridesSection isDeleting={false} isLoading={false} onDelete={vi.fn()} onEdit={vi.fn()} overrides={[{ ...mockOverride, sourceScoreChanged: true }]} />);
+
+    expect(screen.getByText('CFBD score changed')).toBeInTheDocument();
   });
 });

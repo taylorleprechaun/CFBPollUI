@@ -50,10 +50,18 @@ export const SeasonExperimentalPredictionsResponseSchema = z.object({
   weeks: z.array(SeasonExperimentalPredictionsWeekSchema),
 });
 
+export const StaleScoreOverrideSchema = z.object({
+  awayTeam: z.string(),
+  gameID: z.number(),
+  homeTeam: z.string(),
+  kind: z.enum(['Added', 'Changed', 'Removed']),
+});
+
 export const RankingsSnapshotSchema = z.object({
   createdAt: z.string(),
   isPublished: z.boolean(),
   season: z.number(),
+  staleScoreOverrides: z.array(StaleScoreOverrideSchema).optional(),
   week: z.number(),
 });
 
@@ -183,6 +191,7 @@ export const GameOverrideSchema = z.object({
   reason: z.string(),
   season: z.number(),
   seasonType: z.string(),
+  sourceScoreChanged: z.boolean().optional(),
   week: z.number(),
 });
 
@@ -209,6 +218,7 @@ export type PredictionRecordSummary = z.infer<typeof PredictionRecordSummarySche
 export type PredictionsResponse = z.infer<typeof PredictionsResponseSchema>;
 export type PredictionsSummary = z.infer<typeof PredictionsSummarySchema>;
 export type RankingsSnapshot = z.infer<typeof RankingsSnapshotSchema>;
+export type StaleScoreOverride = z.infer<typeof StaleScoreOverrideSchema>;
 export type RefreshCacheResponse = z.infer<typeof RefreshCacheResponseSchema>;
 export type RemoveCacheEntriesResponse = z.infer<typeof RemoveCacheEntriesResponseSchema>;
 export type SeasonExperimentalPredictionsResponse = z.infer<typeof SeasonExperimentalPredictionsResponseSchema>;
