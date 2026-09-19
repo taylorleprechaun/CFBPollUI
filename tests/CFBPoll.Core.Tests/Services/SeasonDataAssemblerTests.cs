@@ -189,6 +189,32 @@ public class SeasonDataAssemblerTests
     }
 
     [Fact]
+    public void AttachAdvancedStats_PreservesOriginalScores()
+    {
+        var games = new List<Game>
+        {
+            new Game
+            {
+                GameID = 100,
+                Week = 1,
+                HomeTeam = "Iowa",
+                AwayTeam = "Nebraska",
+                HomePoints = 28,
+                AwayPoints = 24,
+                OriginalHomePoints = 24,
+                OriginalAwayPoints = 28,
+                SeasonType = "regular"
+            }
+        };
+
+        var result = SeasonDataAssembler.AttachAdvancedStats(games, [], [], 1, 15).ToList();
+
+        Assert.Single(result);
+        Assert.Equal(24, result[0].OriginalHomePoints);
+        Assert.Equal(28, result[0].OriginalAwayPoints);
+    }
+
+    [Fact]
     public void AttachAdvancedStats_PreservesScoreOverrideReason()
     {
         var games = new List<Game>

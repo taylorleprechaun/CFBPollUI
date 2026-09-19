@@ -62,22 +62,14 @@ public class GameOverrideModule : IGameOverrideModule
         if (!game.GameID.HasValue || !overridesByGameID.TryGetValue(game.GameID.Value, out var gameOverride))
             return game;
 
-        return new Game
-        {
-            AwayAdvancedStats = game.AwayAdvancedStats,
-            AwayGameStats = game.AwayGameStats,
-            AwayPoints = gameOverride.OverrideAwayPoints,
-            AwayTeam = game.AwayTeam,
-            GameID = game.GameID,
-            HomeAdvancedStats = game.HomeAdvancedStats,
-            HomeGameStats = game.HomeGameStats,
-            HomePoints = gameOverride.OverrideHomePoints,
-            HomeTeam = game.HomeTeam,
-            NeutralSite = game.NeutralSite,
-            ScoreOverrideReason = gameOverride.Reason,
-            SeasonType = game.SeasonType,
-            Week = game.Week
-        };
+        var overridden = game.Clone();
+        overridden.AwayPoints = gameOverride.OverrideAwayPoints;
+        overridden.HomePoints = gameOverride.OverrideHomePoints;
+        overridden.OriginalAwayPoints = game.AwayPoints;
+        overridden.OriginalHomePoints = game.HomePoints;
+        overridden.ScoreOverrideReason = gameOverride.Reason;
+
+        return overridden;
     }
 
     private static ScheduleGame ApplyOverride(ScheduleGame game, IReadOnlyDictionary<long, GameOverride> overridesByGameID)
@@ -85,24 +77,14 @@ public class GameOverrideModule : IGameOverrideModule
         if (!game.GameID.HasValue || !overridesByGameID.TryGetValue(game.GameID.Value, out var gameOverride))
             return game;
 
-        return new ScheduleGame
-        {
-            AwayPoints = gameOverride.OverrideAwayPoints,
-            AwayTeam = game.AwayTeam,
-            Completed = game.Completed,
-            GameID = game.GameID,
-            HomePoints = gameOverride.OverrideHomePoints,
-            HomeTeam = game.HomeTeam,
-            NeutralSite = game.NeutralSite,
-            OriginalAwayPoints = game.AwayPoints,
-            OriginalHomePoints = game.HomePoints,
-            ScoreOverrideReason = gameOverride.Reason,
-            SeasonType = game.SeasonType,
-            StartDate = game.StartDate,
-            StartTimeTbd = game.StartTimeTbd,
-            Venue = game.Venue,
-            Week = game.Week
-        };
+        var overridden = game.Clone();
+        overridden.AwayPoints = gameOverride.OverrideAwayPoints;
+        overridden.HomePoints = gameOverride.OverrideHomePoints;
+        overridden.OriginalAwayPoints = game.AwayPoints;
+        overridden.OriginalHomePoints = game.HomePoints;
+        overridden.ScoreOverrideReason = gameOverride.Reason;
+
+        return overridden;
     }
 
     private async Task<IReadOnlyDictionary<long, GameOverride>> BuildOverrideLookupAsync(int season)

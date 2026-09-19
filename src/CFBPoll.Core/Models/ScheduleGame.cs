@@ -19,4 +19,6 @@ public class ScheduleGame
     public bool StartTimeTbd { get; set; }
     public string? Venue { get; set; }
     public int? Week { get; set; }
+
+    public ScheduleGame Clone() => (ScheduleGame)MemberwiseClone();
 }

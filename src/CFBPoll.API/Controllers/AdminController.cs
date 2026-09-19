@@ -14,6 +14,7 @@ public class AdminController : ControllerBase
 {
     private const string CACHE_ENTRY_NOT_FOUND = "Cache entry not found";
     private const string GAME_OVERRIDE_NOT_FOUND = "Game score override not found";
+    private const int MAX_GAME_OVERRIDE_REASON_LENGTH = 500;
     private const string PREDICTION_NOT_FOUND = "Prediction not found";
     private const string RANKING_NOT_FOUND = "Ranking not found";
     private const string RANKING_WEEK_INCOMPLETE = "Cannot publish rankings for a week that has not been fully played yet";
@@ -472,6 +473,15 @@ public class AdminController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Reason))
             return BadRequest(new ErrorResponseDTO { Message = "Reason is required", StatusCode = 400 });
 
+        if (request.Reason.Length > MAX_GAME_OVERRIDE_REASON_LENGTH)
+            return BadRequest(new ErrorResponseDTO { Message = $"Reason must be {MAX_GAME_OVERRIDE_REASON_LENGTH} characters or fewer", StatusCode = 400 });
+
+        if (request.OverrideHomePoints < 0 || request.OverrideAwayPoints < 0)
+            return BadRequest(new ErrorResponseDTO { Message = "Override scores cannot be negative", StatusCode = 400 });
+
+        if (request.OverrideHomePoints == request.OverrideAwayPoints)
+            return BadRequest(new ErrorResponseDTO { Message = "Override scores cannot be tied", StatusCode = 400 });
+
         _logger.LogInformation("Admin saving game score override for game {GameID} in season {Season}", gameID, season);
 
         var outcome = await _adminModule.SaveGameOverrideAsync(
@@ -482,6 +492,9 @@ public class AdminController : ControllerBase
 
         if (outcome == SaveGameOverrideOutcome.GameNotCompleted)
             return BadRequest(new ErrorResponseDTO { Message = "Cannot override the score of a game that has not been completed", StatusCode = 400 });
+
+        if (outcome == SaveGameOverrideOutcome.ScoresLocked)
+            return BadRequest(new ErrorResponseDTO { Message = "The scores of an existing override cannot be changed; delete the override and create a new one", StatusCode = 400 });
 
         var saved = await _adminModule.GetGameOverrideAsync(gameID);
 

@@ -4,5 +4,6 @@ public enum SaveGameOverrideOutcome
 {
     GameNotCompleted,
     GameNotFound,
-    Saved
+    Saved,
+    ScoresLocked
 }

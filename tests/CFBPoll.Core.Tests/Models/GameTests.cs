@@ -6,6 +6,36 @@ namespace CFBPoll.Core.Tests.Models;
 public class GameTests
 {
     [Fact]
+    public void Clone_PopulatedGame_CopiesEveryWritableProperty()
+    {
+        var original = new Game();
+        var properties = typeof(Game).GetProperties().Where(p => p.CanWrite).ToList();
+        foreach (var property in properties)
+        {
+            property.SetValue(original, CreateSampleValue(property.PropertyType));
+        }
+
+        var clone = original.Clone();
+
+        Assert.NotSame(original, clone);
+        foreach (var property in properties)
+        {
+            Assert.Equal(property.GetValue(original), property.GetValue(clone));
+        }
+    }
+
+    [Fact]
+    public void Clone_ChangingCloneScores_DoesNotAffectOriginal()
+    {
+        var original = new Game { HomePoints = 24, AwayPoints = 21 };
+
+        var clone = original.Clone();
+        clone.HomePoints = 10;
+
+        Assert.Equal(24, original.HomePoints);
+    }
+
+    [Fact]
     public void Game_AdvancedStatsDefaultToNull()
     {
         var game = new Game();
@@ -57,5 +87,19 @@ public class GameTests
         Assert.Equal(6, game.Week);
         Assert.Equal("regular", game.SeasonType);
         Assert.True(game.NeutralSite);
+    }
+
+    private static object CreateSampleValue(Type type)
+    {
+        var underlying = Nullable.GetUnderlyingType(type) ?? type;
+
+        if (underlying == typeof(int)) return 7;
+        if (underlying == typeof(long)) return 7L;
+        if (underlying == typeof(bool)) return true;
+        if (underlying == typeof(string)) return "sample";
+        if (underlying == typeof(DateTime)) return new DateTime(2026, 9, 1);
+        if (underlying.IsInterface) return Activator.CreateInstance(typeof(List<>).MakeGenericType(underlying.GetGenericArguments()))!;
+
+        return Activator.CreateInstance(underlying)!;
     }
 }

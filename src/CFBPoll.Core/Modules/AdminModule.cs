@@ -600,6 +600,13 @@ public class AdminModule : IAdminModule
         }
 
         var existingOverride = await _gameOverrideModule.GetGameOverrideAsync(gameID).ConfigureAwait(false);
+        if (existingOverride is not null
+            && (existingOverride.OverrideHomePoints != overrideHomePoints || existingOverride.OverrideAwayPoints != overrideAwayPoints))
+        {
+            _logger.LogWarning("Refused to change the scores of existing game score override for game {GameID}", gameID);
+            return SaveGameOverrideOutcome.ScoresLocked;
+        }
+
         var now = DateTime.UtcNow;
 
         var gameOverride = new GameOverride
@@ -625,7 +632,7 @@ public class AdminModule : IAdminModule
     }
 
     private async Task<ExperimentalPredictionsResult> CalculateThrottledExperimentalPredictionsAsync(
-            int season, int week, RatingAlgorithmVersion algorithmVersion, SemaphoreSlim throttle)
+        int season, int week, RatingAlgorithmVersion algorithmVersion, SemaphoreSlim throttle)
     {
         await throttle.WaitAsync().ConfigureAwait(false);
         try
@@ -637,5 +644,4 @@ public class AdminModule : IAdminModule
             throttle.Release();
         }
     }
-
 }

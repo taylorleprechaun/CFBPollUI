@@ -22,6 +22,41 @@ public class GameOverrideModuleTests
     }
 
     [Fact]
+    public async Task ApplyOverridesAsync_GamesWithMatchingOverride_PreservesOfficialScoreAndOtherFields()
+    {
+        var awayStats = new AdvancedGameStats { GameID = 401123456, Team = "Oklahoma" };
+        var games = new List<Game>
+        {
+            new()
+            {
+                AwayAdvancedStats = awayStats,
+                AwayPoints = 21,
+                AwayTeam = "Oklahoma",
+                GameID = 401123456,
+                HomePoints = 24,
+                HomeTeam = "Notre Dame",
+                NeutralSite = true,
+                SeasonType = "regular",
+                Week = 3
+            }
+        };
+        var gameOverride = CreateGameOverride(gameID: 401123456, overrideHomePoints: 21, overrideAwayPoints: 24);
+        _mockGameOverrideData
+            .Setup(x => x.GetGameOverridesBySeasonAsync(2026))
+            .ReturnsAsync([gameOverride]);
+
+        var result = await _module.ApplyOverridesAsync(games, 2026);
+
+        var overriddenGame = Assert.Single(result);
+        Assert.Equal(24, overriddenGame.OriginalHomePoints);
+        Assert.Equal(21, overriddenGame.OriginalAwayPoints);
+        Assert.Same(awayStats, overriddenGame.AwayAdvancedStats);
+        Assert.True(overriddenGame.NeutralSite);
+        Assert.Equal("regular", overriddenGame.SeasonType);
+        Assert.Equal(3, overriddenGame.Week);
+    }
+
+    [Fact]
     public async Task ApplyOverridesAsync_GamesWithMatchingOverride_ReturnsGameWithOverriddenScore()
     {
         var games = new List<Game>

@@ -2146,6 +2146,31 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task SaveGameOverrideAsync_ExistingOverride_DifferentScores_ReturnsScoresLocked()
+    {
+        var fullSchedule = new List<ScheduleGame>
+        {
+            new() { GameID = 401123456, Week = 3, SeasonType = "regular", HomeTeam = "USC", AwayTeam = "Notre Dame", HomePoints = 20, AwayPoints = 24, Completed = true }
+        };
+        var existingOverride = new GameOverride
+        {
+            GameID = 401123456,
+            OriginalHomePoints = 17,
+            OriginalAwayPoints = 20,
+            OverrideHomePoints = 20,
+            OverrideAwayPoints = 24
+        };
+
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2026)).ReturnsAsync(fullSchedule);
+        _mockGameOverrideModule.Setup(x => x.GetGameOverrideAsync(401123456)).ReturnsAsync(existingOverride);
+
+        var outcome = await _adminModule.SaveGameOverrideAsync(401123456, 2026, 21, 24, "Corrected after review.");
+
+        Assert.Equal(SaveGameOverrideOutcome.ScoresLocked, outcome);
+        _mockGameOverrideModule.Verify(x => x.SaveGameOverrideAsync(It.IsAny<GameOverride>()), Times.Never);
+    }
+
+    [Fact]
     public async Task SaveGameOverrideAsync_ExistingOverride_PreservesStoredOriginalScore()
     {
         var fullSchedule = new List<ScheduleGame>
@@ -2157,6 +2182,8 @@ public class AdminModuleTests
             GameID = 401123456,
             OriginalHomePoints = 17,
             OriginalAwayPoints = 20,
+            OverrideHomePoints = 20,
+            OverrideAwayPoints = 24,
             CreatedAt = new DateTime(2026, 9, 1)
         };
 

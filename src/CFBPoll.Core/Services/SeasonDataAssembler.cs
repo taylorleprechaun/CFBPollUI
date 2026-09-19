@@ -64,18 +64,7 @@ public static class SeasonDataAssembler
         List<Game> result = [];
         foreach (var game in games)
         {
-            var newGame = new Game
-            {
-                AwayPoints = game.AwayPoints,
-                AwayTeam = game.AwayTeam,
-                GameID = game.GameID,
-                HomePoints = game.HomePoints,
-                HomeTeam = game.HomeTeam,
-                NeutralSite = game.NeutralSite,
-                ScoreOverrideReason = game.ScoreOverrideReason,
-                SeasonType = game.SeasonType,
-                Week = game.Week
-            };
+            var newGame = game.Clone();
 
             if (newGame.GameID.HasValue)
             {

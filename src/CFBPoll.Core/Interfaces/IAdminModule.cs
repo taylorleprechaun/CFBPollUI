@@ -183,7 +183,8 @@ public interface IAdminModule
     /// <summary>
     /// Creates or replaces the manual score override for the given completed game. Preserves the
     /// originally recorded score across edits rather than re-deriving it, since a subsequent lookup
-    /// of the game would otherwise return the already-overridden score.
+    /// of the game would otherwise return the already-overridden score. Once an override exists only its
+    /// reason can change; submitting different scores returns <see cref="SaveGameOverrideOutcome.ScoresLocked"/>.
     /// </summary>
     Task<SaveGameOverrideOutcome> SaveGameOverrideAsync(long gameID, int season, int overrideHomePoints, int overrideAwayPoints, string reason);
 }
