@@ -149,4 +149,86 @@ describe('ConfirmModal', () => {
 
     expect(document.activeElement).toBe(screen.getByText('Cancel'));
   });
+  describe('with confirmPhrase', () => {
+    const phraseProps = { ...defaultProps, confirmPhrase: '2026 Week 7' };
+
+    it('calls onConfirm when Enter is pressed after typing the phrase', async () => {
+      render(<ConfirmModal {...phraseProps} />);
+
+      await userEvent.type(screen.getByLabelText(/to confirm/), '2026 Week 7{Enter}');
+
+      expect(defaultProps.onConfirm).toHaveBeenCalledOnce();
+    });
+
+    it('disables the confirm button until the phrase is typed', async () => {
+      render(<ConfirmModal {...phraseProps} />);
+
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled();
+
+      await userEvent.type(screen.getByLabelText(/to confirm/), '2026 Week 7');
+
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled();
+    });
+
+    it('does not call onConfirm when Enter is pressed before the phrase matches', async () => {
+      render(<ConfirmModal {...phraseProps} />);
+
+      await userEvent.type(screen.getByLabelText(/to confirm/), '2026 Week 6{Enter}');
+
+      expect(defaultProps.onConfirm).not.toHaveBeenCalled();
+    });
+
+    it('enables the confirm button when the typed phrase has surrounding whitespace', async () => {
+      render(<ConfirmModal {...phraseProps} />);
+
+      await userEvent.type(screen.getByLabelText(/to confirm/), '  2026 Week 7  ');
+
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled();
+    });
+
+    it('focuses the phrase input on mount', () => {
+      render(<ConfirmModal {...phraseProps} />);
+
+      expect(document.activeElement).toBe(screen.getByLabelText(/to confirm/));
+    });
+
+    it('keeps the confirm button disabled for a partial phrase', async () => {
+      render(<ConfirmModal {...phraseProps} />);
+
+      await userEvent.type(screen.getByLabelText(/to confirm/), '2026 Week');
+
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled();
+    });
+
+    it('shows the phrase to type', () => {
+      render(<ConfirmModal {...phraseProps} />);
+
+      expect(screen.getByText('2026 Week 7')).toBeInTheDocument();
+    });
+
+    it('skips the disabled confirm button when trapping focus', () => {
+      render(<ConfirmModal {...phraseProps} />);
+
+      fireEvent.keyDown(document, { key: 'Tab' });
+      expect(document.activeElement).toBe(screen.getByText('Cancel'));
+
+      fireEvent.keyDown(document, { key: 'Tab' });
+      expect(document.activeElement).toBe(screen.getByLabelText(/to confirm/));
+    });
+
+    it('traps focus across the phrase input, Cancel, and the enabled confirm button on Tab', async () => {
+      render(<ConfirmModal {...phraseProps} />);
+      const input = screen.getByLabelText(/to confirm/);
+      await userEvent.type(input, '2026 Week 7');
+
+      fireEvent.keyDown(document, { key: 'Tab' });
+      expect(document.activeElement).toBe(screen.getByText('Cancel'));
+
+      fireEvent.keyDown(document, { key: 'Tab' });
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Delete' }));
+
+      fireEvent.keyDown(document, { key: 'Tab' });
+      expect(document.activeElement).toBe(input);
+    });
+  });
 });

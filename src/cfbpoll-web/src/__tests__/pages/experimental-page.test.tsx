@@ -33,11 +33,12 @@ vi.mock('../../hooks/use-season', () => ({
   }),
 }));
 
-let mockWeeksData: { season: number; weeks: { label: string; weekNumber: number }[] } | undefined = {
+let mockWeeksData: { season: number; weeks: { isComplete: boolean; label: string; weekNumber: number }[] } | undefined = {
   season: 2024,
   weeks: [
-    { weekNumber: 1, label: 'Week 2' },
-    { weekNumber: 5, label: 'Week 6' },
+    { weekNumber: 1, label: 'Week 2', isComplete: true },
+    { weekNumber: 5, label: 'Week 6', isComplete: true },
+    { weekNumber: 9, label: 'Week 10', isComplete: false },
   ],
 };
 
@@ -87,8 +88,9 @@ describe('ExperimentalPage', () => {
     mockWeeksData = {
       season: 2024,
       weeks: [
-        { weekNumber: 1, label: 'Week 2' },
-        { weekNumber: 5, label: 'Week 6' },
+        { weekNumber: 1, label: 'Week 2', isComplete: true },
+        { weekNumber: 5, label: 'Week 6', isComplete: true },
+        { weekNumber: 9, label: 'Week 10', isComplete: false },
       ],
     };
   });
@@ -161,8 +163,8 @@ describe('ExperimentalPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Compare' }));
 
     await waitFor(() => {
-      expect(mockCalculateSeasonPredictionsMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V1', season: 2024, weeks: [1, 5] });
-      expect(mockCalculateSeasonPredictionsMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V2', season: 2024, weeks: [1, 5] });
+      expect(mockCalculateSeasonPredictionsMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V1', season: 2024, weeks: [1, 5, 9] });
+      expect(mockCalculateSeasonPredictionsMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V2', season: 2024, weeks: [1, 5, 9] });
     });
   });
 

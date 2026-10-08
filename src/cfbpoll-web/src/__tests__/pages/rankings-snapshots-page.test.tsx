@@ -35,8 +35,9 @@ vi.mock('../../hooks/use-weeks', () => ({
     data: {
       season: 2024,
       weeks: [
-        { weekNumber: 1, label: 'Week 2' },
-        { weekNumber: 5, label: 'Week 6' },
+        { weekNumber: 1, label: 'Week 2', isComplete: true },
+        { weekNumber: 5, label: 'Week 6', isComplete: true },
+        { weekNumber: 9, label: 'Week 10', isComplete: false },
       ],
     },
     isLoading: false,
@@ -149,6 +150,7 @@ describe('RankingsSnapshotsPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     const dialog = screen.getByRole('dialog');
+    await userEvent.type(within(dialog).getByLabelText(/to confirm/), '2024 Week 6');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -643,6 +645,8 @@ describe('RankingsSnapshotsPage', () => {
     const modalDeleteButton = screen.getAllByText('Delete').find(
       (btn) => btn.closest('[role="dialog"]') !== null
     )!;
+    expect(modalDeleteButton).toBeDisabled();
+    await userEvent.type(within(dialog).getByLabelText(/to confirm/), '2024 Week 2');
     await userEvent.click(modalDeleteButton);
 
     await waitFor(() => {

@@ -49,7 +49,7 @@ export function RankingsSnapshotsPage() {
   );
 
   const { data: weeksData, isLoading: weeksLoading } = useWeeks(selectedSeason);
-  const { selectedWeek, setSelectedWeek } = useWeekSelection(weeksData?.weeks);
+  const { selectedWeek, setSelectedWeek } = useWeekSelection(weeksData?.weeks, 'latest-complete');
 
   const isSelectedWeekComplete = useMemo(
     () => weeksData?.weeks.find((w) => w.weekNumber === selectedWeek)?.isComplete ?? true,
@@ -224,6 +224,7 @@ export function RankingsSnapshotsPage() {
 
       {deleteConfirm && (
         <ConfirmModal
+          confirmPhrase={`${deleteConfirm.season} ${getWeekLabel(deleteConfirm.week)}`}
           title="Delete Published Rankings"
           message={`These rankings (${deleteConfirm.season} ${getWeekLabel(deleteConfirm.week)}) are published and visible to users. Are you sure you want to delete them?`}
           onConfirm={() => executeDelete(deleteConfirm.season, deleteConfirm.week)}
@@ -233,6 +234,7 @@ export function RankingsSnapshotsPage() {
 
       {calculateConfirm && (
         <ConfirmModal
+          confirmPhrase={`${calculateConfirm.season} ${getWeekLabel(calculateConfirm.week)}`}
           title="Overwrite Published Rankings"
           message={`The rankings for ${calculateConfirm.season} ${getWeekLabel(calculateConfirm.week)} are already published and visible to users. Recalculating will overwrite them and reset them to draft. Continue?`}
           confirmLabel="Calculate"

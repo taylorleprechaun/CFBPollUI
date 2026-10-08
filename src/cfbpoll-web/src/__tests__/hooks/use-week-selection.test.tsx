@@ -17,6 +17,19 @@ describe('useWeekSelection', () => {
     expect(result.current.selectedWeek).toBe(5);
   });
 
+  it('auto-selects the highest complete week with the latest-complete strategy', () => {
+    const weeks: Week[] = [
+      { weekNumber: 4, label: 'Week 5', isComplete: true, predictionsPublished: false, rankingsPublished: true },
+      { weekNumber: 5, label: 'Week 6', isComplete: true, predictionsPublished: false, rankingsPublished: false },
+      { weekNumber: 6, label: 'Week 7', isComplete: false, predictionsPublished: false, rankingsPublished: false },
+      { weekNumber: 15, label: 'Week 16', isComplete: false, predictionsPublished: false, rankingsPublished: false },
+    ];
+
+    const { result } = renderHook(() => useWeekSelection(weeks, 'latest-complete'));
+
+    expect(result.current.selectedWeek).toBe(5);
+  });
+
   it('auto-selects the highest week number even when weeks arrive out of order', () => {
     const weeks: Week[] = [
       { weekNumber: 5, label: 'Week 5', isComplete: true, predictionsPublished: false, rankingsPublished: false },
@@ -62,6 +75,18 @@ describe('useWeekSelection', () => {
     expect(result.current.selectedWeek).toBe(3);
   });
 
+  it('falls back to the lowest week when no week is complete with the latest-complete strategy', () => {
+    const weeks: Week[] = [
+      { weekNumber: 2, label: 'Week 3', isComplete: false, predictionsPublished: false, rankingsPublished: false },
+      { weekNumber: 1, label: 'Week 2', isComplete: false, predictionsPublished: false, rankingsPublished: false },
+      { weekNumber: 15, label: 'Week 16', isComplete: false, predictionsPublished: false, rankingsPublished: false },
+    ];
+
+    const { result } = renderHook(() => useWeekSelection(weeks, 'latest-complete'));
+
+    expect(result.current.selectedWeek).toBe(1);
+  });
+
   it('preserves manual selection', () => {
     const weeks: Week[] = [
       { weekNumber: 1, label: 'Week 1', isComplete: true, predictionsPublished: false, rankingsPublished: true },
@@ -75,6 +100,21 @@ describe('useWeekSelection', () => {
     });
 
     expect(result.current.selectedWeek).toBe(1);
+  });
+
+  it('preserves manual selection with the latest-complete strategy', () => {
+    const weeks: Week[] = [
+      { weekNumber: 5, label: 'Week 6', isComplete: true, predictionsPublished: false, rankingsPublished: false },
+      { weekNumber: 6, label: 'Week 7', isComplete: false, predictionsPublished: false, rankingsPublished: false },
+    ];
+
+    const { result } = renderHook(() => useWeekSelection(weeks, 'latest-complete'));
+
+    act(() => {
+      result.current.setSelectedWeek(6);
+    });
+
+    expect(result.current.selectedWeek).toBe(6);
   });
 
   it('returns null when no weeks provided', () => {

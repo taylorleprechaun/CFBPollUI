@@ -36,6 +36,14 @@ public class CacheKeysTests
     }
 
     [Fact]
+    public void GetGameResultKeys_ReturnsScheduleAndBothGamesKeys()
+    {
+        var keys = CacheKeys.GetGameResultKeys(2024).ToList();
+
+        Assert.Equal(["fullSchedule_2024", "games_2024_regular", "games_2024_postseason"], keys);
+    }
+
+    [Fact]
     public void GetSeasonScopedKeys_IncludesFullSchedule()
     {
         var keys = CacheKeys.GetSeasonScopedKeys(2024, 5);
@@ -52,6 +60,15 @@ public class CacheKeysTests
     }
 
     [Fact]
+    public void GetSeasonScopedKeys_RegularSeason_IncludesBettingLinesWeek1AndGameWeek()
+    {
+        var keys = CacheKeys.GetSeasonScopedKeys(2024, 5).ToList();
+
+        Assert.Contains("bettingLines_2024_1", keys);
+        Assert.Contains("bettingLines_2024_6", keys);
+    }
+
+    [Fact]
     public void GetSeasonScopedKeys_RegularSeasonWeek_ReturnsExpectedKeys()
     {
         var keys = CacheKeys.GetSeasonScopedKeys(2024, 5).ToList();
@@ -64,15 +81,6 @@ public class CacheKeysTests
         Assert.Contains("advancedGameStats_2024_postseason", keys);
         Assert.Contains("seasonStats_2024", keys);
         Assert.Contains("seasonStats_2024_week_5", keys);
-        Assert.Contains("bettingLines_2024_6", keys);
-    }
-
-    [Fact]
-    public void GetSeasonScopedKeys_RegularSeason_IncludesBettingLinesWeek1AndGameWeek()
-    {
-        var keys = CacheKeys.GetSeasonScopedKeys(2024, 5).ToList();
-
-        Assert.Contains("bettingLines_2024_1", keys);
         Assert.Contains("bettingLines_2024_6", keys);
     }
 

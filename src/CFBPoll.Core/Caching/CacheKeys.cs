@@ -13,6 +13,13 @@ public static class CacheKeys
     public static string Games(int season, string seasonType) => $"games_{season}_{seasonType}";
     public static string GameTeamStats(int season, string seasonType) => $"gameTeamStats_{season}_{seasonType}";
 
+    public static IEnumerable<string> GetGameResultKeys(int season)
+    {
+        yield return FullSchedule(season);
+        yield return Games(season, "regular");
+        yield return Games(season, "postseason");
+    }
+
     public static IEnumerable<string> GetSeasonScopedKeys(int season, int week)
     {
         var gameWeek = week + 1;

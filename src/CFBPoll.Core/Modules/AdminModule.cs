@@ -446,6 +446,9 @@ public class AdminModule : IAdminModule
 
     public async Task<GradePredictionsResult?> GradePredictionsAsync(int season, int week)
     {
+        var removed = await _cache.RemoveManyAsync(CacheKeys.GetGameResultKeys(season)).ConfigureAwait(false);
+        _logger.LogInformation("Removed {Count} cached game result entries for season {Season} before grading", removed, season);
+
         return await _predictionGradingModule.GradeAsync(season, week).ConfigureAwait(false);
     }
 
