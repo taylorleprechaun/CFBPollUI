@@ -60,6 +60,52 @@ public class PredictionGradingModuleTests
     }
 
     [Fact]
+    public async Task GradeAsync_GameNotCompleted_LeavesPredictionUngraded()
+    {
+        SetupRegularSeasonWeek(2024, 5, BuildPrediction(homeTeam: "Team A", awayTeam: "Team B", predictedWinner: "Team A"),
+            BuildGame("Team A", "Team B", homePoints: 14, awayPoints: 7, completed: false));
+
+        var result = await _module.GradeAsync(2024, 5);
+
+        Assert.Equal(1, result!.UnmatchedGameCount);
+        var graded = Assert.Single(result.Predictions.Predictions);
+        Assert.Equal(PredictionGradeStatus.Ungraded, graded.WinnerGrade);
+        Assert.Null(graded.ActualHomeScore);
+    }
+
+    [Fact]
+    public async Task GradeAsync_MixedCompletedAndInProgressGames_GradesOnlyCompletedGames()
+    {
+        var stored = new PredictionsResult
+        {
+            Season = 2024,
+            Week = 5,
+            Predictions =
+            [
+                BuildPrediction(homeTeam: "Team A", awayTeam: "Team B", predictedWinner: "Team A"),
+                BuildPrediction(homeTeam: "Team C", awayTeam: "Team D", predictedWinner: "Team C")
+            ]
+        };
+        _mockPredictionsModule.Setup(x => x.GetAsync(2024, 5)).ReturnsAsync(stored);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(BuildRegularSeasonSchedule());
+        _mockDataService.Setup(x => x.GetGamesAsync(2024, "regular")).ReturnsAsync(
+        [
+            BuildGame("Team A", "Team B", homePoints: 31, awayPoints: 17),
+            BuildGame("Team C", "Team D", homePoints: 3, awayPoints: 10, completed: false)
+        ]);
+
+        var result = await _module.GradeAsync(2024, 5);
+
+        Assert.Equal(1, result!.UnmatchedGameCount);
+        var completedPrediction = result.Predictions.Predictions.Single(p => p.HomeTeam == "Team A");
+        var inProgressPrediction = result.Predictions.Predictions.Single(p => p.HomeTeam == "Team C");
+        Assert.Equal(PredictionGradeStatus.Correct, completedPrediction.WinnerGrade);
+        Assert.Equal(31, completedPrediction.ActualHomeScore);
+        Assert.Equal(PredictionGradeStatus.Ungraded, inProgressPrediction.WinnerGrade);
+        Assert.Null(inProgressPrediction.ActualHomeScore);
+    }
+
+    [Fact]
     public async Task GradeAsync_NoBettingOverUnder_SetsOverUnderGradeNotApplicable()
     {
         SetupRegularSeasonWeek(2024, 5, BuildPrediction(bettingOverUnder: null, myOverUnderPick: string.Empty),
@@ -286,11 +332,12 @@ public class PredictionGradingModuleTests
     }
 
     private static Game BuildGame(
-        string homeTeam, string awayTeam, int homePoints, int awayPoints, int week = 6, string seasonType = "regular") =>
+        string homeTeam, string awayTeam, int homePoints, int awayPoints, int week = 6, string seasonType = "regular", bool completed = true) =>
         new()
         {
             AwayPoints = awayPoints,
             AwayTeam = awayTeam,
+            Completed = completed,
             HomePoints = homePoints,
             HomeTeam = homeTeam,
             SeasonType = seasonType,

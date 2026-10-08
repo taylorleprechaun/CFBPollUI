@@ -6,6 +6,7 @@ public class Game
     public IEnumerable<TeamStat>? AwayGameStats { get; set; }
     public int? AwayPoints { get; set; }
     public string? AwayTeam { get; set; }
+    public bool Completed { get; set; }
     public long? GameID { get; set; }
     public AdvancedGameStats? HomeAdvancedStats { get; set; }
     public IEnumerable<TeamStat>? HomeGameStats { get; set; }

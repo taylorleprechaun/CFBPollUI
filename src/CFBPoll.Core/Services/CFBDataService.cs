@@ -649,6 +649,7 @@ public class CFBDataService : ICFBDataService
         {
             AwayPoints = g.AwayPoints,
             AwayTeam = g.AwayTeam,
+            Completed = g.Completed ?? false,
             GameID = g.Id,
             HomePoints = g.HomePoints,
             HomeTeam = g.HomeTeam,

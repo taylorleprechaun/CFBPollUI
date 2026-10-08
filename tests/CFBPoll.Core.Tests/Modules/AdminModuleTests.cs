@@ -1682,6 +1682,28 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task GradePredictionsAsync_ClearsGameResultCacheKeysBeforeGrading()
+    {
+        var callOrder = new List<string>();
+        IEnumerable<string>? removedKeys = null;
+        _mockCache.Setup(x => x.RemoveManyAsync(It.IsAny<IEnumerable<string>>()))
+            .Callback<IEnumerable<string>>(keys =>
+            {
+                removedKeys = keys.ToList();
+                callOrder.Add("removeCache");
+            })
+            .ReturnsAsync(3);
+        _mockPredictionGradingModule.Setup(x => x.GradeAsync(2024, 5))
+            .Callback(() => callOrder.Add("grade"))
+            .ReturnsAsync((GradePredictionsResult?)null);
+
+        await _adminModule.GradePredictionsAsync(2024, 5);
+
+        Assert.Equal(["removeCache", "grade"], callOrder);
+        Assert.Equal(["fullSchedule_2024", "games_2024_regular", "games_2024_postseason"], removedKeys);
+    }
+
+    [Fact]
     public async Task GradePredictionsAsync_DelegatesToGradingModule()
     {
         var gradeResult = new GradePredictionsResult

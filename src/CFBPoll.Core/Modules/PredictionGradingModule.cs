@@ -36,7 +36,7 @@ public class PredictionGradingModule : IPredictionGradingModule
             completedGames = completedGames.Where(g => g.Week == gameWeek);
 
         var resultsByGame = completedGames
-            .Where(g => g.HomeTeam is not null && g.AwayTeam is not null && g.HomePoints.HasValue && g.AwayPoints.HasValue)
+            .Where(g => g.Completed && g.HomeTeam is not null && g.AwayTeam is not null && g.HomePoints.HasValue && g.AwayPoints.HasValue)
             .GroupBy(g => PredictionGrader.BuildMatchKey(g.HomeTeam!, g.AwayTeam!))
             .ToDictionary(g => g.Key, g => g.First());
 
