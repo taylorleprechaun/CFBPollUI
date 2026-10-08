@@ -35,8 +35,9 @@ vi.mock('../../hooks/use-weeks', () => ({
     data: {
       season: 2024,
       weeks: [
-        { weekNumber: 1, label: 'Week 2' },
-        { weekNumber: 5, label: 'Week 6' },
+        { weekNumber: 1, label: 'Week 2', isComplete: true },
+        { weekNumber: 5, label: 'Week 6', isComplete: true },
+        { weekNumber: 9, label: 'Week 10', isComplete: false },
       ],
     },
     isLoading: false,

@@ -49,7 +49,7 @@ export function RankingsSnapshotsPage() {
   );
 
   const { data: weeksData, isLoading: weeksLoading } = useWeeks(selectedSeason);
-  const { selectedWeek, setSelectedWeek } = useWeekSelection(weeksData?.weeks);
+  const { selectedWeek, setSelectedWeek } = useWeekSelection(weeksData?.weeks, 'latest-complete');
 
   const isSelectedWeekComplete = useMemo(
     () => weeksData?.weeks.find((w) => w.weekNumber === selectedWeek)?.isComplete ?? true,
