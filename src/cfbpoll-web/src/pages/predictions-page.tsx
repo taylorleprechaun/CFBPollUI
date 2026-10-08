@@ -263,6 +263,7 @@ export function PredictionsPage() {
 
       {deleteConfirm && (
         <ConfirmModal
+          confirmPhrase={`${deleteConfirm.season} ${getWeekLabel(deleteConfirm.week)}`}
           title="Delete Published Predictions"
           message={`These predictions (${deleteConfirm.season} ${getWeekLabel(deleteConfirm.week)}) are published and visible to users. Are you sure you want to delete them?`}
           onConfirm={() => executeDelete(deleteConfirm.season, deleteConfirm.week)}
@@ -272,6 +273,7 @@ export function PredictionsPage() {
 
       {generateConfirm && (
         <ConfirmModal
+          confirmPhrase={`${generateConfirm.season} ${getWeekLabel(generateConfirm.week)}`}
           title="Overwrite Existing Predictions"
           message={`Predictions for ${generateConfirm.season} ${getWeekLabel(generateConfirm.week)} already exist with a status of ${generateConfirm.stage}. Generating new predictions will overwrite them and reset their published/graded status. Continue?`}
           confirmLabel="Generate"

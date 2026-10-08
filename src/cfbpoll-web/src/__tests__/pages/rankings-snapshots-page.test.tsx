@@ -150,6 +150,7 @@ describe('RankingsSnapshotsPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Calculate' }));
 
     const dialog = screen.getByRole('dialog');
+    await userEvent.type(within(dialog).getByLabelText(/to confirm/), '2024 Week 6');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Calculate' }));
 
     await waitFor(() => {
@@ -644,6 +645,8 @@ describe('RankingsSnapshotsPage', () => {
     const modalDeleteButton = screen.getAllByText('Delete').find(
       (btn) => btn.closest('[role="dialog"]') !== null
     )!;
+    expect(modalDeleteButton).toBeDisabled();
+    await userEvent.type(within(dialog).getByLabelText(/to confirm/), '2024 Week 2');
     await userEvent.click(modalDeleteButton);
 
     await waitFor(() => {

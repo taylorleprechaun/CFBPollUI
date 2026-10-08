@@ -468,6 +468,7 @@ describe('PredictionsPage', () => {
     renderPredictionsPage();
     await user.click(screen.getByRole('button', { name: 'Generate' }));
     const confirmDialog = await screen.findByRole('dialog');
+    await user.type(within(confirmDialog).getByLabelText(/to confirm/), '2024 Week 6');
     await user.click(within(confirmDialog).getByRole('button', { name: 'Generate' }));
 
     await waitFor(() => expect(screen.getByRole('button', { name: 'Grade' })).toBeInTheDocument());
@@ -525,6 +526,8 @@ describe('PredictionsPage', () => {
 
     const modal = screen.getByRole('dialog');
     const confirmDeleteButton = within(modal).getByRole('button', { name: 'Delete' });
+    expect(confirmDeleteButton).toBeDisabled();
+    await user.type(within(modal).getByLabelText(/to confirm/), '2024 Week 2');
     await user.click(confirmDeleteButton);
 
     expect(mockDeleteMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 1 });
@@ -696,6 +699,7 @@ describe('PredictionsPage', () => {
     await user.click(screen.getByRole('button', { name: 'Generate' }));
 
     const dialog = screen.getByRole('dialog');
+    await user.type(within(dialog).getByLabelText(/to confirm/), '2024 Week 6');
     await user.click(within(dialog).getByRole('button', { name: 'Generate' }));
 
     expect(mockCalculateMutateAsync).toHaveBeenCalledWith({ season: 2024, week: 5 });
