@@ -62,9 +62,11 @@ public class CachingServiceExtensionsTests
         services.AddLogging();
         var configuration = BuildConfiguration(
             apiKey: "test-api-key",
-            calendarExpirationHours: 48,
-            maxSeasonYearExpirationHours: 12,
-            seasonDataExpirationHours: 6);
+            emptyResultExpirationMinutes: 15,
+            refreshGraceMinutes: 45,
+            refreshTimeOfDay: "04:15",
+            refreshTimeZone: "America/Chicago",
+            weeklyRefreshDay: "Tuesday");
 
         services.AddCFBDataServiceWithCaching(configuration);
 
@@ -72,9 +74,11 @@ public class CachingServiceExtensionsTests
         var options = provider.GetService<IOptions<CacheOptions>>();
 
         Assert.NotNull(options);
-        Assert.Equal(48, options.Value.CalendarExpirationHours);
-        Assert.Equal(12, options.Value.MaxSeasonYearExpirationHours);
-        Assert.Equal(6, options.Value.SeasonDataExpirationHours);
+        Assert.Equal(15, options.Value.EmptyResultExpirationMinutes);
+        Assert.Equal(45, options.Value.RefreshGraceMinutes);
+        Assert.Equal("04:15", options.Value.RefreshTimeOfDay);
+        Assert.Equal("America/Chicago", options.Value.RefreshTimeZone);
+        Assert.Equal(DayOfWeek.Tuesday, options.Value.WeeklyRefreshDay);
     }
 
     [Fact]
@@ -129,6 +133,21 @@ public class CachingServiceExtensionsTests
         var hostedServices = provider.GetServices<IHostedService>();
 
         Assert.Contains(hostedServices, s => s is CacheCleanupHostedService);
+    }
+
+    [Fact]
+    public void AddCFBDataServiceWithCaching_RegistersCacheExpirationPolicy()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration(apiKey: "test-api-key");
+
+        services.AddCFBDataServiceWithCaching(configuration);
+
+        var provider = services.BuildServiceProvider();
+
+        Assert.IsType<CacheExpirationPolicy>(provider.GetService<ICacheExpirationPolicy>());
+        Assert.Same(TimeProvider.System, provider.GetService<TimeProvider>());
     }
 
     [Fact]
@@ -344,10 +363,12 @@ public class CachingServiceExtensionsTests
 
     private static IConfiguration BuildConfiguration(
         string? apiKey,
-        int? calendarExpirationHours = null,
         string? connectionString = null,
-        int? maxSeasonYearExpirationHours = null,
-        int? seasonDataExpirationHours = null,
+        int? emptyResultExpirationMinutes = null,
+        int? refreshGraceMinutes = null,
+        string? refreshTimeOfDay = null,
+        string? refreshTimeZone = null,
+        string? weeklyRefreshDay = null,
         int? minimumYear = null,
         string? preferredProvider = null,
         int? seasonBoundaryGraceMonth = null,
@@ -362,24 +383,34 @@ public class CachingServiceExtensionsTests
             configValues["CollegeFootballData:ApiKey"] = apiKey;
         }
 
-        if (calendarExpirationHours.HasValue)
-        {
-            configValues["Cache:CalendarExpirationHours"] = calendarExpirationHours.Value.ToString();
-        }
-
         if (connectionString is not null)
         {
             configValues["Cache:ConnectionString"] = connectionString;
         }
 
-        if (maxSeasonYearExpirationHours.HasValue)
+        if (emptyResultExpirationMinutes.HasValue)
         {
-            configValues["Cache:MaxSeasonYearExpirationHours"] = maxSeasonYearExpirationHours.Value.ToString();
+            configValues["Cache:EmptyResultExpirationMinutes"] = emptyResultExpirationMinutes.Value.ToString();
         }
 
-        if (seasonDataExpirationHours.HasValue)
+        if (refreshGraceMinutes.HasValue)
         {
-            configValues["Cache:SeasonDataExpirationHours"] = seasonDataExpirationHours.Value.ToString();
+            configValues["Cache:RefreshGraceMinutes"] = refreshGraceMinutes.Value.ToString();
+        }
+
+        if (refreshTimeOfDay is not null)
+        {
+            configValues["Cache:RefreshTimeOfDay"] = refreshTimeOfDay;
+        }
+
+        if (refreshTimeZone is not null)
+        {
+            configValues["Cache:RefreshTimeZone"] = refreshTimeZone;
+        }
+
+        if (weeklyRefreshDay is not null)
+        {
+            configValues["Cache:WeeklyRefreshDay"] = weeklyRefreshDay;
         }
 
         if (minimumYear.HasValue)

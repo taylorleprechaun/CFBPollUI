@@ -1,9 +1,7 @@
 using CFBPoll.Core.Caching;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
-using CFBPoll.Core.Options;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace CFBPoll.Core.Modules;
 
@@ -12,19 +10,19 @@ public class TeamPredictionRecordModule : ITeamPredictionRecordModule
     public const string CACHE_KEY_PREFIX = "team-prediction-records_";
 
     private readonly IPersistentCache _cache;
-    private readonly CacheOptions _cacheOptions;
+    private readonly ICacheExpirationPolicy _expirationPolicy;
     private readonly ILogger<TeamPredictionRecordModule> _logger;
     private readonly IPredictionsModule _predictionsModule;
     private readonly StringComparison _scoic = StringComparison.OrdinalIgnoreCase;
 
     public TeamPredictionRecordModule(
         IPersistentCache cache,
-        IOptions<CacheOptions> cacheOptions,
+        ICacheExpirationPolicy expirationPolicy,
         ILogger<TeamPredictionRecordModule> logger,
         IPredictionsModule predictionsModule)
     {
         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
-        _cacheOptions = cacheOptions?.Value ?? throw new ArgumentNullException(nameof(cacheOptions));
+        _expirationPolicy = expirationPolicy ?? throw new ArgumentNullException(nameof(expirationPolicy));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _predictionsModule = predictionsModule ?? throw new ArgumentNullException(nameof(predictionsModule));
     }
@@ -69,7 +67,7 @@ public class TeamPredictionRecordModule : ITeamPredictionRecordModule
 
         var result = records.Values.OrderBy(r => r.TeamName).ToList();
 
-        var expiresAt = DateTime.UtcNow.AddHours(_cacheOptions.TeamPredictionRecordsExpirationHours);
+        var expiresAt = _expirationPolicy.GetExpiration(CacheRefreshTier.Daily);
         await _cache.SetAsync(cacheKey, result, expiresAt).ConfigureAwait(false);
 
         return result;

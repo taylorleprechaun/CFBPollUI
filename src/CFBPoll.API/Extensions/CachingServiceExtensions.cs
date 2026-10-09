@@ -4,6 +4,7 @@ using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Modules;
 using CFBPoll.Core.Options;
 using CFBPoll.Core.Services;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace CFBPoll.API.Extensions;
 
@@ -15,6 +16,8 @@ public static class CachingServiceExtensions
     {
         services.Configure<CacheOptions>(configuration.GetSection(CacheOptions.SECTION_NAME));
 
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<ICacheExpirationPolicy, CacheExpirationPolicy>();
         services.AddSingleton<ICacheData, CacheData>();
         services.AddSingleton<IPersistentCache, CacheModule>();
         services.AddHostedService<CacheCleanupHostedService>();
@@ -39,10 +42,10 @@ public static class CachingServiceExtensions
         {
             var innerService = sp.GetRequiredService<CFBDataService>();
             var cache = sp.GetRequiredService<IPersistentCache>();
-            var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<CacheOptions>>();
+            var expirationPolicy = sp.GetRequiredService<ICacheExpirationPolicy>();
             var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<CachingCFBDataService>>();
 
-            return new CachingCFBDataService(innerService, cache, options, logger);
+            return new CachingCFBDataService(innerService, cache, expirationPolicy, logger);
         });
 
         return services;

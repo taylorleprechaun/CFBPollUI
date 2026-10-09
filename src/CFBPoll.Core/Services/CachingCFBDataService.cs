@@ -1,34 +1,32 @@
 using CFBPoll.Core.Caching;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
-using CFBPoll.Core.Options;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace CFBPoll.Core.Services;
 
 public class CachingCFBDataService : ICFBDataService
 {
     private readonly IPersistentCache _cache;
+    private readonly ICacheExpirationPolicy _expirationPolicy;
     private readonly ICFBDataService _innerService;
     private readonly ILogger<CachingCFBDataService> _logger;
-    private readonly CacheOptions _options;
 
     public CachingCFBDataService(
         ICFBDataService innerService,
         IPersistentCache cache,
-        IOptions<CacheOptions> options,
+        ICacheExpirationPolicy expirationPolicy,
         ILogger<CachingCFBDataService> logger)
     {
         _innerService = innerService ?? throw new ArgumentNullException(nameof(innerService));
         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+        _expirationPolicy = expirationPolicy ?? throw new ArgumentNullException(nameof(expirationPolicy));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
     }
 
     public async Task<IEnumerable<AdvancedGameStats>> GetAdvancedGameStatsAsync(int season, string seasonType)
     {
-        var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
+        var expiresAt = _expirationPolicy.GetSeasonExpiration(season, CacheRefreshTier.Daily);
         return await GetOrCacheListAsync(
             CacheKeys.AdvancedGameStats(season, seasonType),
             () => _innerService.GetAdvancedGameStatsAsync(season, seasonType),
@@ -37,7 +35,7 @@ public class CachingCFBDataService : ICFBDataService
 
     public async Task<IEnumerable<BettingLine>> GetBettingLinesAsync(int season, int week)
     {
-        var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
+        var expiresAt = _expirationPolicy.GetSeasonExpiration(season, CacheRefreshTier.Daily);
         return await GetOrCacheListAsync(
             CacheKeys.BettingLines(season, week),
             () => _innerService.GetBettingLinesAsync(season, week),
@@ -46,7 +44,7 @@ public class CachingCFBDataService : ICFBDataService
 
     public async Task<IEnumerable<CalendarWeek>> GetCalendarAsync(int year)
     {
-        var expiresAt = CalculateExpiration(year, _options.CalendarExpirationHours);
+        var expiresAt = _expirationPolicy.GetSeasonExpiration(year, CacheRefreshTier.Weekly);
         return await GetOrCacheListAsync(
             CacheKeys.Calendar(year),
             () => _innerService.GetCalendarAsync(year),
@@ -70,7 +68,7 @@ public class CachingCFBDataService : ICFBDataService
         _logger.LogDebug("Cache miss for {CacheKey}, fetching from API", cacheKey);
         var usage = await _innerService.GetCFBDUsageAsync(forceRefresh).ConfigureAwait(false);
 
-        var expiresAt = DateTime.UtcNow.AddHours(_options.CFBDUsageExpirationHours);
+        var expiresAt = _expirationPolicy.GetExpiration(CacheRefreshTier.Daily);
         await _cache.SetAsync(cacheKey, usage, expiresAt).ConfigureAwait(false);
 
         return usage;
@@ -78,7 +76,7 @@ public class CachingCFBDataService : ICFBDataService
 
     public async Task<IEnumerable<Conference>> GetConferencesAsync()
     {
-        var expiresAt = DateTime.UtcNow.AddHours(_options.ConferenceExpirationHours);
+        var expiresAt = _expirationPolicy.GetExpiration(CacheRefreshTier.Weekly);
         return await GetOrCacheListAsync(
             CacheKeys.CONFERENCES,
             () => _innerService.GetConferencesAsync(),
@@ -87,7 +85,7 @@ public class CachingCFBDataService : ICFBDataService
 
     public async Task<IEnumerable<FBSTeam>> GetFBSTeamsAsync(int season)
     {
-        var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
+        var expiresAt = _expirationPolicy.GetSeasonExpiration(season, CacheRefreshTier.Daily);
         return await GetOrCacheListAsync(
             CacheKeys.Teams(season),
             () => _innerService.GetFBSTeamsAsync(season),
@@ -96,7 +94,7 @@ public class CachingCFBDataService : ICFBDataService
 
     public async Task<IEnumerable<ScheduleGame>> GetFullSeasonScheduleAsync(int season)
     {
-        var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
+        var expiresAt = _expirationPolicy.GetSeasonExpiration(season, CacheRefreshTier.Daily);
         return await GetOrCacheListAsync(
             CacheKeys.FullSchedule(season),
             () => _innerService.GetFullSeasonScheduleAsync(season),
@@ -105,7 +103,7 @@ public class CachingCFBDataService : ICFBDataService
 
     public async Task<IEnumerable<Game>> GetGamesAsync(int season, string seasonType)
     {
-        var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
+        var expiresAt = _expirationPolicy.GetSeasonExpiration(season, CacheRefreshTier.Daily);
         return await GetOrCacheListAsync(
             CacheKeys.Games(season, seasonType),
             () => _innerService.GetGamesAsync(season, seasonType),
@@ -114,7 +112,7 @@ public class CachingCFBDataService : ICFBDataService
 
     public async Task<IEnumerable<GameTeamStats>> GetGameTeamStatsAsync(int season, string seasonType)
     {
-        var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
+        var expiresAt = _expirationPolicy.GetSeasonExpiration(season, CacheRefreshTier.Daily);
         return await GetOrCacheListAsync(
             CacheKeys.GameTeamStats(season, seasonType),
             () => _innerService.GetGameTeamStatsAsync(season, seasonType),
@@ -135,7 +133,7 @@ public class CachingCFBDataService : ICFBDataService
         _logger.LogDebug("Cache miss for {CacheKey}, fetching from API", cacheKey);
         var year = await _innerService.GetMaxSeasonYearAsync().ConfigureAwait(false);
 
-        var expiresAt = DateTime.UtcNow.AddHours(_options.MaxSeasonYearExpirationHours);
+        var expiresAt = _expirationPolicy.GetExpiration(CacheRefreshTier.Daily);
         await _cache.SetAsync(cacheKey, new MaxSeasonYearWrapper { Year = year }, expiresAt).ConfigureAwait(false);
 
         return year;
@@ -203,20 +201,20 @@ public class CachingCFBDataService : ICFBDataService
             kvp => kvp.Key,
             kvp => kvp.Value.ToList());
 
-        var expiresAt = CalculateExpiration(season, _options.SeasonDataExpirationHours);
+        var expiresAt = ExpirationFor(serializableData.Count, _expirationPolicy.GetSeasonExpiration(season, CacheRefreshTier.Daily));
         await _cache.SetAsync(cacheKey, serializableData, expiresAt).ConfigureAwait(false);
 
         return data;
     }
 
-    private DateTime CalculateExpiration(int year, int expirationHours)
+    /// <summary>
+    /// Returns the expiration for a fetched result. Empty results may be genuinely empty (e.g. a future
+    /// season's calendar) or a swallowed upstream error, so they're kept only briefly instead of until the
+    /// next scheduled refresh.
+    /// </summary>
+    private DateTime ExpirationFor(int itemCount, DateTime scheduledExpiration)
     {
-        if (!SeasonLiveEvaluator.IsSeasonLive(year, DateTime.UtcNow, _options))
-        {
-            return DateTime.MaxValue;
-        }
-
-        return DateTime.UtcNow.AddHours(expirationHours);
+        return itemCount == 0 ? _expirationPolicy.GetEmptyResultExpiration() : scheduledExpiration;
     }
 
     private async Task<List<T>> GetOrCacheListAsync<T>(
@@ -233,7 +231,7 @@ public class CachingCFBDataService : ICFBDataService
 
         _logger.LogDebug("Cache miss for {CacheKey}, fetching from API", cacheKey);
         var data = (await fetchFunc().ConfigureAwait(false)).ToList();
-        await _cache.SetAsync(cacheKey, data, expiresAt).ConfigureAwait(false);
+        await _cache.SetAsync(cacheKey, data, ExpirationFor(data.Count, expiresAt)).ConfigureAwait(false);
 
         return data;
     }

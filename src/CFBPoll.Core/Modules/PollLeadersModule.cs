@@ -1,9 +1,7 @@
 using CFBPoll.Core.Caching;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
-using CFBPoll.Core.Options;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace CFBPoll.Core.Modules;
 
@@ -12,22 +10,22 @@ public class PollLeadersModule : IPollLeadersModule
     public const string CACHE_KEY_PREFIX = "poll-leaders_";
 
     private readonly IPersistentCache _cache;
-    private readonly CacheOptions _cacheOptions;
     private readonly ICFBDataService _dataService;
+    private readonly ICacheExpirationPolicy _expirationPolicy;
     private readonly ILogger<PollLeadersModule> _logger;
     private readonly IRankingsModule _rankingsModule;
     private readonly StringComparison _scoic = StringComparison.OrdinalIgnoreCase;
 
     public PollLeadersModule(
         IPersistentCache cache,
-        IOptions<CacheOptions> cacheOptions,
+        ICacheExpirationPolicy expirationPolicy,
         ICFBDataService dataService,
         ILogger<PollLeadersModule> logger,
         IRankingsModule rankingsModule)
     {
         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
-        _cacheOptions = cacheOptions?.Value ?? throw new ArgumentNullException(nameof(cacheOptions));
         _dataService = dataService ?? throw new ArgumentNullException(nameof(dataService));
+        _expirationPolicy = expirationPolicy ?? throw new ArgumentNullException(nameof(expirationPolicy));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
     }
@@ -83,7 +81,7 @@ public class PollLeadersModule : IPollLeadersModule
             MinAvailableSeason = minAvailable
         };
 
-        var expiresAt = DateTime.UtcNow.AddHours(_cacheOptions.PollLeadersExpirationHours);
+        var expiresAt = _expirationPolicy.GetExpiration(CacheRefreshTier.Daily);
         await _cache.SetAsync(cacheKey, result, expiresAt).ConfigureAwait(false);
 
         return result;

@@ -1,9 +1,7 @@
 using CFBPoll.Core.Caching;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
-using CFBPoll.Core.Options;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace CFBPoll.Core.Modules;
 
@@ -12,23 +10,23 @@ public class SeasonTrendsModule : ISeasonTrendsModule
     public const string CACHE_KEY_PREFIX = "season-trends_";
 
     private readonly IPersistentCache _cache;
-    private readonly CacheOptions _cacheOptions;
     private readonly ICFBDataService _dataService;
+    private readonly ICacheExpirationPolicy _expirationPolicy;
     private readonly ILogger<SeasonTrendsModule> _logger;
     private readonly IRankingsModule _rankingsModule;
     private readonly ISeasonModule _seasonModule;
 
     public SeasonTrendsModule(
         IPersistentCache cache,
-        IOptions<CacheOptions> cacheOptions,
+        ICacheExpirationPolicy expirationPolicy,
         ICFBDataService dataService,
         ILogger<SeasonTrendsModule> logger,
         IRankingsModule rankingsModule,
         ISeasonModule seasonModule)
     {
         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
-        _cacheOptions = cacheOptions?.Value ?? throw new ArgumentNullException(nameof(cacheOptions));
         _dataService = dataService ?? throw new ArgumentNullException(nameof(dataService));
+        _expirationPolicy = expirationPolicy ?? throw new ArgumentNullException(nameof(expirationPolicy));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
         _seasonModule = seasonModule ?? throw new ArgumentNullException(nameof(seasonModule));
@@ -163,7 +161,7 @@ public class SeasonTrendsModule : ISeasonTrendsModule
             return result;
         }
 
-        var expiresAt = DateTime.UtcNow.AddHours(_cacheOptions.SeasonTrendsExpirationHours);
+        var expiresAt = _expirationPolicy.GetExpiration(CacheRefreshTier.Daily);
         await _cache.SetAsync(cacheKey, result, expiresAt).ConfigureAwait(false);
 
         return result;
