@@ -34,6 +34,30 @@ function buildPrediction(overrides: Partial<GamePredictionPublic> = {}): GamePre
 }
 
 describe('PredictionCard', () => {
+  const placeholderTeams = { awayTeam: 'Team A', homeTeam: 'Team B', mySpreadPick: 'Team B', predictedWinner: 'Team B' };
+
+  it('does not show the exact score star when only one predicted score matches', () => {
+    render(
+      <PredictionCard
+        prediction={buildPrediction({ ...placeholderTeams, actualAwayScore: 17, actualHomeScore: 31 })}
+        showGrades={true}
+      />
+    );
+
+    expect(screen.queryByText('Exact score')).not.toBeInTheDocument();
+  });
+
+  it('does not show the exact score star when showGrades is false', () => {
+    render(
+      <PredictionCard
+        prediction={buildPrediction({ ...placeholderTeams, actualAwayScore: 17, actualHomeScore: 28 })}
+        showGrades={false}
+      />
+    );
+
+    expect(screen.queryByText('Exact score')).not.toBeInTheDocument();
+  });
+
   it('does not show the final score when showGrades is false', () => {
     render(
       <PredictionCard
@@ -78,6 +102,21 @@ describe('PredictionCard', () => {
     expect(screen.getByText('Nebraska -3.5')).toBeInTheDocument();
     expect(screen.getByText('45.5')).toBeInTheDocument();
     expect(screen.getByText('Pick: Over')).toBeInTheDocument();
+  });
+
+  it('shows an exact score star when both predicted scores match the final', () => {
+    render(
+      <PredictionCard
+        prediction={buildPrediction({ ...placeholderTeams, actualAwayScore: 17, actualHomeScore: 28 })}
+        showGrades={true}
+      />
+    );
+
+    const star = screen.getByText('★');
+    expect(star).toHaveAttribute('aria-hidden', 'true');
+    expect(star.parentElement).toHaveClass('text-amber-400');
+    expect(star.parentElement).toHaveAttribute('title', 'Exact score');
+    expect(screen.getByText('Exact score')).toHaveClass('sr-only');
   });
 
   it('shows labeled rows for Winner, Spread, and O/U, with the pick folded into each row', () => {

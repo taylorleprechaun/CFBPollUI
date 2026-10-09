@@ -239,6 +239,21 @@ describe('PredictionsTable', () => {
       expect(screen.queryByText(/Actual:/)).not.toBeInTheDocument();
     });
 
+    it('shows an exact score star when the predicted score matches the final', () => {
+      const exactPrediction = buildPrediction({
+        actualAwayScore: 17,
+        actualHomeScore: 28,
+        awayTeam: 'Team A',
+        homeTeam: 'Team B',
+        mySpreadPick: 'Team B',
+        predictedWinner: 'Team B',
+      });
+
+      render(<PredictionsTable predictions={[exactPrediction]} showGrades={true} />);
+
+      expect(screen.getByText('Exact score')).toBeInTheDocument();
+    });
+
     it('shows the final score when showGrades is true', () => {
       render(<PredictionsTable predictions={[gradedPrediction]} showGrades={true} />);
 
