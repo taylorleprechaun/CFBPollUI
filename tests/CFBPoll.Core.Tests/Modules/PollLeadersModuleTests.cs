@@ -2,9 +2,7 @@ using CFBPoll.Core.Caching;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
 using CFBPoll.Core.Modules;
-using CFBPoll.Core.Options;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 
@@ -12,9 +10,10 @@ namespace CFBPoll.Core.Tests.Modules;
 
 public class PollLeadersModuleTests
 {
+    private readonly DateTime _dailyExpiration = new(2026, 10, 10, 7, 30, 0, DateTimeKind.Utc);
     private readonly Mock<IPersistentCache> _mockCache;
-    private readonly Mock<IOptions<CacheOptions>> _mockCacheOptions;
     private readonly Mock<ICFBDataService> _mockDataService;
+    private readonly Mock<ICacheExpirationPolicy> _mockExpirationPolicy;
     private readonly Mock<ILogger<PollLeadersModule>> _mockLogger;
     private readonly Mock<IRankingsModule> _mockRankingsModule;
     private readonly PollLeadersModule _module;
@@ -22,30 +21,18 @@ public class PollLeadersModuleTests
     public PollLeadersModuleTests()
     {
         _mockCache = new Mock<IPersistentCache>();
-        _mockCacheOptions = new Mock<IOptions<CacheOptions>>();
-        _mockCacheOptions.Setup(x => x.Value).Returns(new CacheOptions());
         _mockDataService = new Mock<ICFBDataService>();
+        _mockExpirationPolicy = new Mock<ICacheExpirationPolicy>();
+        _mockExpirationPolicy.Setup(x => x.GetExpiration(CacheRefreshTier.Daily)).Returns(_dailyExpiration);
         _mockLogger = new Mock<ILogger<PollLeadersModule>>();
         _mockRankingsModule = new Mock<IRankingsModule>();
 
         _module = new PollLeadersModule(
             _mockCache.Object,
-            _mockCacheOptions.Object,
+            _mockExpirationPolicy.Object,
             _mockDataService.Object,
             _mockLogger.Object,
             _mockRankingsModule.Object);
-    }
-
-    [Fact]
-    public void Constructor_NullCacheOptions_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(
-            () => new PollLeadersModule(
-                new Mock<IPersistentCache>().Object,
-                null!,
-                new Mock<ICFBDataService>().Object,
-                new Mock<ILogger<PollLeadersModule>>().Object,
-                new Mock<IRankingsModule>().Object));
     }
 
     [Fact]
@@ -54,7 +41,7 @@ public class PollLeadersModuleTests
         Assert.Throws<ArgumentNullException>(
             () => new PollLeadersModule(
                 null!,
-                _mockCacheOptions.Object,
+                _mockExpirationPolicy.Object,
                 new Mock<ICFBDataService>().Object,
                 new Mock<ILogger<PollLeadersModule>>().Object,
                 new Mock<IRankingsModule>().Object));
@@ -66,8 +53,20 @@ public class PollLeadersModuleTests
         Assert.Throws<ArgumentNullException>(
             () => new PollLeadersModule(
                 new Mock<IPersistentCache>().Object,
-                _mockCacheOptions.Object,
+                _mockExpirationPolicy.Object,
                 null!,
+                new Mock<ILogger<PollLeadersModule>>().Object,
+                new Mock<IRankingsModule>().Object));
+    }
+
+    [Fact]
+    public void Constructor_NullExpirationPolicy_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new PollLeadersModule(
+                new Mock<IPersistentCache>().Object,
+                null!,
+                new Mock<ICFBDataService>().Object,
                 new Mock<ILogger<PollLeadersModule>>().Object,
                 new Mock<IRankingsModule>().Object));
     }
@@ -78,7 +77,7 @@ public class PollLeadersModuleTests
         Assert.Throws<ArgumentNullException>(
             () => new PollLeadersModule(
                 new Mock<IPersistentCache>().Object,
-                _mockCacheOptions.Object,
+                _mockExpirationPolicy.Object,
                 new Mock<ICFBDataService>().Object,
                 null!,
                 new Mock<IRankingsModule>().Object));
@@ -90,7 +89,7 @@ public class PollLeadersModuleTests
         Assert.Throws<ArgumentNullException>(
             () => new PollLeadersModule(
                 new Mock<IPersistentCache>().Object,
-                _mockCacheOptions.Object,
+                _mockExpirationPolicy.Object,
                 new Mock<ICFBDataService>().Object,
                 new Mock<ILogger<PollLeadersModule>>().Object,
                 null!));
@@ -360,7 +359,7 @@ public class PollLeadersModuleTests
         await _module.GetPollLeadersAsync(null, null);
 
         _mockCache.Verify(
-            x => x.SetAsync("poll-leaders_2023_2023", It.IsAny<PollLeadersResult>(), It.IsAny<DateTime>()),
+            x => x.SetAsync("poll-leaders_2023_2023", It.IsAny<PollLeadersResult>(), _dailyExpiration),
             Times.Once);
     }
 

@@ -1,10 +1,8 @@
 using CFBPoll.Core.Caching;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
-using CFBPoll.Core.Options;
 using CFBPoll.Core.Services;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 
@@ -12,30 +10,32 @@ namespace CFBPoll.Core.Tests.Services;
 
 public class CachingCFBDataServiceTests
 {
+    private readonly DateTime _dailyExpiration = new(2026, 10, 10, 7, 30, 0, DateTimeKind.Utc);
+    private readonly DateTime _emptyResultExpiration = new(2026, 10, 9, 2, 0, 0, DateTimeKind.Utc);
     private readonly Mock<IPersistentCache> _mockCache;
+    private readonly Mock<ICacheExpirationPolicy> _mockExpirationPolicy;
     private readonly Mock<ICFBDataService> _mockInnerService;
     private readonly Mock<ILogger<CachingCFBDataService>> _mockLogger;
-    private readonly Mock<IOptions<CacheOptions>> _mockOptions;
     private readonly CachingCFBDataService _service;
+    private readonly DateTime _weeklyExpiration = new(2026, 10, 12, 7, 30, 0, DateTimeKind.Utc);
 
     public CachingCFBDataServiceTests()
     {
-        _mockInnerService = new Mock<ICFBDataService>();
         _mockCache = new Mock<IPersistentCache>();
-        _mockOptions = new Mock<IOptions<CacheOptions>>();
+        _mockExpirationPolicy = new Mock<ICacheExpirationPolicy>();
+        _mockInnerService = new Mock<ICFBDataService>();
         _mockLogger = new Mock<ILogger<CachingCFBDataService>>();
 
-        _mockOptions.Setup(x => x.Value).Returns(new CacheOptions
-        {
-            CalendarExpirationHours = 168,
-            MaxSeasonYearExpirationHours = 24,
-            SeasonDataExpirationHours = 24
-        });
+        _mockExpirationPolicy.Setup(x => x.GetEmptyResultExpiration()).Returns(_emptyResultExpiration);
+        _mockExpirationPolicy.Setup(x => x.GetExpiration(CacheRefreshTier.Daily)).Returns(_dailyExpiration);
+        _mockExpirationPolicy.Setup(x => x.GetExpiration(CacheRefreshTier.Weekly)).Returns(_weeklyExpiration);
+        _mockExpirationPolicy.Setup(x => x.GetSeasonExpiration(It.IsAny<int>(), CacheRefreshTier.Daily)).Returns(_dailyExpiration);
+        _mockExpirationPolicy.Setup(x => x.GetSeasonExpiration(It.IsAny<int>(), CacheRefreshTier.Weekly)).Returns(_weeklyExpiration);
 
         _service = new CachingCFBDataService(
             _mockInnerService.Object,
             _mockCache.Object,
-            _mockOptions.Object,
+            _mockExpirationPolicy.Object,
             _mockLogger.Object);
     }
 
@@ -43,28 +43,28 @@ public class CachingCFBDataServiceTests
     public void Constructor_ThrowsOnNullCache()
     {
         Assert.Throws<ArgumentNullException>(() =>
-            new CachingCFBDataService(_mockInnerService.Object, null!, _mockOptions.Object, _mockLogger.Object));
+            new CachingCFBDataService(_mockInnerService.Object, null!, _mockExpirationPolicy.Object, _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_ThrowsOnNullExpirationPolicy()
+    {
+        Assert.Throws<ArgumentNullException>(() =>
+            new CachingCFBDataService(_mockInnerService.Object, _mockCache.Object, null!, _mockLogger.Object));
     }
 
     [Fact]
     public void Constructor_ThrowsOnNullInnerService()
     {
         Assert.Throws<ArgumentNullException>(() =>
-            new CachingCFBDataService(null!, _mockCache.Object, _mockOptions.Object, _mockLogger.Object));
+            new CachingCFBDataService(null!, _mockCache.Object, _mockExpirationPolicy.Object, _mockLogger.Object));
     }
 
     [Fact]
     public void Constructor_ThrowsOnNullLogger()
     {
         Assert.Throws<ArgumentNullException>(() =>
-            new CachingCFBDataService(_mockInnerService.Object, _mockCache.Object, _mockOptions.Object, null!));
-    }
-
-    [Fact]
-    public void Constructor_ThrowsOnNullOptions()
-    {
-        Assert.Throws<ArgumentNullException>(() =>
-            new CachingCFBDataService(_mockInnerService.Object, _mockCache.Object, null!, _mockLogger.Object));
+            new CachingCFBDataService(_mockInnerService.Object, _mockCache.Object, _mockExpirationPolicy.Object, null!));
     }
 
     [Fact]
@@ -140,47 +140,17 @@ public class CachingCFBDataServiceTests
     }
 
     [Fact]
-    public async Task GetAdvancedGameStatsAsync_UsesLongExpiration_ForPastSeasons()
+    public async Task GetAdvancedGameStatsAsync_UsesSeasonDailyExpiration_WhenCacheMiss()
     {
-        var pastSeason = DateTime.Now.Year - 2;
-        var apiData = new List<AdvancedGameStats>();
-
-        _mockCache.Setup(x => x.GetAsync<List<AdvancedGameStats>>($"advancedGameStats_{pastSeason}_regular"))
+        _mockCache.Setup(x => x.GetAsync<List<AdvancedGameStats>>("advancedGameStats_2024_regular"))
             .ReturnsAsync((List<AdvancedGameStats>?)null);
-        _mockInnerService.Setup(x => x.GetAdvancedGameStatsAsync(pastSeason, "regular"))
-            .ReturnsAsync(apiData);
+        _mockInnerService.Setup(x => x.GetAdvancedGameStatsAsync(2024, "regular"))
+            .ReturnsAsync([new AdvancedGameStats()]);
 
-        DateTime capturedExpiration = default;
-        _mockCache.Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<List<AdvancedGameStats>>(), It.IsAny<DateTime>()))
-            .Callback<string, List<AdvancedGameStats>, DateTime>((_, _, exp) => capturedExpiration = exp)
-            .ReturnsAsync(true);
+        await _service.GetAdvancedGameStatsAsync(2024, "regular");
 
-        await _service.GetAdvancedGameStatsAsync(pastSeason, "regular");
-
-        var daysUntilExpiration = (capturedExpiration - DateTime.UtcNow).TotalDays;
-        Assert.True(daysUntilExpiration > 300);
-    }
-
-    [Fact]
-    public async Task GetAdvancedGameStatsAsync_UsesShortExpiration_ForCurrentSeason()
-    {
-        var currentSeason = DateTime.Now.Year;
-        var apiData = new List<AdvancedGameStats>();
-
-        _mockCache.Setup(x => x.GetAsync<List<AdvancedGameStats>>($"advancedGameStats_{currentSeason}_postseason"))
-            .ReturnsAsync((List<AdvancedGameStats>?)null);
-        _mockInnerService.Setup(x => x.GetAdvancedGameStatsAsync(currentSeason, "postseason"))
-            .ReturnsAsync(apiData);
-
-        DateTime capturedExpiration = default;
-        _mockCache.Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<List<AdvancedGameStats>>(), It.IsAny<DateTime>()))
-            .Callback<string, List<AdvancedGameStats>, DateTime>((_, _, exp) => capturedExpiration = exp)
-            .ReturnsAsync(true);
-
-        await _service.GetAdvancedGameStatsAsync(currentSeason, "postseason");
-
-        var hoursUntilExpiration = (capturedExpiration - DateTime.UtcNow).TotalHours;
-        Assert.True(hoursUntilExpiration <= 24);
+        _mockExpirationPolicy.Verify(x => x.GetSeasonExpiration(2024, CacheRefreshTier.Daily), Times.Once);
+        _mockCache.Verify(x => x.SetAsync("advancedGameStats_2024_regular", It.IsAny<List<AdvancedGameStats>>(), _dailyExpiration), Times.Once);
     }
 
     [Fact]
@@ -257,49 +227,30 @@ public class CachingCFBDataServiceTests
     }
 
     [Fact]
-    public async Task GetCalendarAsync_UsesLongExpiration_ForPastYears()
+    public async Task GetCalendarAsync_UsesSeasonWeeklyExpiration_WhenCacheMiss()
     {
-        // Two years back guarantees the season-boundary grace period (default: March 1
-        // of the following year) has already passed, regardless of what month tests run in.
-        var pastYear = DateTime.Now.Year - 2;
-        var apiData = new List<CalendarWeek>();
-
-        _mockCache.Setup(x => x.GetAsync<List<CalendarWeek>>($"calendar_{pastYear}"))
+        _mockCache.Setup(x => x.GetAsync<List<CalendarWeek>>("calendar_2024"))
             .ReturnsAsync((List<CalendarWeek>?)null);
-        _mockInnerService.Setup(x => x.GetCalendarAsync(pastYear))
-            .ReturnsAsync(apiData);
+        _mockInnerService.Setup(x => x.GetCalendarAsync(2024))
+            .ReturnsAsync([new CalendarWeek { Week = 1, SeasonType = "regular" }]);
 
-        DateTime capturedExpiration = default;
-        _mockCache.Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<List<CalendarWeek>>(), It.IsAny<DateTime>()))
-            .Callback<string, List<CalendarWeek>, DateTime>((_, _, exp) => capturedExpiration = exp)
-            .ReturnsAsync(true);
+        await _service.GetCalendarAsync(2024);
 
-        await _service.GetCalendarAsync(pastYear);
-
-        var daysUntilExpiration = (capturedExpiration - DateTime.UtcNow).TotalDays;
-        Assert.True(daysUntilExpiration > 300);
+        _mockExpirationPolicy.Verify(x => x.GetSeasonExpiration(2024, CacheRefreshTier.Weekly), Times.Once);
+        _mockCache.Verify(x => x.SetAsync("calendar_2024", It.IsAny<List<CalendarWeek>>(), _weeklyExpiration), Times.Once);
     }
 
     [Fact]
-    public async Task GetCalendarAsync_UsesShortExpiration_ForCurrentYear()
+    public async Task GetCalendarAsync_UsesSeasonWeeklyExpiration_WhenResultIsEmpty()
     {
-        var currentYear = DateTime.Now.Year;
-        var apiData = new List<CalendarWeek>();
-
-        _mockCache.Setup(x => x.GetAsync<List<CalendarWeek>>($"calendar_{currentYear}"))
+        _mockCache.Setup(x => x.GetAsync<List<CalendarWeek>>("calendar_2027"))
             .ReturnsAsync((List<CalendarWeek>?)null);
-        _mockInnerService.Setup(x => x.GetCalendarAsync(currentYear))
-            .ReturnsAsync(apiData);
+        _mockInnerService.Setup(x => x.GetCalendarAsync(2027)).ReturnsAsync([]);
 
-        DateTime capturedExpiration = default;
-        _mockCache.Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<List<CalendarWeek>>(), It.IsAny<DateTime>()))
-            .Callback<string, List<CalendarWeek>, DateTime>((_, _, exp) => capturedExpiration = exp)
-            .ReturnsAsync(true);
+        await _service.GetCalendarAsync(2027);
 
-        await _service.GetCalendarAsync(currentYear);
-
-        var hoursUntilExpiration = (capturedExpiration - DateTime.UtcNow).TotalHours;
-        Assert.True(hoursUntilExpiration <= 168);
+        _mockCache.Verify(x => x.SetAsync("calendar_2027", It.IsAny<List<CalendarWeek>>(), _weeklyExpiration), Times.Once);
+        _mockExpirationPolicy.Verify(x => x.GetEmptyResultExpiration(), Times.Never);
     }
 
     [Fact]
@@ -407,6 +358,19 @@ public class CachingCFBDataServiceTests
     }
 
     [Fact]
+    public async Task GetConferencesAsync_UsesWeeklyExpiration_WhenCacheMiss()
+    {
+        _mockCache.Setup(x => x.GetAsync<List<Conference>>("conferences"))
+            .ReturnsAsync((List<Conference>?)null);
+        _mockInnerService.Setup(x => x.GetConferencesAsync())
+            .ReturnsAsync([new Conference()]);
+
+        await _service.GetConferencesAsync();
+
+        _mockCache.Verify(x => x.SetAsync("conferences", It.IsAny<List<Conference>>(), _weeklyExpiration), Times.Once);
+    }
+
+    [Fact]
     public async Task GetFBSTeamsAsync_FetchesFromInnerService_WhenCacheMiss()
     {
         var apiData = new List<FBSTeam>
@@ -504,47 +468,17 @@ public class CachingCFBDataServiceTests
     }
 
     [Fact]
-    public async Task GetFullSeasonScheduleAsync_UsesLongExpiration_ForPastSeasons()
+    public async Task GetFullSeasonScheduleAsync_UsesSeasonDailyExpiration_WhenCacheMiss()
     {
-        var pastSeason = DateTime.Now.Year - 2;
-        var apiData = new List<ScheduleGame>();
-
-        _mockCache.Setup(x => x.GetAsync<List<ScheduleGame>>($"fullSchedule_{pastSeason}"))
+        _mockCache.Setup(x => x.GetAsync<List<ScheduleGame>>("fullSchedule_2024"))
             .ReturnsAsync((List<ScheduleGame>?)null);
-        _mockInnerService.Setup(x => x.GetFullSeasonScheduleAsync(pastSeason))
-            .ReturnsAsync(apiData);
+        _mockInnerService.Setup(x => x.GetFullSeasonScheduleAsync(2024))
+            .ReturnsAsync([new ScheduleGame()]);
 
-        DateTime capturedExpiration = default;
-        _mockCache.Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<List<ScheduleGame>>(), It.IsAny<DateTime>()))
-            .Callback<string, List<ScheduleGame>, DateTime>((_, _, exp) => capturedExpiration = exp)
-            .ReturnsAsync(true);
+        await _service.GetFullSeasonScheduleAsync(2024);
 
-        await _service.GetFullSeasonScheduleAsync(pastSeason);
-
-        var daysUntilExpiration = (capturedExpiration - DateTime.UtcNow).TotalDays;
-        Assert.True(daysUntilExpiration > 300);
-    }
-
-    [Fact]
-    public async Task GetFullSeasonScheduleAsync_UsesShortExpiration_ForCurrentSeason()
-    {
-        var currentSeason = DateTime.Now.Year;
-        var apiData = new List<ScheduleGame>();
-
-        _mockCache.Setup(x => x.GetAsync<List<ScheduleGame>>($"fullSchedule_{currentSeason}"))
-            .ReturnsAsync((List<ScheduleGame>?)null);
-        _mockInnerService.Setup(x => x.GetFullSeasonScheduleAsync(currentSeason))
-            .ReturnsAsync(apiData);
-
-        DateTime capturedExpiration = default;
-        _mockCache.Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<List<ScheduleGame>>(), It.IsAny<DateTime>()))
-            .Callback<string, List<ScheduleGame>, DateTime>((_, _, exp) => capturedExpiration = exp)
-            .ReturnsAsync(true);
-
-        await _service.GetFullSeasonScheduleAsync(currentSeason);
-
-        var hoursUntilExpiration = (capturedExpiration - DateTime.UtcNow).TotalHours;
-        Assert.True(hoursUntilExpiration <= 144);
+        _mockExpirationPolicy.Verify(x => x.GetSeasonExpiration(2024, CacheRefreshTier.Daily), Times.Once);
+        _mockCache.Verify(x => x.SetAsync("fullSchedule_2024", It.IsAny<List<ScheduleGame>>(), _dailyExpiration), Times.Once);
     }
 
     [Fact]
@@ -597,6 +531,19 @@ public class CachingCFBDataServiceTests
 
         _mockCache.Verify(x => x.GetAsync<List<Game>>("games_2024_regular"), Times.Once);
         _mockCache.Verify(x => x.GetAsync<List<Game>>("games_2024_postseason"), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetGamesAsync_UsesEmptyResultExpiration_WhenResultIsEmpty()
+    {
+        _mockCache.Setup(x => x.GetAsync<List<Game>>("games_2024_postseason"))
+            .ReturnsAsync((List<Game>?)null);
+        _mockInnerService.Setup(x => x.GetGamesAsync(2024, "postseason"))
+            .ReturnsAsync([]);
+
+        await _service.GetGamesAsync(2024, "postseason");
+
+        _mockCache.Verify(x => x.SetAsync("games_2024_postseason", It.IsAny<List<Game>>(), _emptyResultExpiration), Times.Once);
     }
 
     [Fact]
@@ -700,6 +647,18 @@ public class CachingCFBDataServiceTests
         var result = await _service.GetMaxSeasonYearAsync();
 
         Assert.Equal(2025, result);
+    }
+
+    [Fact]
+    public async Task GetMaxSeasonYearAsync_UsesDailyExpiration_WhenCacheMiss()
+    {
+        _mockCache.Setup(x => x.GetAsync<CachingCFBDataService.MaxSeasonYearWrapper>("maxSeasonYear"))
+            .ReturnsAsync((CachingCFBDataService.MaxSeasonYearWrapper?)null);
+        _mockInnerService.Setup(x => x.GetMaxSeasonYearAsync()).ReturnsAsync(2026);
+
+        await _service.GetMaxSeasonYearAsync();
+
+        _mockCache.Verify(x => x.SetAsync("maxSeasonYear", It.IsAny<CachingCFBDataService.MaxSeasonYearWrapper>(), _dailyExpiration), Times.Once);
     }
 
     [Fact]
@@ -851,6 +810,120 @@ public class CachingCFBDataServiceTests
         await _service.GetSeasonTeamStatsAsync(2024, null);
 
         _mockCache.Verify(x => x.GetAsync<Dictionary<string, List<TeamStat>>>("seasonStats_2024"), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetSeasonTeamStatsAsync_UsesEmptyResultExpiration_WhenResultIsEmpty()
+    {
+        _mockCache.Setup(x => x.GetAsync<Dictionary<string, List<TeamStat>>>("seasonStats_2024_week_5"))
+            .ReturnsAsync((Dictionary<string, List<TeamStat>>?)null);
+        _mockInnerService.Setup(x => x.GetSeasonTeamStatsAsync(2024, 5))
+            .ReturnsAsync(new Dictionary<string, IEnumerable<TeamStat>>());
+
+        await _service.GetSeasonTeamStatsAsync(2024, 5);
+
+        _mockCache.Verify(x => x.SetAsync("seasonStats_2024_week_5", It.IsAny<Dictionary<string, List<TeamStat>>>(), _emptyResultExpiration), Times.Once);
+    }
+
+    [Fact]
+    public async Task RefreshCalendarAsync_KeepsSeasonWeeklyExpiration_WhenResultIsEmpty()
+    {
+        _mockInnerService.Setup(x => x.GetCalendarAsync(2027)).ReturnsAsync([]);
+        _mockCache.Setup(x => x.GetAsync<List<CalendarWeek>>("calendar_2027"))
+            .ReturnsAsync((List<CalendarWeek>?)null);
+
+        var result = await _service.RefreshCalendarAsync(2027);
+
+        Assert.True(result);
+        _mockCache.Verify(x => x.SetAsync("calendar_2027", It.IsAny<List<CalendarWeek>>(), _weeklyExpiration), Times.Once);
+    }
+
+    [Fact]
+    public async Task RefreshCalendarAsync_ReplacesCachedCopy_WithSeasonWeeklyExpiration()
+    {
+        _mockInnerService.Setup(x => x.GetCalendarAsync(2026))
+            .ReturnsAsync([new CalendarWeek { Week = 1, SeasonType = "regular" }]);
+
+        var result = await _service.RefreshCalendarAsync(2026);
+
+        Assert.True(result);
+        _mockExpirationPolicy.Verify(x => x.GetSeasonExpiration(2026, CacheRefreshTier.Weekly), Times.Once);
+        _mockCache.Verify(x => x.SetAsync("calendar_2026", It.IsAny<List<CalendarWeek>>(), _weeklyExpiration), Times.Once);
+    }
+
+    [Fact]
+    public async Task RefreshConferencesAsync_ReplacesCachedCopy_WithWeeklyExpiration()
+    {
+        _mockInnerService.Setup(x => x.GetConferencesAsync()).ReturnsAsync([new Conference()]);
+
+        var result = await _service.RefreshConferencesAsync();
+
+        Assert.True(result);
+        _mockCache.Verify(x => x.SetAsync("conferences", It.IsAny<List<Conference>>(), _weeklyExpiration), Times.Once);
+    }
+
+    [Fact]
+    public async Task RefreshFBSTeamsAsync_KeepsExistingCopy_WhenFetchIsEmpty()
+    {
+        _mockInnerService.Setup(x => x.GetFBSTeamsAsync(2026)).ReturnsAsync([]);
+        _mockCache.Setup(x => x.GetAsync<List<FBSTeam>>("teams_2026"))
+            .ReturnsAsync([new FBSTeam { Name = "Iowa" }]);
+
+        var result = await _service.RefreshFBSTeamsAsync(2026);
+
+        Assert.False(result);
+        _mockCache.Verify(x => x.SetAsync(It.IsAny<string>(), It.IsAny<List<FBSTeam>>(), It.IsAny<DateTime>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RefreshFBSTeamsAsync_ReplacesCachedCopy_WithSeasonDailyExpiration()
+    {
+        _mockInnerService.Setup(x => x.GetFBSTeamsAsync(2026)).ReturnsAsync([new FBSTeam { Name = "Texas" }]);
+
+        var result = await _service.RefreshFBSTeamsAsync(2026);
+
+        Assert.True(result);
+        _mockCache.Verify(x => x.SetAsync("teams_2026", It.IsAny<List<FBSTeam>>(), _dailyExpiration), Times.Once);
+        _mockCache.Verify(x => x.GetAsync<List<FBSTeam>>(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RefreshFullSeasonScheduleAsync_ReplacesCachedCopy_WithSeasonDailyExpiration()
+    {
+        _mockInnerService.Setup(x => x.GetFullSeasonScheduleAsync(2026)).ReturnsAsync([new ScheduleGame()]);
+
+        var result = await _service.RefreshFullSeasonScheduleAsync(2026);
+
+        Assert.True(result);
+        _mockExpirationPolicy.Verify(x => x.GetSeasonExpiration(2026, CacheRefreshTier.Daily), Times.Once);
+        _mockCache.Verify(x => x.SetAsync("fullSchedule_2026", It.IsAny<List<ScheduleGame>>(), _dailyExpiration), Times.Once);
+    }
+
+    [Fact]
+    public async Task RefreshFullSeasonScheduleAsync_StoresEmptyResultBriefly_WhenNothingIsCached()
+    {
+        _mockInnerService.Setup(x => x.GetFullSeasonScheduleAsync(2027)).ReturnsAsync([]);
+        _mockCache.Setup(x => x.GetAsync<List<ScheduleGame>>("fullSchedule_2027"))
+            .ReturnsAsync((List<ScheduleGame>?)null);
+
+        var result = await _service.RefreshFullSeasonScheduleAsync(2027);
+
+        Assert.True(result);
+        _mockCache.Verify(x => x.SetAsync("fullSchedule_2027", It.IsAny<List<ScheduleGame>>(), _emptyResultExpiration), Times.Once);
+    }
+
+    [Fact]
+    public async Task RefreshMaxSeasonYearAsync_ReplacesCachedYear_WithDailyExpiration()
+    {
+        _mockInnerService.Setup(x => x.GetMaxSeasonYearAsync()).ReturnsAsync(2026);
+
+        var result = await _service.RefreshMaxSeasonYearAsync();
+
+        Assert.Equal(2026, result);
+        _mockCache.Verify(x => x.SetAsync(
+            "maxSeasonYear",
+            It.Is<CachingCFBDataService.MaxSeasonYearWrapper>(w => w.Year == 2026),
+            _dailyExpiration), Times.Once);
     }
 
     private void SetupCacheMiss()

@@ -4,6 +4,7 @@ using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Modules;
 using CFBPoll.Core.Options;
 using CFBPoll.Core.Services;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace CFBPoll.API.Extensions;
 
@@ -15,6 +16,8 @@ public static class CachingServiceExtensions
     {
         services.Configure<CacheOptions>(configuration.GetSection(CacheOptions.SECTION_NAME));
 
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<ICacheExpirationPolicy, CacheExpirationPolicy>();
         services.AddSingleton<ICacheData, CacheData>();
         services.AddSingleton<IPersistentCache, CacheModule>();
         services.AddHostedService<CacheCleanupHostedService>();
@@ -35,15 +38,23 @@ public static class CachingServiceExtensions
             return new CFBDataService(httpClient, apiKey, minimumYear, preferredBettingProvider, sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<CFBDataService>>());
         });
 
-        services.AddSingleton<ICFBDataService>(sp =>
+        services.AddSingleton<CachingCFBDataService>(sp =>
         {
             var innerService = sp.GetRequiredService<CFBDataService>();
             var cache = sp.GetRequiredService<IPersistentCache>();
-            var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<CacheOptions>>();
+            var expirationPolicy = sp.GetRequiredService<ICacheExpirationPolicy>();
             var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<CachingCFBDataService>>();
 
-            return new CachingCFBDataService(innerService, cache, options, logger);
+            return new CachingCFBDataService(innerService, cache, expirationPolicy, logger);
         });
+
+        // One caching instance serves both reads and background refreshes
+        services.AddSingleton<ICFBDataService>(sp => sp.GetRequiredService<CachingCFBDataService>());
+        services.AddSingleton<ICFBDataCacheRefresher>(sp => sp.GetRequiredService<CachingCFBDataService>());
+
+        // Depends on the track record, team prediction record, season trends, and poll leaders modules,
+        // which are registered in Program.cs
+        services.AddHostedService<ScheduledCacheRefreshHostedService>();
 
         return services;
     }

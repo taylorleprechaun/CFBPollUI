@@ -2,9 +2,7 @@ using CFBPoll.Core.Caching;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
 using CFBPoll.Core.Modules;
-using CFBPoll.Core.Options;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 
@@ -12,9 +10,10 @@ namespace CFBPoll.Core.Tests.Modules;
 
 public class SeasonTrendsModuleTests
 {
+    private readonly DateTime _dailyExpiration = new(2026, 10, 10, 7, 30, 0, DateTimeKind.Utc);
     private readonly Mock<IPersistentCache> _mockCache;
-    private readonly Mock<IOptions<CacheOptions>> _mockCacheOptions;
     private readonly Mock<ICFBDataService> _mockDataService;
+    private readonly Mock<ICacheExpirationPolicy> _mockExpirationPolicy;
     private readonly Mock<ILogger<SeasonTrendsModule>> _mockLogger;
     private readonly Mock<IRankingsModule> _mockRankingsModule;
     private readonly Mock<ISeasonModule> _mockSeasonModule;
@@ -23,16 +22,16 @@ public class SeasonTrendsModuleTests
     public SeasonTrendsModuleTests()
     {
         _mockCache = new Mock<IPersistentCache>();
-        _mockCacheOptions = new Mock<IOptions<CacheOptions>>();
-        _mockCacheOptions.Setup(x => x.Value).Returns(new CacheOptions());
         _mockDataService = new Mock<ICFBDataService>();
+        _mockExpirationPolicy = new Mock<ICacheExpirationPolicy>();
+        _mockExpirationPolicy.Setup(x => x.GetExpiration(CacheRefreshTier.Daily)).Returns(_dailyExpiration);
         _mockLogger = new Mock<ILogger<SeasonTrendsModule>>();
         _mockRankingsModule = new Mock<IRankingsModule>();
         _mockSeasonModule = new Mock<ISeasonModule>();
 
         _module = new SeasonTrendsModule(
             _mockCache.Object,
-            _mockCacheOptions.Object,
+            _mockExpirationPolicy.Object,
             _mockDataService.Object,
             _mockLogger.Object,
             _mockRankingsModule.Object,
@@ -116,25 +115,12 @@ public class SeasonTrendsModuleTests
     }
 
     [Fact]
-    public void Constructor_NullCacheOptions_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(
-            () => new SeasonTrendsModule(
-                new Mock<IPersistentCache>().Object,
-                null!,
-                new Mock<ICFBDataService>().Object,
-                new Mock<ILogger<SeasonTrendsModule>>().Object,
-                new Mock<IRankingsModule>().Object,
-                new Mock<ISeasonModule>().Object));
-    }
-
-    [Fact]
     public void Constructor_NullCache_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
             () => new SeasonTrendsModule(
                 null!,
-                _mockCacheOptions.Object,
+                _mockExpirationPolicy.Object,
                 new Mock<ICFBDataService>().Object,
                 new Mock<ILogger<SeasonTrendsModule>>().Object,
                 new Mock<IRankingsModule>().Object,
@@ -147,8 +133,21 @@ public class SeasonTrendsModuleTests
         Assert.Throws<ArgumentNullException>(
             () => new SeasonTrendsModule(
                 new Mock<IPersistentCache>().Object,
-                _mockCacheOptions.Object,
+                _mockExpirationPolicy.Object,
                 null!,
+                new Mock<ILogger<SeasonTrendsModule>>().Object,
+                new Mock<IRankingsModule>().Object,
+                new Mock<ISeasonModule>().Object));
+    }
+
+    [Fact]
+    public void Constructor_NullExpirationPolicy_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new SeasonTrendsModule(
+                new Mock<IPersistentCache>().Object,
+                null!,
+                new Mock<ICFBDataService>().Object,
                 new Mock<ILogger<SeasonTrendsModule>>().Object,
                 new Mock<IRankingsModule>().Object,
                 new Mock<ISeasonModule>().Object));
@@ -160,7 +159,7 @@ public class SeasonTrendsModuleTests
         Assert.Throws<ArgumentNullException>(
             () => new SeasonTrendsModule(
                 new Mock<IPersistentCache>().Object,
-                _mockCacheOptions.Object,
+                _mockExpirationPolicy.Object,
                 new Mock<ICFBDataService>().Object,
                 null!,
                 new Mock<IRankingsModule>().Object,
@@ -173,7 +172,7 @@ public class SeasonTrendsModuleTests
         Assert.Throws<ArgumentNullException>(
             () => new SeasonTrendsModule(
                 new Mock<IPersistentCache>().Object,
-                _mockCacheOptions.Object,
+                _mockExpirationPolicy.Object,
                 new Mock<ICFBDataService>().Object,
                 new Mock<ILogger<SeasonTrendsModule>>().Object,
                 null!,
@@ -186,7 +185,7 @@ public class SeasonTrendsModuleTests
         Assert.Throws<ArgumentNullException>(
             () => new SeasonTrendsModule(
                 new Mock<IPersistentCache>().Object,
-                _mockCacheOptions.Object,
+                _mockExpirationPolicy.Object,
                 new Mock<ICFBDataService>().Object,
                 new Mock<ILogger<SeasonTrendsModule>>().Object,
                 new Mock<IRankingsModule>().Object,
@@ -509,7 +508,7 @@ public class SeasonTrendsModuleTests
         await _module.GetSeasonTrendsAsync(2024);
 
         _mockCache.Verify(
-            x => x.SetAsync("season-trends_2024", It.IsAny<SeasonTrendsResult>(), It.IsAny<DateTime>()),
+            x => x.SetAsync("season-trends_2024", It.IsAny<SeasonTrendsResult>(), _dailyExpiration),
             Times.Once);
     }
 

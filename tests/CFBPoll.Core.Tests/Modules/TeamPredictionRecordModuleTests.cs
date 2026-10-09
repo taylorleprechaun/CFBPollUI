@@ -2,9 +2,7 @@ using CFBPoll.Core.Caching;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
 using CFBPoll.Core.Modules;
-using CFBPoll.Core.Options;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 
@@ -12,8 +10,9 @@ namespace CFBPoll.Core.Tests.Modules;
 
 public class TeamPredictionRecordModuleTests
 {
+    private readonly DateTime _dailyExpiration = new(2026, 10, 10, 7, 30, 0, DateTimeKind.Utc);
     private readonly Mock<IPersistentCache> _mockCache;
-    private readonly Mock<IOptions<CacheOptions>> _mockCacheOptions;
+    private readonly Mock<ICacheExpirationPolicy> _mockExpirationPolicy;
     private readonly Mock<ILogger<TeamPredictionRecordModule>> _mockLogger;
     private readonly Mock<IPredictionsModule> _mockPredictionsModule;
     private readonly TeamPredictionRecordModule _module;
@@ -21,14 +20,14 @@ public class TeamPredictionRecordModuleTests
     public TeamPredictionRecordModuleTests()
     {
         _mockCache = new Mock<IPersistentCache>();
-        _mockCacheOptions = new Mock<IOptions<CacheOptions>>();
-        _mockCacheOptions.Setup(x => x.Value).Returns(new CacheOptions());
+        _mockExpirationPolicy = new Mock<ICacheExpirationPolicy>();
+        _mockExpirationPolicy.Setup(x => x.GetExpiration(CacheRefreshTier.Daily)).Returns(_dailyExpiration);
         _mockLogger = new Mock<ILogger<TeamPredictionRecordModule>>();
         _mockPredictionsModule = new Mock<IPredictionsModule>();
 
         _module = new TeamPredictionRecordModule(
             _mockCache.Object,
-            _mockCacheOptions.Object,
+            _mockExpirationPolicy.Object,
             _mockLogger.Object,
             _mockPredictionsModule.Object);
     }
@@ -39,13 +38,13 @@ public class TeamPredictionRecordModuleTests
         Assert.Throws<ArgumentNullException>(
             () => new TeamPredictionRecordModule(
                 null!,
-                _mockCacheOptions.Object,
+                _mockExpirationPolicy.Object,
                 _mockLogger.Object,
                 _mockPredictionsModule.Object));
     }
 
     [Fact]
-    public void Constructor_NullCacheOptions_ThrowsArgumentNullException()
+    public void Constructor_NullExpirationPolicy_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(
             () => new TeamPredictionRecordModule(
@@ -61,7 +60,7 @@ public class TeamPredictionRecordModuleTests
         Assert.Throws<ArgumentNullException>(
             () => new TeamPredictionRecordModule(
                 _mockCache.Object,
-                _mockCacheOptions.Object,
+                _mockExpirationPolicy.Object,
                 null!,
                 _mockPredictionsModule.Object));
     }
@@ -72,7 +71,7 @@ public class TeamPredictionRecordModuleTests
         Assert.Throws<ArgumentNullException>(
             () => new TeamPredictionRecordModule(
                 _mockCache.Object,
-                _mockCacheOptions.Object,
+                _mockExpirationPolicy.Object,
                 _mockLogger.Object,
                 null!));
     }
@@ -103,7 +102,7 @@ public class TeamPredictionRecordModuleTests
         await _module.GetTeamRecordsAsync(2024);
 
         _mockCache.Verify(
-            x => x.SetAsync("team-prediction-records_2024", It.IsAny<List<TeamPredictionRecord>>(), It.IsAny<DateTime>()),
+            x => x.SetAsync("team-prediction-records_2024", It.IsAny<List<TeamPredictionRecord>>(), _dailyExpiration),
             Times.Once);
     }
 

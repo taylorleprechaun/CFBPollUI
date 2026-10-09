@@ -2,9 +2,7 @@ using CFBPoll.Core.Caching;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
 using CFBPoll.Core.Modules;
-using CFBPoll.Core.Options;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 
@@ -12,8 +10,9 @@ namespace CFBPoll.Core.Tests.Modules;
 
 public class TrackRecordModuleTests
 {
+    private readonly DateTime _dailyExpiration = new(2026, 10, 10, 7, 30, 0, DateTimeKind.Utc);
     private readonly Mock<IPersistentCache> _mockCache;
-    private readonly Mock<IOptions<CacheOptions>> _mockCacheOptions;
+    private readonly Mock<ICacheExpirationPolicy> _mockExpirationPolicy;
     private readonly Mock<ILogger<TrackRecordModule>> _mockLogger;
     private readonly Mock<IPredictionsModule> _mockPredictionsModule;
     private readonly TrackRecordModule _module;
@@ -21,27 +20,16 @@ public class TrackRecordModuleTests
     public TrackRecordModuleTests()
     {
         _mockCache = new Mock<IPersistentCache>();
-        _mockCacheOptions = new Mock<IOptions<CacheOptions>>();
-        _mockCacheOptions.Setup(x => x.Value).Returns(new CacheOptions());
+        _mockExpirationPolicy = new Mock<ICacheExpirationPolicy>();
+        _mockExpirationPolicy.Setup(x => x.GetExpiration(CacheRefreshTier.Daily)).Returns(_dailyExpiration);
         _mockLogger = new Mock<ILogger<TrackRecordModule>>();
         _mockPredictionsModule = new Mock<IPredictionsModule>();
 
         _module = new TrackRecordModule(
             _mockCache.Object,
-            _mockCacheOptions.Object,
+            _mockExpirationPolicy.Object,
             _mockLogger.Object,
             _mockPredictionsModule.Object);
-    }
-
-    [Fact]
-    public void Constructor_NullCacheOptions_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(
-            () => new TrackRecordModule(
-                _mockCache.Object,
-                null!,
-                _mockLogger.Object,
-                _mockPredictionsModule.Object));
     }
 
     [Fact]
@@ -50,7 +38,18 @@ public class TrackRecordModuleTests
         Assert.Throws<ArgumentNullException>(
             () => new TrackRecordModule(
                 null!,
-                _mockCacheOptions.Object,
+                _mockExpirationPolicy.Object,
+                _mockLogger.Object,
+                _mockPredictionsModule.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullExpirationPolicy_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new TrackRecordModule(
+                _mockCache.Object,
+                null!,
                 _mockLogger.Object,
                 _mockPredictionsModule.Object));
     }
@@ -61,7 +60,7 @@ public class TrackRecordModuleTests
         Assert.Throws<ArgumentNullException>(
             () => new TrackRecordModule(
                 _mockCache.Object,
-                _mockCacheOptions.Object,
+                _mockExpirationPolicy.Object,
                 null!,
                 _mockPredictionsModule.Object));
     }
@@ -72,7 +71,7 @@ public class TrackRecordModuleTests
         Assert.Throws<ArgumentNullException>(
             () => new TrackRecordModule(
                 _mockCache.Object,
-                _mockCacheOptions.Object,
+                _mockExpirationPolicy.Object,
                 _mockLogger.Object,
                 null!));
     }
@@ -106,7 +105,7 @@ public class TrackRecordModuleTests
         await _module.GetTrackRecordAsync();
 
         _mockCache.Verify(
-            x => x.SetAsync("track-record_all", It.IsAny<TrackRecordResult>(), It.IsAny<DateTime>()),
+            x => x.SetAsync("track-record_all", It.IsAny<TrackRecordResult>(), _dailyExpiration),
             Times.Once);
     }
 

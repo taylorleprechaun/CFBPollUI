@@ -38,8 +38,9 @@ import { useWeeks } from '../../hooks/use-weeks';
 const mockWeeksData = {
   season: 2024,
   weeks: [
-    { weekNumber: 1, label: 'Week 1' },
-    { weekNumber: 12, label: 'Week 12' },
+    { weekNumber: 1, label: 'Week 1', rankingsPublished: true },
+    { weekNumber: 12, label: 'Week 12', rankingsPublished: true },
+    { weekNumber: 15, label: 'Week 15', rankingsPublished: false },
   ],
 };
 const mockRankingsData = {
@@ -790,6 +791,35 @@ describe('TeamDetailsPage', () => {
 
       const teamSelect = screen.getByLabelText('Team:') as HTMLSelectElement;
       expect(teamSelect.value).toBe('USC');
+    });
+  });
+
+  describe('week selection', () => {
+    it('requests the latest published week rather than the highest week', () => {
+      setupMocks({ teamDetailData: mockTeamDetail });
+      renderPage('/team-details?team=USC&season=2024');
+
+      expect(useRankings).toHaveBeenLastCalledWith(2024, 12, 2024);
+      expect(useTeamDetail).toHaveBeenLastCalledWith(2024, 12, 'USC', 2024);
+    });
+
+    it('shows a message and requests no week when the season has no published rankings', () => {
+      setupMocks({
+        rankingsData: undefined,
+        weeksData: {
+          season: 2024,
+          weeks: [
+            { weekNumber: 1, label: 'Week 1', rankingsPublished: false },
+            { weekNumber: 12, label: 'Week 12', rankingsPublished: false },
+            { weekNumber: 15, label: 'Week 15', rankingsPublished: false },
+          ],
+        },
+      });
+      renderPage('/team-details?team=USC&season=2024');
+
+      expect(screen.getByText('No published rankings for this season yet.')).toBeInTheDocument();
+      expect(screen.queryByText('No details available for the selected team.')).not.toBeInTheDocument();
+      expect(useRankings).toHaveBeenLastCalledWith(2024, null, 2024);
     });
   });
 });

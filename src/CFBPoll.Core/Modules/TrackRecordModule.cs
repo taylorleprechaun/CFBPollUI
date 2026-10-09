@@ -1,9 +1,7 @@
 using CFBPoll.Core.Caching;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
-using CFBPoll.Core.Options;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace CFBPoll.Core.Modules;
 
@@ -14,18 +12,18 @@ public class TrackRecordModule : ITrackRecordModule
     private const string CACHE_KEY = CACHE_KEY_PREFIX + "all";
 
     private readonly IPersistentCache _cache;
-    private readonly CacheOptions _cacheOptions;
+    private readonly ICacheExpirationPolicy _expirationPolicy;
     private readonly ILogger<TrackRecordModule> _logger;
     private readonly IPredictionsModule _predictionsModule;
 
     public TrackRecordModule(
         IPersistentCache cache,
-        IOptions<CacheOptions> cacheOptions,
+        ICacheExpirationPolicy expirationPolicy,
         ILogger<TrackRecordModule> logger,
         IPredictionsModule predictionsModule)
     {
         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
-        _cacheOptions = cacheOptions?.Value ?? throw new ArgumentNullException(nameof(cacheOptions));
+        _expirationPolicy = expirationPolicy ?? throw new ArgumentNullException(nameof(expirationPolicy));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _predictionsModule = predictionsModule ?? throw new ArgumentNullException(nameof(predictionsModule));
     }
@@ -118,7 +116,7 @@ public class TrackRecordModule : ITrackRecordModule
             Weeks = weeks
         };
 
-        var expiresAt = DateTime.UtcNow.AddHours(_cacheOptions.TrackRecordExpirationHours);
+        var expiresAt = _expirationPolicy.GetExpiration(CacheRefreshTier.Daily);
         await _cache.SetAsync(CACHE_KEY, result, expiresAt).ConfigureAwait(false);
 
         return result;
