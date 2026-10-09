@@ -6,6 +6,7 @@ import { SeasonSelector } from '../components/rankings/season-selector';
 import { MarginStatCard } from '../components/track-record/margin-stat-card';
 import { MarginStatsToggle } from '../components/track-record/margin-stats-toggle';
 import { OverallRecordCard } from '../components/track-record/overall-record-card';
+import { RecordTrend } from '../components/track-record/record-trend';
 import { TrackRecordTable } from '../components/track-record/track-record-table';
 import { EmptyState } from '../components/ui/empty-state';
 import { useDocumentTitle } from '../hooks/use-document-title';
@@ -15,7 +16,7 @@ import { SITE_OWNER_NAME } from '../lib/config';
 import { marginBiasClasses, marginRMSEClasses } from '../lib/margin-quality';
 import { overUnderClasses, spreadClasses, winnerClasses } from '../lib/pick-quality';
 import { TRACK_RECORD_STAT_INFO } from '../lib/track-record-stat-info';
-import { combineMarginBias, combineMarginRMSE, formatMarginBias, formatMarginRMSE, sumTotals } from '../lib/track-record-utils';
+import { ALL_TIME_TREND_WEEKS, combineMarginBias, combineMarginRMSE, computeRecordTrend, formatMarginBias, formatMarginRMSE, sumTotals } from '../lib/track-record-utils';
 
 export function TrackRecordPage() {
   useDocumentTitle(`${SITE_OWNER_NAME} - Track Record`);
@@ -28,6 +29,15 @@ export function TrackRecordPage() {
   const weeksDescending = useMemo(
     () => data ? [...data.weeks].sort((a, b) => b.season - a.season || b.week - a.week) : [],
     [data]
+  );
+
+  const allTimeTrends = useMemo(
+    () => ({
+      overUnder: computeRecordTrend(weeksDescending.map((w) => w.overUnder), ALL_TIME_TREND_WEEKS),
+      spread: computeRecordTrend(weeksDescending.map((w) => w.spread), ALL_TIME_TREND_WEEKS),
+      winner: computeRecordTrend(weeksDescending.map((w) => w.winner), ALL_TIME_TREND_WEEKS),
+    }),
+    [weeksDescending]
   );
 
   const seasons = useMemo(
@@ -101,9 +111,21 @@ export function TrackRecordPage() {
           <div>
             <h2 className="text-lg font-semibold text-text-primary mb-3">All-Time</h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <OverallRecordCard label="Winner" totals={data.overallWinner} statInfo={TRACK_RECORD_STAT_INFO.winner} />
-              <OverallRecordCard label="Spread" totals={data.overallSpread} statInfo={TRACK_RECORD_STAT_INFO.spread} />
-              <OverallRecordCard label="Over/Under" totals={data.overallOverUnder} statInfo={TRACK_RECORD_STAT_INFO.overUnder} />
+              <OverallRecordCard label="Winner" totals={data.overallWinner} statInfo={TRACK_RECORD_STAT_INFO.winner}>
+                {allTimeTrends.winner && (
+                  <RecordTrend trend={allTimeTrends.winner} windowWeeks={ALL_TIME_TREND_WEEKS} />
+                )}
+              </OverallRecordCard>
+              <OverallRecordCard label="Spread" totals={data.overallSpread} statInfo={TRACK_RECORD_STAT_INFO.spread}>
+                {allTimeTrends.spread && (
+                  <RecordTrend trend={allTimeTrends.spread} windowWeeks={ALL_TIME_TREND_WEEKS} />
+                )}
+              </OverallRecordCard>
+              <OverallRecordCard label="Over/Under" totals={data.overallOverUnder} statInfo={TRACK_RECORD_STAT_INFO.overUnder}>
+                {allTimeTrends.overUnder && (
+                  <RecordTrend trend={allTimeTrends.overUnder} windowWeeks={ALL_TIME_TREND_WEEKS} />
+                )}
+              </OverallRecordCard>
             </div>
             {showMarginStats && (
               <div className="grid grid-cols-2 gap-4 mt-4">

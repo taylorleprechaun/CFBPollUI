@@ -6,13 +6,14 @@ import { InfoTooltip } from '../ui/info-tooltip';
 import { ValueBadge } from '../ui/value-badge';
 
 interface OverallRecordCardProps {
+  children?: React.ReactNode;
   classes?: string | null;
   label: string;
   statInfo?: TrackRecordStatInfo;
   totals: TrackRecordTotals;
 }
 
-export function OverallRecordCard({ classes = null, label, statInfo, totals }: OverallRecordCardProps) {
+export function OverallRecordCard({ children, classes = null, label, statInfo, totals }: OverallRecordCardProps) {
   const pct = winPercentage(totals);
 
   return (
@@ -27,6 +28,7 @@ export function OverallRecordCard({ classes = null, label, statInfo, totals }: O
           <ValueBadge classes={classes} value={`${pct.toFixed(1)}%`} />
         </div>
       )}
+      {children}
     </div>
   );
 }

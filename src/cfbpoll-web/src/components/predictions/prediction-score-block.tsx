@@ -13,6 +13,7 @@ interface PredictionScoreBlockProps {
 
 export function PredictionScoreBlock({ prediction: p, rankByTeam, season = null, showGrades = false, showPredictedScore = true }: PredictionScoreBlockProps) {
   const isFinal = showGrades && p.actualAwayScore !== null && p.actualHomeScore !== null;
+  const isExactScore = isFinal && p.awayTeamScore === p.actualAwayScore && p.homeTeamScore === p.actualHomeScore;
   const awayScore = showPredictedScore ? p.awayTeamScore : isFinal ? p.actualAwayScore : null;
   const homeScore = showPredictedScore ? p.homeTeamScore : isFinal ? p.actualHomeScore : null;
 
@@ -30,9 +31,17 @@ export function PredictionScoreBlock({ prediction: p, rankByTeam, season = null,
         {homeScore !== null && <span className="font-semibold ml-auto">{homeScore}</span>}
       </div>
       {showPredictedScore && isFinal && (
-        <span className="text-sm font-semibold text-text-primary">
-          Final: {p.actualAwayScore}-{p.actualHomeScore}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold text-text-primary">
+            Final: {p.actualAwayScore}-{p.actualHomeScore}
+          </span>
+          {isExactScore && (
+            <span className="text-amber-400 dark:text-amber-300" title="Exact score">
+              <span aria-hidden="true">★</span>
+              <span className="sr-only">Exact score</span>
+            </span>
+          )}
+        </div>
       )}
     </div>
   );

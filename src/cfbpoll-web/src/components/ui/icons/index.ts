@@ -6,4 +6,5 @@ export { LockIcon, UnlockIcon } from './lock-icon';
 export { CloseIcon, MenuIcon } from './menu-icon';
 export { SortAscIcon, SortDescIcon, SortNeutralIcon } from './sort-icon';
 export { MoonIcon, SunIcon } from './theme-icon';
+export { TrendDownIcon, TrendFlatIcon, TrendUpIcon } from './trend-icon';
 export { TwitterIcon } from './twitter-icon';
