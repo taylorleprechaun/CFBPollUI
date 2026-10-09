@@ -9,8 +9,10 @@ public class CacheOptions
     public string ConnectionString { get; set; } = "Data Source=data/cache.db";
     public int EmptyResultExpirationMinutes { get; set; } = 60;
     public int RefreshGraceMinutes { get; set; } = 30;
+    public int RefreshStartupDelayMinutes { get; set; } = 1;
     public string RefreshTimeOfDay { get; set; } = "03:00";
     public string RefreshTimeZone { get; set; } = "America/New_York";
+    public bool ScheduledRefreshEnabled { get; set; } = true;
     public int SeasonBoundaryGraceDay { get; set; } = 1;
     public int SeasonBoundaryGraceMonth { get; set; } = 3;
     public DayOfWeek WeeklyRefreshDay { get; set; } = DayOfWeek.Monday;

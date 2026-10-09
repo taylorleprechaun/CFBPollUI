@@ -38,7 +38,7 @@ public static class CachingServiceExtensions
             return new CFBDataService(httpClient, apiKey, minimumYear, preferredBettingProvider, sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<CFBDataService>>());
         });
 
-        services.AddSingleton<ICFBDataService>(sp =>
+        services.AddSingleton<CachingCFBDataService>(sp =>
         {
             var innerService = sp.GetRequiredService<CFBDataService>();
             var cache = sp.GetRequiredService<IPersistentCache>();
@@ -47,6 +47,14 @@ public static class CachingServiceExtensions
 
             return new CachingCFBDataService(innerService, cache, expirationPolicy, logger);
         });
+
+        // One caching instance serves both reads and background refreshes
+        services.AddSingleton<ICFBDataService>(sp => sp.GetRequiredService<CachingCFBDataService>());
+        services.AddSingleton<ICFBDataCacheRefresher>(sp => sp.GetRequiredService<CachingCFBDataService>());
+
+        // Depends on the track record, team prediction record, season trends, and poll leaders modules,
+        // which are registered in Program.cs
+        services.AddHostedService<ScheduledCacheRefreshHostedService>();
 
         return services;
     }

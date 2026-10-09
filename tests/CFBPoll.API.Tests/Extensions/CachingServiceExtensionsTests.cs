@@ -129,10 +129,7 @@ public class CachingServiceExtensionsTests
 
         services.AddCFBDataServiceWithCaching(configuration);
 
-        var provider = services.BuildServiceProvider();
-        var hostedServices = provider.GetServices<IHostedService>();
-
-        Assert.Contains(hostedServices, s => s is CacheCleanupHostedService);
+        Assert.Contains(services, d => d.ServiceType == typeof(IHostedService) && d.ImplementationType == typeof(CacheCleanupHostedService));
     }
 
     [Fact]
@@ -148,6 +145,20 @@ public class CachingServiceExtensionsTests
 
         Assert.IsType<CacheExpirationPolicy>(provider.GetService<ICacheExpirationPolicy>());
         Assert.Same(TimeProvider.System, provider.GetService<TimeProvider>());
+    }
+
+    [Fact]
+    public void AddCFBDataServiceWithCaching_RegistersICFBDataCacheRefresherAsSameCachingInstance()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration(apiKey: "test-api-key");
+
+        services.AddCFBDataServiceWithCaching(configuration);
+
+        var provider = services.BuildServiceProvider();
+
+        Assert.Same(provider.GetService<ICFBDataService>(), provider.GetService<ICFBDataCacheRefresher>());
     }
 
     [Fact]
@@ -196,6 +207,18 @@ public class CachingServiceExtensionsTests
 
         Assert.NotNull(cache);
         Assert.IsType<CacheModule>(cache);
+    }
+
+    [Fact]
+    public void AddCFBDataServiceWithCaching_RegistersScheduledCacheRefreshHostedService()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration(apiKey: "test-api-key");
+
+        services.AddCFBDataServiceWithCaching(configuration);
+
+        Assert.Contains(services, d => d.ServiceType == typeof(IHostedService) && d.ImplementationType == typeof(ScheduledCacheRefreshHostedService));
     }
 
     [Fact]
