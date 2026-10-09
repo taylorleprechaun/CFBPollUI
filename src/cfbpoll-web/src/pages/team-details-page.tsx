@@ -55,7 +55,14 @@ export function TeamDetailsPage() {
     refetch: refetchWeeks,
   } = useWeeks(selectedSeason);
 
-  const { selectedWeek, setSelectedWeek } = useWeekSelection(weeksData?.weeks);
+  // No week picker on this page, so always show the latest published week rather than calculating an unpublished one live
+  const publishedWeeks = useMemo(
+    () => weeksData?.weeks?.filter((w) => w.rankingsPublished) ?? [],
+    [weeksData?.weeks]
+  );
+  const hasNoPublishedWeeks = weeksData !== undefined && publishedWeeks.length === 0;
+
+  const { selectedWeek, setSelectedWeek } = useWeekSelection(publishedWeeks);
 
   const maxSeason = seasons.length > 0 ? seasons[0] : null;
 
@@ -303,11 +310,15 @@ export function TeamDetailsPage() {
         </div>
       )}
 
-      {!teamDetailLoading && !teamDetail && selectedTeam && !error && (
+      {hasNoPublishedWeeks && !error && (
+        <EmptyState message="No published rankings for this season yet." />
+      )}
+
+      {!hasNoPublishedWeeks && !teamDetailLoading && !teamDetail && selectedTeam && !error && (
         <EmptyState message="No details available for the selected team." />
       )}
 
-      {!selectedTeam && !teamDetailLoading && (
+      {!hasNoPublishedWeeks && !selectedTeam && !teamDetailLoading && (
         <EmptyState message="Select a season and team to view details." />
       )}
     </div>
