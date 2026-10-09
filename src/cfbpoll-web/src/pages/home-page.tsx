@@ -5,7 +5,7 @@ import { RankingsPreview } from '../components/home/rankings-preview';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { useInView } from '../hooks/use-in-view';
 import { useRankings } from '../hooks/use-rankings';
-import { useSeason } from '../hooks/use-season';
+import { useSeasons } from '../hooks/use-seasons';
 import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
 import { SITE_OWNER_NAME } from '../lib/config';
@@ -49,7 +49,8 @@ export function HomePage() {
     triggerOnce: true,
   });
 
-  const { selectedSeason: currentSeason } = useSeason();
+  const { data: seasonsData } = useSeasons();
+  const currentSeason = seasonsData?.latestPublishedSeason ?? seasonsData?.seasons[0] ?? null;
 
   const { data: weeksData, isLoading: weeksLoading } = useWeeks(currentSeason);
   const publishedWeeks = useMemo(

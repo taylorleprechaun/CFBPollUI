@@ -11,8 +11,8 @@ vi.mock('../../hooks/use-rankings', () => ({
   useRankings: vi.fn(),
 }));
 
-vi.mock('../../hooks/use-season', () => ({
-  useSeason: vi.fn(),
+vi.mock('../../hooks/use-seasons', () => ({
+  useSeasons: vi.fn(),
 }));
 
 vi.mock('../../hooks/use-week-selection', () => ({
@@ -24,7 +24,7 @@ vi.mock('../../hooks/use-weeks', () => ({
 }));
 
 import { useRankings } from '../../hooks/use-rankings';
-import { useSeason } from '../../hooks/use-season';
+import { useSeasons } from '../../hooks/use-seasons';
 import { useWeekSelection } from '../../hooks/use-week-selection';
 import { useWeeks } from '../../hooks/use-weeks';
 import { HomePage } from '../../pages/home-page';
@@ -62,15 +62,9 @@ beforeEach(() => {
   vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
   vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }));
 
-  vi.mocked(useSeason).mockReturnValue({
-    nextSeason: null,
-    seasons: [2026],
-    seasonsLoading: false,
-    seasonsError: null,
-    refetchSeasons: vi.fn(),
-    selectedSeason: 2026,
-    setSelectedSeason: vi.fn(),
-  });
+  vi.mocked(useSeasons).mockReturnValue({
+    data: { latestPublishedSeason: 2026, nextSeason: null, seasons: [2026] },
+  } as unknown as ReturnType<typeof useSeasons>);
 
   vi.mocked(useWeeks).mockReturnValue({
     data: { season: 2026, weeks: [{ weekNumber: 3, label: 'Championship', isComplete: true, rankingsPublished: true, predictionsPublished: true }] },
@@ -196,16 +190,10 @@ describe('HomePage', () => {
     expect(screen.queryByText('Oklahoma')).not.toBeInTheDocument();
   });
 
-  it('renders the rankings preview using the selected season instead of the newest available season', () => {
-    vi.mocked(useSeason).mockReturnValue({
-      nextSeason: null,
-      seasons: [2026, 2025],
-      seasonsLoading: false,
-      seasonsError: null,
-      refetchSeasons: vi.fn(),
-      selectedSeason: 2025,
-      setSelectedSeason: vi.fn(),
-    });
+  it('renders the rankings preview using the latest published season instead of the newest available season', () => {
+    vi.mocked(useSeasons).mockReturnValue({
+      data: { latestPublishedSeason: 2025, nextSeason: null, seasons: [2026, 2025] },
+    } as unknown as ReturnType<typeof useSeasons>);
     vi.mocked(useWeeks).mockReturnValue({
       data: { season: 2025, weeks: [{ weekNumber: 3, label: 'Championship', isComplete: true, rankingsPublished: true, predictionsPublished: true }] },
       isLoading: false,
@@ -248,15 +236,9 @@ describe('HomePage', () => {
   });
 
   it('renders without a season/week label when there are no seasons yet', () => {
-    vi.mocked(useSeason).mockReturnValue({
-      nextSeason: null,
-      seasons: [],
-      seasonsLoading: false,
-      seasonsError: null,
-      refetchSeasons: vi.fn(),
-      selectedSeason: null,
-      setSelectedSeason: vi.fn(),
-    });
+    vi.mocked(useSeasons).mockReturnValue({
+      data: { latestPublishedSeason: null, nextSeason: null, seasons: [] },
+    } as unknown as ReturnType<typeof useSeasons>);
 
     renderHomePage();
 
