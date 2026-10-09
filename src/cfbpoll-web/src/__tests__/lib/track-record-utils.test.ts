@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   combineMarginBias,
   combineMarginRMSE,
+  computeRecordTrend,
   formatMarginBias,
   formatMarginRMSE,
   formatTotals,
@@ -47,6 +48,84 @@ describe('combineMarginRMSE', () => {
 
   it('returns null for an empty array', () => {
     expect(combineMarginRMSE([])).toBeNull();
+  });
+});
+
+describe('computeRecordTrend', () => {
+  it('excludes pushes from both the window and baseline percentages', () => {
+    const trend = computeRecordTrend([
+      { correct: 3, incorrect: 1, push: 4 },
+      { correct: 1, incorrect: 3, push: 0 },
+    ], 1);
+
+    expect(trend?.windowPct).toBe(75);
+    expect(trend?.baselinePct).toBe(50);
+  });
+
+  it('pools games across the window instead of averaging weekly percentages', () => {
+    const trend = computeRecordTrend([
+      { correct: 1, incorrect: 0, push: 0 },
+      { correct: 40, incorrect: 60, push: 0 },
+      { correct: 50, incorrect: 50, push: 0 },
+    ], 2);
+
+    expect(trend?.windowPct).toBeCloseTo(40.594, 3);
+    expect(trend?.direction).toBe('down');
+  });
+
+  it('returns a down direction when the window trails the baseline', () => {
+    const trend = computeRecordTrend([
+      { correct: 2, incorrect: 8, push: 0 },
+      { correct: 2, incorrect: 8, push: 0 },
+      { correct: 8, incorrect: 2, push: 0 },
+      { correct: 8, incorrect: 2, push: 0 },
+    ], 2);
+
+    expect(trend).toEqual({ baselinePct: 50, direction: 'down', windowPct: 20 });
+  });
+
+  it('returns a flat direction only when both percentages match at one decimal', () => {
+    // Window is 74.975%, baseline is exactly 75%; both display as 75.0%
+    const trend = computeRecordTrend([
+      { correct: 2999, incorrect: 1001, push: 0 },
+      { correct: 3001, incorrect: 999, push: 0 },
+    ], 1);
+
+    expect(trend?.direction).toBe('flat');
+  });
+
+  it('returns an up direction for a gap under one point', () => {
+    const trend = computeRecordTrend([
+      { correct: 51, incorrect: 49, push: 0 },
+      { correct: 50, incorrect: 50, push: 0 },
+    ], 1);
+
+    expect(trend?.direction).toBe('up');
+  });
+
+  it('returns an up direction when the window beats the baseline', () => {
+    const trend = computeRecordTrend([
+      { correct: 8, incorrect: 2, push: 0 },
+      { correct: 8, incorrect: 2, push: 0 },
+      { correct: 2, incorrect: 8, push: 0 },
+      { correct: 2, incorrect: 8, push: 0 },
+    ], 2);
+
+    expect(trend).toEqual({ baselinePct: 50, direction: 'up', windowPct: 80 });
+  });
+
+  it('returns null when the window has no decided games', () => {
+    expect(computeRecordTrend([
+      { correct: 0, incorrect: 0, push: 2 },
+      { correct: 5, incorrect: 5, push: 0 },
+    ], 1)).toBeNull();
+  });
+
+  it('returns null when there are no weeks beyond the window', () => {
+    expect(computeRecordTrend([
+      { correct: 5, incorrect: 5, push: 0 },
+      { correct: 6, incorrect: 4, push: 0 },
+    ], 2)).toBeNull();
   });
 });
 

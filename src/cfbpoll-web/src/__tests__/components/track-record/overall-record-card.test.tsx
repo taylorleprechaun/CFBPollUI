@@ -36,6 +36,16 @@ describe('OverallRecordCard', () => {
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();
   });
 
+  it('renders children below the record', () => {
+    render(
+      <OverallRecordCard label="Winner" totals={{ correct: 10, incorrect: 5, push: 0 }}>
+        <span>Trend line</span>
+      </OverallRecordCard>
+    );
+
+    expect(screen.getByText('Trend line')).toBeInTheDocument();
+  });
+
   it('renders no info button when statInfo is omitted', () => {
     render(<OverallRecordCard label="Winner" totals={{ correct: 10, incorrect: 5, push: 0 }} />);
 

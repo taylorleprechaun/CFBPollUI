@@ -68,6 +68,21 @@ const mockData = {
   ],
 };
 
+function buildTrendData(weeks2023: number, weeks2024: number) {
+  const weeks = [
+    ...Array.from({ length: weeks2023 }, (_, i) => buildTrendWeek(2023, i + 1)),
+    ...Array.from({ length: weeks2024 }, (_, i) => buildTrendWeek(2024, i + 1)),
+  ];
+  const overall = { correct: weeks2023 * 6 + weeks2024 * 9, incorrect: weeks2023 * 4 + weeks2024, push: 0 };
+  return { overallMarginBias: 0, overallMarginRMSE: 5, overallOverUnder: overall, overallSpread: overall, overallWinner: overall, weeks };
+}
+
+// Totals-only weeks for exercising the trend windows: 2023 weeks go 6-4 and 2024 weeks go 9-1 in every category.
+function buildTrendWeek(season: number, week: number) {
+  const totals = season === 2024 ? { correct: 9, incorrect: 1, push: 0 } : { correct: 6, incorrect: 4, push: 0 };
+  return { marginBias: 0, marginGameCount: 10, marginRMSE: 5, overUnder: totals, season, spread: totals, week, winner: totals };
+}
+
 beforeEach(() => {
   localStorage.clear();
 });
@@ -141,6 +156,20 @@ describe('TrackRecordPage', () => {
     expect(seasonSelect.value).toBe('2024');
   });
 
+  it('does not show trend lines on the By Season cards', () => {
+    vi.mocked(useTrackRecord).mockReturnValue({
+      data: buildTrendData(11, 4),
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useTrackRecord>);
+
+    renderPage();
+
+    // Only the three All-Time cards carry a trend line, even though 2024 has history beyond any short window
+    expect(screen.getAllByText(/L\d+: /)).toHaveLength(3);
+  });
+
   it('hides margin stats by default, showing a toggle to reveal them', () => {
     vi.mocked(useTrackRecord).mockReturnValue({
       data: mockData,
@@ -154,6 +183,19 @@ describe('TrackRecordPage', () => {
     expect(screen.queryByText('Margin RMSE')).not.toBeInTheDocument();
     expect(screen.queryByText('Margin Bias')).not.toBeInTheDocument();
     expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('hides trend lines when there is not enough history beyond the window', () => {
+    vi.mocked(useTrackRecord).mockReturnValue({
+      data: mockData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useTrackRecord>);
+
+    renderPage();
+
+    expect(screen.queryByText(/L\d+: /)).not.toBeInTheDocument();
   });
 
   it('ignores a ?season= URL param for a season with no data', () => {
@@ -346,6 +388,21 @@ describe('TrackRecordPage', () => {
 
     const seasonSelect = screen.getByLabelText('Season:') as HTMLSelectElement;
     expect(seasonSelect.value).toBe('2023');
+  });
+
+  it('shows the all-time trend line once there are more weeks than the window', () => {
+    vi.mocked(useTrackRecord).mockReturnValue({
+      data: buildTrendData(11, 4),
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useTrackRecord>);
+
+    renderPage();
+
+    // All-time: newest 10 weeks are 4 of 2024 (36-4) + 6 of 2023 (36-24) = 72.0%, up from 102-48 = 68.0%.
+    expect(screen.getAllByText(/L10: 72\.0%/)).toHaveLength(3);
+    expect(screen.getAllByText('Up from 68.0% all-time')).toHaveLength(3);
   });
 
   it('shows the season-overall summary for the currently selected season, summed from its weeks', () => {
