@@ -468,6 +468,28 @@ public class CachingCFBDataServiceTests
     }
 
     [Fact]
+    public async Task GetFullSeasonScheduleAsync_ReturnsCachedData_WhileSeasonRefreshIsInFlight()
+    {
+        var cachedSchedule = new List<ScheduleGame> { new ScheduleGame { GameID = 1, HomeTeam = "Nebraska", AwayTeam = "Iowa" } };
+        var pendingFetch = new TaskCompletionSource<IEnumerable<ScheduleGame>>();
+        SetupCachedKeys("fullSchedule_2026");
+        _mockCache.Setup(x => x.GetAsync<List<ScheduleGame>>("fullSchedule_2026")).ReturnsAsync(cachedSchedule);
+        _mockInnerService.Setup(x => x.GetFullSeasonScheduleAsync(2026)).Returns(pendingFetch.Task);
+
+        var refreshTask = _service.RefreshSeasonScopedAsync(2026, 5);
+        var result = await _service.GetFullSeasonScheduleAsync(2026);
+
+        Assert.False(refreshTask.IsCompleted);
+        Assert.Same(cachedSchedule, result);
+        _mockInnerService.Verify(x => x.GetFullSeasonScheduleAsync(2026), Times.Once);
+
+        pendingFetch.SetResult([new ScheduleGame { GameID = 2 }]);
+        await refreshTask;
+
+        _mockCache.Verify(x => x.SetAsync("fullSchedule_2026", It.IsAny<List<ScheduleGame>>(), _dailyExpiration), Times.Once);
+    }
+
+    [Fact]
     public async Task GetFullSeasonScheduleAsync_UsesSeasonDailyExpiration_WhenCacheMiss()
     {
         _mockCache.Setup(x => x.GetAsync<List<ScheduleGame>>("fullSchedule_2024"))
@@ -913,6 +935,22 @@ public class CachingCFBDataServiceTests
     }
 
     [Fact]
+    public async Task RefreshGameResultsAsync_RefreshesOnlyCachedGameResultKeys()
+    {
+        SetupCachedKeys("fullSchedule_2026", "games_2026_regular", "teams_2026");
+        _mockInnerService.Setup(x => x.GetFullSeasonScheduleAsync(2026)).ReturnsAsync([new ScheduleGame()]);
+        _mockInnerService.Setup(x => x.GetGamesAsync(2026, "regular")).ReturnsAsync([new Game()]);
+
+        var result = await _service.RefreshGameResultsAsync(2026);
+
+        Assert.Equal(2, result.RefreshedCount);
+        Assert.Equal(0, result.FailedCount);
+        _mockInnerService.Verify(x => x.GetGamesAsync(2026, "postseason"), Times.Never);
+        _mockInnerService.Verify(x => x.GetFBSTeamsAsync(It.IsAny<int>()), Times.Never);
+        _mockCache.Verify(x => x.SetAsync("games_2026_regular", It.IsAny<List<Game>>(), _dailyExpiration), Times.Once);
+    }
+
+    [Fact]
     public async Task RefreshMaxSeasonYearAsync_ReplacesCachedYear_WithDailyExpiration()
     {
         _mockInnerService.Setup(x => x.GetMaxSeasonYearAsync()).ReturnsAsync(2026);
@@ -924,6 +962,91 @@ public class CachingCFBDataServiceTests
             "maxSeasonYear",
             It.Is<CachingCFBDataService.MaxSeasonYearWrapper>(w => w.Year == 2026),
             _dailyExpiration), Times.Once);
+    }
+
+    [Fact]
+    public async Task RefreshSeasonScopedAsync_CountsFailed_AndKeepsExistingCopy_WhenFetchThrows()
+    {
+        SetupCachedKeys("fullSchedule_2026", "teams_2026");
+        _mockInnerService.Setup(x => x.GetFullSeasonScheduleAsync(2026)).ThrowsAsync(new HttpRequestException("502"));
+        _mockInnerService.Setup(x => x.GetFBSTeamsAsync(2026)).ReturnsAsync([new FBSTeam { Name = "Oklahoma" }]);
+
+        var result = await _service.RefreshSeasonScopedAsync(2026, 5);
+
+        Assert.Equal(1, result.FailedCount);
+        Assert.Equal(1, result.RefreshedCount);
+        _mockCache.Verify(x => x.SetAsync("fullSchedule_2026", It.IsAny<List<ScheduleGame>>(), It.IsAny<DateTime>()), Times.Never);
+        _mockCache.Verify(x => x.SetAsync("teams_2026", It.IsAny<List<FBSTeam>>(), _dailyExpiration), Times.Once);
+    }
+
+    [Fact]
+    public async Task RefreshSeasonScopedAsync_CountsFailed_WhenFetchIsEmptyAndCopyExists()
+    {
+        SetupCachedKeys("games_2026_regular");
+        _mockInnerService.Setup(x => x.GetGamesAsync(2026, "regular")).ReturnsAsync([]);
+        _mockCache.Setup(x => x.GetAsync<List<Game>>("games_2026_regular")).ReturnsAsync([new Game { GameID = 7 }]);
+
+        var result = await _service.RefreshSeasonScopedAsync(2026, 5);
+
+        Assert.Equal(1, result.FailedCount);
+        Assert.Equal(0, result.RefreshedCount);
+        _mockCache.Verify(x => x.SetAsync(It.IsAny<string>(), It.IsAny<List<Game>>(), It.IsAny<DateTime>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RefreshSeasonScopedAsync_RefreshesEverySeasonScopedKey_WhenAllAreCached()
+    {
+        var seasonScopedKeys = CacheKeys.GetSeasonScopedKeys(2026, 5).ToArray();
+        SetupCachedKeys(seasonScopedKeys);
+        _mockInnerService.Setup(x => x.GetAdvancedGameStatsAsync(2026, It.IsAny<string>())).ReturnsAsync([new AdvancedGameStats()]);
+        _mockInnerService.Setup(x => x.GetBettingLinesAsync(2026, It.IsAny<int>())).ReturnsAsync([new BettingLine()]);
+        _mockInnerService.Setup(x => x.GetFBSTeamsAsync(2026)).ReturnsAsync([new FBSTeam()]);
+        _mockInnerService.Setup(x => x.GetFullSeasonScheduleAsync(2026)).ReturnsAsync([new ScheduleGame()]);
+        _mockInnerService.Setup(x => x.GetGamesAsync(2026, It.IsAny<string>())).ReturnsAsync([new Game()]);
+        _mockInnerService.Setup(x => x.GetGameTeamStatsAsync(2026, It.IsAny<string>())).ReturnsAsync([new GameTeamStats()]);
+        _mockInnerService.Setup(x => x.GetSeasonTeamStatsAsync(2026, It.IsAny<int?>()))
+            .ReturnsAsync(new Dictionary<string, IEnumerable<TeamStat>> { ["Notre Dame"] = [new TeamStat()] });
+
+        var result = await _service.RefreshSeasonScopedAsync(2026, 5);
+
+        Assert.Equal(seasonScopedKeys.Length, result.RefreshedCount);
+        Assert.Equal(0, result.FailedCount);
+        _mockInnerService.Verify(x => x.GetBettingLinesAsync(2026, 6), Times.Once);
+        _mockInnerService.Verify(x => x.GetSeasonTeamStatsAsync(2026, 5), Times.Once);
+    }
+
+    [Fact]
+    public async Task RefreshSeasonScopedAsync_RefreshesSeasonStats_WithSeasonDailyExpiration()
+    {
+        SetupCachedKeys("seasonStats_2026_week_5");
+        _mockInnerService.Setup(x => x.GetSeasonTeamStatsAsync(2026, 5))
+            .ReturnsAsync(new Dictionary<string, IEnumerable<TeamStat>> { ["USC"] = [new TeamStat { StatName = "firstDowns" }] });
+
+        var result = await _service.RefreshSeasonScopedAsync(2026, 5);
+
+        Assert.Equal(1, result.RefreshedCount);
+        _mockCache.Verify(x => x.SetAsync(
+            "seasonStats_2026_week_5",
+            It.Is<Dictionary<string, List<TeamStat>>>(d => d["USC"].Single().StatName == "firstDowns"),
+            _dailyExpiration), Times.Once);
+    }
+
+    [Fact]
+    public async Task RefreshSeasonScopedAsync_SkipsKeysThatAreNotCached()
+    {
+        SetupCachedKeys();
+
+        var result = await _service.RefreshSeasonScopedAsync(2026, 5);
+
+        Assert.Equal(0, result.FailedCount);
+        Assert.Equal(0, result.RefreshedCount);
+        _mockInnerService.VerifyNoOtherCalls();
+    }
+
+    private void SetupCachedKeys(params string[] keys)
+    {
+        _mockCache.Setup(x => x.GetAllEntriesMetadataAsync())
+            .ReturnsAsync(keys.Select(key => new CacheEntryMetadata { CacheKey = key }).ToList());
     }
 
     private void SetupCacheMiss()

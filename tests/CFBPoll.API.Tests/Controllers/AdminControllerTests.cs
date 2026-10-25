@@ -688,7 +688,7 @@ public class AdminControllerTests
     [Fact]
     public async Task RefreshCache_DelegatesToAdminModuleWithCorrectSeasonAndWeek()
     {
-        _mockAdminModule.Setup(x => x.RefreshSeasonCacheAsync(2024, 5)).ReturnsAsync(0);
+        _mockAdminModule.Setup(x => x.RefreshSeasonCacheAsync(2024, 5)).ReturnsAsync(new CacheRefreshResult());
 
         await _controller.RefreshCache(2024, 5);
 
@@ -696,29 +696,32 @@ public class AdminControllerTests
     }
 
     [Fact]
-    public async Task RefreshCache_ReturnsOkWithRemovedCount()
+    public async Task RefreshCache_NothingCached_StillReturnsOk()
     {
-        _mockAdminModule.Setup(x => x.RefreshSeasonCacheAsync(2024, 5)).ReturnsAsync(8);
+        _mockAdminModule.Setup(x => x.RefreshSeasonCacheAsync(2024, 5)).ReturnsAsync(new CacheRefreshResult());
 
         var result = await _controller.RefreshCache(2024, 5);
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var response = Assert.IsType<RefreshCacheResponseDTO>(okResult.Value);
-        Assert.Equal(8, response.RemovedCount);
-        Assert.Equal(2024, response.Season);
-        Assert.Equal(5, response.Week);
+        Assert.Equal(0, response.FailedCount);
+        Assert.Equal(0, response.RefreshedCount);
     }
 
     [Fact]
-    public async Task RefreshCache_ZeroRemoved_StillReturnsOk()
+    public async Task RefreshCache_ReturnsOkWithRefreshedAndFailedCounts()
     {
-        _mockAdminModule.Setup(x => x.RefreshSeasonCacheAsync(2024, 5)).ReturnsAsync(0);
+        _mockAdminModule.Setup(x => x.RefreshSeasonCacheAsync(2024, 5))
+            .ReturnsAsync(new CacheRefreshResult { FailedCount = 2, RefreshedCount = 6 });
 
         var result = await _controller.RefreshCache(2024, 5);
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var response = Assert.IsType<RefreshCacheResponseDTO>(okResult.Value);
-        Assert.Equal(0, response.RemovedCount);
+        Assert.Equal(2, response.FailedCount);
+        Assert.Equal(6, response.RefreshedCount);
+        Assert.Equal(2024, response.Season);
+        Assert.Equal(5, response.Week);
     }
 
     [Fact]

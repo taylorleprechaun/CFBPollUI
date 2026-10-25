@@ -500,7 +500,7 @@ describe('useRefreshCache', () => {
   beforeEach(() => vi.resetAllMocks());
 
   it('calls refreshCache with token and params', async () => {
-    const mockResult = { removedCount: 8, season: 2024, week: 5 };
+    const mockResult = { failedCount: 0, refreshedCount: 8, season: 2024, week: 5 };
     vi.mocked(refreshCache).mockResolvedValue(mockResult);
 
     const { result } = renderHook(() => useRefreshCache('test-token'), {

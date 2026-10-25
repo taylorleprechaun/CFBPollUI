@@ -12,6 +12,7 @@ public class AdminModuleTests
 {
     private readonly AdminModule _adminModule;
     private readonly Mock<IPersistentCache> _mockCache;
+    private readonly Mock<ICFBDataCacheRefresher> _mockCacheRefresher;
     private readonly Mock<ICFBDataService> _mockDataService;
     private readonly Mock<IExcelExportModule> _mockExcelExportModule;
     private readonly Mock<ILogger<AdminModule>> _mockLogger;
@@ -31,6 +32,9 @@ public class AdminModuleTests
     public AdminModuleTests()
     {
         _mockCache = new Mock<IPersistentCache>();
+        _mockCacheRefresher = new Mock<ICFBDataCacheRefresher>();
+        _mockCacheRefresher.Setup(x => x.RefreshGameResultsAsync(It.IsAny<int>())).ReturnsAsync(new CacheRefreshResult());
+        _mockCacheRefresher.Setup(x => x.RefreshSeasonScopedAsync(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(new CacheRefreshResult());
         _mockDataService = new Mock<ICFBDataService>();
         _mockExcelExportModule = new Mock<IExcelExportModule>();
         _mockLogger = new Mock<ILogger<AdminModule>>();
@@ -61,6 +65,7 @@ public class AdminModuleTests
             _mockDataService.Object,
             _mockExcelExportModule.Object,
             _mockCache.Object,
+            _mockCacheRefresher.Object,
             _mockPollLeadersModule.Object,
             _mockPredictionAlgorithmResolver.Object,
             _mockPredictionGradingModule.Object,
@@ -552,15 +557,15 @@ public class AdminModuleTests
     }
 
     [Fact]
-    public async Task CalculatePredictionsAsync_ClearsComponentCachesBeforeFetching()
+    public async Task CalculatePredictionsAsync_DataRefreshedInPlaceBeforeFetching()
     {
         var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
         var ratings = new Dictionary<string, RatingDetails>();
 
         var callOrder = new List<string>();
-        _mockCache.Setup(x => x.RemoveAsync(It.IsAny<string>()))
-            .Callback<string>(key => callOrder.Add($"cache_remove:{key}"))
-            .ReturnsAsync(true);
+        _mockCacheRefresher.Setup(x => x.RefreshSeasonScopedAsync(2024, 5))
+            .Callback(() => callOrder.Add("cache_refresh"))
+            .ReturnsAsync(new CacheRefreshResult());
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5))
             .Callback(() => callOrder.Add("get_season_data"))
             .ReturnsAsync(seasonData);
@@ -572,10 +577,8 @@ public class AdminModuleTests
 
         await _adminModule.CalculatePredictionsAsync(2024, 5);
 
-        _mockCache.Verify(x => x.RemoveAsync("teams_2024"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("fullSchedule_2024"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("bettingLines_2024_6"), Times.Once);
-        Assert.True(callOrder.IndexOf("get_season_data") > callOrder.IndexOf("cache_remove:teams_2024"));
+        Assert.Equal(["cache_refresh", "get_season_data"], callOrder);
+        _mockCache.Verify(x => x.RemoveAsync(It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
@@ -774,53 +777,27 @@ public class AdminModuleTests
     }
 
     [Fact]
-    public async Task CalculateRankingsAsync_ClearsComponentCachesBeforeFetching()
+    public async Task CalculateRankingsAsync_DataRefreshedInPlaceBeforeFetching()
     {
         var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
         var ratings = new Dictionary<string, RatingDetails>();
         var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
 
-        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
         _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
         _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankings);
 
         var callOrder = new List<string>();
-        _mockCache.Setup(x => x.RemoveAsync(It.IsAny<string>()))
-            .Callback<string>(key => callOrder.Add($"cache_remove:{key}"))
-            .ReturnsAsync(true);
+        _mockCacheRefresher.Setup(x => x.RefreshSeasonScopedAsync(2024, 5))
+            .Callback(() => callOrder.Add("cache_refresh"))
+            .ReturnsAsync(new CacheRefreshResult());
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5))
             .Callback(() => callOrder.Add("get_season_data"))
             .ReturnsAsync(seasonData);
 
         await _adminModule.CalculateRankingsAsync(2024, 5);
 
-        _mockCache.Verify(x => x.RemoveAsync("advancedGameStats_2024_postseason"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("advancedGameStats_2024_regular"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("bettingLines_2024_1"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("bettingLines_2024_6"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("games_2024_postseason"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("games_2024_regular"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("seasonStats_2024"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("seasonStats_2024_week_5"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("teams_2024"), Times.Once);
-
-        Assert.True(callOrder.IndexOf("get_season_data") > callOrder.IndexOf("cache_remove:teams_2024"));
-    }
-
-    [Fact]
-    public async Task CalculateRankingsAsync_ClearsFullScheduleCache()
-    {
-        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
-        var ratings = new Dictionary<string, RatingDetails>();
-        var rankings = new RankingsResult { Season = 2024, Week = 5, Rankings = [] };
-
-        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
-        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
-        _mockRankingsModule.Setup(x => x.GenerateRankingsAsync(seasonData, ratings)).ReturnsAsync(rankings);
-
-        await _adminModule.CalculateRankingsAsync(2024, 5);
-
-        _mockCache.Verify(x => x.RemoveAsync("fullSchedule_2024"), Times.Once);
+        Assert.Equal(["cache_refresh", "get_season_data"], callOrder);
+        _mockCache.Verify(x => x.RemoveAsync(It.IsAny<string>()), Times.Never);
     }
 
     [Fact]
@@ -958,6 +935,29 @@ public class AdminModuleTests
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
                 null!,
+                _mockCacheRefresher.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionAlgorithmResolver.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingAlgorithmResolver.Object,
+                _mockSeasonModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTeamPredictionRecordModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullCacheRefresher_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                null!,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
@@ -979,6 +979,7 @@ public class AdminModuleTests
                 null!,
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
+                _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
@@ -1000,6 +1001,7 @@ public class AdminModuleTests
                 _mockDataService.Object,
                 null!,
                 _mockCache.Object,
+                _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
@@ -1021,6 +1023,7 @@ public class AdminModuleTests
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
+                _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
@@ -1042,6 +1045,7 @@ public class AdminModuleTests
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
+                _mockCacheRefresher.Object,
                 null!,
                 _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
@@ -1063,6 +1067,7 @@ public class AdminModuleTests
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
+                _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 null!,
                 _mockPredictionGradingModule.Object,
@@ -1084,6 +1089,7 @@ public class AdminModuleTests
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
+                _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
                 null!,
@@ -1105,6 +1111,7 @@ public class AdminModuleTests
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
+                _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
@@ -1126,6 +1133,7 @@ public class AdminModuleTests
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
+                _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
@@ -1147,6 +1155,7 @@ public class AdminModuleTests
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
+                _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
@@ -1168,6 +1177,7 @@ public class AdminModuleTests
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
+                _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
@@ -1189,6 +1199,7 @@ public class AdminModuleTests
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
+                _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
@@ -1210,6 +1221,7 @@ public class AdminModuleTests
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
+                _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
@@ -1231,6 +1243,7 @@ public class AdminModuleTests
                 _mockDataService.Object,
                 _mockExcelExportModule.Object,
                 _mockCache.Object,
+                _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
                 _mockPredictionGradingModule.Object,
@@ -1682,28 +1695,6 @@ public class AdminModuleTests
     }
 
     [Fact]
-    public async Task GradePredictionsAsync_ClearsGameResultCacheKeysBeforeGrading()
-    {
-        var callOrder = new List<string>();
-        IEnumerable<string>? removedKeys = null;
-        _mockCache.Setup(x => x.RemoveManyAsync(It.IsAny<IEnumerable<string>>()))
-            .Callback<IEnumerable<string>>(keys =>
-            {
-                removedKeys = keys.ToList();
-                callOrder.Add("removeCache");
-            })
-            .ReturnsAsync(3);
-        _mockPredictionGradingModule.Setup(x => x.GradeAsync(2024, 5))
-            .Callback(() => callOrder.Add("grade"))
-            .ReturnsAsync((GradePredictionsResult?)null);
-
-        await _adminModule.GradePredictionsAsync(2024, 5);
-
-        Assert.Equal(["removeCache", "grade"], callOrder);
-        Assert.Equal(["fullSchedule_2024", "games_2024_regular", "games_2024_postseason"], removedKeys);
-    }
-
-    [Fact]
     public async Task GradePredictionsAsync_DelegatesToGradingModule()
     {
         var gradeResult = new GradePredictionsResult
@@ -1719,6 +1710,23 @@ public class AdminModuleTests
         Assert.NotNull(result);
         Assert.True(result.IsPersisted);
         _mockPredictionGradingModule.Verify(x => x.GradeAsync(2024, 5), Times.Once);
+    }
+
+    [Fact]
+    public async Task GradePredictionsAsync_GameResultsRefreshedInPlaceBeforeGrading()
+    {
+        var callOrder = new List<string>();
+        _mockCacheRefresher.Setup(x => x.RefreshGameResultsAsync(2024))
+            .Callback(() => callOrder.Add("refreshCache"))
+            .ReturnsAsync(new CacheRefreshResult { RefreshedCount = 3 });
+        _mockPredictionGradingModule.Setup(x => x.GradeAsync(2024, 5))
+            .Callback(() => callOrder.Add("grade"))
+            .ReturnsAsync((GradePredictionsResult?)null);
+
+        await _adminModule.GradePredictionsAsync(2024, 5);
+
+        Assert.Equal(["refreshCache", "grade"], callOrder);
+        _mockCache.Verify(x => x.RemoveManyAsync(It.IsAny<IEnumerable<string>>()), Times.Never);
     }
 
     [Fact]
@@ -1855,45 +1863,25 @@ public class AdminModuleTests
     }
 
     [Fact]
-    public async Task RefreshSeasonCacheAsync_NoKeysCached_ReturnsZero()
+    public async Task RefreshSeasonCacheAsync_NeverRemovesCacheEntries()
     {
-        _mockCache.Setup(x => x.RemoveAsync(It.IsAny<string>())).ReturnsAsync(false);
-
-        var result = await _adminModule.RefreshSeasonCacheAsync(2024, 5);
-
-        Assert.Equal(0, result);
-    }
-
-    [Fact]
-    public async Task RefreshSeasonCacheAsync_RemovesAllSeasonScopedKeys()
-    {
-        _mockCache.Setup(x => x.RemoveAsync(It.IsAny<string>())).ReturnsAsync(true);
-
         await _adminModule.RefreshSeasonCacheAsync(2024, 5);
 
-        _mockCache.Verify(x => x.RemoveAsync("teams_2024"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("fullSchedule_2024"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("games_2024_regular"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("games_2024_postseason"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("advancedGameStats_2024_regular"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("advancedGameStats_2024_postseason"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("seasonStats_2024"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("seasonStats_2024_week_5"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("bettingLines_2024_6"), Times.Once);
-        _mockCache.Verify(x => x.RemoveAsync("bettingLines_2024_1"), Times.Once);
+        _mockCacheRefresher.Verify(x => x.RefreshSeasonScopedAsync(2024, 5), Times.Once);
+        _mockCache.Verify(x => x.RemoveAsync(It.IsAny<string>()), Times.Never);
+        _mockCache.Verify(x => x.RemoveManyAsync(It.IsAny<IEnumerable<string>>()), Times.Never);
     }
 
     [Fact]
-    public async Task RefreshSeasonCacheAsync_ReturnsCountOfKeysActuallyRemoved()
+    public async Task RefreshSeasonCacheAsync_ReturnsRefresherCounts()
     {
-        _mockCache.Setup(x => x.RemoveAsync("teams_2024")).ReturnsAsync(true);
-        _mockCache.Setup(x => x.RemoveAsync("fullSchedule_2024")).ReturnsAsync(true);
-        _mockCache.Setup(x => x.RemoveAsync(It.Is<string>(k => k != "teams_2024" && k != "fullSchedule_2024")))
-            .ReturnsAsync(false);
+        _mockCacheRefresher.Setup(x => x.RefreshSeasonScopedAsync(2024, 5))
+            .ReturnsAsync(new CacheRefreshResult { FailedCount = 1, RefreshedCount = 7 });
 
         var result = await _adminModule.RefreshSeasonCacheAsync(2024, 5);
 
-        Assert.Equal(2, result);
+        Assert.Equal(1, result.FailedCount);
+        Assert.Equal(7, result.RefreshedCount);
     }
 
     [Fact]

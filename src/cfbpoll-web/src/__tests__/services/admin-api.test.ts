@@ -966,7 +966,7 @@ describe('Admin API service', () => {
     it('sends POST to cache endpoint with auth header', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ removedCount: 8, season: 2024, week: 5 }),
+        json: () => Promise.resolve({ failedCount: 1, refreshedCount: 8, season: 2024, week: 5 }),
       });
       vi.stubGlobal('fetch', mockFetch);
 
@@ -981,7 +981,8 @@ describe('Admin API service', () => {
           }),
         })
       );
-      expect(result.removedCount).toBe(8);
+      expect(result.failedCount).toBe(1);
+      expect(result.refreshedCount).toBe(8);
       expect(result.season).toBe(2024);
       expect(result.week).toBe(5);
     });

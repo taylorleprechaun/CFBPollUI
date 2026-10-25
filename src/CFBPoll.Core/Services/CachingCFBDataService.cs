@@ -1,3 +1,4 @@
+using System.Collections;
 using CFBPoll.Core.Caching;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
@@ -241,6 +242,13 @@ public class CachingCFBDataService : ICFBDataService, ICFBDataCacheRefresher
             _expirationPolicy.GetSeasonExpiration(season, CacheRefreshTier.Daily)).ConfigureAwait(false);
     }
 
+    public async Task<CacheRefreshResult> RefreshGameResultsAsync(int season)
+    {
+        return await RefreshCachedEntriesAsync(
+            CacheKeys.GetGameResultKeys(season),
+            BuildSeasonRefreshers(season, week: null)).ConfigureAwait(false);
+    }
+
     public async Task<int> RefreshMaxSeasonYearAsync()
     {
         var year = await _innerService.GetMaxSeasonYearAsync().ConfigureAwait(false);
@@ -249,6 +257,45 @@ public class CachingCFBDataService : ICFBDataService, ICFBDataCacheRefresher
         await _cache.SetAsync(CacheKeys.MAX_SEASON_YEAR, new MaxSeasonYearWrapper { Year = year }, expiresAt).ConfigureAwait(false);
 
         return year;
+    }
+
+    public async Task<CacheRefreshResult> RefreshSeasonScopedAsync(int season, int week)
+    {
+        return await RefreshCachedEntriesAsync(
+            CacheKeys.GetSeasonScopedKeys(season, week),
+            BuildSeasonRefreshers(season, week)).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Maps each season-scoped cache key to the refresh that re-fetches it, using the same expiration its
+    /// Get method uses. Week-specific keys are included only when <paramref name="week"/> is given.
+    /// </summary>
+    private Dictionary<string, Func<Task<bool>>> BuildSeasonRefreshers(int season, int? week)
+    {
+        var expiresAt = _expirationPolicy.GetSeasonExpiration(season, CacheRefreshTier.Daily);
+
+        var refreshers = new Dictionary<string, Func<Task<bool>>>
+        {
+            [CacheKeys.AdvancedGameStats(season, "postseason")] = () => RefreshListAsync(CacheKeys.AdvancedGameStats(season, "postseason"), () => _innerService.GetAdvancedGameStatsAsync(season, "postseason"), expiresAt),
+            [CacheKeys.AdvancedGameStats(season, "regular")] = () => RefreshListAsync(CacheKeys.AdvancedGameStats(season, "regular"), () => _innerService.GetAdvancedGameStatsAsync(season, "regular"), expiresAt),
+            [CacheKeys.BettingLines(season, 1)] = () => RefreshListAsync(CacheKeys.BettingLines(season, 1), () => _innerService.GetBettingLinesAsync(season, 1), expiresAt),
+            [CacheKeys.FullSchedule(season)] = () => RefreshListAsync(CacheKeys.FullSchedule(season), () => _innerService.GetFullSeasonScheduleAsync(season), expiresAt),
+            [CacheKeys.Games(season, "postseason")] = () => RefreshListAsync(CacheKeys.Games(season, "postseason"), () => _innerService.GetGamesAsync(season, "postseason"), expiresAt),
+            [CacheKeys.Games(season, "regular")] = () => RefreshListAsync(CacheKeys.Games(season, "regular"), () => _innerService.GetGamesAsync(season, "regular"), expiresAt),
+            [CacheKeys.GameTeamStats(season, "postseason")] = () => RefreshListAsync(CacheKeys.GameTeamStats(season, "postseason"), () => _innerService.GetGameTeamStatsAsync(season, "postseason"), expiresAt),
+            [CacheKeys.GameTeamStats(season, "regular")] = () => RefreshListAsync(CacheKeys.GameTeamStats(season, "regular"), () => _innerService.GetGameTeamStatsAsync(season, "regular"), expiresAt),
+            [CacheKeys.SeasonStats(season, null)] = () => RefreshSeasonTeamStatsAsync(season, null, expiresAt),
+            [CacheKeys.Teams(season)] = () => RefreshListAsync(CacheKeys.Teams(season), () => _innerService.GetFBSTeamsAsync(season), expiresAt)
+        };
+
+        if (week.HasValue)
+        {
+            var gameWeek = week.Value + 1;
+            refreshers[CacheKeys.BettingLines(season, gameWeek)] = () => RefreshListAsync(CacheKeys.BettingLines(season, gameWeek), () => _innerService.GetBettingLinesAsync(season, gameWeek), expiresAt);
+            refreshers[CacheKeys.SeasonStats(season, week)] = () => RefreshSeasonTeamStatsAsync(season, week, expiresAt);
+        }
+
+        return refreshers;
     }
 
     /// <summary>
@@ -283,16 +330,36 @@ public class CachingCFBDataService : ICFBDataService, ICFBDataCacheRefresher
     }
 
     /// <summary>
+    /// Refreshes, in parallel, each of <paramref name="keys"/> that is currently cached. Keys that are not cached
+    /// are left to be fetched on demand, so a refresh never adds upstream calls for data nothing has asked for.
+    /// </summary>
+    private async Task<CacheRefreshResult> RefreshCachedEntriesAsync(IEnumerable<string> keys, IReadOnlyDictionary<string, Func<Task<bool>>> refreshers)
+    {
+        var metadata = await _cache.GetAllEntriesMetadataAsync().ConfigureAwait(false);
+        var cachedKeys = metadata.Select(m => m.CacheKey).ToHashSet(StringComparer.Ordinal);
+
+        var outcomes = await Task.WhenAll(keys
+            .Where(cachedKeys.Contains)
+            .Select(key => TryRefreshAsync(key, refreshers))).ConfigureAwait(false);
+
+        return new CacheRefreshResult
+        {
+            FailedCount = outcomes.Count(refreshed => !refreshed),
+            RefreshedCount = outcomes.Count(refreshed => refreshed)
+        };
+    }
+
+    /// <summary>
     /// Fetches fresh data and replaces the cached copy in place, so readers never see a gap. An empty fetch
     /// never replaces existing data, since it may be a swallowed upstream error rather than real emptiness.
     /// </summary>
-    private async Task<bool> RefreshListAsync<T>(string cacheKey, Func<Task<IEnumerable<T>>> fetchFunc, DateTime expiresAt, bool emptyResultIsGenuine = false) where T : class
+    private async Task<bool> RefreshEntryAsync<TData>(string cacheKey, Func<Task<TData>> fetchFunc, DateTime expiresAt, bool emptyResultIsGenuine) where TData : class, ICollection
     {
-        var data = (await fetchFunc().ConfigureAwait(false)).ToList();
+        var data = await fetchFunc().ConfigureAwait(false);
 
         if (data.Count == 0)
         {
-            var existing = await _cache.GetAsync<List<T>>(cacheKey).ConfigureAwait(false);
+            var existing = await _cache.GetAsync<TData>(cacheKey).ConfigureAwait(false);
             if (existing is { Count: > 0 })
             {
                 _logger.LogWarning("Refresh of {CacheKey} returned no data; keeping the existing cached copy", cacheKey);
@@ -304,6 +371,48 @@ public class CachingCFBDataService : ICFBDataService, ICFBDataCacheRefresher
         _logger.LogDebug("Refreshed {CacheKey} with {Count} items", cacheKey, data.Count);
 
         return true;
+    }
+
+    private async Task<bool> RefreshListAsync<T>(string cacheKey, Func<Task<IEnumerable<T>>> fetchFunc, DateTime expiresAt, bool emptyResultIsGenuine = false) where T : class
+    {
+        return await RefreshEntryAsync(
+            cacheKey,
+            async () => (await fetchFunc().ConfigureAwait(false)).ToList(),
+            expiresAt,
+            emptyResultIsGenuine).ConfigureAwait(false);
+    }
+
+    private async Task<bool> RefreshSeasonTeamStatsAsync(int season, int? endWeek, DateTime expiresAt)
+    {
+        return await RefreshEntryAsync(
+            CacheKeys.SeasonStats(season, endWeek),
+            async () => (await _innerService.GetSeasonTeamStatsAsync(season, endWeek).ConfigureAwait(false))
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToList()),
+            expiresAt,
+            emptyResultIsGenuine: false).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Runs one entry's refresh. A failure is logged and reported as not refreshed, leaving the existing cached
+    /// copy in place, so one failing upstream call never stops the others.
+    /// </summary>
+    private async Task<bool> TryRefreshAsync(string cacheKey, IReadOnlyDictionary<string, Func<Task<bool>>> refreshers)
+    {
+        if (!refreshers.TryGetValue(cacheKey, out var refresh))
+        {
+            _logger.LogWarning("No refresh is defined for {CacheKey}; keeping the existing cached copy", cacheKey);
+            return false;
+        }
+
+        try
+        {
+            return await refresh().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Refresh of {CacheKey} failed; keeping the existing cached copy", cacheKey);
+            return false;
+        }
     }
 
     internal class MaxSeasonYearWrapper
