@@ -389,18 +389,24 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Clears cached CollegeFootballData API responses for the specified season and week without
-    /// recalculating rankings or predictions. Use when CFBD has corrected source data and an admin
-    /// wants fresh data available before deciding whether to recalculate.
+    /// Re-fetches cached CollegeFootballData API responses for the specified season and week and
+    /// replaces the cached copies, without recalculating rankings or predictions. Use when CFBD has
+    /// corrected source data and an admin wants fresh data available before deciding whether to recalculate.
     /// </summary>
     [HttpPost("seasons/{season}/weeks/{week}/cache")]
     public async Task<ActionResult<RefreshCacheResponseDTO>> RefreshCache(int season, int week)
     {
         _logger.LogInformation("Admin refreshing cached CFBD data for season {Season}, week {Week}", season, week);
 
-        var removedCount = await _adminModule.RefreshSeasonCacheAsync(season, week);
+        var result = await _adminModule.RefreshSeasonCacheAsync(season, week);
 
-        return Ok(new RefreshCacheResponseDTO { RemovedCount = removedCount, Season = season, Week = week });
+        return Ok(new RefreshCacheResponseDTO
+        {
+            FailedCount = result.FailedCount,
+            RefreshedCount = result.RefreshedCount,
+            Season = season,
+            Week = week
+        });
     }
 
     /// <summary>

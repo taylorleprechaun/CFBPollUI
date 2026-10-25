@@ -37,7 +37,7 @@ describe('CalculateSection', () => {
         {...defaultProps}
         onRefreshCache={vi.fn()}
         onClearRefreshFeedback={onClearRefreshFeedback}
-        refreshFeedback={{ key: 'refresh-cache-2024-5', type: 'success', message: 'Removed 8 cached entries' }}
+        refreshFeedback={{ key: 'refresh-cache-2024-5', type: 'success', message: 'Refreshed 8 cached entries' }}
       />
     );
 
@@ -102,11 +102,11 @@ describe('CalculateSection', () => {
       <CalculateSection
         {...defaultProps}
         onRefreshCache={vi.fn()}
-        refreshFeedback={{ key: 'refresh-cache-2023-1', type: 'success', message: 'Removed 3 cached entries' }}
+        refreshFeedback={{ key: 'refresh-cache-2023-1', type: 'success', message: 'Refreshed 3 cached entries' }}
       />
     );
 
-    expect(screen.queryByText('Removed 3 cached entries')).not.toBeInTheDocument();
+    expect(screen.queryByText('Refreshed 3 cached entries')).not.toBeInTheDocument();
   });
 
   it('renders heading', () => {
@@ -157,10 +157,10 @@ describe('CalculateSection', () => {
       <CalculateSection
         {...defaultProps}
         onRefreshCache={vi.fn()}
-        refreshFeedback={{ key: 'refresh-cache-2024-5', type: 'success', message: 'Removed 8 cached entries' }}
+        refreshFeedback={{ key: 'refresh-cache-2024-5', type: 'success', message: 'Refreshed 8 cached entries' }}
       />
     );
 
-    expect(screen.getByText('Removed 8 cached entries')).toBeInTheDocument();
+    expect(screen.getByText('Refreshed 8 cached entries')).toBeInTheDocument();
   });
 });

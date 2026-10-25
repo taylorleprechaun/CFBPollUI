@@ -348,7 +348,7 @@ describe('PredictionsPage', () => {
 
   it('calls refreshCache with selected season and week when confirmed', async () => {
     const user = userEvent.setup();
-    mockRefreshCacheMutateAsync.mockResolvedValue({ removedCount: 6, season: 2024, week: 5 });
+    mockRefreshCacheMutateAsync.mockResolvedValue({ failedCount: 0, refreshedCount: 6, season: 2024, week: 5 });
 
     renderPredictionsPage();
     await user.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
@@ -1018,7 +1018,7 @@ describe('PredictionsPage', () => {
 
   it('shows removed count feedback after a successful confirmed refresh', async () => {
     const user = userEvent.setup();
-    mockRefreshCacheMutateAsync.mockResolvedValue({ removedCount: 6, season: 2024, week: 5 });
+    mockRefreshCacheMutateAsync.mockResolvedValue({ failedCount: 0, refreshedCount: 6, season: 2024, week: 5 });
 
     renderPredictionsPage();
     await user.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
@@ -1027,7 +1027,7 @@ describe('PredictionsPage', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Refresh' }));
 
     await waitFor(() => {
-      expect(screen.getByText('Removed 6 cached entries')).toBeInTheDocument();
+      expect(screen.getByText('Refreshed 6 cached entries')).toBeInTheDocument();
     });
   });
 

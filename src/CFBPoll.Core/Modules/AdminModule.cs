@@ -15,6 +15,7 @@ public class AdminModule : IAdminModule
     private const int MAX_CONCURRENT_SEASON_WEEK_CALCULATIONS = 4;
 
     private readonly IPersistentCache _cache;
+    private readonly ICFBDataCacheRefresher _cacheRefresher;
     private readonly ICFBDataService _dataService;
     private readonly IExcelExportModule _excelExportModule;
     private readonly ILogger<AdminModule> _logger;
@@ -33,6 +34,7 @@ public class AdminModule : IAdminModule
         ICFBDataService dataService,
         IExcelExportModule excelExportModule,
         IPersistentCache cache,
+        ICFBDataCacheRefresher cacheRefresher,
         IPollLeadersModule pollLeadersModule,
         IPredictionAlgorithmResolver predictionAlgorithmResolver,
         IPredictionGradingModule predictionGradingModule,
@@ -46,6 +48,7 @@ public class AdminModule : IAdminModule
         ILogger<AdminModule> logger)
     {
         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+        _cacheRefresher = cacheRefresher ?? throw new ArgumentNullException(nameof(cacheRefresher));
         _dataService = dataService ?? throw new ArgumentNullException(nameof(dataService));
         _excelExportModule = excelExportModule ?? throw new ArgumentNullException(nameof(excelExportModule));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -446,8 +449,10 @@ public class AdminModule : IAdminModule
 
     public async Task<GradePredictionsResult?> GradePredictionsAsync(int season, int week)
     {
-        var removed = await _cache.RemoveManyAsync(CacheKeys.GetGameResultKeys(season)).ConfigureAwait(false);
-        _logger.LogInformation("Removed {Count} cached game result entries for season {Season} before grading", removed, season);
+        var refreshResult = await _cacheRefresher.RefreshGameResultsAsync(season).ConfigureAwait(false);
+        _logger.LogInformation(
+            "Refreshed {RefreshedCount} cached game result entries for season {Season} before grading ({FailedCount} kept their last cached data)",
+            refreshResult.RefreshedCount, season, refreshResult.FailedCount);
 
         return await _predictionGradingModule.GradeAsync(season, week).ConfigureAwait(false);
     }
@@ -505,21 +510,21 @@ public class AdminModule : IAdminModule
         return PublishRankingsOutcome.Published;
     }
 
-    public async Task<int> RefreshSeasonCacheAsync(int season, int week)
+    public async Task<CacheRefreshResult> RefreshSeasonCacheAsync(int season, int week)
     {
         _logger.LogInformation("Refreshing cached CFBD data for season {Season}, week {Week}", season, week);
 
-        var removed = 0;
-        foreach (var key in CacheKeys.GetSeasonScopedKeys(season, week))
+        var result = await _cacheRefresher.RefreshSeasonScopedAsync(season, week).ConfigureAwait(false);
+
+        _logger.LogInformation("Refreshed {RefreshedCount} cached entries for season {Season}, week {Week}", result.RefreshedCount, season, week);
+        if (result.FailedCount > 0)
         {
-            if (await _cache.RemoveAsync(key).ConfigureAwait(false))
-            {
-                removed++;
-            }
+            _logger.LogWarning(
+                "{FailedCount} cached entries for season {Season}, week {Week} could not be refreshed; the last cached data is used for them",
+                result.FailedCount, season, week);
         }
 
-        _logger.LogInformation("Removed {Count} cached entries for season {Season}, week {Week}", removed, season, week);
-        return removed;
+        return result;
     }
 
     public async Task<int> RemoveCacheEntriesAsync(IEnumerable<string> keys)

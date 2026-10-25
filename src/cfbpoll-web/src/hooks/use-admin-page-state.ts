@@ -20,7 +20,7 @@ interface UseAdminPageStateOptions<TCalcResult> {
   queryError: Error | null;
   queryErrorLabel: string;
   refetch: () => void;
-  refreshCacheMutation?: UseMutationResult<{ removedCount: number }, Error, SeasonWeekParams>;
+  refreshCacheMutation?: UseMutationResult<{ failedCount: number; refreshedCount: number }, Error, SeasonWeekParams>;
   selectedSeason: number | null;
   selectedWeek: number | null;
 }
@@ -107,7 +107,9 @@ export function useAdminPageState<TCalcResult>({
       key: `refresh-cache-${season}-${week}`,
       mutate: () => refreshCacheMutation.mutateAsync({ season, week }),
       setFeedback: setActionFeedback,
-      successMessage: (result) => `Removed ${result.removedCount} cached entries`,
+      successMessage: (result) => result.failedCount > 0
+        ? `Refreshed ${result.refreshedCount} cached entries (${result.failedCount} kept old data, CFBD unavailable)`
+        : `Refreshed ${result.refreshedCount} cached entries`,
     });
   };
 

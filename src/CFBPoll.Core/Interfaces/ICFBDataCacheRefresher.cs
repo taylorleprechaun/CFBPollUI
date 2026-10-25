@@ -1,3 +1,5 @@
+using CFBPoll.Core.Models;
+
 namespace CFBPoll.Core.Interfaces;
 
 /// <summary>
@@ -31,8 +33,22 @@ public interface ICFBDataCacheRefresher
     Task<bool> RefreshFullSeasonScheduleAsync(int season);
 
     /// <summary>
+    /// Re-fetches and replaces the cached game results (schedule and games) for a season. Only entries
+    /// already in the cache are refreshed; an entry whose fetch fails or comes back empty keeps its existing copy.
+    /// </summary>
+    /// <returns>How many entries were replaced and how many kept their existing copy.</returns>
+    Task<CacheRefreshResult> RefreshGameResultsAsync(int season);
+
+    /// <summary>
     /// Re-fetches and replaces the cached most recent season year.
     /// </summary>
     /// <returns>The refreshed season year.</returns>
     Task<int> RefreshMaxSeasonYearAsync();
+
+    /// <summary>
+    /// Re-fetches and replaces the cached entries scoped to a season and week. Only entries already in the
+    /// cache are refreshed; an entry whose fetch fails or comes back empty keeps its existing copy.
+    /// </summary>
+    /// <returns>How many entries were replaced and how many kept their existing copy.</returns>
+    Task<CacheRefreshResult> RefreshSeasonScopedAsync(int season, int week);
 }

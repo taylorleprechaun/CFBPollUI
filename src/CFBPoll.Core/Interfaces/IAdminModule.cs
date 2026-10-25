@@ -138,11 +138,12 @@ public interface IAdminModule
     Task<PublishRankingsOutcome> PublishRankingsSnapshotAsync(int season, int week);
 
     /// <summary>
-    /// Removes cached CollegeFootballData API responses scoped to the given season and week,
-    /// forcing the next data fetch to pull fresh data. Does not recalculate rankings or predictions.
+    /// Re-fetches cached CollegeFootballData API responses scoped to the given season and week and
+    /// replaces the cached copies, keeping the existing copy of any entry that cannot be fetched.
+    /// Does not recalculate rankings or predictions.
     /// </summary>
-    /// <returns>The number of cache entries actually removed.</returns>
-    Task<int> RefreshSeasonCacheAsync(int season, int week);
+    /// <returns>How many entries were replaced and how many kept their existing copy.</returns>
+    Task<CacheRefreshResult> RefreshSeasonCacheAsync(int season, int week);
 
     /// <summary>
     /// Removes the persistent cache entries matching the given keys.

@@ -270,7 +270,7 @@ describe('RankingsSnapshotsPage', () => {
   });
 
   it('calls refreshCache with selected season and week when confirmed', async () => {
-    mockRefreshCacheMutateAsync.mockResolvedValue({ removedCount: 8, season: 2024, week: 5 });
+    mockRefreshCacheMutateAsync.mockResolvedValue({ failedCount: 0, refreshedCount: 8, season: 2024, week: 5 });
 
     renderRankingsSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
@@ -807,7 +807,7 @@ describe('RankingsSnapshotsPage', () => {
   });
 
   it('shows removed count feedback after a successful confirmed refresh', async () => {
-    mockRefreshCacheMutateAsync.mockResolvedValue({ removedCount: 8, season: 2024, week: 5 });
+    mockRefreshCacheMutateAsync.mockResolvedValue({ failedCount: 0, refreshedCount: 8, season: 2024, week: 5 });
 
     renderRankingsSnapshotsPage();
     await userEvent.click(screen.getByRole('button', { name: 'Refresh Cached Data' }));
@@ -816,7 +816,7 @@ describe('RankingsSnapshotsPage', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Refresh' }));
 
     await waitFor(() => {
-      expect(screen.getByText('Removed 8 cached entries')).toBeInTheDocument();
+      expect(screen.getByText('Refreshed 8 cached entries')).toBeInTheDocument();
     });
   });
 

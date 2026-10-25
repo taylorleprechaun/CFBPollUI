@@ -138,11 +138,31 @@ describe('useAdminPageState - refresh cache', () => {
     expect(result.current.actionFeedback).toBeNull();
   });
 
+  it('executeRefreshCache notes entries that kept old data in the success feedback', async () => {
+    const mutateAsync = vi.fn().mockResolvedValue({ failedCount: 2, refreshedCount: 5 });
+    const options = {
+      ...baseOptions(),
+      refreshCacheMutation: fakeMutation<{ failedCount: number; refreshedCount: number }, { season: number; week: number }>({ mutateAsync }),
+    };
+
+    const { result } = renderHook(() => useAdminPageState<CalcResult>(options));
+
+    await act(async () => {
+      await result.current.executeRefreshCache(2024, 5);
+    });
+
+    expect(result.current.actionFeedback).toEqual({
+      key: 'refresh-cache-2024-5',
+      type: 'success',
+      message: 'Refreshed 5 cached entries (2 kept old data, CFBD unavailable)',
+    });
+  });
+
   it('executeRefreshCache sets error feedback on failure', async () => {
     const mutateAsync = vi.fn().mockRejectedValue(new Error('Server error'));
     const options = {
       ...baseOptions(),
-      refreshCacheMutation: fakeMutation<{ removedCount: number }, { season: number; week: number }>({ mutateAsync }),
+      refreshCacheMutation: fakeMutation<{ failedCount: number; refreshedCount: number }, { season: number; week: number }>({ mutateAsync }),
     };
 
     const { result } = renderHook(() => useAdminPageState<CalcResult>(options));
@@ -158,11 +178,11 @@ describe('useAdminPageState - refresh cache', () => {
     });
   });
 
-  it('executeRefreshCache sets success feedback with removed count and clears the confirmation', async () => {
-    const mutateAsync = vi.fn().mockResolvedValue({ removedCount: 4 });
+  it('executeRefreshCache sets success feedback with refreshed count and clears the confirmation', async () => {
+    const mutateAsync = vi.fn().mockResolvedValue({ failedCount: 0, refreshedCount: 4 });
     const options = {
       ...baseOptions(),
-      refreshCacheMutation: fakeMutation<{ removedCount: number }, { season: number; week: number }>({ mutateAsync }),
+      refreshCacheMutation: fakeMutation<{ failedCount: number; refreshedCount: number }, { season: number; week: number }>({ mutateAsync }),
     };
 
     const { result } = renderHook(() => useAdminPageState<CalcResult>(options));
@@ -181,7 +201,7 @@ describe('useAdminPageState - refresh cache', () => {
     expect(result.current.actionFeedback).toEqual({
       key: 'refresh-cache-2024-5',
       type: 'success',
-      message: 'Removed 4 cached entries',
+      message: 'Refreshed 4 cached entries',
     });
   });
 
@@ -189,7 +209,7 @@ describe('useAdminPageState - refresh cache', () => {
     const mutateAsync = vi.fn();
     const options = {
       ...baseOptions(),
-      refreshCacheMutation: fakeMutation<{ removedCount: number }, { season: number; week: number }>({ mutateAsync }),
+      refreshCacheMutation: fakeMutation<{ failedCount: number; refreshedCount: number }, { season: number; week: number }>({ mutateAsync }),
     };
 
     const { result } = renderHook(() => useAdminPageState<CalcResult>(options));
@@ -211,7 +231,7 @@ describe('useAdminPageState - refresh cache', () => {
   it('isRefreshingCache reflects refreshCacheMutation.isPending when provided', () => {
     const options = {
       ...baseOptions(),
-      refreshCacheMutation: fakeMutation<{ removedCount: number }, { season: number; week: number }>({ isPending: true }),
+      refreshCacheMutation: fakeMutation<{ failedCount: number; refreshedCount: number }, { season: number; week: number }>({ isPending: true }),
     };
 
     const { result } = renderHook(() => useAdminPageState<CalcResult>(options));

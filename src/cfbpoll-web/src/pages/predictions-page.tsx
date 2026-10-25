@@ -288,7 +288,7 @@ export function PredictionsPage() {
       {refreshCacheConfirm && (
         <ConfirmModal
           title="Refresh Cached Data"
-          message={`This will clear cached source data for ${refreshCacheConfirm.season} ${getWeekLabel(refreshCacheConfirm.week)} and force a fresh pull from the College Football Data API on the next calculation. This is normally unnecessary since Generate already forces a fresh pull. Continue?`}
+          message={`This will pull fresh source data for ${refreshCacheConfirm.season} ${getWeekLabel(refreshCacheConfirm.week)} from the College Football Data API and replace the cached copy. Anything that can't be fetched keeps its current cached data. This is normally unnecessary since Generate already pulls fresh data. Continue?`}
           confirmLabel="Refresh"
           onConfirm={() => executeRefreshCache(refreshCacheConfirm.season, refreshCacheConfirm.week)}
           onCancel={() => setRefreshCacheConfirm(null)}

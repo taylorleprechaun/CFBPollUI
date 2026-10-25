@@ -116,7 +116,8 @@ export const CfbdUsageSchema = z.object({
 });
 
 export const RefreshCacheResponseSchema = z.object({
-  removedCount: z.number(),
+  failedCount: z.number(),
+  refreshedCount: z.number(),
   season: z.number(),
   week: z.number(),
 });
