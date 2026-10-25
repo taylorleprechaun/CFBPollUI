@@ -440,6 +440,28 @@ public class CachingCFBDataServiceTests
     }
 
     [Fact]
+    public async Task GetFullSeasonScheduleAsync_RetriesFetch_AfterSharedFetchFails()
+    {
+        var failingFetch = new TaskCompletionSource<IEnumerable<ScheduleGame>>();
+        _mockCache.Setup(x => x.GetAsync<List<ScheduleGame>>("fullSchedule_2026")).ReturnsAsync((List<ScheduleGame>?)null);
+        _mockInnerService.SetupSequence(x => x.GetFullSeasonScheduleAsync(2026))
+            .Returns(failingFetch.Task)
+            .ReturnsAsync([new ScheduleGame { GameID = 3 }]);
+
+        var firstCaller = _service.GetFullSeasonScheduleAsync(2026);
+        var secondCaller = _service.GetFullSeasonScheduleAsync(2026);
+        failingFetch.SetException(new HttpRequestException("502"));
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => firstCaller);
+        await Assert.ThrowsAsync<HttpRequestException>(() => secondCaller);
+
+        var retried = await _service.GetFullSeasonScheduleAsync(2026);
+
+        Assert.Equal(3, retried.Single().GameID);
+        _mockInnerService.Verify(x => x.GetFullSeasonScheduleAsync(2026), Times.Exactly(2));
+    }
+
+    [Fact]
     public async Task GetFullSeasonScheduleAsync_ReturnsCachedData_WhenCacheHit()
     {
         var cachedData = new List<ScheduleGame>
@@ -490,6 +512,22 @@ public class CachingCFBDataServiceTests
     }
 
     [Fact]
+    public async Task GetFullSeasonScheduleAsync_SharesOneFetch_WhenConcurrentCallersMissCache()
+    {
+        var pendingFetch = new TaskCompletionSource<IEnumerable<ScheduleGame>>();
+        _mockCache.Setup(x => x.GetAsync<List<ScheduleGame>>("fullSchedule_2026")).ReturnsAsync((List<ScheduleGame>?)null);
+        _mockInnerService.Setup(x => x.GetFullSeasonScheduleAsync(2026)).Returns(pendingFetch.Task);
+
+        var callers = Enumerable.Range(0, 5).Select(_ => _service.GetFullSeasonScheduleAsync(2026)).ToList();
+        pendingFetch.SetResult([new ScheduleGame { GameID = 1, HomeTeam = "Michigan", AwayTeam = "Texas" }]);
+        var results = await Task.WhenAll(callers);
+
+        Assert.All(results, result => Assert.Equal("Michigan", result.Single().HomeTeam));
+        _mockInnerService.Verify(x => x.GetFullSeasonScheduleAsync(2026), Times.Once);
+        _mockCache.Verify(x => x.SetAsync("fullSchedule_2026", It.IsAny<List<ScheduleGame>>(), _dailyExpiration), Times.Once);
+    }
+
+    [Fact]
     public async Task GetFullSeasonScheduleAsync_UsesSeasonDailyExpiration_WhenCacheMiss()
     {
         _mockCache.Setup(x => x.GetAsync<List<ScheduleGame>>("fullSchedule_2024"))
@@ -501,6 +539,26 @@ public class CachingCFBDataServiceTests
 
         _mockExpirationPolicy.Verify(x => x.GetSeasonExpiration(2024, CacheRefreshTier.Daily), Times.Once);
         _mockCache.Verify(x => x.SetAsync("fullSchedule_2024", It.IsAny<List<ScheduleGame>>(), _dailyExpiration), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetGamesAsync_FetchesEachSeasonTypeIndependently_WhenConcurrent()
+    {
+        var pendingRegular = new TaskCompletionSource<IEnumerable<Game>>();
+        var pendingPostseason = new TaskCompletionSource<IEnumerable<Game>>();
+        _mockCache.Setup(x => x.GetAsync<List<Game>>(It.IsAny<string>())).ReturnsAsync((List<Game>?)null);
+        _mockInnerService.Setup(x => x.GetGamesAsync(2026, "regular")).Returns(pendingRegular.Task);
+        _mockInnerService.Setup(x => x.GetGamesAsync(2026, "postseason")).Returns(pendingPostseason.Task);
+
+        var regularCaller = _service.GetGamesAsync(2026, "regular");
+        var postseasonCaller = _service.GetGamesAsync(2026, "postseason");
+        pendingRegular.SetResult([new Game { GameID = 10 }]);
+        pendingPostseason.SetResult([new Game { GameID = 20 }]);
+
+        Assert.Equal(10, (await regularCaller).Single().GameID);
+        Assert.Equal(20, (await postseasonCaller).Single().GameID);
+        _mockInnerService.Verify(x => x.GetGamesAsync(2026, "regular"), Times.Once);
+        _mockInnerService.Verify(x => x.GetGamesAsync(2026, "postseason"), Times.Once);
     }
 
     [Fact]
@@ -819,6 +877,22 @@ public class CachingCFBDataServiceTests
 
         Assert.Single(result);
         _mockInnerService.Verify(x => x.GetSeasonTeamStatsAsync(It.IsAny<int>(), It.IsAny<int?>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetSeasonTeamStatsAsync_SharesOneFetch_WhenConcurrentCallersMissCache()
+    {
+        var pendingFetch = new TaskCompletionSource<IDictionary<string, IEnumerable<TeamStat>>>();
+        _mockCache.Setup(x => x.GetAsync<Dictionary<string, List<TeamStat>>>("seasonStats_2026_week_5"))
+            .ReturnsAsync((Dictionary<string, List<TeamStat>>?)null);
+        _mockInnerService.Setup(x => x.GetSeasonTeamStatsAsync(2026, 5)).Returns(pendingFetch.Task);
+
+        var callers = Enumerable.Range(0, 3).Select(_ => _service.GetSeasonTeamStatsAsync(2026, 5)).ToList();
+        pendingFetch.SetResult(new Dictionary<string, IEnumerable<TeamStat>> { ["Florida"] = [new TeamStat { StatName = "turnovers" }] });
+        var results = await Task.WhenAll(callers);
+
+        Assert.All(results, result => Assert.Equal("turnovers", result["Florida"].Single().StatName));
+        _mockInnerService.Verify(x => x.GetSeasonTeamStatsAsync(2026, 5), Times.Once);
     }
 
     [Fact]

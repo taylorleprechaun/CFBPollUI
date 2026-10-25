@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Concurrent;
 using CFBPoll.Core.Caching;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
@@ -10,6 +11,7 @@ public class CachingCFBDataService : ICFBDataService, ICFBDataCacheRefresher
 {
     private readonly IPersistentCache _cache;
     private readonly ICacheExpirationPolicy _expirationPolicy;
+    private readonly ConcurrentDictionary<string, Lazy<Task<object>>> _inFlightFetches = new();
     private readonly ICFBDataService _innerService;
     private readonly ILogger<CachingCFBDataService> _logger;
 
@@ -197,16 +199,23 @@ public class CachingCFBDataService : ICFBDataService, ICFBDataCacheRefresher
         }
 
         _logger.LogDebug("Cache miss for {CacheKey}, fetching from API", cacheKey);
-        var data = await _innerService.GetSeasonTeamStatsAsync(season, endWeek).ConfigureAwait(false);
+        var fetched = await FetchOnceAsync(cacheKey, async () =>
+        {
+            var data = await _innerService.GetSeasonTeamStatsAsync(season, endWeek).ConfigureAwait(false);
 
-        var serializableData = data.ToDictionary(
+            var serializableData = data.ToDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value.ToList());
+
+            var expiresAt = ExpirationFor(serializableData.Count, _expirationPolicy.GetSeasonExpiration(season, CacheRefreshTier.Daily), emptyResultIsGenuine: false);
+            await _cache.SetAsync(cacheKey, serializableData, expiresAt).ConfigureAwait(false);
+
+            return serializableData;
+        }).ConfigureAwait(false);
+
+        return fetched.ToDictionary(
             kvp => kvp.Key,
-            kvp => kvp.Value.ToList());
-
-        var expiresAt = ExpirationFor(serializableData.Count, _expirationPolicy.GetSeasonExpiration(season, CacheRefreshTier.Daily), emptyResultIsGenuine: false);
-        await _cache.SetAsync(cacheKey, serializableData, expiresAt).ConfigureAwait(false);
-
-        return data;
+            kvp => (IEnumerable<TeamStat>)kvp.Value);
     }
 
     public async Task<bool> RefreshCalendarAsync(int year)
@@ -309,6 +318,27 @@ public class CachingCFBDataService : ICFBDataService, ICFBDataCacheRefresher
         return itemCount == 0 && !emptyResultIsGenuine ? _expirationPolicy.GetEmptyResultExpiration() : scheduledExpiration;
     }
 
+    /// <summary>
+    /// Runs <paramref name="fetchAndCache"/> at most once at a time per cache key. Callers that miss the cache
+    /// while a fetch for the same key is running await that fetch instead of starting their own. The entry is
+    /// removed when the fetch finishes, so a failed fetch is retried by the next caller.
+    /// </summary>
+    private async Task<TData> FetchOnceAsync<TData>(string cacheKey, Func<Task<TData>> fetchAndCache) where TData : class
+    {
+        var fetch = _inFlightFetches.GetOrAdd(
+            cacheKey,
+            _ => new Lazy<Task<object>>(async () => await fetchAndCache().ConfigureAwait(false)));
+
+        try
+        {
+            return (TData)await fetch.Value.ConfigureAwait(false);
+        }
+        finally
+        {
+            _inFlightFetches.TryRemove(new KeyValuePair<string, Lazy<Task<object>>>(cacheKey, fetch));
+        }
+    }
+
     private async Task<List<T>> GetOrCacheListAsync<T>(
         string cacheKey,
         Func<Task<IEnumerable<T>>> fetchFunc,
@@ -323,10 +353,13 @@ public class CachingCFBDataService : ICFBDataService, ICFBDataCacheRefresher
         }
 
         _logger.LogDebug("Cache miss for {CacheKey}, fetching from API", cacheKey);
-        var data = (await fetchFunc().ConfigureAwait(false)).ToList();
-        await _cache.SetAsync(cacheKey, data, ExpirationFor(data.Count, expiresAt, emptyResultIsGenuine)).ConfigureAwait(false);
+        return await FetchOnceAsync(cacheKey, async () =>
+        {
+            var data = (await fetchFunc().ConfigureAwait(false)).ToList();
+            await _cache.SetAsync(cacheKey, data, ExpirationFor(data.Count, expiresAt, emptyResultIsGenuine)).ConfigureAwait(false);
 
-        return data;
+            return data;
+        }).ConfigureAwait(false);
     }
 
     /// <summary>
