@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   calculateExperimental,
+  calculateExperimentalMatchup,
   calculateExperimentalPredictions,
   calculateExperimentalSeasonPredictions,
   calculatePredictions,
@@ -18,6 +19,7 @@ import {
   fetchPrediction,
   fetchPredictionsSummaries,
   fetchRankingsSnapshots,
+  fetchSeasonFbsTeams,
   gradePredictions,
   publishGradedResults,
   publishPredictions,
@@ -65,6 +67,48 @@ describe('Admin API service', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await expect(calculateExperimental('token', 2024, 5, 'V1')).rejects.toThrow('Server error');
+    });
+  });
+
+  describe('calculateExperimentalMatchup', () => {
+    it('sends POST to the matchup endpoint with the matchup body and auth header', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ actualGames: [], algorithmVersion: 'V2', prediction: null }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await calculateExperimentalMatchup('my-token', 2024, 5, 'V2', {
+        awayTeam: 'Nebraska',
+        homeTeam: 'Texas',
+        neutralSite: true,
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/seasons/2024/weeks/5/experimental/V2/matchup'),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ awayTeam: 'Nebraska', homeTeam: 'Texas', neutralSite: true }),
+          headers: expect.objectContaining({
+            Authorization: 'Bearer my-token',
+            'Content-Type': 'application/json',
+          }),
+        })
+      );
+      expect(result.prediction).toBeNull();
+    });
+
+    it('throws on a bad request', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: () => Promise.resolve({ message: 'Both teams must be FBS teams in the selected season' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(
+        calculateExperimentalMatchup('token', 2024, 5, 'V1', { awayTeam: 'Opponent', homeTeam: 'Texas', neutralSite: false })
+      ).rejects.toThrow('Both teams must be FBS teams in the selected season');
     });
   });
 
@@ -789,6 +833,37 @@ describe('Admin API service', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await expect(fetchRankingsSnapshots('token')).rejects.toThrow('Timeout');
+    });
+  });
+
+  describe('fetchSeasonFbsTeams', () => {
+    it('sends GET to the season teams endpoint and returns the team names', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ teams: ['Iowa', 'Notre Dame'] }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchSeasonFbsTeams('my-token', 2024);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/seasons/2024/teams'),
+        expect.objectContaining({
+          headers: expect.objectContaining({ Authorization: 'Bearer my-token' }),
+        })
+      );
+      expect(result).toEqual(['Iowa', 'Notre Dame']);
+    });
+
+    it('throws on failed fetch', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ message: 'Server error' }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(fetchSeasonFbsTeams('token', 2024)).rejects.toThrow('Server error');
     });
   });
 

@@ -145,6 +145,43 @@ public class PredictionsMapperTests
     }
 
     [Fact]
+    public void ToDTO_MatchupActualGame_MapsAllFields()
+    {
+        var game = new MatchupActualGame
+        {
+            AwayPoints = 31,
+            AwayTeam = "Michigan",
+            BettingOverUnder = 51.5,
+            BettingSpread = -4,
+            HomePoints = 27,
+            HomeTeam = "Florida",
+            NeutralSite = true,
+            PlayedAfterPrediction = true,
+            SeasonType = "postseason",
+            Week = 1
+        };
+
+        var result = PredictionsMapper.ToDTO(game);
+
+        Assert.Equal(31, result.AwayPoints);
+        Assert.Equal("Michigan", result.AwayTeam);
+        Assert.Equal(51.5, result.BettingOverUnder);
+        Assert.Equal(-4, result.BettingSpread);
+        Assert.Equal(27, result.HomePoints);
+        Assert.Equal("Florida", result.HomeTeam);
+        Assert.True(result.NeutralSite);
+        Assert.True(result.PlayedAfterPrediction);
+        Assert.Equal("postseason", result.SeasonType);
+        Assert.Equal(1, result.Week);
+    }
+
+    [Fact]
+    public void ToDTO_MatchupActualGame_NullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => PredictionsMapper.ToDTO((MatchupActualGame)null!));
+    }
+
+    [Fact]
     public void ToDTO_NeutralSiteGame_MapsCorrectly()
     {
         var prediction = new GamePrediction
@@ -231,6 +268,48 @@ public class PredictionsMapperTests
         Assert.Equal("Ungraded", result.OverUnderGrade);
         Assert.Equal("Ungraded", result.SpreadGrade);
         Assert.Equal("Ungraded", result.WinnerGrade);
+    }
+
+    [Fact]
+    public void ToExperimentalMatchupResponseDTO_NoPredictionOrMeetings_MapsNullAndEmpty()
+    {
+        var matchupResult = new ExperimentalMatchupResult { AlgorithmVersion = RatingAlgorithmVersion.V1 };
+
+        var result = PredictionsMapper.ToExperimentalMatchupResponseDTO(matchupResult);
+
+        Assert.Equal("V1", result.AlgorithmVersion);
+        Assert.Null(result.Prediction);
+        Assert.Empty(result.ActualGames);
+    }
+
+    [Fact]
+    public void ToExperimentalMatchupResponseDTO_NullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => PredictionsMapper.ToExperimentalMatchupResponseDTO(null!));
+    }
+
+    [Fact]
+    public void ToExperimentalMatchupResponseDTO_WithPredictionAndMeetings_MapsBoth()
+    {
+        var matchupResult = new ExperimentalMatchupResult
+        {
+            ActualGames =
+            [
+                new MatchupActualGame { AwayTeam = "Oklahoma", HomeTeam = "USC", AwayPoints = 14, HomePoints = 21, Week = 3 },
+                new MatchupActualGame { AwayTeam = "USC", HomeTeam = "Oklahoma", AwayPoints = 17, HomePoints = 10, Week = 12 }
+            ],
+            AlgorithmVersion = RatingAlgorithmVersion.V2,
+            Prediction = new GamePrediction { AwayTeam = "USC", HomeTeam = "Oklahoma", PredictedWinner = "USC" }
+        };
+
+        var result = PredictionsMapper.ToExperimentalMatchupResponseDTO(matchupResult);
+
+        Assert.Equal("V2", result.AlgorithmVersion);
+        Assert.NotNull(result.Prediction);
+        Assert.Equal("USC", result.Prediction.PredictedWinner);
+        Assert.Collection(result.ActualGames,
+            game => Assert.Equal(3, game.Week),
+            game => Assert.Equal(12, game.Week));
     }
 
     [Fact]

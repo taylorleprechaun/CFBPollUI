@@ -6,6 +6,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    // Node 25+ defines its own global localStorage (undefined without --localstorage-file),
+    // which shadows jsdom's. Disable it so tests use the jsdom implementation.
+    execArgv: ['--no-experimental-webstorage'],
     setupFiles: './src/test-setup.ts',
     coverage: {
       provider: 'v8',

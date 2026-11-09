@@ -15,6 +15,15 @@ public interface IAdminModule
     Task<ExperimentalCalculateResult> CalculateExperimentalAsync(int season, int week, RatingAlgorithmVersion algorithmVersion);
 
     /// <summary>
+    /// Predicts a single hypothetical FBS matchup for the given season and week using an explicitly
+    /// chosen algorithm version, without persisting anything. When the matchup exactly matches a scheduled
+    /// game that week, that game's published line is used. Every completed meeting between the two teams
+    /// that season is returned alongside for reference but is not used for grading.
+    /// </summary>
+    Task<ExperimentalMatchupResult> CalculateExperimentalMatchupAsync(
+        int season, int week, RatingAlgorithmVersion algorithmVersion, string homeTeam, string awayTeam, bool neutralSite);
+
+    /// <summary>
     /// Calculates predictions for the given season and week using an explicitly chosen algorithm
     /// version and grades them against actual results, without persisting anything.
     /// </summary>
@@ -84,6 +93,13 @@ public interface IAdminModule
     /// <param name="forceRefresh">Whether to bypass any cached value and fetch live data.</param>
     /// <returns>The current CFBD API usage snapshot.</returns>
     Task<CFBDUsage> GetCFBDUsageAsync(bool forceRefresh = false);
+
+    /// <summary>
+    /// Retrieves the names of every FBS team for the given season, sorted alphabetically.
+    /// </summary>
+    /// <param name="season">The season year.</param>
+    /// <returns>The season's FBS team names.</returns>
+    Task<IEnumerable<string>> GetFBSTeamNamesAsync(int season);
 
     /// <summary>
     /// Retrieves the games for the given season and week that have not yet been marked complete,

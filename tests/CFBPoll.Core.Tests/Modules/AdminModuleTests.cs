@@ -118,6 +118,239 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task CalculateExperimentalMatchupAsync_BlankTeam_ThrowsArgumentException()
+    {
+        await Assert.ThrowsAnyAsync<ArgumentException>(
+            () => _adminModule.CalculateExperimentalMatchupAsync(2024, 5, RatingAlgorithmVersion.V1, " ", "Florida", false));
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalMatchupAsync_CalculatorReturnsNoPrediction_ReturnsSuccessWithNullPrediction()
+    {
+        SetUpMatchupData(2024, 5, ["Nebraska", "USC"], [], []);
+
+        var result = await _adminModule.CalculateExperimentalMatchupAsync(2024, 5, RatingAlgorithmVersion.V1, "Nebraska", "USC", false);
+
+        Assert.Equal(ExperimentalMatchupOutcome.Success, result.Outcome);
+        Assert.Null(result.Prediction);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalMatchupAsync_DifferentCasing_UsesCanonicalTeamNames()
+    {
+        var prediction = new GamePrediction { HomeTeam = "Notre Dame", AwayTeam = "Texas" };
+        var seasonData = SetUpMatchupData(2024, 5, ["Notre Dame", "Texas"], [], [prediction]);
+        List<ScheduleGame>? passedGames = null;
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, It.IsAny<IDictionary<string, RatingDetails>>(), It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .Callback<SeasonData, IDictionary<string, RatingDetails>, IEnumerable<ScheduleGame>, IEnumerable<BettingLine>>((_, _, games, _) => passedGames = games.ToList())
+            .ReturnsAsync(new List<GamePrediction> { prediction });
+
+        var result = await _adminModule.CalculateExperimentalMatchupAsync(2024, 5, RatingAlgorithmVersion.V1, "notre dame", "TEXAS", false);
+
+        Assert.Equal(ExperimentalMatchupOutcome.Success, result.Outcome);
+        Assert.Same(prediction, result.Prediction);
+        var game = Assert.Single(passedGames!);
+        Assert.Equal("Notre Dame", game.HomeTeam);
+        Assert.Equal("Texas", game.AwayTeam);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalMatchupAsync_ExactlyMatchesScheduledGame_PassesGameIDAndThatWeeksLines()
+    {
+        var schedule = new List<ScheduleGame>
+        {
+            new() { GameID = 611, Week = 6, SeasonType = "regular", HomeTeam = "Oklahoma", AwayTeam = "Florida", NeutralSite = false }
+        };
+        var seasonData = SetUpMatchupData(2024, 5, ["Florida", "Oklahoma"], schedule, []);
+        var weekLines = new List<BettingLine> { new() { GameID = 611, SpreadOpen = -2.5, OverUnderOpen = 50.5 } };
+        _mockDataService.Setup(x => x.GetBettingLinesAsync(2024, 6)).ReturnsAsync(weekLines);
+        List<ScheduleGame>? passedGames = null;
+        List<BettingLine>? passedLines = null;
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, It.IsAny<IDictionary<string, RatingDetails>>(), It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .Callback<SeasonData, IDictionary<string, RatingDetails>, IEnumerable<ScheduleGame>, IEnumerable<BettingLine>>((_, _, games, lines) =>
+            {
+                passedGames = games.ToList();
+                passedLines = lines.ToList();
+            })
+            .ReturnsAsync(new List<GamePrediction>());
+
+        await _adminModule.CalculateExperimentalMatchupAsync(2024, 5, RatingAlgorithmVersion.V1, "Oklahoma", "Florida", false);
+
+        var game = Assert.Single(passedGames!);
+        Assert.Equal(611, game.GameID);
+        var line = Assert.Single(passedLines!);
+        Assert.Equal(-2.5, line.SpreadOpen);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalMatchupAsync_MultipleMeetings_ReturnsAllInOrderWithLaterGamesFlagged()
+    {
+        var schedule = new List<ScheduleGame>
+        {
+            new() { GameID = 950, Week = 1, SeasonType = "postseason", HomeTeam = "Iowa", AwayTeam = "USC", HomePoints = 20, AwayPoints = 23, NeutralSite = true },
+            new() { GameID = 409, Week = 9, SeasonType = "regular", HomeTeam = "Iowa", AwayTeam = "USC", HomePoints = 14, AwayPoints = 10 },
+            new() { GameID = 402, Week = 2, SeasonType = "regular", HomeTeam = "USC", AwayTeam = "Iowa", HomePoints = 21, AwayPoints = 27 },
+            new() { GameID = 406, Week = 6, SeasonType = "regular", HomeTeam = "USC", AwayTeam = "Iowa", HomePoints = 30, AwayPoints = 3 },
+            new() { GameID = 500, Week = 6, SeasonType = "regular", HomeTeam = "Iowa", AwayTeam = "Opponent", HomePoints = 40, AwayPoints = 0 },
+            new() { GameID = 410, Week = 10, SeasonType = "regular", HomeTeam = "USC", AwayTeam = "Iowa" }
+        };
+        SetUpMatchupData(2024, 5, ["Iowa", "USC"], schedule, []);
+        _mockDataService.Setup(x => x.GetBettingLinesAsync(2024, 2))
+            .ReturnsAsync(new List<BettingLine> { new() { GameID = 402, SpreadOpen = -6.5, OverUnderOpen = 48 } });
+
+        var result = await _adminModule.CalculateExperimentalMatchupAsync(2024, 5, RatingAlgorithmVersion.V1, "Iowa", "USC", false);
+
+        Assert.Collection(result.ActualGames,
+            game =>
+            {
+                Assert.Equal(2, game.Week);
+                Assert.Equal("USC", game.HomeTeam);
+                Assert.Equal(27, game.AwayPoints);
+                Assert.Equal(-6.5, game.BettingSpread);
+                Assert.Equal(48, game.BettingOverUnder);
+                Assert.False(game.PlayedAfterPrediction);
+            },
+            game =>
+            {
+                Assert.Equal(6, game.Week);
+                Assert.Null(game.BettingSpread);
+                Assert.False(game.PlayedAfterPrediction);
+            },
+            game =>
+            {
+                Assert.Equal(9, game.Week);
+                Assert.True(game.PlayedAfterPrediction);
+            },
+            game =>
+            {
+                Assert.Equal("postseason", game.SeasonType);
+                Assert.True(game.NeutralSite);
+                Assert.True(game.PlayedAfterPrediction);
+            });
+        _mockDataService.Verify(x => x.GetBettingLinesAsync(2024, 1), Times.Once);
+        _mockDataService.Verify(x => x.GetBettingLinesAsync(2024, 10), Times.Never);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalMatchupAsync_NoMeetingsInSeason_ReturnsEmptyActualGamesWithoutFetchingLines()
+    {
+        var schedule = new List<ScheduleGame>
+        {
+            new() { GameID = 409, Week = 9, SeasonType = "regular", HomeTeam = "Nebraska", AwayTeam = "Opponent", HomePoints = 17, AwayPoints = 24 }
+        };
+        SetUpMatchupData(2024, 5, ["Nebraska", "Michigan"], schedule, []);
+
+        var result = await _adminModule.CalculateExperimentalMatchupAsync(2024, 5, RatingAlgorithmVersion.V1, "Nebraska", "Michigan", false);
+
+        Assert.Empty(result.ActualGames);
+        _mockDataService.Verify(x => x.GetBettingLinesAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalMatchupAsync_NoScheduledGame_PassesTeamsAndNeutralSiteWithoutLines()
+    {
+        var seasonData = SetUpMatchupData(2024, 5, ["Florida", "Iowa"], [], []);
+        List<ScheduleGame>? passedGames = null;
+        List<BettingLine>? passedLines = null;
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, It.IsAny<IDictionary<string, RatingDetails>>(), It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .Callback<SeasonData, IDictionary<string, RatingDetails>, IEnumerable<ScheduleGame>, IEnumerable<BettingLine>>((_, _, games, lines) =>
+            {
+                passedGames = games.ToList();
+                passedLines = lines.ToList();
+            })
+            .ReturnsAsync(new List<GamePrediction>());
+
+        await _adminModule.CalculateExperimentalMatchupAsync(2024, 5, RatingAlgorithmVersion.V2, "Iowa", "Florida", true);
+
+        var game = Assert.Single(passedGames!);
+        Assert.Equal("Iowa", game.HomeTeam);
+        Assert.Equal("Florida", game.AwayTeam);
+        Assert.True(game.NeutralSite);
+        Assert.Null(game.GameID);
+        Assert.Empty(passedLines!);
+        _mockPredictionAlgorithmResolver.Verify(x => x.Resolve(RatingAlgorithmVersion.V2), Times.Once);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalMatchupAsync_PostseasonWeek_PostseasonMeetingNotFlaggedAndUsesWeekOneLines()
+    {
+        var schedule = new List<ScheduleGame>
+        {
+            new() { Week = 15, SeasonType = "regular", HomeTeam = "Team A", AwayTeam = "Team B" },
+            new() { GameID = 900, Week = 1, SeasonType = "postseason", HomeTeam = "Ohio State", AwayTeam = "Oklahoma", HomePoints = 35, AwayPoints = 28 }
+        };
+        SetUpMatchupData(2024, 15, ["Ohio State", "Oklahoma"], schedule, []);
+        _mockDataService.Setup(x => x.GetBettingLinesAsync(2024, 1))
+            .ReturnsAsync(new List<BettingLine> { new() { GameID = 900, SpreadOpen = -3, OverUnderOpen = 55.5 } });
+
+        var result = await _adminModule.CalculateExperimentalMatchupAsync(2024, 15, RatingAlgorithmVersion.V1, "Ohio State", "Oklahoma", true);
+
+        var game = Assert.Single(result.ActualGames);
+        Assert.Equal(35, game.HomePoints);
+        Assert.Equal(-3, game.BettingSpread);
+        Assert.Equal(55.5, game.BettingOverUnder);
+        Assert.False(game.PlayedAfterPrediction);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalMatchupAsync_SameTeamOnBothSides_ReturnsInvalidTeamWithoutCalculating()
+    {
+        SetUpMatchupData(2024, 5, ["Michigan", "Iowa"], [], []);
+
+        var result = await _adminModule.CalculateExperimentalMatchupAsync(2024, 5, RatingAlgorithmVersion.V1, "Michigan", "michigan", false);
+
+        Assert.Equal(ExperimentalMatchupOutcome.InvalidTeam, result.Outcome);
+        _mockDataService.Verify(x => x.GetSeasonDataAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData("Florida", "Oklahoma", false, 6)]
+    [InlineData("Oklahoma", "Florida", true, 6)]
+    [InlineData("Oklahoma", "Florida", false, 7)]
+    public async Task CalculateExperimentalMatchupAsync_ScheduledGameNotExactMatch_PassesNoGameIDOrLines(
+        string homeTeam, string awayTeam, bool neutralSite, int scheduledWeek)
+    {
+        var schedule = new List<ScheduleGame>
+        {
+            new() { GameID = 611, Week = scheduledWeek, SeasonType = "regular", HomeTeam = "Oklahoma", AwayTeam = "Florida", NeutralSite = false }
+        };
+        var seasonData = SetUpMatchupData(2024, 5, ["Florida", "Oklahoma"], schedule, []);
+        List<ScheduleGame>? passedGames = null;
+        List<BettingLine>? passedLines = null;
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, It.IsAny<IDictionary<string, RatingDetails>>(), It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .Callback<SeasonData, IDictionary<string, RatingDetails>, IEnumerable<ScheduleGame>, IEnumerable<BettingLine>>((_, _, games, lines) =>
+            {
+                passedGames = games.ToList();
+                passedLines = lines.ToList();
+            })
+            .ReturnsAsync(new List<GamePrediction>());
+
+        await _adminModule.CalculateExperimentalMatchupAsync(2024, 5, RatingAlgorithmVersion.V1, homeTeam, awayTeam, neutralSite);
+
+        Assert.Null(Assert.Single(passedGames!).GameID);
+        Assert.Empty(passedLines!);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalMatchupAsync_TeamNotFBSInSeason_ReturnsInvalidTeamWithoutCalculating()
+    {
+        SetUpMatchupData(2024, 5, ["Florida"], [], []);
+
+        var result = await _adminModule.CalculateExperimentalMatchupAsync(2024, 5, RatingAlgorithmVersion.V1, "Florida", "Opponent", false);
+
+        Assert.Equal(ExperimentalMatchupOutcome.InvalidTeam, result.Outcome);
+        Assert.Null(result.Prediction);
+        _mockPredictionCalculatorModule.Verify(
+            x => x.GeneratePredictionsAsync(It.IsAny<SeasonData>(), It.IsAny<IDictionary<string, RatingDetails>>(), It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()),
+            Times.Never);
+    }
+
+
+    [Fact]
     public async Task CalculateExperimentalPredictionsAsync_GradesAgainstActualScores_ReturnsSummary()
     {
         var fbsTeams = new Dictionary<string, TeamInfo>
@@ -1502,6 +1735,24 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task GetFBSTeamNamesAsync_ReturnsDistinctNonEmptyNamesSortedAlphabetically()
+    {
+        var teams = new List<FBSTeam>
+        {
+            new() { Name = "Texas" },
+            new() { Name = "Alabama" },
+            new() { Name = string.Empty },
+            new() { Name = "texas" },
+            new() { Name = "Michigan" }
+        };
+        _mockDataService.Setup(x => x.GetFBSTeamsAsync(2024)).ReturnsAsync(teams);
+
+        var result = await _adminModule.GetFBSTeamNamesAsync(2024);
+
+        Assert.Equal(["Alabama", "Michigan", "Texas"], result);
+    }
+
+    [Fact]
     public async Task GetIncompleteGamesAsync_DelegatesToSeasonModule_WithSeasonTypeFromCalendar()
     {
         var fullSchedule = new List<ScheduleGame>
@@ -1924,5 +2175,23 @@ public class AdminModuleTests
         _mockSeasonModule
             .Setup(x => x.IsWeekComplete(week, "regular", It.IsAny<IEnumerable<ScheduleGame>>()))
             .Returns(false);
+    }
+
+    private SeasonData SetUpMatchupData(
+        int season, int week, IEnumerable<string> fbsTeamNames, IEnumerable<ScheduleGame> schedule, IEnumerable<GamePrediction> predictions)
+    {
+        var seasonData = new SeasonData { Season = season, Week = week, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+
+        _mockDataService.Setup(x => x.GetFBSTeamsAsync(season))
+            .ReturnsAsync(fbsTeamNames.Select(n => new FBSTeam { Name = n }).ToList());
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(season, week)).ReturnsAsync(seasonData);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(season)).ReturnsAsync(schedule.ToList());
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(predictions.ToList());
+
+        return seasonData;
     }
 }

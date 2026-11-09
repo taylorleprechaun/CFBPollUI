@@ -50,6 +50,7 @@ vi.mock('../../hooks/use-weeks', () => ({
 }));
 
 const mockCalculateMutateAsync = vi.fn();
+const mockCalculateMatchupMutateAsync = vi.fn();
 const mockCalculatePredictionsMutateAsync = vi.fn();
 const mockCalculateSeasonPredictionsMutateAsync = vi.fn();
 const mockExportMutateAsync = vi.fn();
@@ -57,6 +58,10 @@ const mockExportMutateAsync = vi.fn();
 vi.mock('../../hooks/use-experimental-mutations', () => ({
   useCalculateExperimental: () => ({
     mutateAsync: mockCalculateMutateAsync,
+    isPending: false,
+  }),
+  useCalculateExperimentalMatchup: () => ({
+    mutateAsync: mockCalculateMatchupMutateAsync,
     isPending: false,
   }),
   useCalculateExperimentalPredictions: () => ({
@@ -70,6 +75,14 @@ vi.mock('../../hooks/use-experimental-mutations', () => ({
   useExportExperimental: () => ({
     mutateAsync: mockExportMutateAsync,
     isPending: false,
+  }),
+}));
+
+vi.mock('../../hooks/use-season-fbs-teams', () => ({
+  useSeasonFbsTeams: () => ({
+    data: ['Florida', 'Iowa', 'Texas'],
+    error: null,
+    isLoading: false,
   }),
 }));
 
@@ -108,6 +121,28 @@ describe('ExperimentalPage', () => {
       expect(mockCalculateMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V1', season: 2024, week: 5 });
       expect(mockCalculateMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V2', season: 2024, week: 5 });
     });
+  });
+
+  it('calls calculateExperimentalMatchup once per selected algorithm version when Predict Matchup is clicked', async () => {
+    mockCalculateMatchupMutateAsync.mockImplementation(({ algorithmVersion }: { algorithmVersion: string }) =>
+      Promise.resolve({ actualGames: [], algorithmVersion, prediction: null })
+    );
+
+    renderExperimentalPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Matchup' }));
+    await userEvent.click(screen.getByRole('button', { name: 'V1' }));
+    await userEvent.click(screen.getByRole('combobox', { name: 'Away Team' }));
+    await userEvent.click(screen.getByRole('option', { name: 'Texas' }));
+    await userEvent.click(screen.getByRole('combobox', { name: 'Home Team' }));
+    await userEvent.click(screen.getByRole('option', { name: 'Iowa' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Predict Matchup' }));
+
+    const matchup = { awayTeam: 'Texas', homeTeam: 'Iowa', neutralSite: false };
+    await waitFor(() => {
+      expect(mockCalculateMatchupMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V1', matchup, season: 2024, week: 5 });
+      expect(mockCalculateMatchupMutateAsync).toHaveBeenCalledWith({ algorithmVersion: 'V2', matchup, season: 2024, week: 5 });
+    });
+    expect(await screen.findByText('Texas at Iowa')).toBeInTheDocument();
   });
 
   it('calls calculateExperimentalPredictions once per selected algorithm version on calculate', async () => {
@@ -276,6 +311,19 @@ describe('ExperimentalPage', () => {
     expect(screen.getByLabelText('Season')).toBeInTheDocument();
     expect(screen.getByLabelText('Week')).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Algorithm Version' })).toBeInTheDocument();
+  });
+
+  it('renders the hypothetical matchup panel after switching to matchup mode', async () => {
+    renderExperimentalPage();
+
+    expect(screen.queryByText('Hypothetical Matchup')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Matchup' }));
+
+    expect(screen.getByText('Hypothetical Matchup')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Away Team' })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Home Team' })).toBeInTheDocument();
+    expect(screen.queryByText('Experimental Calculation')).not.toBeInTheDocument();
   });
 
   it('shows a comparison table after a successful calculation', async () => {

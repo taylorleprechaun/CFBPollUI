@@ -23,8 +23,11 @@ import {
   CfbdUsageSchema,
   type ExperimentalCalculateResponse,
   ExperimentalCalculateResponseSchema,
+  type ExperimentalMatchupResponse,
+  ExperimentalMatchupResponseSchema,
   type ExperimentalPredictionsResponse,
   ExperimentalPredictionsResponseSchema,
+  FbsTeamNamesResponseSchema,
   type GradePredictionsResponse,
   GradePredictionsResponseSchema,
   type IncompleteGamesResponse,
@@ -51,6 +54,24 @@ export async function calculateExperimental(
     withAuth(token, { method: 'POST' })
   );
   return parseResponse(response, ExperimentalCalculateResponseSchema);
+}
+
+export async function calculateExperimentalMatchup(
+  token: string,
+  season: number,
+  week: number,
+  algorithmVersion: AlgorithmVersion,
+  matchup: { awayTeam: string; homeTeam: string; neutralSite: boolean }
+): Promise<ExperimentalMatchupResponse> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/experimental/${algorithmVersion}/matchup`,
+    withAuth(token, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(matchup),
+    })
+  );
+  return parseResponse(response, ExperimentalMatchupResponseSchema);
 }
 
 export async function calculateExperimentalPredictions(
@@ -262,6 +283,15 @@ export async function fetchRankingsSnapshots(
     withAuth(token)
   );
   return parseResponse(response, RankingsSnapshotsResponseSchema);
+}
+
+export async function fetchSeasonFbsTeams(token: string, season: number): Promise<string[]> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/teams`,
+    withAuth(token)
+  );
+  const result = await parseResponse(response, FbsTeamNamesResponseSchema);
+  return result.teams;
 }
 
 export async function gradePredictions(

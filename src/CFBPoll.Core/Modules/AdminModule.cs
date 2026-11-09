@@ -81,6 +81,78 @@ public class AdminModule : IAdminModule
         };
     }
 
+    public async Task<ExperimentalMatchupResult> CalculateExperimentalMatchupAsync(
+        int season, int week, RatingAlgorithmVersion algorithmVersion, string homeTeam, string awayTeam, bool neutralSite)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(homeTeam);
+        ArgumentException.ThrowIfNullOrWhiteSpace(awayTeam);
+
+        _logger.LogInformation(
+            "Calculating experimental matchup {AwayTeam} at {HomeTeam} (neutral: {NeutralSite}) for season {Season}, week {Week} using algorithm version {AlgorithmVersion}",
+            awayTeam, homeTeam, neutralSite, season, week, algorithmVersion);
+
+        var fbsTeams = await _dataService.GetFBSTeamsAsync(season).ConfigureAwait(false);
+        var canonicalNames = fbsTeams
+            .Select(t => t.Name)
+            .Where(n => !string.IsNullOrEmpty(n))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(n => n, StringComparer.OrdinalIgnoreCase);
+
+        if (!canonicalNames.TryGetValue(homeTeam, out var canonicalHome)
+            || !canonicalNames.TryGetValue(awayTeam, out var canonicalAway)
+            || canonicalHome.Equals(canonicalAway, StringComparison.OrdinalIgnoreCase))
+        {
+            return new ExperimentalMatchupResult
+            {
+                AlgorithmVersion = algorithmVersion,
+                Outcome = ExperimentalMatchupOutcome.InvalidTeam
+            };
+        }
+
+        var seasonDataTask = _dataService.GetSeasonDataAsync(season, week);
+        var fullScheduleTask = _dataService.GetFullSeasonScheduleAsync(season);
+        await Task.WhenAll(seasonDataTask, fullScheduleTask).ConfigureAwait(false);
+
+        var seasonData = seasonDataTask.Result;
+        var fullSchedule = fullScheduleTask.Result;
+        var (gameWeek, isPostseason) = GameWeekResolver.Resolve(week, fullSchedule);
+
+        // A real game's published line applies only when the matchup is exactly that game: same teams,
+        // same home/away orientation, and same neutral-site flag. Anything else is purely hypothetical.
+        var scheduledGame = FindExactScheduledGame(fullSchedule, canonicalHome, canonicalAway, neutralSite, gameWeek, isPostseason);
+
+        // CFBD API serves all postseason betting lines under week 1
+        var bettingLinesTask = scheduledGame?.GameID is not null
+            ? _dataService.GetBettingLinesAsync(season, isPostseason ? 1 : gameWeek)
+            : Task.FromResult<IEnumerable<BettingLine>>([]);
+        var ratingsTask = _ratingAlgorithmResolver.ResolveForPredictions().RateTeamsAsync(seasonData);
+        var seasonMeetingsTask = FindSeasonMeetingsAsync(season, fullSchedule, canonicalHome, canonicalAway, gameWeek, isPostseason);
+        await Task.WhenAll(bettingLinesTask, ratingsTask, seasonMeetingsTask).ConfigureAwait(false);
+
+        var matchupGame = new ScheduleGame
+        {
+            AwayTeam = canonicalAway,
+            GameID = scheduledGame?.GameID,
+            HomeTeam = canonicalHome,
+            NeutralSite = neutralSite,
+            SeasonType = isPostseason ? "postseason" : "regular",
+            Week = gameWeek
+        };
+
+        var predictions = await _predictionAlgorithmResolver
+            .Resolve(algorithmVersion)
+            .GeneratePredictionsAsync(seasonData, ratingsTask.Result, [matchupGame], bettingLinesTask.Result)
+            .ConfigureAwait(false);
+
+        return new ExperimentalMatchupResult
+        {
+            ActualGames = seasonMeetingsTask.Result,
+            AlgorithmVersion = algorithmVersion,
+            Outcome = ExperimentalMatchupOutcome.Success,
+            Prediction = predictions.FirstOrDefault()
+        };
+    }
+
     public async Task<ExperimentalPredictionsResult> CalculateExperimentalPredictionsAsync(int season, int week, RatingAlgorithmVersion algorithmVersion)
     {
         _logger.LogInformation(
@@ -384,6 +456,18 @@ public class AdminModule : IAdminModule
         return await _dataService.GetCFBDUsageAsync(forceRefresh).ConfigureAwait(false);
     }
 
+    public async Task<IEnumerable<string>> GetFBSTeamNamesAsync(int season)
+    {
+        var teams = await _dataService.GetFBSTeamsAsync(season).ConfigureAwait(false);
+
+        return teams
+            .Select(t => t.Name)
+            .Where(n => !string.IsNullOrEmpty(n))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
     public async Task<IEnumerable<ScheduleGame>> GetIncompleteGamesAsync(int season, int week)
     {
         var calendarTask = _dataService.GetCalendarAsync(season);
@@ -549,5 +633,86 @@ public class AdminModule : IAdminModule
         {
             throttle.Release();
         }
+    }
+
+    /// <summary>
+    /// Finds the scheduled game in the resolved game week (or postseason) that exactly matches the requested
+    /// home team, away team, and neutral-site flag, whether or not it has been played yet.
+    /// </summary>
+    private ScheduleGame? FindExactScheduledGame(
+        IEnumerable<ScheduleGame> fullSchedule, string homeTeam, string awayTeam, bool neutralSite, int gameWeek, bool isPostseason)
+    {
+        var scoic = StringComparison.OrdinalIgnoreCase;
+
+        return fullSchedule.FirstOrDefault(g =>
+            g.HomeTeam is not null && g.HomeTeam.Equals(homeTeam, scoic)
+            && g.AwayTeam is not null && g.AwayTeam.Equals(awayTeam, scoic)
+            && g.NeutralSite == neutralSite
+            && (isPostseason
+                ? g.SeasonType is not null && g.SeasonType.Equals("postseason", scoic)
+                : g.Week == gameWeek && (g.SeasonType is null || g.SeasonType.Equals("regular", scoic))));
+    }
+
+    /// <summary>
+    /// Finds every completed game between the two teams across the season, in either home/away orientation,
+    /// ordered regular season by week then postseason. Opening lines are fetched only for weeks with a meeting.
+    /// Games played after the predicted game week are flagged, since the model could not have seen them.
+    /// </summary>
+    private async Task<IReadOnlyList<MatchupActualGame>> FindSeasonMeetingsAsync(
+        int season, IEnumerable<ScheduleGame> fullSchedule, string homeTeam, string awayTeam, int gameWeek, bool isPostseason)
+    {
+        var scoic = StringComparison.OrdinalIgnoreCase;
+        var matchKeys = new HashSet<string>
+        {
+            PredictionGrader.BuildMatchKey(homeTeam, awayTeam),
+            PredictionGrader.BuildMatchKey(awayTeam, homeTeam)
+        };
+
+        var meetings = fullSchedule
+            .Where(g => g.HomeTeam is not null && g.AwayTeam is not null
+                && g.HomePoints.HasValue && g.AwayPoints.HasValue
+                && matchKeys.Contains(PredictionGrader.BuildMatchKey(g.HomeTeam, g.AwayTeam)))
+            .Select(g => (Game: g, IsPostseason: g.SeasonType is not null && g.SeasonType.Equals("postseason", scoic)))
+            .OrderBy(m => m.IsPostseason)
+            .ThenBy(m => m.Game.Week ?? 0)
+            .ThenBy(m => m.Game.StartDate ?? DateTime.MaxValue)
+            .ToList();
+
+        if (meetings.Count == 0)
+            return [];
+
+        // CFBD API serves all postseason betting lines under week 1
+        var lineWeeks = meetings
+            .Select(m => m.IsPostseason ? 1 : m.Game.Week ?? 0)
+            .Where(w => w > 0)
+            .Distinct()
+            .ToList();
+        var lineResults = await Task.WhenAll(lineWeeks.Select(w => _dataService.GetBettingLinesAsync(season, w))).ConfigureAwait(false);
+        var linesByGameID = lineResults
+            .SelectMany(lines => lines)
+            .Where(b => b.GameID.HasValue)
+            .GroupBy(b => b.GameID!.Value)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        return meetings
+            .Select(m =>
+            {
+                var line = m.Game.GameID.HasValue && linesByGameID.TryGetValue(m.Game.GameID.Value, out var match) ? match : null;
+
+                return new MatchupActualGame
+                {
+                    AwayPoints = m.Game.AwayPoints!.Value,
+                    AwayTeam = m.Game.AwayTeam!,
+                    BettingOverUnder = line?.OverUnderOpen,
+                    BettingSpread = line?.SpreadOpen,
+                    HomePoints = m.Game.HomePoints!.Value,
+                    HomeTeam = m.Game.HomeTeam!,
+                    NeutralSite = m.Game.NeutralSite,
+                    PlayedAfterPrediction = !isPostseason && (m.IsPostseason || m.Game.Week > gameWeek),
+                    SeasonType = m.IsPostseason ? "postseason" : "regular",
+                    Week = m.Game.Week
+                };
+            })
+            .ToList();
     }
 }

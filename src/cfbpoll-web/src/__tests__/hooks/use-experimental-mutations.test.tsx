@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   useCalculateExperimental,
+  useCalculateExperimentalMatchup,
   useCalculateExperimentalPredictions,
   useCalculateExperimentalSeasonPredictions,
   useExportExperimental,
@@ -13,6 +14,7 @@ import {
 
 vi.mock('../../services/admin-api', () => ({
   calculateExperimental: vi.fn(),
+  calculateExperimentalMatchup: vi.fn(),
   calculateExperimentalPredictions: vi.fn(),
   calculateExperimentalSeasonPredictions: vi.fn(),
   downloadExperimentalExport: vi.fn(),
@@ -20,10 +22,13 @@ vi.mock('../../services/admin-api', () => ({
 
 import {
   calculateExperimental,
+  calculateExperimentalMatchup,
   calculateExperimentalPredictions,
   calculateExperimentalSeasonPredictions,
   downloadExperimentalExport,
 } from '../../services/admin-api';
+
+const matchup = { awayTeam: 'Iowa', homeTeam: 'Oklahoma', neutralSite: false };
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -47,6 +52,18 @@ describe('null token guard', () => {
     ).rejects.toThrow('Authentication required');
 
     expect(calculateExperimental).not.toHaveBeenCalled();
+  });
+
+  it('useCalculateExperimentalMatchup rejects with Authentication required when token is null', async () => {
+    const { result } = renderHook(() => useCalculateExperimentalMatchup(null), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(
+      act(() => result.current.mutateAsync({ algorithmVersion: 'V1', matchup, season: 2024, week: 5 }))
+    ).rejects.toThrow('Authentication required');
+
+    expect(calculateExperimentalMatchup).not.toHaveBeenCalled();
   });
 
   it('useCalculateExperimentalPredictions rejects with Authentication required when token is null', async () => {
@@ -113,6 +130,36 @@ describe('useCalculateExperimental', () => {
 
     await expect(
       act(() => result.current.mutateAsync({ algorithmVersion: 'V1', season: 2024, week: 5 }))
+    ).rejects.toThrow('Failed');
+  });
+});
+
+describe('useCalculateExperimentalMatchup', () => {
+  beforeEach(() => vi.resetAllMocks());
+
+  it('calls calculateExperimentalMatchup with token, params, and matchup', async () => {
+    vi.mocked(calculateExperimentalMatchup).mockResolvedValue({ actualGames: [], algorithmVersion: 'V2', prediction: null });
+
+    const { result } = renderHook(() => useCalculateExperimentalMatchup('test-token'), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ algorithmVersion: 'V2', matchup, season: 2024, week: 5 });
+    });
+
+    expect(calculateExperimentalMatchup).toHaveBeenCalledWith('test-token', 2024, 5, 'V2', matchup);
+  });
+
+  it('rejects on failure', async () => {
+    vi.mocked(calculateExperimentalMatchup).mockRejectedValue(new Error('Failed'));
+
+    const { result } = renderHook(() => useCalculateExperimentalMatchup('test-token'), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(
+      act(() => result.current.mutateAsync({ algorithmVersion: 'V1', matchup, season: 2024, week: 5 }))
     ).rejects.toThrow('Failed');
   });
 });
