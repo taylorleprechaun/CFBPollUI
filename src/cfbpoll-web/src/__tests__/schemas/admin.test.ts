@@ -4,11 +4,14 @@ import {
   AdminPredictionsResponseSchema,
   CalculatePredictionsResponseSchema,
   CalculateResponseSchema,
+  ExperimentalMatchupResponseSchema,
+  FbsTeamNamesResponseSchema,
   GamePredictionSchema,
   GradePredictionsResponseSchema,
   IncompleteGameSchema,
   IncompleteGamesResponseSchema,
   LoginResponseSchema,
+  MatchupActualGameSchema,
   PredictionsResponseSchema,
   PredictionsSummariesResponseSchema,
   PredictionsSummarySchema,
@@ -17,6 +20,43 @@ import {
   RefreshCacheResponseSchema,
   SeasonExperimentalPredictionsResponseSchema,
 } from '../../schemas/admin';
+
+const validMatchupPrediction = {
+  actualAwayScore: null,
+  actualHomeScore: null,
+  actualOverUnderResult: null,
+  actualSpreadCoveringTeam: null,
+  actualWinner: null,
+  awayLogoURL: '',
+  awayTeam: 'Florida',
+  awayTeamScore: 24,
+  bettingOverUnder: null,
+  bettingSpread: null,
+  homeLogoURL: '',
+  homeTeam: 'Iowa',
+  homeTeamScore: 20,
+  myOverUnderPick: '',
+  mySpreadPick: '',
+  neutralSite: true,
+  overUnderGrade: 'Ungraded',
+  predictedMargin: 4,
+  predictedWinner: 'Florida',
+  spreadGrade: 'Ungraded',
+  winnerGrade: 'Ungraded',
+};
+
+const validMatchupActualGame = {
+  awayPoints: 17,
+  awayTeam: 'Iowa',
+  bettingOverUnder: 44.5,
+  bettingSpread: -3,
+  homePoints: 21,
+  homeTeam: 'Florida',
+  neutralSite: false,
+  playedAfterPrediction: true,
+  seasonType: 'regular',
+  week: 9,
+};
 
 describe('Admin schemas', () => {
   describe('AdminPredictionsResponseSchema', () => {
@@ -82,6 +122,39 @@ describe('Admin schemas', () => {
         },
       };
       const result = CalculateResponseSchema.safeParse(data);
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('ExperimentalMatchupResponseSchema', () => {
+    it('rejects missing actualGames', () => {
+      const result = ExperimentalMatchupResponseSchema.safeParse({ algorithmVersion: 'V1', prediction: null });
+      expect(result.success).toBe(false);
+    });
+
+    it('validates a response with a null prediction and no meetings', () => {
+      const result = ExperimentalMatchupResponseSchema.safeParse({ actualGames: [], algorithmVersion: 'V1', prediction: null });
+      expect(result.success).toBe(true);
+    });
+
+    it('validates a response with a prediction and meetings', () => {
+      const result = ExperimentalMatchupResponseSchema.safeParse({
+        actualGames: [validMatchupActualGame],
+        algorithmVersion: 'V2',
+        prediction: validMatchupPrediction,
+      });
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('FbsTeamNamesResponseSchema', () => {
+    it('rejects non-string team names', () => {
+      const result = FbsTeamNamesResponseSchema.safeParse({ teams: [1, 2] });
+      expect(result.success).toBe(false);
+    });
+
+    it('validates a list of team names', () => {
+      const result = FbsTeamNamesResponseSchema.safeParse({ teams: ['Florida', 'Iowa'] });
       expect(result.success).toBe(true);
     });
   });
@@ -347,6 +420,28 @@ describe('Admin schemas', () => {
         expect(result.data.token).toBe('jwt-token-here');
         expect(result.data.expiresIn).toBe(28800);
       }
+    });
+  });
+
+  describe('MatchupActualGameSchema', () => {
+    it('rejects missing playedAfterPrediction', () => {
+      const result = MatchupActualGameSchema.safeParse({ ...validMatchupActualGame, playedAfterPrediction: undefined });
+      expect(result.success).toBe(false);
+    });
+
+    it('validates a game with null week and null betting values', () => {
+      const result = MatchupActualGameSchema.safeParse({
+        ...validMatchupActualGame,
+        bettingOverUnder: null,
+        bettingSpread: null,
+        week: null,
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('validates a valid game', () => {
+      const result = MatchupActualGameSchema.safeParse(validMatchupActualGame);
+      expect(result.success).toBe(true);
     });
   });
 

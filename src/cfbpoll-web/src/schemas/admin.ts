@@ -50,6 +50,29 @@ export const SeasonExperimentalPredictionsResponseSchema = z.object({
   weeks: z.array(SeasonExperimentalPredictionsWeekSchema),
 });
 
+export const MatchupActualGameSchema = z.object({
+  awayPoints: z.number(),
+  awayTeam: z.string(),
+  bettingOverUnder: z.number().nullable(),
+  bettingSpread: z.number().nullable(),
+  homePoints: z.number(),
+  homeTeam: z.string(),
+  neutralSite: z.boolean(),
+  playedAfterPrediction: z.boolean(),
+  seasonType: z.string(),
+  week: z.number().nullable(),
+});
+
+export const ExperimentalMatchupResponseSchema = z.object({
+  actualGames: z.array(MatchupActualGameSchema),
+  algorithmVersion: z.string(),
+  prediction: GamePredictionPublicSchema.nullable(),
+});
+
+export const FbsTeamNamesResponseSchema = z.object({
+  teams: z.array(z.string()),
+});
+
 export const RankingsSnapshotSchema = z.object({
   createdAt: z.string(),
   isPublished: z.boolean(),
@@ -159,12 +182,15 @@ export type CalculateResponse = z.infer<typeof CalculateResponseSchema>;
 export type CfbdTopEndpoint = z.infer<typeof CfbdTopEndpointSchema>;
 export type CfbdUsage = z.infer<typeof CfbdUsageSchema>;
 export type ExperimentalCalculateResponse = z.infer<typeof ExperimentalCalculateResponseSchema>;
+export type ExperimentalMatchupResponse = z.infer<typeof ExperimentalMatchupResponseSchema>;
 export type ExperimentalPredictionsResponse = z.infer<typeof ExperimentalPredictionsResponseSchema>;
+export type FbsTeamNamesResponse = z.infer<typeof FbsTeamNamesResponseSchema>;
 export type GamePrediction = z.infer<typeof GamePredictionSchema>;
 export type GradePredictionsResponse = z.infer<typeof GradePredictionsResponseSchema>;
 export type IncompleteGame = z.infer<typeof IncompleteGameSchema>;
 export type IncompleteGamesResponse = z.infer<typeof IncompleteGamesResponseSchema>;
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
+export type MatchupActualGame = z.infer<typeof MatchupActualGameSchema>;
 export type PredictionRecordSummary = z.infer<typeof PredictionRecordSummarySchema>;
 export type PredictionsResponse = z.infer<typeof PredictionsResponseSchema>;
 export type PredictionsSummary = z.infer<typeof PredictionsSummarySchema>;
