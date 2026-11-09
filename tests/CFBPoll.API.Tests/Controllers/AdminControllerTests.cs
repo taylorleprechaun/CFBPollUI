@@ -84,6 +84,92 @@ public class AdminControllerTests
         Assert.Equal("Ohio State", team.TeamName);
     }
 
+    [Theory]
+    [InlineData("", "Florida")]
+    [InlineData("Florida", "  ")]
+    [InlineData("Florida", "florida ")]
+    public async Task CalculateExperimentalMatchup_InvalidTeamInput_ReturnsBadRequestWithoutCallingModule(string homeTeam, string awayTeam)
+    {
+        var request = new ExperimentalMatchupRequestDTO { AwayTeam = awayTeam, HomeTeam = homeTeam };
+
+        var result = await _controller.CalculateExperimentalMatchup(2024, 5, RatingAlgorithmVersion.V1, request);
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.IsType<ErrorResponseDTO>(badRequest.Value);
+        _mockAdminModule.Verify(
+            x => x.CalculateExperimentalMatchupAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<RatingAlgorithmVersion>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalMatchup_ModuleReportsInvalidTeam_ReturnsBadRequest()
+    {
+        var request = new ExperimentalMatchupRequestDTO { AwayTeam = "Opponent", HomeTeam = "Iowa" };
+        _mockAdminModule
+            .Setup(x => x.CalculateExperimentalMatchupAsync(2024, 5, RatingAlgorithmVersion.V1, "Iowa", "Opponent", false))
+            .ReturnsAsync(new ExperimentalMatchupResult { AlgorithmVersion = RatingAlgorithmVersion.V1, Outcome = ExperimentalMatchupOutcome.InvalidTeam });
+
+        var result = await _controller.CalculateExperimentalMatchup(2024, 5, RatingAlgorithmVersion.V1, request);
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result.Result);
+        var error = Assert.IsType<ErrorResponseDTO>(badRequest.Value);
+        Assert.Equal(400, error.StatusCode);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalMatchup_NullRequestBody_ReturnsBadRequest()
+    {
+        var result = await _controller.CalculateExperimentalMatchup(2024, 5, RatingAlgorithmVersion.V1, null!);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalMatchup_ValidRequest_ReturnsOkWithPredictionAndSeasonMeetings()
+    {
+        var request = new ExperimentalMatchupRequestDTO { AwayTeam = " Nebraska ", HomeTeam = "Notre Dame", NeutralSite = true };
+        var matchupResult = new ExperimentalMatchupResult
+        {
+            ActualGames = [new MatchupActualGame { AwayTeam = "Notre Dame", HomeTeam = "Nebraska", AwayPoints = 24, HomePoints = 20, BettingSpread = 2.5, Week = 9, PlayedAfterPrediction = true }],
+            AlgorithmVersion = RatingAlgorithmVersion.V2,
+            Outcome = ExperimentalMatchupOutcome.Success,
+            Prediction = new GamePrediction { AwayTeam = "Nebraska", HomeTeam = "Notre Dame", NeutralSite = true, PredictedWinner = "Notre Dame" }
+        };
+        _mockAdminModule
+            .Setup(x => x.CalculateExperimentalMatchupAsync(2024, 5, RatingAlgorithmVersion.V2, "Notre Dame", "Nebraska", true))
+            .ReturnsAsync(matchupResult);
+
+        var result = await _controller.CalculateExperimentalMatchup(2024, 5, RatingAlgorithmVersion.V2, request);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<ExperimentalMatchupResponseDTO>(okResult.Value);
+        Assert.Equal("V2", response.AlgorithmVersion);
+        Assert.NotNull(response.Prediction);
+        Assert.Equal("Notre Dame", response.Prediction.PredictedWinner);
+        Assert.True(response.Prediction.NeutralSite);
+        var meeting = Assert.Single(response.ActualGames);
+        Assert.Equal(24, meeting.AwayPoints);
+        Assert.Equal(2.5, meeting.BettingSpread);
+        Assert.Equal(9, meeting.Week);
+        Assert.True(meeting.PlayedAfterPrediction);
+    }
+
+    [Fact]
+    public async Task CalculateExperimentalMatchup_ValidRequestWithNoPrediction_ReturnsOkWithNullPrediction()
+    {
+        var request = new ExperimentalMatchupRequestDTO { AwayTeam = "Texas", HomeTeam = "Florida" };
+        _mockAdminModule
+            .Setup(x => x.CalculateExperimentalMatchupAsync(2024, 1, RatingAlgorithmVersion.V1, "Florida", "Texas", false))
+            .ReturnsAsync(new ExperimentalMatchupResult { AlgorithmVersion = RatingAlgorithmVersion.V1, Outcome = ExperimentalMatchupOutcome.Success });
+
+        var result = await _controller.CalculateExperimentalMatchup(2024, 1, RatingAlgorithmVersion.V1, request);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<ExperimentalMatchupResponseDTO>(okResult.Value);
+        Assert.Null(response.Prediction);
+        Assert.Empty(response.ActualGames);
+    }
+
     [Fact]
     public async Task CalculateExperimentalPredictions_ReturnsGradedPredictionsWithSummary()
     {
@@ -443,6 +529,18 @@ public class AdminControllerTests
         var response = Assert.IsType<CFBDUsageDTO>(okResult.Value);
         Assert.Equal(150, response.RemainingCalls);
         Assert.Equal("Patron", response.TierName);
+    }
+
+    [Fact]
+    public async Task GetFBSTeams_ReturnsTeamNames()
+    {
+        _mockAdminModule.Setup(x => x.GetFBSTeamNamesAsync(2024)).ReturnsAsync(["Iowa", "USC"]);
+
+        var result = await _controller.GetFBSTeams(2024);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<FBSTeamNamesResponseDTO>(okResult.Value);
+        Assert.Equal(["Iowa", "USC"], response.Teams);
     }
 
     [Fact]

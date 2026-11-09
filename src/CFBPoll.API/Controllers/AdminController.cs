@@ -68,6 +68,37 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
+    /// Predicts a single hypothetical FBS matchup for the specified season and week using an explicitly
+    /// chosen algorithm version, without persisting anything. Includes the real result for reference
+    /// when the two teams actually played that week.
+    /// </summary>
+    [HttpPost("seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/matchup")]
+    public async Task<ActionResult<ExperimentalMatchupResponseDTO>> CalculateExperimentalMatchup(
+        int season, int week, RatingAlgorithmVersion algorithmVersion, [FromBody] ExperimentalMatchupRequestDTO request)
+    {
+        if (request is null)
+            return BadRequest(new ErrorResponseDTO { Message = "Request body is required", StatusCode = 400 });
+
+        if (string.IsNullOrWhiteSpace(request.HomeTeam) || string.IsNullOrWhiteSpace(request.AwayTeam))
+            return BadRequest(new ErrorResponseDTO { Message = "Home and away teams are required", StatusCode = 400 });
+
+        if (request.HomeTeam.Trim().Equals(request.AwayTeam.Trim(), StringComparison.OrdinalIgnoreCase))
+            return BadRequest(new ErrorResponseDTO { Message = "Home and away teams must be different", StatusCode = 400 });
+
+        _logger.LogInformation(
+            "Admin calculating experimental matchup {AwayTeam} at {HomeTeam} for season {Season}, week {Week} using algorithm version {AlgorithmVersion}",
+            request.AwayTeam, request.HomeTeam, season, week, algorithmVersion);
+
+        var result = await _adminModule.CalculateExperimentalMatchupAsync(
+            season, week, algorithmVersion, request.HomeTeam.Trim(), request.AwayTeam.Trim(), request.NeutralSite);
+
+        if (result.Outcome == ExperimentalMatchupOutcome.InvalidTeam)
+            return BadRequest(new ErrorResponseDTO { Message = "Both teams must be FBS teams in the selected season", StatusCode = 400 });
+
+        return Ok(PredictionsMapper.ToExperimentalMatchupResponseDTO(result));
+    }
+
+    /// <summary>
     /// Calculates predictions for the specified season and week using an explicitly chosen algorithm
     /// version and grades them against actual results, without persisting anything.
     /// </summary>
@@ -277,6 +308,17 @@ public class AdminController : ControllerBase
         var usage = await _adminModule.GetCFBDUsageAsync(forceRefresh);
 
         return Ok(CFBDUsageMapper.ToDTO(usage));
+    }
+
+    /// <summary>
+    /// Retrieves the names of every FBS team for the specified season, sorted alphabetically.
+    /// </summary>
+    [HttpGet("seasons/{season}/teams")]
+    public async Task<ActionResult<FBSTeamNamesResponseDTO>> GetFBSTeams(int season)
+    {
+        var teams = await _adminModule.GetFBSTeamNamesAsync(season);
+
+        return Ok(new FBSTeamNamesResponseDTO { Teams = teams });
     }
 
     /// <summary>

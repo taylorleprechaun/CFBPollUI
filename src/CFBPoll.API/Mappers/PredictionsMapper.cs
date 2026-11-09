@@ -57,6 +57,25 @@ public static class PredictionsMapper
         };
     }
 
+    public static MatchupActualGameDTO ToDTO(MatchupActualGame game)
+    {
+        ArgumentNullException.ThrowIfNull(game);
+
+        return new MatchupActualGameDTO
+        {
+            AwayPoints = game.AwayPoints,
+            AwayTeam = game.AwayTeam,
+            BettingOverUnder = game.BettingOverUnder,
+            BettingSpread = game.BettingSpread,
+            HomePoints = game.HomePoints,
+            HomeTeam = game.HomeTeam,
+            NeutralSite = game.NeutralSite,
+            PlayedAfterPrediction = game.PlayedAfterPrediction,
+            SeasonType = game.SeasonType,
+            Week = game.Week
+        };
+    }
+
     public static PredictionRecordSummaryDTO ToDTO(PredictionRecordSummary summary)
     {
         ArgumentNullException.ThrowIfNull(summary);
@@ -70,6 +89,18 @@ public static class PredictionsMapper
             OverUnder = TrackRecordMapper.ToDTO(summary.OverUnder),
             Spread = TrackRecordMapper.ToDTO(summary.Spread),
             Winner = TrackRecordMapper.ToDTO(summary.Winner)
+        };
+    }
+
+    public static ExperimentalMatchupResponseDTO ToExperimentalMatchupResponseDTO(ExperimentalMatchupResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        return new ExperimentalMatchupResponseDTO
+        {
+            ActualGames = result.ActualGames.Select(ToDTO).ToList(),
+            AlgorithmVersion = result.AlgorithmVersion.ToString(),
+            Prediction = result.Prediction is null ? null : ToDTO(result.Prediction)
         };
     }
 
