@@ -30,6 +30,21 @@ const mockPrediction: GamePredictionPublic = {
 };
 
 describe('PredictionsComparisonColumn', () => {
+  it('hides spread and O/U rows without a line when showMissingLines is false', () => {
+    render(<PredictionsComparisonColumn prediction={{ ...mockPrediction, bettingOverUnder: null, bettingSpread: null, myOverUnderPick: '', mySpreadPick: '' }} showMissingLines={false} />);
+
+    expect(screen.queryByText('Spread')).not.toBeInTheDocument();
+    expect(screen.queryByText('O/U')).not.toBeInTheDocument();
+    expect(screen.getByText('21-24')).toBeInTheDocument();
+  });
+
+  it('keeps spread and O/U rows that have a line when showMissingLines is false', () => {
+    render(<PredictionsComparisonColumn prediction={mockPrediction} showMissingLines={false} />);
+
+    expect(screen.getByText('Spread')).toBeInTheDocument();
+    expect(screen.getByText('O/U')).toBeInTheDocument();
+  });
+
   it('renders a No data placeholder when no prediction is provided for this column', () => {
     render(<PredictionsComparisonColumn prediction={undefined} />);
 
@@ -62,5 +77,13 @@ describe('PredictionsComparisonColumn', () => {
 
     expect(screen.getByText('Score')).toBeInTheDocument();
     expect(screen.getByText('21-24')).toBeInTheDocument();
+  });
+
+  it('shows N/A spread and O/U rows by default when there is no line', () => {
+    render(<PredictionsComparisonColumn prediction={{ ...mockPrediction, bettingOverUnder: null, bettingSpread: null, myOverUnderPick: '', mySpreadPick: '' }} />);
+
+    expect(screen.getByText('Spread')).toBeInTheDocument();
+    expect(screen.getByText('O/U')).toBeInTheDocument();
+    expect(screen.getAllByText('N/A').length).toBeGreaterThan(0);
   });
 });

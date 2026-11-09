@@ -41,15 +41,13 @@ export function ExperimentalMatchupResults({ runState, submittedMatchup }: Exper
         </div>
       </div>
       <div className="p-6 space-y-6">
-        <div className="overflow-x-auto">
-          <div className="flex gap-4">
-            {runVersions.map((version) => (
-              <div key={version} className="flex-1 min-w-64">
-                <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">{version}</h3>
-                <MatchupVersionResult entry={runState[version]} />
-              </div>
-            ))}
-          </div>
+        <div className="flex flex-wrap gap-4">
+          {runVersions.map((version) => (
+            <div key={version} className="flex-1 min-w-64">
+              <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">{version}</h3>
+              <MatchupVersionResult entry={runState[version]} />
+            </div>
+          ))}
         </div>
         <MatchupSeasonMeetings games={actualGames} />
       </div>

@@ -31,5 +31,5 @@ export function MatchupVersionResult({ entry }: MatchupVersionResultProps) {
     );
   }
 
-  return <PredictionsComparisonColumn prediction={entry.result.prediction} />;
+  return <PredictionsComparisonColumn prediction={entry.result.prediction} showMissingLines={false} />;
 }

@@ -81,11 +81,6 @@ export function ExperimentalMatchupPanel({
     setHomeTeam(awayTeam);
   }
 
-  function handleWeekChange(week: number | null) {
-    onWeekChange(week);
-    clearTeams();
-  }
-
   return (
     <>
       <div className="bg-surface border border-border rounded-xl p-4 sm:p-6 space-y-4">
@@ -107,7 +102,7 @@ export function ExperimentalMatchupPanel({
               ))}
             </select>
           </div>
-          <WeekSelect onWeekChange={handleWeekChange} selectedWeek={selectedWeek} weeks={weeks} weeksLoading={weeksLoading} />
+          <WeekSelect onWeekChange={onWeekChange} selectedWeek={selectedWeek} weeks={weeks} weeksLoading={weeksLoading} />
           <AlgorithmVersionPicker onChange={setSelectedVersions} selectedVersions={selectedVersions} />
         </div>
         <div className="flex flex-wrap gap-4 items-end">

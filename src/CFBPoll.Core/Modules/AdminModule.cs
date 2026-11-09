@@ -117,23 +117,31 @@ public class AdminModule : IAdminModule
         var fullSchedule = fullScheduleTask.Result;
         var (gameWeek, isPostseason) = GameWeekResolver.Resolve(week, fullSchedule);
 
+        // A real game's published line applies only when the matchup is exactly that game: same teams,
+        // same home/away orientation, and same neutral-site flag. Anything else is purely hypothetical.
+        var scheduledGame = FindExactScheduledGame(fullSchedule, canonicalHome, canonicalAway, neutralSite, gameWeek, isPostseason);
+
+        // CFBD API serves all postseason betting lines under week 1
+        var bettingLinesTask = scheduledGame?.GameID is not null
+            ? _dataService.GetBettingLinesAsync(season, isPostseason ? 1 : gameWeek)
+            : Task.FromResult<IEnumerable<BettingLine>>([]);
         var ratingsTask = _ratingAlgorithmResolver.ResolveForPredictions().RateTeamsAsync(seasonData);
         var seasonMeetingsTask = FindSeasonMeetingsAsync(season, fullSchedule, canonicalHome, canonicalAway, gameWeek, isPostseason);
-        await Task.WhenAll(ratingsTask, seasonMeetingsTask).ConfigureAwait(false);
+        await Task.WhenAll(bettingLinesTask, ratingsTask, seasonMeetingsTask).ConfigureAwait(false);
 
-        var hypotheticalGame = new ScheduleGame
+        var matchupGame = new ScheduleGame
         {
             AwayTeam = canonicalAway,
+            GameID = scheduledGame?.GameID,
             HomeTeam = canonicalHome,
             NeutralSite = neutralSite,
             SeasonType = isPostseason ? "postseason" : "regular",
             Week = gameWeek
         };
 
-        // No betting lines are passed: a hypothetical game has no line of its own.
         var predictions = await _predictionAlgorithmResolver
             .Resolve(algorithmVersion)
-            .GeneratePredictionsAsync(seasonData, ratingsTask.Result, [hypotheticalGame], [])
+            .GeneratePredictionsAsync(seasonData, ratingsTask.Result, [matchupGame], bettingLinesTask.Result)
             .ConfigureAwait(false);
 
         return new ExperimentalMatchupResult
@@ -625,6 +633,24 @@ public class AdminModule : IAdminModule
         {
             throttle.Release();
         }
+    }
+
+    /// <summary>
+    /// Finds the scheduled game in the resolved game week (or postseason) that exactly matches the requested
+    /// home team, away team, and neutral-site flag, whether or not it has been played yet.
+    /// </summary>
+    private ScheduleGame? FindExactScheduledGame(
+        IEnumerable<ScheduleGame> fullSchedule, string homeTeam, string awayTeam, bool neutralSite, int gameWeek, bool isPostseason)
+    {
+        var scoic = StringComparison.OrdinalIgnoreCase;
+
+        return fullSchedule.FirstOrDefault(g =>
+            g.HomeTeam is not null && g.HomeTeam.Equals(homeTeam, scoic)
+            && g.AwayTeam is not null && g.AwayTeam.Equals(awayTeam, scoic)
+            && g.NeutralSite == neutralSite
+            && (isPostseason
+                ? g.SeasonType is not null && g.SeasonType.Equals("postseason", scoic)
+                : g.Week == gameWeek && (g.SeasonType is null || g.SeasonType.Equals("regular", scoic))));
     }
 
     /// <summary>

@@ -16,8 +16,9 @@ public interface IAdminModule
 
     /// <summary>
     /// Predicts a single hypothetical FBS matchup for the given season and week using an explicitly
-    /// chosen algorithm version, without persisting anything. If the two teams actually played that
-    /// week, the real result is returned alongside for reference but is not used for grading.
+    /// chosen algorithm version, without persisting anything. When the matchup exactly matches a scheduled
+    /// game that week, that game's published line is used. Every completed meeting between the two teams
+    /// that season is returned alongside for reference but is not used for grading.
     /// </summary>
     Task<ExperimentalMatchupResult> CalculateExperimentalMatchupAsync(
         int season, int week, RatingAlgorithmVersion algorithmVersion, string homeTeam, string awayTeam, bool neutralSite);

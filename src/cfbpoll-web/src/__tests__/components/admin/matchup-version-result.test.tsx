@@ -65,7 +65,7 @@ describe('MatchupVersionResult', () => {
     expect(screen.getByText('V2 boom')).toBeInTheDocument();
   });
 
-  it('shows the predicted score when the version returned a prediction', () => {
+  it('shows the predicted score without spread or O/U rows for a hypothetical game', () => {
     render(
       <MatchupVersionResult
         entry={createEntry({ result: { actualGames: [], algorithmVersion: 'V2', prediction }, status: 'success' })}
@@ -73,6 +73,20 @@ describe('MatchupVersionResult', () => {
     );
 
     expect(screen.getByText('27-24')).toBeInTheDocument();
+    expect(screen.queryByText('Spread')).not.toBeInTheDocument();
+    expect(screen.queryByText('O/U')).not.toBeInTheDocument();
     expect(screen.queryByText('Insufficient data')).not.toBeInTheDocument();
+  });
+
+  it('shows the published spread and O/U when the matchup is a real scheduled game', () => {
+    const scheduledPrediction = { ...prediction, bettingOverUnder: 51.5, bettingSpread: 2.5, myOverUnderPick: 'Under', mySpreadPick: 'Michigan' };
+    render(
+      <MatchupVersionResult
+        entry={createEntry({ result: { actualGames: [], algorithmVersion: 'V1', prediction: scheduledPrediction }, status: 'success' })}
+      />
+    );
+
+    expect(screen.getByText('Oklahoma +2.5')).toBeInTheDocument();
+    expect(screen.getByText('51.5')).toBeInTheDocument();
   });
 });

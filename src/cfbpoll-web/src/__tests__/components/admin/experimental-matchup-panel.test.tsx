@@ -76,17 +76,6 @@ describe('ExperimentalMatchupPanel', () => {
     expect(screen.getByRole('combobox', { name: 'Home Team' })).toHaveValue('');
   });
 
-  it('clears both teams when the week changes', async () => {
-    const handleWeekChange = vi.fn();
-    renderPanel({ onWeekChange: handleWeekChange });
-    await pickTeam('Away Team', 'Texas');
-
-    await userEvent.selectOptions(screen.getByLabelText('Week'), '6');
-
-    expect(handleWeekChange).toHaveBeenCalledWith(6);
-    expect(screen.getByRole('combobox', { name: 'Away Team' })).toHaveValue('');
-  });
-
   it('disables Predict Matchup until both teams are picked', async () => {
     renderPanel();
 
@@ -126,6 +115,19 @@ describe('ExperimentalMatchupPanel', () => {
     const homeList = screen.getByRole('listbox', { name: 'Home Team' });
     expect(within(homeList).queryByRole('option', { name: 'Texas' })).not.toBeInTheDocument();
     expect(within(homeList).getAllByRole('option')).toHaveLength(2);
+  });
+
+  it('keeps both teams when only the week changes', async () => {
+    const handleWeekChange = vi.fn();
+    renderPanel({ onWeekChange: handleWeekChange });
+    await pickTeam('Away Team', 'Texas');
+    await pickTeam('Home Team', 'Iowa');
+
+    await userEvent.selectOptions(screen.getByLabelText('Week'), '6');
+
+    expect(handleWeekChange).toHaveBeenCalledWith(6);
+    expect(screen.getByRole('combobox', { name: 'Away Team' })).toHaveValue('Texas');
+    expect(screen.getByRole('combobox', { name: 'Home Team' })).toHaveValue('Iowa');
   });
 
   it('runs the selected versions with the picked matchup and neutral flag', async () => {

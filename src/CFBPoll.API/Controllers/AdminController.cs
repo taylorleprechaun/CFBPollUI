@@ -69,8 +69,8 @@ public class AdminController : ControllerBase
 
     /// <summary>
     /// Predicts a single hypothetical FBS matchup for the specified season and week using an explicitly
-    /// chosen algorithm version, without persisting anything. Includes the real result for reference
-    /// when the two teams actually played that week.
+    /// chosen algorithm version, without persisting anything. Uses the published line when the matchup
+    /// exactly matches a scheduled game that week, and includes every completed meeting that season for reference.
     /// </summary>
     [HttpPost("seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/matchup")]
     public async Task<ActionResult<ExperimentalMatchupResponseDTO>> CalculateExperimentalMatchup(
