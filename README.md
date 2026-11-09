@@ -369,8 +369,8 @@ npm test
 ### Coverage Summary
 
 <!-- coverage:start -->
-![Backend Tests](https://img.shields.io/badge/Backend_Tests-1153-blue)
-![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1638-blue)
+![Backend Tests](https://img.shields.io/badge/Backend_Tests-1180-blue)
+![Frontend Tests](https://img.shields.io/badge/Frontend_Tests-1703-blue)
 ![Core Coverage](https://img.shields.io/badge/Core_Coverage-99%25-brightgreen)
 ![API Coverage](https://img.shields.io/badge/API_Coverage-100%25-brightgreen)
 ![Web Coverage](https://img.shields.io/badge/Web_Coverage-99%25-brightgreen)
@@ -379,7 +379,7 @@ npm test
 |---------|---------------|-----------------|
 | CFBPoll.Core | 99% | 94% |
 | CFBPoll.API | 100% | 98% |
-| cfbpoll-web | 99% | 95% |
+| cfbpoll-web | 99% | 94% |
 <!-- coverage:end -->
 
 **Excluded from coverage:**
