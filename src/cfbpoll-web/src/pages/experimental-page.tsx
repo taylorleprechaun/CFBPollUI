@@ -6,6 +6,7 @@ import {
   CompareSeasonWeeksModal,
   DEFAULT_ALGORITHM_VERSIONS,
   ExperimentalCalculateSection,
+  ExperimentalMatchupPanel,
   ExperimentalPredictionsCalculateSection,
   IncompleteWeekBanner,
   PredictionsComparisonSection,
@@ -24,7 +25,7 @@ import { useWeekSelection } from '../hooks/use-week-selection';
 import { useWeeks } from '../hooks/use-weeks';
 import { SITE_OWNER_NAME } from '../lib/config';
 
-type ExperimentalMode = 'predictions' | 'ratings';
+type ExperimentalMode = 'matchup' | 'predictions' | 'ratings';
 
 export function ExperimentalPage() {
   useDocumentTitle(`${SITE_OWNER_NAME} - Experimental`);
@@ -89,6 +90,12 @@ export function ExperimentalPage() {
           className={mode === 'predictions' ? BUTTON_PRIMARY : BUTTON_SECONDARY}
         >
           Predictions
+        </button>
+        <button
+          onClick={() => setMode('matchup')}
+          className={mode === 'matchup' ? BUTTON_PRIMARY : BUTTON_SECONDARY}
+        >
+          Matchup
         </button>
       </div>
 
@@ -174,6 +181,20 @@ export function ExperimentalPage() {
             />
           )}
         </>
+      )}
+
+      {mode === 'matchup' && (
+        <ExperimentalMatchupPanel
+          onSeasonChange={setSelectedSeason}
+          onWeekChange={setSelectedWeek}
+          seasons={seasonOptions}
+          seasonsLoading={seasonsLoading}
+          selectedSeason={selectedSeason}
+          selectedWeek={selectedWeek}
+          token={token}
+          weeks={weeksData?.weeks ?? []}
+          weeksLoading={weeksLoading}
+        />
       )}
     </div>
   );
