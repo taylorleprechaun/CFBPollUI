@@ -123,6 +123,42 @@ export const PredictionsSummarySchema = z.object({
 
 export const PredictionsSummariesResponseSchema = z.array(PredictionsSummarySchema);
 
+export const PredictionCalibrationSourceSchema = z.enum(['Accepted', 'CarriedForward', 'Manual']);
+
+export const PredictionCalibrationParameterSchema = z.object({
+  defaultValue: z.number(),
+  description: z.string(),
+  key: z.string(),
+  label: z.string(),
+  max: z.number(),
+  min: z.number(),
+  step: z.number(),
+});
+
+export const PredictionCalibrationResponseSchema = z.object({
+  draftUsesDifferentValues: z.boolean(),
+  isLocked: z.boolean(),
+  isStored: z.boolean(),
+  isSupported: z.boolean(),
+  parameters: z.array(PredictionCalibrationParameterSchema),
+  season: z.number(),
+  source: PredictionCalibrationSourceSchema.nullable(),
+  updatedAt: z.string().nullable(),
+  values: z.record(z.string(), z.number()),
+  week: z.number(),
+});
+
+export const PredictionCalibrationHistoryEntrySchema = z.object({
+  isLocked: z.boolean(),
+  season: z.number(),
+  source: PredictionCalibrationSourceSchema,
+  updatedAt: z.string().nullable(),
+  values: z.record(z.string(), z.number()),
+  week: z.number(),
+});
+
+export const PredictionCalibrationHistoryResponseSchema = z.array(PredictionCalibrationHistoryEntrySchema);
+
 export const CfbdTopEndpointSchema = z.object({
   endpoint: z.string(),
   requestCount: z.number(),
@@ -191,6 +227,10 @@ export type IncompleteGame = z.infer<typeof IncompleteGameSchema>;
 export type IncompleteGamesResponse = z.infer<typeof IncompleteGamesResponseSchema>;
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 export type MatchupActualGame = z.infer<typeof MatchupActualGameSchema>;
+export type PredictionCalibrationHistoryEntry = z.infer<typeof PredictionCalibrationHistoryEntrySchema>;
+export type PredictionCalibrationParameter = z.infer<typeof PredictionCalibrationParameterSchema>;
+export type PredictionCalibrationResponse = z.infer<typeof PredictionCalibrationResponseSchema>;
+export type PredictionCalibrationSource = z.infer<typeof PredictionCalibrationSourceSchema>;
 export type PredictionRecordSummary = z.infer<typeof PredictionRecordSummarySchema>;
 export type PredictionsResponse = z.infer<typeof PredictionsResponseSchema>;
 export type PredictionsSummary = z.infer<typeof PredictionsSummarySchema>;

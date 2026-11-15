@@ -17,6 +17,8 @@ import {
   fetchCfbdUsage,
   fetchIncompleteGames,
   fetchPrediction,
+  fetchPredictionCalibration,
+  fetchPredictionCalibrationHistory,
   fetchPredictionsSummaries,
   fetchRankingsSnapshots,
   fetchSeasonFbsTeams,
@@ -25,8 +27,22 @@ import {
   publishPredictions,
   publishRankingsSnapshot,
   refreshCache,
+  savePredictionCalibration,
   updatePageVisibility,
 } from '../../services/admin-api';
+
+const mockCalibrationResponse = {
+  draftUsesDifferentValues: false,
+  isLocked: false,
+  isStored: true,
+  isSupported: true,
+  parameters: [{ defaultValue: 0, description: 'Desc', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 }],
+  season: 2026,
+  source: 'Manual',
+  updatedAt: '2026-11-01T12:00:00Z',
+  values: { paramA: 1.5 },
+  week: 10,
+};
 
 describe('Admin API service', () => {
   beforeEach(() => {
@@ -755,6 +771,51 @@ describe('Admin API service', () => {
     });
   });
 
+  describe('fetchPredictionCalibration', () => {
+    it('rejects a response with an unknown source', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ ...mockCalibrationResponse, source: 'Guessed' }),
+      }));
+
+      await expect(fetchPredictionCalibration('token', 2026, 10)).rejects.toThrow('Validation failed');
+    });
+
+    it('sends GET to the week calibration endpoint with auth header and parses the response', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(mockCalibrationResponse) });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchPredictionCalibration('token', 2026, 10);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/seasons/2026/weeks/10/prediction-calibration'),
+        expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer token' }) })
+      );
+      expect(result.values.paramA).toBe(1.5);
+    });
+  });
+
+  describe('fetchPredictionCalibrationHistory', () => {
+    it('sends GET to the season calibration endpoint and parses the entries', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve([
+          { isLocked: true, season: 2026, source: 'CarriedForward', updatedAt: null, values: { paramA: 0 }, week: 9 },
+        ]),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchPredictionCalibrationHistory('token', 2026);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/seasons/2026/prediction-calibration'),
+        expect.anything()
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].isLocked).toBe(true);
+    });
+  });
+
   describe('fetchPredictionsSummaries', () => {
     it('sends GET to predictions with auth header', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
@@ -1078,6 +1139,33 @@ describe('Admin API service', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await expect(refreshCache('token', 2024, 5)).rejects.toThrow('Connection refused');
+    });
+  });
+
+  describe('savePredictionCalibration', () => {
+    it('sends PUT with the values as a JSON body', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(mockCalibrationResponse) });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await savePredictionCalibration('token', 2026, 10, { paramA: 1.5 });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/seasons/2026/weeks/10/prediction-calibration'),
+        expect.objectContaining({
+          body: JSON.stringify({ values: { paramA: 1.5 } }),
+          method: 'PUT',
+        })
+      );
+    });
+
+    it('surfaces the server message when the save is rejected', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: () => Promise.resolve({ message: 'Calibration can’t be changed after the week’s predictions are published' }),
+      }));
+
+      await expect(savePredictionCalibration('token', 2026, 10, { paramA: 1 })).rejects.toThrow('published');
     });
   });
 

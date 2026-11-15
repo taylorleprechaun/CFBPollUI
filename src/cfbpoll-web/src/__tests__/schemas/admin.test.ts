@@ -12,6 +12,8 @@ import {
   IncompleteGamesResponseSchema,
   LoginResponseSchema,
   MatchupActualGameSchema,
+  PredictionCalibrationHistoryEntrySchema,
+  PredictionCalibrationResponseSchema,
   PredictionsResponseSchema,
   PredictionsSummariesResponseSchema,
   PredictionsSummarySchema,
@@ -442,6 +444,53 @@ describe('Admin schemas', () => {
     it('validates a valid game', () => {
       const result = MatchupActualGameSchema.safeParse(validMatchupActualGame);
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe('PredictionCalibrationHistoryEntrySchema', () => {
+    it('accepts an entry with a null updatedAt', () => {
+      const result = PredictionCalibrationHistoryEntrySchema.safeParse({
+        isLocked: true, season: 2026, source: 'CarriedForward', updatedAt: null, values: { paramA: 0 }, week: 9,
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects a non-numeric value', () => {
+      const result = PredictionCalibrationHistoryEntrySchema.safeParse({
+        isLocked: true, season: 2026, source: 'Manual', updatedAt: null, values: { paramA: 'high' }, week: 9,
+      });
+
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('PredictionCalibrationResponseSchema', () => {
+    const validResponse = {
+      draftUsesDifferentValues: false,
+      isLocked: false,
+      isStored: false,
+      isSupported: true,
+      parameters: [{ defaultValue: 0, description: 'Desc', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 }],
+      season: 2026,
+      source: 'CarriedForward',
+      updatedAt: null,
+      values: { paramA: 1.5 },
+      week: 10,
+    };
+
+    it('accepts a valid response', () => {
+      expect(PredictionCalibrationResponseSchema.safeParse(validResponse).success).toBe(true);
+    });
+
+    it('accepts an unsupported season with a null source and no values', () => {
+      const result = PredictionCalibrationResponseSchema.safeParse({ ...validResponse, isSupported: false, parameters: [], source: null, values: {} });
+
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects an unknown source', () => {
+      expect(PredictionCalibrationResponseSchema.safeParse({ ...validResponse, source: 'Guessed' }).success).toBe(false);
     });
   });
 

@@ -32,6 +32,10 @@ import {
   GradePredictionsResponseSchema,
   type IncompleteGamesResponse,
   IncompleteGamesResponseSchema,
+  type PredictionCalibrationHistoryEntry,
+  PredictionCalibrationHistoryResponseSchema,
+  type PredictionCalibrationResponse,
+  PredictionCalibrationResponseSchema,
   PredictionsSummariesResponseSchema,
   type PredictionsSummary,
   type RankingsSnapshot,
@@ -253,6 +257,29 @@ export async function fetchPrediction(
   return parseResponse(response, AdminPredictionsResponseSchema);
 }
 
+export async function fetchPredictionCalibration(
+  token: string,
+  season: number,
+  week: number
+): Promise<PredictionCalibrationResponse> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction-calibration`,
+    withAuth(token)
+  );
+  return parseResponse(response, PredictionCalibrationResponseSchema);
+}
+
+export async function fetchPredictionCalibrationHistory(
+  token: string,
+  season: number
+): Promise<PredictionCalibrationHistoryEntry[]> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/prediction-calibration`,
+    withAuth(token)
+  );
+  return parseResponse(response, PredictionCalibrationHistoryResponseSchema);
+}
+
 export async function fetchPredictionsSummaries(
   token: string
 ): Promise<PredictionsSummary[]> {
@@ -363,6 +390,23 @@ export async function refreshCache(
     withAuth(token, { method: 'POST' })
   );
   return parseResponse(response, RefreshCacheResponseSchema);
+}
+
+export async function savePredictionCalibration(
+  token: string,
+  season: number,
+  week: number,
+  values: Record<string, number>
+): Promise<PredictionCalibrationResponse> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction-calibration`,
+    withAuth(token, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values }),
+    })
+  );
+  return parseResponse(response, PredictionCalibrationResponseSchema);
 }
 
 export async function updatePageVisibility(
