@@ -108,6 +108,18 @@ public interface IAdminModule
     Task<IEnumerable<ScheduleGame>> GetIncompleteGamesAsync(int season, int week);
 
     /// <summary>
+    /// Retrieves the calibration that applies to the given season and week's predictions, with whether
+    /// it can still be edited and whether an unpublished draft was generated with different values.
+    /// </summary>
+    Task<PredictionCalibrationView> GetPredictionCalibrationAsync(int season, int week);
+
+    /// <summary>
+    /// Retrieves every stored prediction calibration for the given season, in week order, with whether
+    /// each week is locked.
+    /// </summary>
+    Task<IEnumerable<PredictionCalibrationHistoryEntry>> GetPredictionCalibrationHistoryAsync(int season);
+
+    /// <summary>
     /// Retrieves the persisted predictions for the given season and week without recalculating or
     /// re-grading, along with publish/grade status flags. Returns null if no predictions exist for
     /// the week.
@@ -172,4 +184,11 @@ public interface IAdminModule
     /// </summary>
     /// <returns>True if an entry was removed; otherwise false.</returns>
     Task<bool> RemoveCacheEntryAsync(string key);
+
+    /// <summary>
+    /// Saves calibration values for the given season and week's predictions. Rejected when the season's
+    /// algorithm takes no calibration, when the week's predictions are already published, or when the
+    /// values don't match the algorithm's parameters (unknown or missing keys, out-of-range values).
+    /// </summary>
+    Task<SavePredictionCalibrationResult> SavePredictionCalibrationAsync(int season, int week, IReadOnlyDictionary<string, double> values);
 }

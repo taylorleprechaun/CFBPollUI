@@ -499,6 +499,51 @@ public class AdminModule : IAdminModule
         return _seasonModule.GetIncompleteGames(week, seasonType, fullSchedule);
     }
 
+    public async Task<PredictionCalibrationView> GetPredictionCalibrationAsync(int season, int week)
+    {
+        if (_predictionAlgorithmResolver.ResolveForSeason(season) is not ICalibratedPredictionCalculator calibratedCalculator)
+            return new PredictionCalibrationView { IsSupported = false, Season = season, Week = week };
+
+        var parameters = calibratedCalculator.CalibrationParameters;
+
+        var storedTask = _predictionCalibrationModule.GetAsync(season, week, parameters);
+        var predictionsTask = _predictionsModule.GetAsync(season, week);
+        var publishedWeeksTask = _predictionsModule.GetPublishedWeekNumbersAsync(season);
+        await Task.WhenAll(storedTask, predictionsTask, publishedWeeksTask).ConfigureAwait(false);
+
+        var stored = storedTask.Result;
+        var calibration = stored
+            ?? await _predictionCalibrationModule.ResolveEffectiveAsync(season, week, parameters).ConfigureAwait(false);
+        var isLocked = publishedWeeksTask.Result.Contains(week);
+        var draft = predictionsTask.Result;
+
+        return new PredictionCalibrationView
+        {
+            Calibration = calibration,
+            DraftUsesDifferentValues = draft is not null && !isLocked
+                && !HaveSameCalibrationValues(draft.AppliedCalibration, calibration.Values, parameters),
+            IsLocked = isLocked,
+            IsStored = stored is not null,
+            IsSupported = true,
+            Parameters = parameters,
+            Season = season,
+            Week = week
+        };
+    }
+
+    public async Task<IEnumerable<PredictionCalibrationHistoryEntry>> GetPredictionCalibrationHistoryAsync(int season)
+    {
+        var calibrationsTask = _predictionCalibrationModule.GetSeasonAsync(season);
+        var publishedWeeksTask = _predictionsModule.GetPublishedWeekNumbersAsync(season);
+        await Task.WhenAll(calibrationsTask, publishedWeeksTask).ConfigureAwait(false);
+
+        var publishedWeeks = publishedWeeksTask.Result.ToHashSet();
+
+        return calibrationsTask.Result
+            .Select(c => new PredictionCalibrationHistoryEntry { Calibration = c, IsLocked = publishedWeeks.Contains(c.Week) })
+            .ToList();
+    }
+
     public async Task<GetPredictionsResult?> GetPredictionsAsync(int season, int week)
     {
         var predictionsTask = _predictionsModule.GetAsync(season, week);
@@ -639,6 +684,34 @@ public class AdminModule : IAdminModule
         return await _cache.RemoveAsync(key).ConfigureAwait(false);
     }
 
+    public async Task<SavePredictionCalibrationResult> SavePredictionCalibrationAsync(int season, int week, IReadOnlyDictionary<string, double> values)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+
+        if (_predictionAlgorithmResolver.ResolveForSeason(season) is not ICalibratedPredictionCalculator calibratedCalculator)
+            return new SavePredictionCalibrationResult { Outcome = SavePredictionCalibrationOutcome.NotSupported };
+
+        var publishedWeeks = await _predictionsModule.GetPublishedWeekNumbersAsync(season).ConfigureAwait(false);
+        if (publishedWeeks.Contains(week))
+            return new SavePredictionCalibrationResult { Outcome = SavePredictionCalibrationOutcome.Locked };
+
+        var validationError = ValidateCalibrationValues(values, calibratedCalculator.CalibrationParameters);
+        if (validationError is not null)
+            return new SavePredictionCalibrationResult { ErrorMessage = validationError, Outcome = SavePredictionCalibrationOutcome.InvalidValues };
+
+        await _predictionCalibrationModule.SaveAsync(new PredictionCalibration
+        {
+            Season = season,
+            Source = PredictionCalibrationSource.Manual,
+            Values = values.ToDictionary(v => v.Key, v => v.Value),
+            Week = week
+        }).ConfigureAwait(false);
+
+        _logger.LogInformation("Saved prediction calibration for season {Season}, week {Week}", season, week);
+
+        return new SavePredictionCalibrationResult { Outcome = SavePredictionCalibrationOutcome.Saved };
+    }
+
     private async Task<ExperimentalPredictionsResult> CalculateThrottledExperimentalPredictionsAsync(
         int season, int week, RatingAlgorithmVersion algorithmVersion, SemaphoreSlim throttle)
     {
@@ -735,6 +808,22 @@ public class AdminModule : IAdminModule
     }
 
     /// <summary>
+    /// Compares two sets of calibration values over the given parameters. A null or missing value counts
+    /// as the parameter's default, so a draft generated before calibration existed matches the defaults.
+    /// </summary>
+    private bool HaveSameCalibrationValues(IReadOnlyDictionary<string, double>? applied, IReadOnlyDictionary<string, double> current, IEnumerable<PredictionCalibrationParameter> parameters)
+    {
+        const double tolerance = 1e-9;
+
+        return parameters.All(p =>
+        {
+            var appliedValue = applied is not null && applied.TryGetValue(p.Key, out var a) ? a : p.DefaultValue;
+            var currentValue = current.TryGetValue(p.Key, out var c) ? c : p.DefaultValue;
+            return Math.Abs(appliedValue - currentValue) < tolerance;
+        });
+    }
+
+    /// <summary>
     /// Returns the calibration values to calculate a week's predictions with. A week with no stored values
     /// gets the carried-forward values saved as its own row, so its history shows what was applied.
     /// </summary>
@@ -759,5 +848,28 @@ public class AdminModule : IAdminModule
         }
 
         return carriedForward.Values;
+    }
+
+    /// <summary>
+    /// Checks submitted calibration values against the algorithm's parameters: every parameter must have a
+    /// finite value within its range, and no other keys are allowed.
+    /// </summary>
+    /// <returns>A message describing the first problem found, or null when the values are valid.</returns>
+    private string? ValidateCalibrationValues(IReadOnlyDictionary<string, double> values, IReadOnlyList<PredictionCalibrationParameter> parameters)
+    {
+        var unknownKey = values.Keys.FirstOrDefault(k => parameters.All(p => p.Key != k));
+        if (unknownKey is not null)
+            return $"Unknown calibration parameter: {unknownKey}";
+
+        foreach (var parameter in parameters)
+        {
+            if (!values.TryGetValue(parameter.Key, out var value))
+                return $"A value for {parameter.Label} is required";
+
+            if (!double.IsFinite(value) || value < parameter.Min || value > parameter.Max)
+                return $"{parameter.Label} must be between {parameter.Min} and {parameter.Max}";
+        }
+
+        return null;
     }
 }

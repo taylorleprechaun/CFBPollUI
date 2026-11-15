@@ -1924,6 +1924,88 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task GetPredictionCalibrationAsync_DraftGeneratedBeforeCalibrationAndDefaultValues_DoesNotFlagMismatch()
+    {
+        SetUpCalibratedCalculator(2026);
+        SetUpCalibrationState(2026, 4, values: CalibrationValues(0, 0), isStored: false, publishedWeeks: [],
+            draft: new PredictionsResult { AppliedCalibration = null, Season = 2026, Week = 4 });
+
+        var result = await _adminModule.GetPredictionCalibrationAsync(2026, 4);
+
+        Assert.False(result.DraftUsesDifferentValues);
+    }
+
+    [Fact]
+    public async Task GetPredictionCalibrationAsync_DraftGeneratedWithDifferentValues_FlagsMismatch()
+    {
+        SetUpCalibratedCalculator(2026);
+        SetUpCalibrationState(2026, 4, values: CalibrationValues(1.5, 0), isStored: true, publishedWeeks: [],
+            draft: new PredictionsResult { AppliedCalibration = CalibrationValues(0.5, 0), Season = 2026, Week = 4 });
+
+        var result = await _adminModule.GetPredictionCalibrationAsync(2026, 4);
+
+        Assert.True(result.DraftUsesDifferentValues);
+    }
+
+    [Fact]
+    public async Task GetPredictionCalibrationAsync_NoStoredRow_ReturnsCarriedForwardValuesAsNotStored()
+    {
+        SetUpCalibratedCalculator(2026);
+        SetUpCalibrationState(2026, 4, values: CalibrationValues(2, -1), isStored: false, publishedWeeks: [], draft: null);
+
+        var result = await _adminModule.GetPredictionCalibrationAsync(2026, 4);
+
+        Assert.True(result.IsSupported);
+        Assert.False(result.IsStored);
+        Assert.False(result.IsLocked);
+        Assert.False(result.DraftUsesDifferentValues);
+        Assert.Equal(PredictionCalibrationSource.CarriedForward, result.Calibration!.Source);
+        Assert.Equal(2, result.Calibration.Values["paramA"]);
+        Assert.Equal(2, result.Parameters.Count);
+    }
+
+    [Fact]
+    public async Task GetPredictionCalibrationAsync_PublishedWeek_IsLockedAndNeverFlagsMismatch()
+    {
+        SetUpCalibratedCalculator(2026);
+        SetUpCalibrationState(2026, 4, values: CalibrationValues(1.5, 0), isStored: true, publishedWeeks: [3, 4],
+            draft: new PredictionsResult { AppliedCalibration = CalibrationValues(0, 0), Season = 2026, Week = 4 });
+
+        var result = await _adminModule.GetPredictionCalibrationAsync(2026, 4);
+
+        Assert.True(result.IsLocked);
+        Assert.True(result.IsStored);
+        Assert.False(result.DraftUsesDifferentValues);
+    }
+
+    [Fact]
+    public async Task GetPredictionCalibrationAsync_UncalibratedCalculator_ReturnsNotSupported()
+    {
+        var result = await _adminModule.GetPredictionCalibrationAsync(2024, 4);
+
+        Assert.False(result.IsSupported);
+        Assert.Null(result.Calibration);
+        _mockPredictionCalibrationModule.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task GetPredictionCalibrationHistoryAsync_MarksPublishedWeeksLocked()
+    {
+        _mockPredictionCalibrationModule.Setup(x => x.GetSeasonAsync(2026)).ReturnsAsync(
+        [
+            new PredictionCalibration { Season = 2026, Week = 2 },
+            new PredictionCalibration { Season = 2026, Week = 3 }
+        ]);
+        _mockPredictionsModule.Setup(x => x.GetPublishedWeekNumbersAsync(2026)).ReturnsAsync([2]);
+
+        var result = (await _adminModule.GetPredictionCalibrationHistoryAsync(2026)).ToList();
+
+        Assert.Equal([2, 3], result.Select(e => e.Calibration.Week));
+        Assert.True(result[0].IsLocked);
+        Assert.False(result[1].IsLocked);
+    }
+
+    [Fact]
     public async Task GetPredictionsAsync_CallsBothPredictionsModuleMethods()
     {
         _mockPredictionsModule.Setup(x => x.GetAsync(2024, 5))
@@ -2292,27 +2374,148 @@ public class AdminModuleTests
         _mockCache.Verify(x => x.RemoveAsync("teams_2024"), Times.Once);
     }
 
-    private (Mock<ICalibratedPredictionCalculator> Calculator, SeasonData SeasonData, Dictionary<string, RatingDetails> Ratings)
-        SetUpCalibratedCalculation(int season, int week)
+    [Fact]
+    public async Task SavePredictionCalibrationAsync_MissingKey_ReturnsInvalidValuesWithoutSaving()
+    {
+        SetUpCalibratedCalculator(2026);
+        _mockPredictionsModule.Setup(x => x.GetPublishedWeekNumbersAsync(2026)).ReturnsAsync([]);
+
+        var result = await _adminModule.SavePredictionCalibrationAsync(2026, 4, new Dictionary<string, double> { ["paramA"] = 1 });
+
+        Assert.Equal(SavePredictionCalibrationOutcome.InvalidValues, result.Outcome);
+        Assert.Contains("Param B", result.ErrorMessage);
+        _mockPredictionCalibrationModule.Verify(x => x.SaveAsync(It.IsAny<PredictionCalibration>()), Times.Never);
+    }
+
+    [Theory]
+    [InlineData(5.1)]
+    [InlineData(-5.1)]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    public async Task SavePredictionCalibrationAsync_OutOfRangeOrNonFiniteValue_ReturnsInvalidValuesWithoutSaving(double paramAValue)
+    {
+        SetUpCalibratedCalculator(2026);
+        _mockPredictionsModule.Setup(x => x.GetPublishedWeekNumbersAsync(2026)).ReturnsAsync([]);
+
+        var result = await _adminModule.SavePredictionCalibrationAsync(2026, 4, CalibrationValues(paramAValue, 0));
+
+        Assert.Equal(SavePredictionCalibrationOutcome.InvalidValues, result.Outcome);
+        Assert.Contains("Param A", result.ErrorMessage);
+        _mockPredictionCalibrationModule.Verify(x => x.SaveAsync(It.IsAny<PredictionCalibration>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SavePredictionCalibrationAsync_PublishedWeek_ReturnsLockedWithoutSaving()
+    {
+        SetUpCalibratedCalculator(2026);
+        _mockPredictionsModule.Setup(x => x.GetPublishedWeekNumbersAsync(2026)).ReturnsAsync([4]);
+
+        var result = await _adminModule.SavePredictionCalibrationAsync(2026, 4, CalibrationValues(1, 1));
+
+        Assert.Equal(SavePredictionCalibrationOutcome.Locked, result.Outcome);
+        _mockPredictionCalibrationModule.Verify(x => x.SaveAsync(It.IsAny<PredictionCalibration>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SavePredictionCalibrationAsync_UncalibratedCalculator_ReturnsNotSupported()
+    {
+        var result = await _adminModule.SavePredictionCalibrationAsync(2024, 4, CalibrationValues(1, 1));
+
+        Assert.Equal(SavePredictionCalibrationOutcome.NotSupported, result.Outcome);
+        _mockPredictionCalibrationModule.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task SavePredictionCalibrationAsync_UnknownKey_ReturnsInvalidValuesWithoutSaving()
+    {
+        SetUpCalibratedCalculator(2026);
+        _mockPredictionsModule.Setup(x => x.GetPublishedWeekNumbersAsync(2026)).ReturnsAsync([]);
+        var values = new Dictionary<string, double> { ["paramA"] = 1, ["paramB"] = 1, ["retiredParam"] = 3 };
+
+        var result = await _adminModule.SavePredictionCalibrationAsync(2026, 4, values);
+
+        Assert.Equal(SavePredictionCalibrationOutcome.InvalidValues, result.Outcome);
+        Assert.Contains("retiredParam", result.ErrorMessage);
+        _mockPredictionCalibrationModule.Verify(x => x.SaveAsync(It.IsAny<PredictionCalibration>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SavePredictionCalibrationAsync_ValidValues_SavesAsManual()
+    {
+        SetUpCalibratedCalculator(2026);
+        _mockPredictionsModule.Setup(x => x.GetPublishedWeekNumbersAsync(2026)).ReturnsAsync([1, 2, 3]);
+        PredictionCalibration? saved = null;
+        _mockPredictionCalibrationModule.Setup(x => x.SaveAsync(It.IsAny<PredictionCalibration>()))
+            .Callback<PredictionCalibration>(c => saved = c)
+            .ReturnsAsync(true);
+
+        var result = await _adminModule.SavePredictionCalibrationAsync(2026, 4, CalibrationValues(-5, 10));
+
+        Assert.Equal(SavePredictionCalibrationOutcome.Saved, result.Outcome);
+        Assert.Equal(PredictionCalibrationSource.Manual, saved!.Source);
+        Assert.Equal(2026, saved.Season);
+        Assert.Equal(4, saved.Week);
+        Assert.Equal(-5, saved.Values["paramA"]);
+        Assert.Equal(10, saved.Values["paramB"]);
+    }
+
+    private Dictionary<string, double> CalibrationValues(double paramA, double paramB)
+    {
+        return new Dictionary<string, double> { ["paramA"] = paramA, ["paramB"] = paramB };
+    }
+
+    private (Mock<ICalibratedPredictionCalculator> Calculator, SeasonData SeasonData, Dictionary<string, RatingDetails> Ratings) SetUpCalibratedCalculation(int season, int week)
     {
         var seasonData = new SeasonData { Season = season, Week = week, Teams = new Dictionary<string, TeamInfo>() };
         var ratings = new Dictionary<string, RatingDetails>();
-        var calculator = new Mock<ICalibratedPredictionCalculator>();
-        calculator.Setup(x => x.CalibrationParameters).Returns(
-        [
-            new PredictionCalibrationParameter { DefaultValue = 0, Key = "paramA", Max = 5, Min = -5, Step = 0.1 }
-        ]);
+        var calculator = SetUpCalibratedCalculator(season);
         calculator
-            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(),
-                It.IsAny<IEnumerable<BettingLine>>(), It.IsAny<IReadOnlyDictionary<string, double>>()))
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>(), It.IsAny<IReadOnlyDictionary<string, double>>()))
             .ReturnsAsync(new List<GamePrediction>());
 
-        _mockPredictionAlgorithmResolver.Setup(x => x.ResolveForSeason(season)).Returns(calculator.Object);
         _mockDataService.Setup(x => x.GetSeasonDataAsync(season, week)).ReturnsAsync(seasonData);
         _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(season)).ReturnsAsync(new List<ScheduleGame>());
         _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
 
         return (calculator, seasonData, ratings);
+    }
+
+    /// <summary>
+    /// Resolves the season to a calibrated calculator with two parameters: paramA in [-5, 5] and paramB in [-10, 10], both defaulting to 0.
+    /// </summary>
+    private Mock<ICalibratedPredictionCalculator> SetUpCalibratedCalculator(int season)
+    {
+        var calculator = new Mock<ICalibratedPredictionCalculator>();
+        calculator.Setup(x => x.CalibrationParameters).Returns(
+        [
+            new PredictionCalibrationParameter { DefaultValue = 0, Key = "paramA", Label = "Param A", Max = 5, Min = -5, Step = 0.1 },
+            new PredictionCalibrationParameter { DefaultValue = 0, Key = "paramB", Label = "Param B", Max = 10, Min = -10, Step = 0.1 }
+        ]);
+
+        _mockPredictionAlgorithmResolver.Setup(x => x.ResolveForSeason(season)).Returns(calculator.Object);
+
+        return calculator;
+    }
+
+    /// <summary>
+    /// Sets up a week's effective calibration (stored or carried forward), its draft predictions, and the season's published weeks.
+    /// </summary>
+    private void SetUpCalibrationState(int season, int week, IReadOnlyDictionary<string, double> values, bool isStored, IEnumerable<int> publishedWeeks, PredictionsResult? draft)
+    {
+        var calibration = new PredictionCalibration
+        {
+            Season = season,
+            Source = isStored ? PredictionCalibrationSource.Manual : PredictionCalibrationSource.CarriedForward,
+            Values = values,
+            Week = week
+        };
+
+        _mockPredictionCalibrationModule.Setup(x => x.GetAsync(season, week, It.IsAny<IEnumerable<PredictionCalibrationParameter>>()))
+            .ReturnsAsync(isStored ? calibration : null);
+        _mockPredictionCalibrationModule.Setup(x => x.ResolveEffectiveAsync(season, week, It.IsAny<IEnumerable<PredictionCalibrationParameter>>()))
+            .ReturnsAsync(calibration);
+        _mockPredictionsModule.Setup(x => x.GetAsync(season, week)).ReturnsAsync(draft);
+        _mockPredictionsModule.Setup(x => x.GetPublishedWeekNumbersAsync(season)).ReturnsAsync(publishedWeeks.ToList());
     }
 
     private void SetUpCompleteWeek(int season, int week)
