@@ -63,6 +63,22 @@ public class DatabaseServiceExtensionsTests
     }
 
     [Fact]
+    public void AddDatabase_RegistersIPredictionCalibrationData()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var configuration = BuildConfiguration();
+
+        services.AddDatabase(configuration);
+
+        var provider = services.BuildServiceProvider();
+        var data = provider.GetService<IPredictionCalibrationData>();
+
+        Assert.NotNull(data);
+        Assert.IsType<PredictionCalibrationData>(data);
+    }
+
+    [Fact]
     public void AddDatabase_RegistersIPredictionsData()
     {
         var services = new ServiceCollection();
@@ -112,6 +128,9 @@ public class DatabaseServiceExtensionsTests
         var mockPageVisibilityData = new Mock<IPageVisibilityData>();
         mockPageVisibilityData.Setup(x => x.InitializeAsync()).ReturnsAsync(true);
 
+        var mockPredictionCalibrationData = new Mock<IPredictionCalibrationData>();
+        mockPredictionCalibrationData.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
+
         var mockPredictionsData = new Mock<IPredictionsData>();
         mockPredictionsData.Setup(x => x.InitializeAsync()).Returns(Task.CompletedTask);
 
@@ -120,6 +139,7 @@ public class DatabaseServiceExtensionsTests
 
         var builder = WebApplication.CreateBuilder();
         builder.Services.AddSingleton(mockPageVisibilityData.Object);
+        builder.Services.AddSingleton(mockPredictionCalibrationData.Object);
         builder.Services.AddSingleton(mockPredictionsData.Object);
         builder.Services.AddSingleton(mockRankingsData.Object);
         var app = builder.Build();
@@ -127,6 +147,7 @@ public class DatabaseServiceExtensionsTests
         await app.InitializeDatabaseAsync();
 
         mockPageVisibilityData.Verify(x => x.InitializeAsync(), Times.Once);
+        mockPredictionCalibrationData.Verify(x => x.InitializeAsync(), Times.Once);
         mockPredictionsData.Verify(x => x.InitializeAsync(), Times.Once);
         mockRankingsData.Verify(x => x.InitializeAsync(), Times.Once);
     }

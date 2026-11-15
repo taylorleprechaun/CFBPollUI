@@ -19,6 +19,7 @@ public class AdminModuleTests
     private readonly Mock<IPollLeadersModule> _mockPollLeadersModule;
     private readonly Mock<IPredictionAlgorithmResolver> _mockPredictionAlgorithmResolver;
     private readonly Mock<IPredictionCalculatorModule> _mockPredictionCalculatorModule;
+    private readonly Mock<IPredictionCalibrationModule> _mockPredictionCalibrationModule;
     private readonly Mock<IPredictionGradingModule> _mockPredictionGradingModule;
     private readonly Mock<IPredictionsModule> _mockPredictionsModule;
     private readonly Mock<IRankingsModule> _mockRankingsModule;
@@ -44,6 +45,7 @@ public class AdminModuleTests
         _mockPredictionAlgorithmResolver.Setup(x => x.ResolveForSeason(It.IsAny<int>())).Returns(_mockPredictionCalculatorModule.Object);
         _mockPredictionAlgorithmResolver.Setup(x => x.Resolve(It.IsAny<RatingAlgorithmVersion>())).Returns(_mockPredictionCalculatorModule.Object);
         _mockPredictionAlgorithmResolver.Setup(x => x.ResolveVersionForSeason(It.IsAny<int>())).Returns(RatingAlgorithmVersion.V1);
+        _mockPredictionCalibrationModule = new Mock<IPredictionCalibrationModule>();
         _mockPredictionGradingModule = new Mock<IPredictionGradingModule>();
         _mockPredictionsModule = new Mock<IPredictionsModule>();
         _mockRankingsModule = new Mock<IRankingsModule>();
@@ -68,6 +70,7 @@ public class AdminModuleTests
             _mockCacheRefresher.Object,
             _mockPollLeadersModule.Object,
             _mockPredictionAlgorithmResolver.Object,
+            _mockPredictionCalibrationModule.Object,
             _mockPredictionGradingModule.Object,
             _mockPredictionsModule.Object,
             _mockRankingsModule.Object,
@@ -744,6 +747,81 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task CalculatePredictionsAsync_CalibratedCalculatorNoStoredCalibration_SavesCarriedForwardAndAppliesIt()
+    {
+        var (calculator, seasonData, ratings) = SetUpCalibratedCalculation(2024, 5);
+        var carriedForward = new PredictionCalibration
+        {
+            Season = 2024,
+            Source = PredictionCalibrationSource.CarriedForward,
+            Values = new Dictionary<string, double> { ["paramA"] = 1.5 },
+            Week = 5
+        };
+        _mockPredictionCalibrationModule
+            .Setup(x => x.GetAsync(2024, 5, It.IsAny<IEnumerable<PredictionCalibrationParameter>>()))
+            .ReturnsAsync((PredictionCalibration?)null);
+        _mockPredictionCalibrationModule
+            .Setup(x => x.ResolveEffectiveAsync(2024, 5, It.IsAny<IEnumerable<PredictionCalibrationParameter>>()))
+            .ReturnsAsync(carriedForward);
+
+        var result = await _adminModule.CalculatePredictionsAsync(2024, 5);
+
+        Assert.Equal(1.5, result.Predictions.AppliedCalibration!["paramA"]);
+        _mockPredictionCalibrationModule.Verify(x => x.SaveAsync(carriedForward), Times.Once);
+        calculator.Verify(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(),
+            It.IsAny<IEnumerable<BettingLine>>(), carriedForward.Values), Times.Once);
+    }
+
+    [Fact]
+    public async Task CalculatePredictionsAsync_CalibratedCalculatorStoredCalibration_AppliesStoredWithoutSaving()
+    {
+        var (calculator, seasonData, ratings) = SetUpCalibratedCalculation(2024, 5);
+        var stored = new PredictionCalibration
+        {
+            Season = 2024,
+            Source = PredictionCalibrationSource.Accepted,
+            Values = new Dictionary<string, double> { ["paramA"] = -2 },
+            Week = 5
+        };
+        _mockPredictionCalibrationModule
+            .Setup(x => x.GetAsync(2024, 5, It.IsAny<IEnumerable<PredictionCalibrationParameter>>()))
+            .ReturnsAsync(stored);
+
+        var result = await _adminModule.CalculatePredictionsAsync(2024, 5);
+
+        Assert.Equal(-2, result.Predictions.AppliedCalibration!["paramA"]);
+        _mockPredictionCalibrationModule.Verify(x => x.SaveAsync(It.IsAny<PredictionCalibration>()), Times.Never);
+        calculator.Verify(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(),
+            It.IsAny<IEnumerable<BettingLine>>(), stored.Values), Times.Once);
+    }
+
+    [Fact]
+    public async Task CalculatePredictionsAsync_CalibrationSaveFails_StillGeneratesPredictionsWithCarriedForwardValues()
+    {
+        SetUpCalibratedCalculation(2024, 5);
+        _mockPredictionCalibrationModule
+            .Setup(x => x.GetAsync(2024, 5, It.IsAny<IEnumerable<PredictionCalibrationParameter>>()))
+            .ReturnsAsync((PredictionCalibration?)null);
+        _mockPredictionCalibrationModule
+            .Setup(x => x.ResolveEffectiveAsync(2024, 5, It.IsAny<IEnumerable<PredictionCalibrationParameter>>()))
+            .ReturnsAsync(new PredictionCalibration
+            {
+                Season = 2024,
+                Source = PredictionCalibrationSource.CarriedForward,
+                Values = new Dictionary<string, double> { ["paramA"] = 0.5 },
+                Week = 5
+            });
+        _mockPredictionCalibrationModule
+            .Setup(x => x.SaveAsync(It.IsAny<PredictionCalibration>()))
+            .ThrowsAsync(new InvalidOperationException("DB error"));
+
+        var result = await _adminModule.CalculatePredictionsAsync(2024, 5);
+
+        Assert.Equal(0.5, result.Predictions.AppliedCalibration!["paramA"]);
+        Assert.True(result.IsPersisted);
+    }
+
+    [Fact]
     public async Task CalculatePredictionsAsync_CallsServicesInOrder()
     {
         var fbsTeams = new Dictionary<string, TeamInfo>
@@ -972,6 +1050,25 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task CalculatePredictionsAsync_UncalibratedCalculator_LeavesAppliedCalibrationNull()
+    {
+        var seasonData = new SeasonData { Season = 2024, Week = 5, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2024, 5)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(new List<ScheduleGame>());
+        _mockPredictionCalculatorModule
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>()))
+            .ReturnsAsync(new List<GamePrediction>());
+
+        var result = await _adminModule.CalculatePredictionsAsync(2024, 5);
+
+        Assert.Null(result.Predictions.AppliedCalibration);
+        _mockPredictionCalibrationModule.VerifyNoOtherCalls();
+    }
+
+    [Fact]
     public async Task CalculatePredictionsAsync_UsesSelectedWeekForSeasonData()
     {
         var seasonData = new SeasonData { Season = 2024, Week = 8, Teams = new Dictionary<string, TeamInfo>() };
@@ -1171,6 +1268,7 @@ public class AdminModuleTests
                 _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
+                _mockPredictionCalibrationModule.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -1193,6 +1291,7 @@ public class AdminModuleTests
                 null!,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
+                _mockPredictionCalibrationModule.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -1215,6 +1314,7 @@ public class AdminModuleTests
                 _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
+                _mockPredictionCalibrationModule.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -1237,6 +1337,7 @@ public class AdminModuleTests
                 _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
+                _mockPredictionCalibrationModule.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -1259,6 +1360,7 @@ public class AdminModuleTests
                 _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
+                _mockPredictionCalibrationModule.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -1281,6 +1383,7 @@ public class AdminModuleTests
                 _mockCacheRefresher.Object,
                 null!,
                 _mockPredictionAlgorithmResolver.Object,
+                _mockPredictionCalibrationModule.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -1302,6 +1405,30 @@ public class AdminModuleTests
                 _mockCache.Object,
                 _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
+                null!,
+                _mockPredictionCalibrationModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingAlgorithmResolver.Object,
+                _mockSeasonModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTeamPredictionRecordModule.Object,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullPredictionCalibrationModule_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockCacheRefresher.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionAlgorithmResolver.Object,
                 null!,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
@@ -1325,6 +1452,7 @@ public class AdminModuleTests
                 _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
+                _mockPredictionCalibrationModule.Object,
                 null!,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -1347,6 +1475,7 @@ public class AdminModuleTests
                 _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
+                _mockPredictionCalibrationModule.Object,
                 _mockPredictionGradingModule.Object,
                 null!,
                 _mockRankingsModule.Object,
@@ -1369,6 +1498,7 @@ public class AdminModuleTests
                 _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
+                _mockPredictionCalibrationModule.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 null!,
@@ -1391,6 +1521,7 @@ public class AdminModuleTests
                 _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
+                _mockPredictionCalibrationModule.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -1413,6 +1544,7 @@ public class AdminModuleTests
                 _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
+                _mockPredictionCalibrationModule.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -1435,6 +1567,7 @@ public class AdminModuleTests
                 _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
+                _mockPredictionCalibrationModule.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -1457,6 +1590,7 @@ public class AdminModuleTests
                 _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
+                _mockPredictionCalibrationModule.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -1479,6 +1613,7 @@ public class AdminModuleTests
                 _mockCacheRefresher.Object,
                 _mockPollLeadersModule.Object,
                 _mockPredictionAlgorithmResolver.Object,
+                _mockPredictionCalibrationModule.Object,
                 _mockPredictionGradingModule.Object,
                 _mockPredictionsModule.Object,
                 _mockRankingsModule.Object,
@@ -2155,6 +2290,29 @@ public class AdminModuleTests
 
         Assert.True(result);
         _mockCache.Verify(x => x.RemoveAsync("teams_2024"), Times.Once);
+    }
+
+    private (Mock<ICalibratedPredictionCalculator> Calculator, SeasonData SeasonData, Dictionary<string, RatingDetails> Ratings)
+        SetUpCalibratedCalculation(int season, int week)
+    {
+        var seasonData = new SeasonData { Season = season, Week = week, Teams = new Dictionary<string, TeamInfo>() };
+        var ratings = new Dictionary<string, RatingDetails>();
+        var calculator = new Mock<ICalibratedPredictionCalculator>();
+        calculator.Setup(x => x.CalibrationParameters).Returns(
+        [
+            new PredictionCalibrationParameter { DefaultValue = 0, Key = "paramA", Max = 5, Min = -5, Step = 0.1 }
+        ]);
+        calculator
+            .Setup(x => x.GeneratePredictionsAsync(seasonData, ratings, It.IsAny<IEnumerable<ScheduleGame>>(),
+                It.IsAny<IEnumerable<BettingLine>>(), It.IsAny<IReadOnlyDictionary<string, double>>()))
+            .ReturnsAsync(new List<GamePrediction>());
+
+        _mockPredictionAlgorithmResolver.Setup(x => x.ResolveForSeason(season)).Returns(calculator.Object);
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(season, week)).ReturnsAsync(seasonData);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(season)).ReturnsAsync(new List<ScheduleGame>());
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+
+        return (calculator, seasonData, ratings);
     }
 
     private void SetUpCompleteWeek(int season, int week)

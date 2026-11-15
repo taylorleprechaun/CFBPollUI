@@ -297,6 +297,24 @@ public class PredictionGradingModuleTests
     }
 
     [Fact]
+    public async Task GradeAsync_StoredAppliedCalibration_KeepsItInGradedResult()
+    {
+        SetupRegularSeasonWeek(2024, 5,
+            BuildPrediction(homeTeam: "Team A", awayTeam: "Team B", predictedWinner: "Team A", mySpreadPick: "Team A"),
+            BuildGame("Team A", "Team B", homePoints: 28, awayPoints: 17));
+        var stored = await _mockPredictionsModule.Object.GetAsync(2024, 5);
+        stored!.AppliedCalibration = new Dictionary<string, double> { ["paramA"] = 1.5 };
+        PredictionsResult? saved = null;
+        _mockPredictionsModule.Setup(x => x.SaveGradedResultAsync(It.IsAny<PredictionsResult>()))
+            .Callback<PredictionsResult>(r => saved = r)
+            .ReturnsAsync(true);
+
+        await _module.GradeAsync(2024, 5);
+
+        Assert.Equal(1.5, saved!.AppliedCalibration!["paramA"]);
+    }
+
+    [Fact]
     public async Task GradeAsync_TeamNameCasingDiffers_StillMatches()
     {
         SetupRegularSeasonWeek(2024, 5, BuildPrediction(homeTeam: "Ohio State", awayTeam: "Michigan"),

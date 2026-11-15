@@ -21,6 +21,7 @@ public class AdminModule : IAdminModule
     private readonly ILogger<AdminModule> _logger;
     private readonly IPollLeadersModule _pollLeadersModule;
     private readonly IPredictionAlgorithmResolver _predictionAlgorithmResolver;
+    private readonly IPredictionCalibrationModule _predictionCalibrationModule;
     private readonly IPredictionGradingModule _predictionGradingModule;
     private readonly IPredictionsModule _predictionsModule;
     private readonly IRankingsModule _rankingsModule;
@@ -37,6 +38,7 @@ public class AdminModule : IAdminModule
         ICFBDataCacheRefresher cacheRefresher,
         IPollLeadersModule pollLeadersModule,
         IPredictionAlgorithmResolver predictionAlgorithmResolver,
+        IPredictionCalibrationModule predictionCalibrationModule,
         IPredictionGradingModule predictionGradingModule,
         IPredictionsModule predictionsModule,
         IRankingsModule rankingsModule,
@@ -54,6 +56,7 @@ public class AdminModule : IAdminModule
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _pollLeadersModule = pollLeadersModule ?? throw new ArgumentNullException(nameof(pollLeadersModule));
         _predictionAlgorithmResolver = predictionAlgorithmResolver ?? throw new ArgumentNullException(nameof(predictionAlgorithmResolver));
+        _predictionCalibrationModule = predictionCalibrationModule ?? throw new ArgumentNullException(nameof(predictionCalibrationModule));
         _predictionGradingModule = predictionGradingModule ?? throw new ArgumentNullException(nameof(predictionGradingModule));
         _predictionsModule = predictionsModule ?? throw new ArgumentNullException(nameof(predictionsModule));
         _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
@@ -316,13 +319,28 @@ public class AdminModule : IAdminModule
         _logger.LogDebug("Found {GameCount} FBS vs FBS games for season {Season}, week {Week}",
             upcomingGames.Count, season, week);
 
-        var gamePredictions = await _predictionAlgorithmResolver
-            .ResolveForSeason(season)
-            .GeneratePredictionsAsync(seasonData, ratings, upcomingGames, bettingLines)
-            .ConfigureAwait(false);
+        var calculator = _predictionAlgorithmResolver.ResolveForSeason(season);
+        IReadOnlyDictionary<string, double>? appliedCalibration = null;
+        IEnumerable<GamePrediction> gamePredictions;
+
+        if (calculator is ICalibratedPredictionCalculator calibratedCalculator)
+        {
+            appliedCalibration = await ResolveCalibrationForCalculationAsync(season, week, calibratedCalculator.CalibrationParameters)
+                .ConfigureAwait(false);
+            gamePredictions = await calibratedCalculator
+                .GeneratePredictionsAsync(seasonData, ratings, upcomingGames, bettingLines, appliedCalibration)
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            gamePredictions = await calculator
+                .GeneratePredictionsAsync(seasonData, ratings, upcomingGames, bettingLines)
+                .ConfigureAwait(false);
+        }
 
         var predictionsResult = new PredictionsResult
         {
+            AppliedCalibration = appliedCalibration,
             Predictions = gamePredictions.ToList(),
             Season = season,
             Week = week
@@ -714,5 +732,32 @@ public class AdminModule : IAdminModule
                 };
             })
             .ToList();
+    }
+
+    /// <summary>
+    /// Returns the calibration values to calculate a week's predictions with. A week with no stored values
+    /// gets the carried-forward values saved as its own row, so its history shows what was applied.
+    /// </summary>
+    private async Task<IReadOnlyDictionary<string, double>> ResolveCalibrationForCalculationAsync(int season, int week, IEnumerable<PredictionCalibrationParameter> parameters)
+    {
+        var parameterList = parameters.ToList();
+
+        var stored = await _predictionCalibrationModule.GetAsync(season, week, parameterList).ConfigureAwait(false);
+        if (stored is not null)
+            return stored.Values;
+
+        var carriedForward = await _predictionCalibrationModule.ResolveEffectiveAsync(season, week, parameterList).ConfigureAwait(false);
+
+        try
+        {
+            await _predictionCalibrationModule.SaveAsync(carriedForward).ConfigureAwait(false);
+            _logger.LogInformation("Saved carried-forward prediction calibration for season {Season}, week {Week}", season, week);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to persist carried-forward prediction calibration for season {Season}, week {Week}", season, week);
+        }
+
+        return carriedForward.Values;
     }
 }
