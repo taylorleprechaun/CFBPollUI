@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { PredictionCalibrationAnalysis, PredictionCalibrationBacktestWeek } from '../../../schemas/admin';
+import type { PredictionCalibrationAnalysis } from '../../../schemas/admin';
 
 import { rechartsMock } from '../../mocks/recharts';
 
@@ -13,6 +13,7 @@ vi.mock('../../../hooks/use-theme', () => ({
 }));
 
 import { PredictionCalibrationSeasonResults } from '../../../components/admin';
+import { buildAnalysis, buildBacktestWeek } from '../../fixtures/calibration';
 
 const parameters = [
   { defaultValue: 0, description: '', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 },
@@ -22,31 +23,19 @@ function bodyRows() {
   return screen.getAllByRole('row').slice(1);
 }
 
-function buildAnalysis(overrides: Partial<PredictionCalibrationAnalysis> = {}): PredictionCalibrationAnalysis {
-  return {
-    backtestWeeks: Array.from({ length: 10 }, (_, i) => buildWeek(i + 1, 25, 26)),
-    candidateValues: null,
-    suggestedValues: { paramA: 1.5 },
-    suggestionNotes: {},
+/**
+ * Ten completed weeks where the suggestion got one more pick of each kind right than the values used.
+ */
+function buildSeasonAnalysis(overrides: Partial<PredictionCalibrationAnalysis> = {}): PredictionCalibrationAnalysis {
+  return buildAnalysis({
+    backtestWeeks: Array.from({ length: 10 }, (_, i) => buildBacktestWeek(i + 1, 25, 26)),
     ...overrides,
-  };
-}
-
-function buildWeek(week: number, usedCorrect: number, suggestedCorrect: number, candidateCorrect: number | null = null): PredictionCalibrationBacktestWeek {
-  return {
-    candidate: candidateCorrect === null ? null : summary(candidateCorrect, 50 - candidateCorrect),
-    season: 2026,
-    suggested: summary(suggestedCorrect, 50 - suggestedCorrect),
-    suggestedValues: { paramA: week / 10 },
-    used: summary(usedCorrect, 50 - usedCorrect),
-    usedValues: { paramA: 0 },
-    week,
-  };
+  });
 }
 
 function renderResults(overrides: Partial<Parameters<typeof PredictionCalibrationSeasonResults>[0]> = {}) {
   const props = {
-    analysis: buildAnalysis(),
+    analysis: buildSeasonAnalysis(),
     comparison: 'suggested' as const,
     historyEntries: [{ carriedFromSeason: null, carriedFromWeek: null, isLocked: true, season: 2026, source: 'Accepted' as const, updatedAt: null, values: { paramA: 0 }, week: 10 }],
     onComparisonChange: vi.fn(),
@@ -57,22 +46,10 @@ function renderResults(overrides: Partial<Parameters<typeof PredictionCalibratio
   return props;
 }
 
-function summary(correct: number, incorrect: number) {
-  return {
-    gradedGameCount: correct + incorrect,
-    marginBias: null,
-    marginMAE: null,
-    marginRMSE: null,
-    overUnder: { correct, incorrect, push: 0 },
-    spread: { correct, incorrect, push: 0 },
-    winner: { correct, incorrect, push: 0 },
-  };
-}
-
 describe('PredictionCalibrationSeasonResults', () => {
   it('compares against the typed values with a hindsight warning', () => {
     renderResults({
-      analysis: buildAnalysis({ backtestWeeks: [buildWeek(1, 25, 26, 30)], candidateValues: { paramA: 2 } }),
+      analysis: buildSeasonAnalysis({ backtestWeeks: [buildBacktestWeek(1, 25, 26, 30)], candidateValues: { paramA: 2 } }),
       comparison: 'candidate',
     });
 
@@ -100,7 +77,7 @@ describe('PredictionCalibrationSeasonResults', () => {
   });
 
   it('shows a message when there are no completed weeks', () => {
-    renderResults({ analysis: buildAnalysis({ backtestWeeks: [] }) });
+    renderResults({ analysis: buildSeasonAnalysis({ backtestWeeks: [] }) });
 
     expect(screen.getByText('No completed weeks this season to compare yet.')).toBeInTheDocument();
   });
@@ -131,7 +108,7 @@ describe('PredictionCalibrationSeasonResults', () => {
 
   it('switches back to the suggestions from the toggle', async () => {
     const props = renderResults({
-      analysis: buildAnalysis({ backtestWeeks: [buildWeek(1, 25, 26, 30)], candidateValues: { paramA: 2 } }),
+      analysis: buildSeasonAnalysis({ backtestWeeks: [buildBacktestWeek(1, 25, 26, 30)], candidateValues: { paramA: 2 } }),
       comparison: 'candidate',
     });
 

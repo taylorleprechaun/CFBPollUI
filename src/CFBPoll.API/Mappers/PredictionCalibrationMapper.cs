@@ -22,8 +22,8 @@ public static class PredictionCalibrationMapper
                 Week = w.Week
             }).ToList(),
             CandidateValues = analysis.CandidateValues?.ToDictionary(v => v.Key, v => v.Value),
-            SuggestionNotes = analysis.SuggestionNotes.ToDictionary(v => v.Key, v => v.Value),
-            SuggestedValues = analysis.SuggestedValues.ToDictionary(v => v.Key, v => v.Value)
+            SuggestedValues = analysis.SuggestedValues.ToDictionary(v => v.Key, v => v.Value),
+            SuggestionNotes = analysis.SuggestionNotes.ToDictionary(v => v.Key, v => v.Value)
         };
     }
 

@@ -23,6 +23,7 @@ import {
 } from '../hooks/use-admin-mutations';
 import { useAdminPageState } from '../hooks/use-admin-page-state';
 import { useAuth } from '../hooks/use-auth';
+import { useCalibrationPublishGuard } from '../hooks/use-calibration-publish-guard';
 import { useDocumentTitle } from '../hooks/use-document-title';
 import { usePredictionsActiveView } from '../hooks/use-predictions-active-view';
 import { usePredictionsGradingState } from '../hooks/use-predictions-grading-state';
@@ -152,6 +153,8 @@ export function PredictionsPage() {
     selectedWeek,
   });
 
+  const publishGuard = useCalibrationPublishGuard(token, handlePublish);
+
   const handleExport = async (season: number, week: number) => {
     setOperationError(null);
     try {
@@ -240,7 +243,7 @@ export function PredictionsPage() {
             onClearPublishResultsFeedback={clearGradingFeedback}
             onExport={handleExport}
             onGrade={handleGrade}
-            onPublish={(season, week) => handlePublish(season, week, 'active-view-publish')}
+            onPublish={(season, week) => publishGuard.requestPublish(season, week, 'active-view-publish')}
             onPublishResults={handlePublishResults}
             publishFeedback={actionFeedback}
             publishResultsFeedback={gradingActionFeedback}
@@ -261,7 +264,7 @@ export function PredictionsPage() {
         onDelete={handleDelete}
         onExpandAll={handleExpandAll}
         onExport={handleExport}
-        onPublish={(season, week) => handlePublish(season, week, 'persisted-prediction-publish')}
+        onPublish={(season, week) => publishGuard.requestPublish(season, week, 'persisted-prediction-publish')}
         onToggleSeason={toggleSeason}
         onView={activeView.showView}
         summaries={summaries ?? []}
@@ -289,6 +292,16 @@ export function PredictionsPage() {
             handleCalculate();
           }}
           onCancel={() => setGenerateConfirm(null)}
+        />
+      )}
+
+      {publishGuard.pendingPublish && (
+        <ConfirmModal
+          title="Publish With Different Calibration"
+          message={`The draft predictions for ${publishGuard.pendingPublish.season} ${getWeekLabel(publishGuard.pendingPublish.week)} were generated with different calibration values than the ones now saved. Publishing locks the saved values even though these predictions didn't use them. Generate again first to apply them, or publish anyway?`}
+          confirmLabel="Publish anyway"
+          onConfirm={publishGuard.confirmPublish}
+          onCancel={publishGuard.cancelPublish}
         />
       )}
 

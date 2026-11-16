@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PredictionCalibrationResponse } from '../../../schemas/admin';
 
 import { PredictionCalibrationSummary } from '../../../components/admin';
+import { buildCalibration } from '../../fixtures/calibration';
 
 let mockCalibration: PredictionCalibrationResponse | undefined = undefined;
 let mockError: Error | null = null;
@@ -13,25 +14,19 @@ vi.mock('../../../hooks/use-prediction-calibration', () => ({
   usePredictionCalibration: () => ({ data: mockCalibration, error: mockError, isLoading: false }),
 }));
 
-function buildCalibration(overrides: Partial<PredictionCalibrationResponse> = {}): PredictionCalibrationResponse {
-  return {
+/**
+ * Week 10 showing values carried forward from week 9 and not saved yet.
+ */
+function buildCarriedCalibration(overrides: Partial<PredictionCalibrationResponse> = {}): PredictionCalibrationResponse {
+  return buildCalibration({
     carriedFromSeason: 2026,
     carriedFromWeek: 9,
-    draftUsesDifferentValues: false,
-    isLocked: false,
     isStored: false,
-    isSupported: true,
-    parameters: [
-      { defaultValue: 0, description: '', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 },
-      { defaultValue: 0, description: '', key: 'paramB', label: 'Param B', max: 10, min: -10, step: 0.1 },
-    ],
-    season: 2026,
     source: 'CarriedForward',
     updatedAt: null,
     values: { paramA: 2, paramB: -2 },
-    week: 10,
     ...overrides,
-  };
+  });
 }
 
 function renderSummary() {
@@ -44,12 +39,12 @@ function renderSummary() {
 
 describe('PredictionCalibrationSummary', () => {
   beforeEach(() => {
-    mockCalibration = buildCalibration();
+    mockCalibration = buildCarriedCalibration();
     mockError = null;
   });
 
   it('labels the link View calibration once the week is locked', () => {
-    mockCalibration = buildCalibration({ isLocked: true });
+    mockCalibration = buildCarriedCalibration({ isLocked: true });
 
     renderSummary();
 
@@ -63,7 +58,7 @@ describe('PredictionCalibrationSummary', () => {
   });
 
   it('renders nothing when the season does not support calibration', () => {
-    mockCalibration = buildCalibration({ isSupported: false, parameters: [] });
+    mockCalibration = buildCarriedCalibration({ isSupported: false, parameters: [] });
 
     const { container } = renderSummary();
 
@@ -71,7 +66,7 @@ describe('PredictionCalibrationSummary', () => {
   });
 
   it('shows the draft mismatch warning', () => {
-    mockCalibration = buildCalibration({ draftUsesDifferentValues: true });
+    mockCalibration = buildCarriedCalibration({ draftUsesDifferentValues: true });
 
     renderSummary();
 
@@ -85,6 +80,14 @@ describe('PredictionCalibrationSummary', () => {
     renderSummary();
 
     expect(screen.getByRole('alert')).toHaveTextContent('Failed to load calibration');
+  });
+
+  it('shows the published mismatch wording once the week is locked', () => {
+    mockCalibration = buildCarriedCalibration({ draftUsesDifferentValues: true, isLocked: true });
+
+    renderSummary();
+
+    expect(screen.getByText(/The published predictions for this week were generated with different calibration values/)).toBeInTheDocument();
   });
 
   it('shows the values and where they were carried forward from', () => {

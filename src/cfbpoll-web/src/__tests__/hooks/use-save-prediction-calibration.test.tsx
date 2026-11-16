@@ -76,9 +76,10 @@ describe('useSavePredictionCalibration', () => {
     ).rejects.toThrow('Authentication required');
   });
 
-  it('stores the saved calibration and invalidates the season history on success', async () => {
+  it('stores the saved calibration and invalidates later weeks and the season history on success', async () => {
     vi.mocked(savePredictionCalibration).mockResolvedValue(savedResponse);
     const { queryClient, wrapper } = createClientAndWrapper();
+    queryClient.setQueryData(['prediction-calibration', 2026, 11], {});
     queryClient.setQueryData(['prediction-calibration-history', 2026], []);
 
     const { result } = renderHook(() => useSavePredictionCalibration('test-token'), { wrapper });
@@ -88,6 +89,7 @@ describe('useSavePredictionCalibration', () => {
     });
 
     expect(queryClient.getQueryData(['prediction-calibration', 2026, 10])).toEqual(savedResponse);
+    expect(queryClient.getQueryState(['prediction-calibration', 2026, 11])?.isInvalidated).toBe(true);
     expect(queryClient.getQueryState(['prediction-calibration-history', 2026])?.isInvalidated).toBe(true);
   });
 });

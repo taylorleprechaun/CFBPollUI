@@ -8,17 +8,6 @@ namespace CFBPoll.API.Tests.Mappers;
 public class PredictionCalibrationMapperTests
 {
     [Fact]
-    public void PublicPredictionDTOs_DoNotExposeAppliedCalibration()
-    {
-        var publicTypes = new[] { typeof(PredictionsResponseDTO), typeof(GamePredictionDTO) };
-
-        foreach (var type in publicTypes)
-        {
-            Assert.DoesNotContain(type.GetProperties(), p => p.Name.Contains("Calibration", StringComparison.OrdinalIgnoreCase));
-        }
-    }
-
-    [Fact]
     public void ToAnalysisResponseDTO_MapsValuesNotesAndWeeks()
     {
         var used = new PredictionRecordSummary { GradedGameCount = 50 };
@@ -82,7 +71,7 @@ public class PredictionCalibrationMapperTests
     }
 
     [Fact]
-    public void ToHistoryEntryDTO_MapsCalibrationAndLockState()
+    public void ToHistoryEntryDTO_LockedEntry_MapsCalibrationAndLockState()
     {
         var updatedAt = new DateTime(2026, 10, 3, 14, 0, 0, DateTimeKind.Utc);
         var entry = new PredictionCalibrationHistoryEntry

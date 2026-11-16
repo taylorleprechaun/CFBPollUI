@@ -12,7 +12,8 @@ public class PredictionCalibrationView
     public PredictionCalibration? Calibration { get; set; }
 
     /// <summary>
-    /// True when an unpublished draft exists for the week and was generated with different values.
+    /// True when the week's saved predictions (draft or published) were generated with different values than
+    /// the ones that now apply. On a published week this means the shown values aren't what was published.
     /// </summary>
     public bool DraftUsesDifferentValues { get; set; }
 

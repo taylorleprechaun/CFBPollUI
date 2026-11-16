@@ -77,6 +77,23 @@ public class AdminControllerTests
     }
 
     [Fact]
+    public async Task AnalyzePredictionCalibration_WithValues_ForwardsCandidateAndReturnsMappedAnalysis()
+    {
+        _mockAdminModule.Setup(x => x.AnalyzePredictionCalibrationAsync(2026, 4, It.Is<IReadOnlyDictionary<string, double>?>(v => v != null && v["paramA"] == 1.5)))
+            .ReturnsAsync(new AnalyzePredictionCalibrationResult
+            {
+                Analysis = new PredictionCalibrationAnalysis { CandidateValues = new Dictionary<string, double> { ["paramA"] = 1.5 } },
+                Outcome = AnalyzePredictionCalibrationOutcome.Success
+            });
+
+        var result = await _controller.AnalyzePredictionCalibration(2026, 4, new AnalyzePredictionCalibrationRequestDTO { Values = new Dictionary<string, double> { ["paramA"] = 1.5 } });
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<PredictionCalibrationAnalysisResponseDTO>(okResult.Value);
+        Assert.Equal(1.5, response.CandidateValues!["paramA"]);
+    }
+
+    [Fact]
     public async Task Calculate_ReturnsRankingsWithDeltas()
     {
         var rankedTeam = new RankedTeam { TeamName = "Ohio State", Rank = 1, Rating = 90, Details = new TeamDetails() };
@@ -676,7 +693,7 @@ public class AdminControllerTests
     }
 
     [Fact]
-    public async Task GetPredictionCalibration_ReturnsMappedView()
+    public async Task GetPredictionCalibration_SupportedWeek_ReturnsMappedView()
     {
         _mockAdminModule.Setup(x => x.GetPredictionCalibrationAsync(2026, 4)).ReturnsAsync(CreateCalibrationView(2026, 4, 1.5));
 
@@ -691,7 +708,7 @@ public class AdminControllerTests
     }
 
     [Fact]
-    public async Task GetPredictionCalibrationHistory_ReturnsEntriesInOrder()
+    public async Task GetPredictionCalibrationHistory_StoredWeeks_ReturnsEntriesInOrder()
     {
         _mockAdminModule.Setup(x => x.GetPredictionCalibrationHistoryAsync(2026)).ReturnsAsync(
         [

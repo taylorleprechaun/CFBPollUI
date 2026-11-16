@@ -13,6 +13,7 @@ namespace CFBPoll.API.Controllers;
 public class AdminController : ControllerBase
 {
     private const string CACHE_ENTRY_NOT_FOUND = "Cache entry not found";
+    private const string PREDICTION_CALIBRATION_INVALID = "Invalid calibration values";
     private const string PREDICTION_CALIBRATION_LOCKED = "Calibration can't be changed after the week's predictions are published";
     private const string PREDICTION_CALIBRATION_NOT_SUPPORTED = "This season's prediction algorithm doesn't take calibration values";
     private const string PREDICTION_NOT_FOUND = "Prediction not found";
@@ -49,7 +50,7 @@ public class AdminController : ControllerBase
         return result.Outcome switch
         {
             AnalyzePredictionCalibrationOutcome.NotSupported => BadRequest(new ErrorResponseDTO { Message = PREDICTION_CALIBRATION_NOT_SUPPORTED, StatusCode = 400 }),
-            AnalyzePredictionCalibrationOutcome.InvalidValues => BadRequest(new ErrorResponseDTO { Message = result.ErrorMessage ?? "Invalid calibration values", StatusCode = 400 }),
+            AnalyzePredictionCalibrationOutcome.InvalidValues => BadRequest(new ErrorResponseDTO { Message = result.ErrorMessage ?? PREDICTION_CALIBRATION_INVALID, StatusCode = 400 }),
             _ => Ok(PredictionCalibrationMapper.ToAnalysisResponseDTO(result.Analysis!))
         };
     }
@@ -519,14 +520,15 @@ public class AdminController : ControllerBase
         var source = request.IsAcceptedSuggestion ? PredictionCalibrationSource.Accepted : PredictionCalibrationSource.Manual;
         var result = await _adminModule.SavePredictionCalibrationAsync(season, week, request.Values.ToDictionary(v => v.Key, v => v.Value), source);
 
-        switch (result.Outcome)
+        if (result.Outcome != SavePredictionCalibrationOutcome.Saved)
         {
-            case SavePredictionCalibrationOutcome.NotSupported:
-                return BadRequest(new ErrorResponseDTO { Message = PREDICTION_CALIBRATION_NOT_SUPPORTED, StatusCode = 400 });
-            case SavePredictionCalibrationOutcome.Locked:
-                return BadRequest(new ErrorResponseDTO { Message = PREDICTION_CALIBRATION_LOCKED, StatusCode = 400 });
-            case SavePredictionCalibrationOutcome.InvalidValues:
-                return BadRequest(new ErrorResponseDTO { Message = result.ErrorMessage ?? "Invalid calibration values", StatusCode = 400 });
+            var message = result.Outcome switch
+            {
+                SavePredictionCalibrationOutcome.Locked => PREDICTION_CALIBRATION_LOCKED,
+                SavePredictionCalibrationOutcome.NotSupported => PREDICTION_CALIBRATION_NOT_SUPPORTED,
+                _ => result.ErrorMessage ?? PREDICTION_CALIBRATION_INVALID
+            };
+            return BadRequest(new ErrorResponseDTO { Message = message, StatusCode = 400 });
         }
 
         var view = await _adminModule.GetPredictionCalibrationAsync(season, week);

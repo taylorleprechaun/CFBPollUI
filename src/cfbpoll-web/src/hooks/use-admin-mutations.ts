@@ -3,6 +3,7 @@ import { type QueryClient, useMutation, useQueryClient } from '@tanstack/react-q
 import type { AdminPredictionsResponse } from '../schemas/admin';
 import type { SeasonWeekParams } from './types';
 
+import { invalidateCalibrationAfterPredictionChange, invalidateCalibrationAfterPublish } from '../lib/calibration-query-utils';
 import {
   calculatePredictions,
   calculateRankings,
@@ -21,7 +22,7 @@ import {
 export function useCalculatePredictions(token: string | null) {
   return useAdminMutation(token, calculatePredictions, (_result, { season, week }, queryClient) => {
     queryClient.invalidateQueries({ queryKey: ['predictions-summaries'] });
-    invalidatePredictionCalibration(queryClient, season, week);
+    invalidateCalibrationAfterPredictionChange(queryClient, season, week);
   });
 }
 
@@ -35,7 +36,7 @@ export function useDeletePredictions(token: string | null) {
   return useAdminMutation(token, deletePredictions, (_result, { season, week }, queryClient) => {
     queryClient.invalidateQueries({ queryKey: ['predictions-summaries'] });
     queryClient.removeQueries({ queryKey: ['admin-prediction', season, week], exact: true });
-    invalidatePredictionCalibration(queryClient, season, week);
+    invalidateCalibrationAfterPredictionChange(queryClient, season, week);
   });
 }
 
@@ -77,7 +78,7 @@ export function usePublishPredictions(token: string | null) {
       ['admin-prediction', season, week],
       (old: AdminPredictionsResponse | undefined) => old && { ...old, isPublished: true },
     );
-    invalidatePredictionCalibration(queryClient, season, week);
+    invalidateCalibrationAfterPublish(queryClient, season, week);
   });
 }
 
@@ -93,15 +94,6 @@ export function useRefreshCache(token: string | null) {
 
 export function useViewRankingsSnapshot(token: string | null) {
   return useAdminMutation(token, fetchRanking);
-}
-
-// Generating, publishing or deleting a week changes its calibration's lock state, draft-mismatch flag,
-// or (for a first generate) whether a carried-forward row was saved. It also changes the values later
-// weeks' analyses report as used, so every analysis for the season is refreshed.
-function invalidatePredictionCalibration(queryClient: QueryClient, season: number, week: number) {
-  queryClient.invalidateQueries({ queryKey: ['prediction-calibration', season, week] });
-  queryClient.invalidateQueries({ queryKey: ['prediction-calibration-analysis', season] });
-  queryClient.invalidateQueries({ queryKey: ['prediction-calibration-history', season] });
 }
 
 function useAdminMutation<TResult>(

@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { PredictionCalibrationAnalysis, PredictionCalibrationResponse } from '../../../schemas/admin';
@@ -13,6 +14,7 @@ vi.mock('../../../hooks/use-theme', () => ({
 }));
 
 import { PredictionCalibrationSection } from '../../../components/admin';
+import { buildAnalysis, buildCalibration } from '../../fixtures/calibration';
 
 const mockMutateAsync = vi.fn();
 const mockPreviewMutate = vi.fn();
@@ -25,13 +27,15 @@ let mockError: Error | null = null;
 let mockIsLoading = false;
 let mockIsSaving = false;
 let mockPreview: PredictionCalibrationAnalysis | undefined = undefined;
+let mockPreviewError: Error | null = null;
+let mockPreviewPending = false;
 let mockPreviewVariables: { season: number; values: Record<string, number>; week: number } | undefined = undefined;
 
 vi.mock('../../../hooks/use-analyze-prediction-calibration', () => ({
   useAnalyzePredictionCalibration: () => ({
     data: mockPreview,
-    error: null,
-    isPending: false,
+    error: mockPreviewError,
+    isPending: mockPreviewPending,
     mutate: mockPreviewMutate,
     variables: mockPreviewVariables,
   }),
@@ -56,41 +60,12 @@ vi.mock('../../../hooks/use-save-prediction-calibration', () => ({
   useSavePredictionCalibration: () => ({ isPending: mockIsSaving, mutateAsync: mockMutateAsync }),
 }));
 
-function buildAnalysis(overrides: Partial<PredictionCalibrationAnalysis> = {}): PredictionCalibrationAnalysis {
-  const record = { correct: 30, incorrect: 25, push: 1 };
-  const summary = { gradedGameCount: 56, marginBias: null, marginMAE: null, marginRMSE: null, overUnder: record, spread: record, winner: record };
-  return {
-    backtestWeeks: [{ candidate: null, season: 2026, suggested: summary, suggestedValues: { paramA: 1, paramB: 0 }, used: summary, usedValues: { paramA: 0, paramB: 0 }, week: 9 }],
-    candidateValues: null,
-    suggestedValues: { paramA: 1.5, paramB: -0.8 },
-    suggestionNotes: { paramA: 'Note for A.', paramB: 'Note for B.' },
-    ...overrides,
-  };
-}
-
-function buildCalibration(overrides: Partial<PredictionCalibrationResponse> = {}): PredictionCalibrationResponse {
-  return {
-    carriedFromSeason: null,
-    carriedFromWeek: null,
-    draftUsesDifferentValues: false,
-    isLocked: false,
-    isStored: true,
-    isSupported: true,
-    parameters: [
-      { defaultValue: 0, description: 'First parameter', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 },
-      { defaultValue: 0, description: 'Second parameter', key: 'paramB', label: 'Param B', max: 10, min: -10, step: 0.1 },
-    ],
-    season: 2026,
-    source: 'Manual',
-    updatedAt: '2026-11-01T12:00:00Z',
-    values: { paramA: 1, paramB: 0 },
-    week: 10,
-    ...overrides,
-  };
-}
-
 function renderSection() {
-  return render(<PredictionCalibrationSection season={2026} token="test-token" week={10} />);
+  return render(
+    <MemoryRouter>
+      <PredictionCalibrationSection season={2026} token="test-token" week={10} />
+    </MemoryRouter>
+  );
 }
 
 describe('PredictionCalibrationSection', () => {
@@ -105,6 +80,8 @@ describe('PredictionCalibrationSection', () => {
     mockIsLoading = false;
     mockIsSaving = false;
     mockPreview = undefined;
+    mockPreviewError = null;
+    mockPreviewPending = false;
     mockPreviewVariables = undefined;
   });
 
@@ -169,11 +146,11 @@ describe('PredictionCalibrationSection', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Use suggested values' }));
 
     expect(screen.getByLabelText('Param A')).toHaveValue(1.5);
-    expect(screen.getByLabelText('Param B')).toHaveValue(-0.8);
+    expect(screen.getByLabelText('Param B')).toHaveValue(-0.5);
 
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-    expect(mockMutateAsync).toHaveBeenCalledWith({ isAcceptedSuggestion: true, season: 2026, values: { paramA: 1.5, paramB: -0.8 }, week: 10 });
+    expect(mockMutateAsync).toHaveBeenCalledWith({ isAcceptedSuggestion: true, season: 2026, values: { paramA: 1.5, paramB: -0.5 }, week: 10 });
   });
 
   it('saves the typed values and shows a confirmation', async () => {
@@ -204,7 +181,7 @@ describe('PredictionCalibrationSection', () => {
 
     renderSection();
 
-    expect(screen.getByText('Loading calibration...')).toBeInTheDocument();
+    expect(screen.getByText('Loading calibration…')).toBeInTheDocument();
   });
 
   it('shows an out-of-range error and blocks saving', async () => {
@@ -215,6 +192,16 @@ describe('PredictionCalibrationSection', () => {
 
     expect(screen.getByText('Must be between -5 and 5')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  it('shows progress while testing typed values', () => {
+    mockPreviewPending = true;
+    mockPreviewVariables = { season: 2026, values: { paramA: 2, paramB: 0 }, week: 10 };
+
+    renderSection();
+
+    expect(screen.getByRole('button', { name: 'Testing…' })).toBeDisabled();
+    expect(screen.getByText(/Running the analysis/)).toBeInTheDocument();
   });
 
   it('shows the analysis error', () => {
@@ -236,6 +223,24 @@ describe('PredictionCalibrationSection', () => {
     expect(screen.getByRole('button', { name: 'Use suggested values' })).toBeDisabled();
   });
 
+  it('shows the draft mismatch warning with a link to regenerate', () => {
+    mockCalibration = buildCalibration({ draftUsesDifferentValues: true });
+
+    renderSection();
+
+    expect(screen.getByText(/This week’s draft predictions were generated with different values/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Generate again on the Predictions page' })).toHaveAttribute('href', '/admin/predictions?season=2026&week=10');
+  });
+
+  it('shows the error when testing typed values fails', () => {
+    mockPreviewError = new Error('Server unavailable');
+    mockPreviewVariables = { season: 2026, values: { paramA: 2, paramB: 0 }, week: 10 };
+
+    renderSection();
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Server unavailable');
+  });
+
   it('shows the load error', () => {
     mockCalibration = undefined;
     mockError = new Error('Server unavailable');
@@ -253,6 +258,15 @@ describe('PredictionCalibrationSection', () => {
     expect(screen.getByText(/Locked because this week’s predictions are published/)).toBeInTheDocument();
     expect(screen.getByLabelText('Param A')).toBeDisabled();
     expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+  });
+
+  it('shows the published mismatch wording on a locked week', () => {
+    mockCalibration = buildCalibration({ draftUsesDifferentValues: true, isLocked: true });
+
+    renderSection();
+
+    expect(screen.getByText('The published predictions for this week were generated with different values than the ones shown here.')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Generate again on the Predictions page' })).not.toBeInTheDocument();
   });
 
   it('shows the server message when saving fails', async () => {

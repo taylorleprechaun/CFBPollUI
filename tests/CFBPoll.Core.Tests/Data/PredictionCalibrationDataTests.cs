@@ -120,6 +120,27 @@ public class PredictionCalibrationDataTests
     }
 
     [Fact]
+    public async Task GetLatestBeforeAsync_EarlierWeekAndHigherWeekInPriorSeason_ReturnsSameSeasonWeek()
+    {
+        var (data, tempPath) = CreateDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+            await data.SaveAsync(CreateCalibration(2024, 15, PredictionCalibrationSource.Manual, ("paramA", 4)));
+            await data.SaveAsync(CreateCalibration(2025, 2, PredictionCalibrationSource.Manual, ("paramA", 1)));
+
+            var result = await data.GetLatestBeforeAsync(2025, 5);
+
+            Assert.Equal(2025, result!.Season);
+            Assert.Equal(2, result.Week);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
     public async Task GetLatestBeforeAsync_NoEarlierRow_ReturnsNull()
     {
         var (data, tempPath) = CreateDataWithFile();
@@ -212,6 +233,48 @@ public class PredictionCalibrationDataTests
             await data.InitializeAsync();
 
             await Assert.ThrowsAsync<ArgumentNullException>(() => data.SaveAsync(null!));
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task SaveIfMissingAsync_ExistingRow_LeavesItUnchanged()
+    {
+        var (data, tempPath) = CreateDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+            await data.SaveAsync(CreateCalibration(2025, 3, PredictionCalibrationSource.Manual, ("paramA", 2.5)));
+
+            var saved = await data.SaveIfMissingAsync(CreateCalibration(2025, 3, PredictionCalibrationSource.CarriedForward, ("paramA", 1)));
+            var result = await data.GetAsync(2025, 3);
+
+            Assert.False(saved);
+            Assert.Equal(PredictionCalibrationSource.Manual, result!.Source);
+            Assert.Equal(2.5, result.Values["paramA"]);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task SaveIfMissingAsync_NoRow_SavesIt()
+    {
+        var (data, tempPath) = CreateDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var saved = await data.SaveIfMissingAsync(CreateCalibration(2025, 3, PredictionCalibrationSource.CarriedForward, ("paramA", 1)));
+            var result = await data.GetAsync(2025, 3);
+
+            Assert.True(saved);
+            Assert.Equal(PredictionCalibrationSource.CarriedForward, result!.Source);
         }
         finally
         {

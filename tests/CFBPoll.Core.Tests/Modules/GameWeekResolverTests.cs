@@ -7,6 +7,30 @@ namespace CFBPoll.Core.Tests.Modules;
 public class GameWeekResolverTests
 {
     [Fact]
+    public void GetMaxRegularWeek_MixedSchedule_ReturnsLastRegularWeekIgnoringPostseason()
+    {
+        List<ScheduleGame> fullSchedule =
+        [
+            new ScheduleGame { Week = 12, SeasonType = "regular" },
+            new ScheduleGame { Week = 14, SeasonType = "Regular" },
+            new ScheduleGame { Week = 20, SeasonType = "postseason" },
+            new ScheduleGame { Week = null, SeasonType = "regular" }
+        ];
+
+        var result = GameWeekResolver.GetMaxRegularWeek(fullSchedule);
+
+        Assert.Equal(14, result);
+    }
+
+    [Fact]
+    public void GetMaxRegularWeek_NoRegularGames_ReturnsZero()
+    {
+        var result = GameWeekResolver.GetMaxRegularWeek([]);
+
+        Assert.Equal(0, result);
+    }
+
+    [Fact]
     public void Resolve_EmptySchedule_TreatsGameWeekAsPostseason()
     {
         var (gameWeek, isPostseason) = GameWeekResolver.Resolve(0, []);

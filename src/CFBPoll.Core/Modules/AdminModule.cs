@@ -354,24 +354,8 @@ public class AdminModule : IAdminModule
         _logger.LogDebug("Found {GameCount} FBS vs FBS games for season {Season}, week {Week}",
             upcomingGames.Count, season, week);
 
-        var calculator = _predictionAlgorithmResolver.ResolveForSeason(season);
-        IReadOnlyDictionary<string, double>? appliedCalibration = null;
-        IEnumerable<GamePrediction> gamePredictions;
-
-        if (calculator is ICalibratedPredictionCalculator calibratedCalculator)
-        {
-            appliedCalibration = await ResolveCalibrationForCalculationAsync(season, week, calibratedCalculator.CalibrationParameters)
-                .ConfigureAwait(false);
-            gamePredictions = await calibratedCalculator
-                .GeneratePredictionsAsync(seasonData, ratings, upcomingGames, bettingLines, appliedCalibration)
-                .ConfigureAwait(false);
-        }
-        else
-        {
-            gamePredictions = await calculator
-                .GeneratePredictionsAsync(seasonData, ratings, upcomingGames, bettingLines)
-                .ConfigureAwait(false);
-        }
+        var (gamePredictions, appliedCalibration) = await GeneratePredictionsWithCalibrationAsync(_predictionAlgorithmResolver.ResolveForSeason(season), parameters => ResolveCalibrationForCalculationAsync(season, week, parameters), seasonData, ratings, upcomingGames, bettingLines)
+            .ConfigureAwait(false);
 
         var predictionsResult = new PredictionsResult
         {
@@ -548,15 +532,15 @@ public class AdminModule : IAdminModule
 
         var stored = storedTask.Result;
         var calibration = stored
-            ?? await _predictionCalibrationModule.ResolveEffectiveAsync(season, week, parameters).ConfigureAwait(false);
+            ?? await _predictionCalibrationModule.ResolveCarriedForwardAsync(season, week, parameters).ConfigureAwait(false);
         var isLocked = publishedWeeksTask.Result.Contains(week);
-        var draft = predictionsTask.Result;
+        var snapshot = predictionsTask.Result;
 
         return new PredictionCalibrationView
         {
             Calibration = calibration,
-            DraftUsesDifferentValues = draft is not null && !isLocked
-                && !HaveSameCalibrationValues(draft.AppliedCalibration, calibration.Values, parameters),
+            DraftUsesDifferentValues = snapshot is not null
+                && !HaveSameCalibrationValues(snapshot.AppliedCalibration, calibration.Values, parameters),
             IsLocked = isLocked,
             IsStored = stored is not null,
             IsSupported = true,
@@ -737,15 +721,18 @@ public class AdminModule : IAdminModule
         if (validationError is not null)
             return new SavePredictionCalibrationResult { ErrorMessage = validationError, Outcome = SavePredictionCalibrationOutcome.InvalidValues };
 
+        var savedValues = values.ToDictionary(v => v.Key, v => v.Value);
         await _predictionCalibrationModule.SaveAsync(new PredictionCalibration
         {
             Season = season,
             Source = source,
-            Values = values.ToDictionary(v => v.Key, v => v.Value),
+            Values = savedValues,
             Week = week
         }).ConfigureAwait(false);
 
         _logger.LogInformation("Saved prediction calibration for season {Season}, week {Week} ({Source})", season, week, source);
+
+        await RefreshLaterCarriedForwardRowsAsync(season, week, savedValues, publishedWeeks).ConfigureAwait(false);
 
         return new SavePredictionCalibrationResult { Outcome = SavePredictionCalibrationOutcome.Saved };
     }
@@ -758,7 +745,7 @@ public class AdminModule : IAdminModule
     private async Task<IReadOnlyDictionary<int, IReadOnlyDictionary<string, double>>> BuildAppliedCalibrationByWeekAsync(int season, int week, IEnumerable<PredictionsResult> snapshots, IReadOnlyList<PredictionCalibrationParameter> parameters)
     {
         var snapshotsByWeek = snapshots.ToDictionary(s => s.Week);
-        var defaults = parameters.ToDictionary(p => p.Key, p => p.DefaultValue);
+        var defaults = PredictionCalibrationValues.Defaults(parameters);
         var appliedByWeek = new Dictionary<int, IReadOnlyDictionary<string, double>>();
 
         for (var predictionWeek = 1; predictionWeek < week; predictionWeek++)
@@ -780,6 +767,7 @@ public class AdminModule : IAdminModule
     {
         var scheduleList = fullSchedule.ToList();
         var lines = new List<HistoricalGameLine>();
+        var scoic = StringComparison.OrdinalIgnoreCase;
         var coveredGameWeeks = new HashSet<int>();
 
         foreach (var snapshot in snapshots)
@@ -803,9 +791,7 @@ public class AdminModule : IAdminModule
         }
 
         var (targetGameWeek, targetIsPostseason) = GameWeekResolver.Resolve(week, scheduleList);
-        var lastCompletedGameWeek = targetIsPostseason
-            ? scheduleList.Where(g => g.SeasonType is not null && g.SeasonType.Equals("regular", StringComparison.OrdinalIgnoreCase)).Select(g => g.Week ?? 0).DefaultIfEmpty(0).Max()
-            : targetGameWeek - 1;
+        var lastCompletedGameWeek = targetIsPostseason ? GameWeekResolver.GetMaxRegularWeek(scheduleList) : targetGameWeek - 1;
 
         var weeksToFetch = Enumerable.Range(1, Math.Max(0, lastCompletedGameWeek))
             .Where(w => !coveredGameWeeks.Contains(w))
@@ -814,7 +800,7 @@ public class AdminModule : IAdminModule
 
         var priorCalendars = await Task.WhenAll(new[] { season - 2, season - 1 }.Select(async s => (Season: s, Calendar: await _dataService.GetCalendarAsync(s).ConfigureAwait(false)))).ConfigureAwait(false);
         weeksToFetch.AddRange(priorCalendars.SelectMany(c => c.Calendar
-            .Where(w => w.SeasonType is not null && w.SeasonType.Equals("regular", StringComparison.OrdinalIgnoreCase))
+            .Where(w => w.SeasonType is not null && w.SeasonType.Equals("regular", scoic))
             .Select(w => (c.Season, GameWeek: w.Week))));
 
         var fetched = await Task.WhenAll(weeksToFetch.Select(async w => (w.Season, w.GameWeek, Lines: await _dataService.GetBettingLinesAsync(w.Season, w.GameWeek).ConfigureAwait(false)))).ConfigureAwait(false);
@@ -934,13 +920,23 @@ public class AdminModule : IAdminModule
     /// </summary>
     private async Task<(IEnumerable<GamePrediction> Predictions, IReadOnlyDictionary<string, double>? AppliedCalibration)> GenerateExperimentalPredictionsAsync(RatingAlgorithmVersion algorithmVersion, int season, int week, SeasonData seasonData, IDictionary<string, RatingDetails> ratings, IEnumerable<ScheduleGame> games, IEnumerable<BettingLine> bettingLines)
     {
-        var calculator = _predictionAlgorithmResolver.Resolve(algorithmVersion);
+        return await GeneratePredictionsWithCalibrationAsync(_predictionAlgorithmResolver.Resolve(algorithmVersion), async parameters => (await _predictionCalibrationModule.ResolveEffectiveAsync(season, week, parameters).ConfigureAwait(false)).Values, seasonData, ratings, games, bettingLines)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Generates predictions with the given calculator. A calibrated calculator gets the values returned by
+    /// <paramref name="resolveCalibration"/>, which are returned with the predictions; any other calculator
+    /// generates without calibration and returns null for them.
+    /// </summary>
+    private async Task<(IEnumerable<GamePrediction> Predictions, IReadOnlyDictionary<string, double>? AppliedCalibration)> GeneratePredictionsWithCalibrationAsync(IPredictionCalculatorModule calculator, Func<IReadOnlyList<PredictionCalibrationParameter>, Task<IReadOnlyDictionary<string, double>>> resolveCalibration, SeasonData seasonData, IDictionary<string, RatingDetails> ratings, IEnumerable<ScheduleGame> games, IEnumerable<BettingLine> bettingLines)
+    {
         if (calculator is not ICalibratedPredictionCalculator calibratedCalculator)
             return (await calculator.GeneratePredictionsAsync(seasonData, ratings, games, bettingLines).ConfigureAwait(false), null);
 
-        var calibration = await _predictionCalibrationModule.ResolveEffectiveAsync(season, week, calibratedCalculator.CalibrationParameters).ConfigureAwait(false);
-        var predictions = await calibratedCalculator.GeneratePredictionsAsync(seasonData, ratings, games, bettingLines, calibration.Values).ConfigureAwait(false);
-        return (predictions, calibration.Values);
+        var calibration = await resolveCalibration(calibratedCalculator.CalibrationParameters).ConfigureAwait(false);
+        var predictions = await calibratedCalculator.GeneratePredictionsAsync(seasonData, ratings, games, bettingLines, calibration).ConfigureAwait(false);
+        return (predictions, calibration);
     }
 
     /// <summary>
@@ -951,12 +947,43 @@ public class AdminModule : IAdminModule
     {
         const double tolerance = 1e-9;
 
-        return parameters.All(p =>
+        var parameterList = parameters.ToList();
+        var appliedValues = PredictionCalibrationValues.Normalize(applied ?? new Dictionary<string, double>(), parameterList);
+        var currentValues = PredictionCalibrationValues.Normalize(current, parameterList);
+
+        return parameterList.All(p => Math.Abs(appliedValues[p.Key] - currentValues[p.Key]) < tolerance);
+    }
+
+    /// <summary>
+    /// After a week's values are saved, points the season's later carried-forward rows at that week and gives
+    /// them its values, so they don't keep values carried from before the change. Stops at the first later
+    /// week that set its own values or is published (its row records what the published predictions used).
+    /// A later week whose draft was generated with the old values then reports the mismatch.
+    /// </summary>
+    private async Task RefreshLaterCarriedForwardRowsAsync(int season, int week, IReadOnlyDictionary<string, double> values, IEnumerable<int> publishedWeeks)
+    {
+        var published = publishedWeeks.ToHashSet();
+        var laterRows = (await _predictionCalibrationModule.GetSeasonAsync(season).ConfigureAwait(false))
+            .Where(c => c.Week > week)
+            .OrderBy(c => c.Week);
+
+        foreach (var row in laterRows)
         {
-            var appliedValue = applied is not null && applied.TryGetValue(p.Key, out var a) ? a : p.DefaultValue;
-            var currentValue = current.TryGetValue(p.Key, out var c) ? c : p.DefaultValue;
-            return Math.Abs(appliedValue - currentValue) < tolerance;
-        });
+            if (row.Source != PredictionCalibrationSource.CarriedForward || published.Contains(row.Week))
+                break;
+
+            await _predictionCalibrationModule.SaveAsync(new PredictionCalibration
+            {
+                CarriedFromSeason = season,
+                CarriedFromWeek = week,
+                Season = season,
+                Source = PredictionCalibrationSource.CarriedForward,
+                Values = values,
+                Week = row.Week
+            }).ConfigureAwait(false);
+
+            _logger.LogInformation("Updated carried-forward prediction calibration for season {Season}, week {Week} from week {OriginWeek}", season, row.Week, week);
+        }
     }
 
     /// <summary>
@@ -971,12 +998,14 @@ public class AdminModule : IAdminModule
         if (stored is not null)
             return stored.Values;
 
-        var carriedForward = await _predictionCalibrationModule.ResolveEffectiveAsync(season, week, parameterList).ConfigureAwait(false);
+        var carriedForward = await _predictionCalibrationModule.ResolveCarriedForwardAsync(season, week, parameterList).ConfigureAwait(false);
 
         try
         {
-            await _predictionCalibrationModule.SaveAsync(carriedForward).ConfigureAwait(false);
-            _logger.LogInformation("Saved carried-forward prediction calibration for season {Season}, week {Week}", season, week);
+            // Never replaces a row: values saved for the week while this calculation ran win, and the week then
+            // reports that its draft used different values.
+            if (await _predictionCalibrationModule.SaveIfMissingAsync(carriedForward).ConfigureAwait(false))
+                _logger.LogInformation("Saved carried-forward prediction calibration for season {Season}, week {Week}", season, week);
         }
         catch (Exception ex)
         {

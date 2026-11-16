@@ -16,10 +16,10 @@ public class PredictionCalibrationAnalysis
     /// </summary>
     public IReadOnlyDictionary<string, double>? CandidateValues { get; set; }
 
+    public IReadOnlyDictionary<string, double> SuggestedValues { get; set; } = new Dictionary<string, double>();
+
     /// <summary>
     /// How each suggested value was estimated, keyed by parameter key.
     /// </summary>
     public IReadOnlyDictionary<string, string> SuggestionNotes { get; set; } = new Dictionary<string, string>();
-
-    public IReadOnlyDictionary<string, double> SuggestedValues { get; set; } = new Dictionary<string, double>();
 }

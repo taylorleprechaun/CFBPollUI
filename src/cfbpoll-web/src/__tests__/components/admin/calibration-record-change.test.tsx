@@ -20,6 +20,6 @@ describe('CalibrationRecordChange', () => {
   it('shows a neutral zero when nothing changed', () => {
     render(<CalibrationRecordChange compared={{ correct: 25, incorrect: 31, push: 0 }} used={{ correct: 25, incorrect: 31, push: 0 }} />);
 
-    expect(screen.getByText('0')).toHaveClass('text-text-muted');
+    expect(screen.getByText('0')).toHaveClass('bg-gray-100');
   });
 });

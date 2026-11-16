@@ -458,20 +458,6 @@ describe('Admin schemas', () => {
       suggestionNotes: { paramA: 'Note.' },
     };
 
-    it('accepts a valid analysis', () => {
-      expect(PredictionCalibrationAnalysisSchema.safeParse(validAnalysis).success).toBe(true);
-    });
-
-    it('accepts an analysis without candidate values', () => {
-      const result = PredictionCalibrationAnalysisSchema.safeParse({
-        ...validAnalysis,
-        backtestWeeks: [{ ...validAnalysis.backtestWeeks[0], candidate: null }],
-        candidateValues: null,
-      });
-
-      expect(result.success).toBe(true);
-    });
-
     it('rejects a backtest week without its used record', () => {
       const result = PredictionCalibrationAnalysisSchema.safeParse({
         ...validAnalysis,
@@ -480,17 +466,23 @@ describe('Admin schemas', () => {
 
       expect(result.success).toBe(false);
     });
-  });
 
-  describe('PredictionCalibrationHistoryEntrySchema', () => {
-    it('accepts an entry with a null updatedAt', () => {
-      const result = PredictionCalibrationHistoryEntrySchema.safeParse({
-        carriedFromSeason: null, carriedFromWeek: null, isLocked: true, season: 2026, source: 'CarriedForward', updatedAt: null, values: { paramA: 0 }, week: 9,
+    it('validates a valid analysis', () => {
+      expect(PredictionCalibrationAnalysisSchema.safeParse(validAnalysis).success).toBe(true);
+    });
+
+    it('validates an analysis without candidate values', () => {
+      const result = PredictionCalibrationAnalysisSchema.safeParse({
+        ...validAnalysis,
+        backtestWeeks: [{ ...validAnalysis.backtestWeeks[0], candidate: null }],
+        candidateValues: null,
       });
 
       expect(result.success).toBe(true);
     });
+  });
 
+  describe('PredictionCalibrationHistoryEntrySchema', () => {
     it('rejects a non-numeric value', () => {
       const result = PredictionCalibrationHistoryEntrySchema.safeParse({
         carriedFromSeason: null, carriedFromWeek: null, isLocked: true, season: 2026, source: 'Manual', updatedAt: null, values: { paramA: 'high' }, week: 9,
@@ -498,14 +490,20 @@ describe('Admin schemas', () => {
 
       expect(result.success).toBe(false);
     });
+
+    it('validates an entry with a null updatedAt', () => {
+      const result = PredictionCalibrationHistoryEntrySchema.safeParse({
+        carriedFromSeason: null, carriedFromWeek: null, isLocked: true, season: 2026, source: 'CarriedForward', updatedAt: null, values: { paramA: 0 }, week: 9,
+      });
+
+      expect(result.success).toBe(true);
+    });
   });
 
   describe('PredictionCalibrationResponseSchema', () => {
     const validResponse = {
       carriedFromSeason: null,
-
       carriedFromWeek: null,
-
       draftUsesDifferentValues: false,
       isLocked: false,
       isStored: false,
@@ -518,18 +516,18 @@ describe('Admin schemas', () => {
       week: 10,
     };
 
-    it('accepts a valid response', () => {
+    it('rejects an unknown source', () => {
+      expect(PredictionCalibrationResponseSchema.safeParse({ ...validResponse, source: 'Guessed' }).success).toBe(false);
+    });
+
+    it('validates a valid response', () => {
       expect(PredictionCalibrationResponseSchema.safeParse(validResponse).success).toBe(true);
     });
 
-    it('accepts an unsupported season with a null source and no values', () => {
+    it('validates an unsupported season with a null source and no values', () => {
       const result = PredictionCalibrationResponseSchema.safeParse({ ...validResponse, isSupported: false, parameters: [], source: null, values: {} });
 
       expect(result.success).toBe(true);
-    });
-
-    it('rejects an unknown source', () => {
-      expect(PredictionCalibrationResponseSchema.safeParse({ ...validResponse, source: 'Guessed' }).success).toBe(false);
     });
   });
 

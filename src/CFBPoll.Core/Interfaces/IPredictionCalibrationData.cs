@@ -31,4 +31,10 @@ public interface IPredictionCalibrationData
     /// Saves the calibration for its season and week, replacing any existing one.
     /// </summary>
     Task<bool> SaveAsync(PredictionCalibration calibration);
+
+    /// <summary>
+    /// Saves the calibration only when nothing is stored yet for its season and week.
+    /// Returns whether it was saved.
+    /// </summary>
+    Task<bool> SaveIfMissingAsync(PredictionCalibration calibration);
 }

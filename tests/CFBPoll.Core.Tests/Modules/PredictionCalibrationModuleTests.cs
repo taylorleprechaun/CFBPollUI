@@ -63,6 +63,19 @@ public class PredictionCalibrationModuleTests
     }
 
     [Fact]
+    public async Task ResolveCarriedForwardAsync_StoredRowForWeek_IgnoresItAndCarriesEarlierValues()
+    {
+        _mockData.Setup(x => x.GetAsync(2025, 6)).ReturnsAsync(CreateCalibration(2025, 6, ("paramA", 3)));
+        _mockData.Setup(x => x.GetLatestBeforeAsync(2025, 6)).ReturnsAsync(CreateCalibration(2025, 5, ("paramA", 1.5)));
+
+        var result = await _module.ResolveCarriedForwardAsync(2025, 6, Parameters);
+
+        Assert.Equal(PredictionCalibrationSource.CarriedForward, result.Source);
+        Assert.Equal(1.5, result.Values["paramA"]);
+        Assert.Equal(5, result.CarriedFromWeek);
+    }
+
+    [Fact]
     public async Task ResolveEffectiveAsync_EarlierRowCarriedDefaults_KeepsNullOrigin()
     {
         var carriedDefaults = CreateCalibration(2025, 5, ("paramA", 0), ("paramB", 1));
@@ -172,6 +185,23 @@ public class PredictionCalibrationModuleTests
         var result = await _module.SaveAsync(calibration);
 
         Assert.True(result);
+    }
+
+    [Fact]
+    public async Task SaveIfMissingAsync_NullCalibration_ThrowsArgumentNullException()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _module.SaveIfMissingAsync(null!));
+    }
+
+    [Fact]
+    public async Task SaveIfMissingAsync_ValidCalibration_ReturnsDataResult()
+    {
+        var calibration = CreateCalibration(2025, 6, ("paramA", 1));
+        _mockData.Setup(x => x.SaveIfMissingAsync(calibration)).ReturnsAsync(false);
+
+        var result = await _module.SaveIfMissingAsync(calibration);
+
+        Assert.False(result);
     }
 
     private static PredictionCalibration CreateCalibration(int season, int week, params (string Key, double Value)[] values)

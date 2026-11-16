@@ -20,12 +20,29 @@ interface CalibrationVerdictInput {
   used: CalibrationRecordSet;
 }
 
-export type CalibrationRecordSet = Record<'overUnder' | 'spread' | 'winner', TrackRecordTotals>;
+export type CalibrationRecordKey = (typeof CALIBRATION_RECORDS)[number]['key'];
+export type CalibrationRecordSet = Record<CalibrationRecordKey, TrackRecordTotals>;
+
+/**
+ * The pick records the calibration comparison reports, in the site's standard order.
+ */
+export const CALIBRATION_RECORDS = [
+  { key: 'winner', label: 'Winner', noun: 'winners' },
+  { key: 'spread', label: 'Spread', noun: 'spreads' },
+  { key: 'overUnder', label: 'O/U', noun: 'over/unders' },
+] as const;
 
 const SOURCE_LABELS: Record<Exclude<PredictionCalibrationSource, 'CarriedForward'>, string> = {
   Accepted: 'Accepted suggestion',
   Manual: 'Set manually',
 };
+
+/**
+ * Link to the Calibration page, opened on a season and optionally a week.
+ */
+export function calibrationPageUrl(season: number, week?: number): string {
+  return week === undefined ? `/admin/calibration?season=${season}` : `/admin/calibration?season=${season}&week=${week}`;
+}
 
 /**
  * Describes where a week's calibration values came from. Carried-forward values name the week they
@@ -52,8 +69,7 @@ export function formatCalibrationSummary(parameters: PredictionCalibrationParame
 
 export function formatCalibrationValue(value: number | undefined): string {
   if (value === undefined) return '-';
-  const rounded = Number(value.toFixed(2));
-  return rounded > 0 ? `+${rounded}` : `${rounded}`;
+  return formatSignedNumber(Number(value.toFixed(2)));
 }
 
 /**
@@ -61,13 +77,11 @@ export function formatCalibrationValue(value: number | undefined): string {
  * changed correct picks by: Winner +3, Spread +8, O/U -1."
  */
 export function formatCalibrationVerdict({ compared, period, subject, used }: CalibrationVerdictInput): string {
-  const signed = (record: keyof CalibrationRecordSet) => {
-    const difference = compared[record].correct - used[record].correct;
-    return difference > 0 ? `+${difference}` : `${difference}`;
-  };
+  const changes = CALIBRATION_RECORDS
+    .map((r) => `${r.label} ${formatSignedNumber(recordDifference(used[r.key], compared[r.key]))}`)
+    .join(', ');
 
-  return `${period}, ${subject} would have changed correct picks by: Winner ${signed('winner')}, `
-    + `Spread ${signed('spread')}, O/U ${signed('overUnder')}.`;
+  return `${period}, ${subject} would have changed correct picks by: ${changes}.`;
 }
 
 /**
@@ -78,13 +92,17 @@ export function formatRecordChange(used: TrackRecordTotals, candidate: TrackReco
 }
 
 /**
- * Adds records together, e.g. a run of weeks into one total.
+ * Prefixes positive numbers with a plus sign, e.g. "+3", "0", "-2".
  */
-export function sumRecords(records: TrackRecordTotals[]): TrackRecordTotals {
-  return records.reduce(
-    (total, r) => ({ correct: total.correct + r.correct, incorrect: total.incorrect + r.incorrect, push: total.push + r.push }),
-    { correct: 0, incorrect: 0, push: 0 }
-  );
+export function formatSignedNumber(value: number): string {
+  return value > 0 ? `+${value}` : `${value}`;
+}
+
+/**
+ * How many more picks were correct with the compared values than with the values used (negative when fewer).
+ */
+export function recordDifference(used: TrackRecordTotals, compared: TrackRecordTotals): number {
+  return compared.correct - used.correct;
 }
 
 /**

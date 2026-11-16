@@ -5,6 +5,7 @@ import type { AlgorithmRunState } from '../../hooks/use-algorithm-run-state';
 import type { SeasonExperimentalPredictionsResponse } from '../../schemas/admin';
 import type { AlgorithmVersion } from './algorithm-versions';
 
+import { calibrationPageUrl } from '../../lib/calibration-utils';
 import { ErrorAlert } from '../error';
 import { CollapsibleContent } from '../ui/collapsible-content';
 import { CollapsibleTrigger } from '../ui/collapsible-trigger';
@@ -66,7 +67,7 @@ export function SeasonPredictionsComparisonSection({
             .map(({ algorithmVersion }) => (
               <p key={algorithmVersion} className="text-xs text-text-muted">
                 {algorithmVersion} uses each week’s own calibration values.{' '}
-                <Link className="text-accent hover:underline" to={`/admin/calibration?season=${season}`}>
+                <Link className="text-accent hover:underline" to={calibrationPageUrl(season)}>
                   View calibration
                 </Link>
               </p>

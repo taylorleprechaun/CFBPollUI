@@ -1,59 +1,37 @@
 import { useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
-import { useChartColors } from '../../hooks/use-chart-colors';
+import type { CalibrationRecordKey } from '../../lib/calibration-utils';
 
-export interface CalibrationChartPoint {
-  label: string;
-  overUnder: number;
-  spread: number;
-  winner: number;
-}
+import { useChartColors } from '../../hooks/use-chart-colors';
+import { CALIBRATION_RECORDS } from '../../lib/calibration-utils';
+import { SegmentedToggle } from '../ui/segmented-toggle';
+
+export type CalibrationChartPoint = Record<CalibrationRecordKey, number> & { label: string };
 
 interface PredictionCalibrationChartProps {
   comparedLabel: string;
   points: CalibrationChartPoint[];
 }
 
-type ChartMetric = 'overUnder' | 'spread' | 'winner';
-
-const GAIN_COLOR = '#16a34a';
-const LOSS_COLOR = '#dc2626';
-const METRICS: { column: string; key: ChartMetric; label: string; noun: string }[] = [
-  { column: 'Winner', key: 'winner', label: 'Winner', noun: 'winners' },
-  { column: 'Spread', key: 'spread', label: 'Spread', noun: 'spreads' },
-  { column: 'O/U', key: 'overUnder', label: 'O/U', noun: 'over/unders' },
-];
-const TOGGLE_CLASSES = 'px-3 py-1 text-xs font-medium transition-colors duration-150';
+const RECORD_OPTIONS = CALIBRATION_RECORDS.map((r) => ({ label: r.label, value: r.key }));
 
 /**
  * One bar per week for the chosen record (spread by default): how many more (above zero) or fewer (below
  * zero) picks the compared values got right than the values used that week.
  */
 export function PredictionCalibrationChart({ comparedLabel, points }: PredictionCalibrationChartProps) {
-  const [metricKey, setMetricKey] = useState<ChartMetric>('spread');
+  const [recordKey, setRecordKey] = useState<CalibrationRecordKey>('spread');
   const chartColors = useChartColors();
 
-  const metric = METRICS.find((m) => m.key === metricKey) ?? METRICS[1];
+  const record = CALIBRATION_RECORDS.find((r) => r.key === recordKey) ?? CALIBRATION_RECORDS[1];
 
   return (
     <figure className="space-y-2">
-      <div className="inline-flex rounded-lg border border-border overflow-hidden" role="group" aria-label="Chart record">
-        {METRICS.map((m) => (
-          <button
-            key={m.key}
-            aria-pressed={m.key === metricKey}
-            className={`${TOGGLE_CLASSES} ${m.key === metricKey ? 'bg-accent text-white' : 'bg-surface text-text-secondary hover:bg-surface-alt'}`}
-            onClick={() => setMetricKey(m.key)}
-            type="button"
-          >
-            {m.label}
-          </button>
-        ))}
-      </div>
+      <SegmentedToggle ariaLabel="Chart record" onChange={setRecordKey} options={RECORD_OPTIONS} size="sm" value={recordKey} />
       <figcaption className="text-xs text-text-muted max-w-prose">
-        Each bar is one week’s {metric.label} difference, the same number as the {metric.column} column below. Green
-        bars are weeks where {comparedLabel} would have gotten more {metric.noun} right; red bars are weeks where they
+        Each bar is one week’s {record.label} difference, the same number as the {record.label} column below. Green
+        bars are weeks where {comparedLabel} would have gotten more {record.noun} right; red bars are weeks where they
         would have gotten fewer.
       </figcaption>
       <ResponsiveContainer height={180} width="100%">
@@ -62,10 +40,10 @@ export function PredictionCalibrationChart({ comparedLabel, points }: Prediction
           <XAxis dataKey="label" stroke={chartColors.axis} tick={{ fill: chartColors.text, fontSize: 12 }} />
           <YAxis allowDecimals={false} stroke={chartColors.axis} tick={{ fill: chartColors.text, fontSize: 12 }} />
           <ReferenceLine stroke={chartColors.text} y={0} />
-          <Tooltip cursor={{ fill: chartColors.grid, fillOpacity: 0.4 }} formatter={(value) => [value, `${metric.label} difference`]} />
-          <Bar dataKey={metricKey} isAnimationActive={false}>
+          <Tooltip cursor={{ fill: chartColors.grid, fillOpacity: 0.4 }} formatter={(value) => [value, `${record.label} difference`]} />
+          <Bar dataKey={recordKey} isAnimationActive={false}>
             {points.map((p) => (
-              <Cell key={p.label} fill={p[metricKey] >= 0 ? GAIN_COLOR : LOSS_COLOR} />
+              <Cell key={p.label} fill={p[recordKey] >= 0 ? chartColors.gain : chartColors.loss} />
             ))}
           </Bar>
         </BarChart>

@@ -70,7 +70,7 @@ describe('PredictionCalibrationValues', () => {
   it('shows a placeholder while the suggestion loads', () => {
     renderValues({ isSuggestionLoading: true, suggestedValues: undefined, suggestionNotes: undefined });
 
-    expect(within(rowFor('Param A')).getByText('...')).toBeInTheDocument();
+    expect(within(rowFor('Param A')).getByText('…')).toBeInTheDocument();
     expect(screen.queryByText('How the suggestions were worked out')).not.toBeInTheDocument();
   });
 

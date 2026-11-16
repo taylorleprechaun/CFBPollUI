@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 
 import { usePredictionCalibration } from '../../hooks/use-prediction-calibration';
-import { calibrationSourceLabel, formatCalibrationSummary } from '../../lib/calibration-utils';
+import { calibrationPageUrl, calibrationSourceLabel, formatCalibrationSummary } from '../../lib/calibration-utils';
 import { BUTTON_GHOST } from '../ui/button-styles';
 
 interface PredictionCalibrationSummaryProps {
@@ -28,13 +28,15 @@ export function PredictionCalibrationSummary({ season, token, week }: Prediction
           {formatCalibrationSummary(calibration.parameters, calibration.values)}
           <span className="text-text-muted"> ({calibrationSourceLabel(calibration)})</span>
         </p>
-        <Link className={BUTTON_GHOST} to={`/admin/calibration?season=${season}&week=${week}`}>
+        <Link className={BUTTON_GHOST} to={calibrationPageUrl(season, week)}>
           {calibration.isLocked ? 'View calibration' : 'Edit calibration'}
         </Link>
       </div>
       {calibration.draftUsesDifferentValues && (
         <p className="text-amber-600 text-sm">
-          The draft predictions for this week were generated with different calibration values. Generate again to apply the current values.
+          {calibration.isLocked
+            ? 'The published predictions for this week were generated with different calibration values than the ones shown.'
+            : 'The draft predictions for this week were generated with different calibration values. Generate again to apply the current values.'}
         </p>
       )}
     </div>

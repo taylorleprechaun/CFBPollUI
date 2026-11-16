@@ -1,4 +1,5 @@
 import { useId, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import type { PredictionCalibrationResponse } from '../../schemas/admin';
 import type { CalibrationComparison } from './prediction-calibration-season-results';
@@ -36,6 +37,10 @@ interface CalibrationEdits {
 
 const CARD_CLASSES = 'bg-surface border border-border rounded-xl p-4 sm:p-6';
 
+/**
+ * The Calibration page's body for one season and week: the values editor with its suggestion, and the season's
+ * comparison of the values each week used against the suggestions (or typed values, in hindsight).
+ */
 export function PredictionCalibrationSection({ season, token, week }: PredictionCalibrationSectionProps) {
   const [edits, setEdits] = useState<CalibrationEdits | null>(null);
   const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
@@ -56,8 +61,8 @@ export function PredictionCalibrationSection({ season, token, week }: Prediction
     return (
       <section className={CARD_CLASSES}>
         <h2 className="text-lg font-semibold text-text-primary mb-2">{weekTitle}</h2>
-        {isLoading && <p className="text-sm text-text-muted">Loading calibration...</p>}
-        {error && <p role="alert" className="text-sm text-red-600">{toErrorMessage(error, 'Failed to load calibration')}</p>}
+        {isLoading && <p className="text-sm text-text-muted">Loading calibration…</p>}
+        {error !== null && <p role="alert" className="text-sm text-red-600">{toErrorMessage(error, 'Failed to load calibration')}</p>}
         {calibration && !calibration.isSupported && (
           <p className="text-sm text-text-muted">This season’s prediction algorithm doesn’t take calibration values.</p>
         )}
@@ -79,6 +84,24 @@ export function PredictionCalibrationSection({ season, token, week }: Prediction
   const preview = previewIsCurrent && !previewMutation.isPending ? previewMutation.data : undefined;
   const previewError = previewIsCurrent ? previewMutation.error : null;
   const resultsAnalysis = preview ?? analysis;
+
+  let seasonBody: React.ReactNode = null;
+  if (analysisQuery.isLoading || previewMutation.isPending) {
+    seasonBody = <p className="text-sm text-text-muted">Running the analysis. It replays every past season, so it can take a few seconds.</p>;
+  } else if (resultsAnalysis) {
+    seasonBody = (
+      <PredictionCalibrationSeasonResults
+        key={`${season}-${week}`}
+        analysis={resultsAnalysis}
+        comparison={preview ? comparison : 'suggested'}
+        historyEntries={history.data ?? []}
+        onComparisonChange={setComparison}
+        parameters={calibration.parameters}
+      />
+    );
+  } else if (analysisQuery.error !== null) {
+    seasonBody = <p role="alert" className="text-sm text-red-600">{toErrorMessage(analysisQuery.error, 'Failed to run the analysis')}</p>;
+  }
 
   function handleApplySuggestion() {
     if (!calibration || !analysis) return;
@@ -124,6 +147,21 @@ export function PredictionCalibrationSection({ season, token, week }: Prediction
             {calibrationSourceLabel(calibration)}
             {calibration.isLocked && ' · Locked because this week’s predictions are published'}
           </p>
+          {calibration.draftUsesDifferentValues && (
+            <p className="text-sm text-amber-600 mt-2 max-w-prose">
+              {calibration.isLocked
+                ? 'The published predictions for this week were generated with different values than the ones shown here.'
+                : (
+                  <>
+                    This week’s draft predictions were generated with different values.{' '}
+                    <Link className="underline hover:no-underline" to={`/admin/predictions?season=${season}&week=${week}`}>
+                      Generate again on the Predictions page
+                    </Link>{' '}
+                    to apply these.
+                  </>
+                )}
+            </p>
+          )}
         </div>
 
         <PredictionCalibrationValues
@@ -145,7 +183,7 @@ export function PredictionCalibrationSection({ season, token, week }: Prediction
               Use suggested values
             </button>
             <button className={BUTTON_SECONDARY} disabled={hasErrors || previewMutation.isPending} onClick={handlePreview} type="button">
-              {previewMutation.isPending ? 'Testing...' : 'Test my values on past weeks'}
+              {previewMutation.isPending ? 'Testing…' : 'Test my values on past weeks'}
             </button>
             <button className={BUTTON_SECONDARY} disabled={!isDirty} onClick={() => setEdits(null)} type="button">
               Reset
@@ -156,7 +194,7 @@ export function PredictionCalibrationSection({ season, token, week }: Prediction
               onClick={handleSave}
               type="button"
             >
-              {saveMutation.isPending ? 'Saving...' : 'Save'}
+              {saveMutation.isPending ? 'Saving…' : 'Save'}
             </button>
             <FeedbackIndicator feedback={feedback} feedbackKey={feedbackKey} onClear={() => setFeedback(null)} />
           </div>
@@ -165,23 +203,10 @@ export function PredictionCalibrationSection({ season, token, week }: Prediction
 
       <section className={CARD_CLASSES}>
         <h2 className="text-lg font-semibold text-text-primary mb-4">Season so far</h2>
-        {previewError && (
+        {previewError !== null && (
           <p role="alert" className="text-sm text-red-600 mb-3">{toErrorMessage(previewError, 'Failed to test your values')}</p>
         )}
-        {analysisQuery.isLoading || previewMutation.isPending ? (
-          <p className="text-sm text-text-muted">Running the analysis. It replays every past season, so it can take a few seconds.</p>
-        ) : analysisQuery.error && !resultsAnalysis ? (
-          <p role="alert" className="text-sm text-red-600">{toErrorMessage(analysisQuery.error, 'Failed to run the analysis')}</p>
-        ) : resultsAnalysis ? (
-          <PredictionCalibrationSeasonResults
-            key={`${season}-${week}`}
-            analysis={resultsAnalysis}
-            comparison={preview ? comparison : 'suggested'}
-            historyEntries={history.data ?? []}
-            onComparisonChange={setComparison}
-            parameters={calibration.parameters}
-          />
-        ) : null}
+        {seasonBody}
       </section>
     </div>
   );

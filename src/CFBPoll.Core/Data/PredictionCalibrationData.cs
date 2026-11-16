@@ -108,28 +108,14 @@ public class PredictionCalibrationData : IPredictionCalibrationData
     {
         ArgumentNullException.ThrowIfNull(calibration);
 
-        await using var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync().ConfigureAwait(false);
+        return await InsertAsync(calibration, "INSERT OR REPLACE").ConfigureAwait(false);
+    }
 
-        await using var command = connection.CreateCommand();
-        command.CommandText = """
-            INSERT OR REPLACE INTO PredictionCalibration (Season, Week, ValuesJson, Source, UpdatedAt, CarriedFromSeason, CarriedFromWeek)
-            VALUES (@Season, @Week, @ValuesJson, @Source, @UpdatedAt, @CarriedFromSeason, @CarriedFromWeek)
-            """;
-        command.Parameters.AddWithValue("@Season", calibration.Season);
-        command.Parameters.AddWithValue("@Week", calibration.Week);
-        command.Parameters.AddWithValue("@ValuesJson", JsonSerializer.Serialize(calibration.Values));
-        command.Parameters.AddWithValue("@Source", calibration.Source.ToString());
-        command.Parameters.AddWithValue("@UpdatedAt", DateTime.UtcNow.ToString("o"));
-        command.Parameters.AddWithValue("@CarriedFromSeason", (object?)calibration.CarriedFromSeason ?? DBNull.Value);
-        command.Parameters.AddWithValue("@CarriedFromWeek", (object?)calibration.CarriedFromWeek ?? DBNull.Value);
+    public async Task<bool> SaveIfMissingAsync(PredictionCalibration calibration)
+    {
+        ArgumentNullException.ThrowIfNull(calibration);
 
-        var rowsAffected = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
-
-        _logger.LogInformation("Saved prediction calibration for season {Season}, week {Week} ({Source})",
-            calibration.Season, calibration.Week, calibration.Source);
-
-        return rowsAffected > 0;
+        return await InsertAsync(calibration, "INSERT OR IGNORE").ConfigureAwait(false);
     }
 
     private void EnsureDirectoryExists()
@@ -148,6 +134,39 @@ public class PredictionCalibrationData : IPredictionCalibrationData
         }
     }
 
+    /// <summary>
+    /// Writes the calibration row with the given insert verb (replace or ignore an existing row).
+    /// Returns whether a row was written.
+    /// </summary>
+    private async Task<bool> InsertAsync(PredictionCalibration calibration, string insertVerb)
+    {
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = $"""
+            {insertVerb} INTO PredictionCalibration (Season, Week, ValuesJson, Source, UpdatedAt, CarriedFromSeason, CarriedFromWeek)
+            VALUES (@Season, @Week, @ValuesJson, @Source, @UpdatedAt, @CarriedFromSeason, @CarriedFromWeek)
+            """;
+        command.Parameters.AddWithValue("@Season", calibration.Season);
+        command.Parameters.AddWithValue("@Week", calibration.Week);
+        command.Parameters.AddWithValue("@ValuesJson", JsonSerializer.Serialize(calibration.Values));
+        command.Parameters.AddWithValue("@Source", calibration.Source.ToString());
+        command.Parameters.AddWithValue("@UpdatedAt", DateTime.UtcNow.ToString("o"));
+        command.Parameters.AddWithValue("@CarriedFromSeason", (object?)calibration.CarriedFromSeason ?? DBNull.Value);
+        command.Parameters.AddWithValue("@CarriedFromWeek", (object?)calibration.CarriedFromWeek ?? DBNull.Value);
+
+        var rowsAffected = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
+
+        if (rowsAffected > 0)
+        {
+            _logger.LogInformation("Saved prediction calibration for season {Season}, week {Week} ({Source})",
+                calibration.Season, calibration.Week, calibration.Source);
+        }
+
+        return rowsAffected > 0;
+    }
+
     private PredictionCalibration ReadCalibration(SqliteDataReader reader)
     {
         return new PredictionCalibration
@@ -155,12 +174,12 @@ public class PredictionCalibrationData : IPredictionCalibrationData
             CarriedFromSeason = reader.IsDBNull(5) ? null : reader.GetInt32(5),
             CarriedFromWeek = reader.IsDBNull(6) ? null : reader.GetInt32(6),
             Season = reader.GetInt32(0),
-            Week = reader.GetInt32(1),
-            Values = JsonSerializer.Deserialize<Dictionary<string, double>>(reader.GetString(2)) ?? [],
             Source = Enum.TryParse<PredictionCalibrationSource>(reader.GetString(3), out var source)
                 ? source
                 : PredictionCalibrationSource.Manual,
-            UpdatedAt = DateTime.Parse(reader.GetString(4), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind)
+            UpdatedAt = DateTime.Parse(reader.GetString(4), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
+            Values = JsonSerializer.Deserialize<Dictionary<string, double>>(reader.GetString(2)) ?? [],
+            Week = reader.GetInt32(1)
         };
     }
 }

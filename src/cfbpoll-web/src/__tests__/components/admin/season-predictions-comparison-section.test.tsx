@@ -76,24 +76,6 @@ describe('SeasonPredictionsComparisonSection', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('shows a status badge for each selected version', () => {
-    renderSection({
-      runState: buildRunState({ V1: { error: null, result: null, status: 'pending' } }),
-      selectedVersions: ['V1', 'V2'],
-    });
-
-    expect(screen.getByText('V1: Running…')).toBeInTheDocument();
-    expect(screen.getByText('V2: Idle')).toBeInTheDocument();
-  });
-
-  it('shows an error alert for a version that failed', () => {
-    renderSection({
-      runState: buildRunState({ V1: { error: new Error('V1 calculation failed'), result: null, status: 'error' } }),
-    });
-
-    expect(screen.getByText('V1 calculation failed')).toBeInTheDocument();
-  });
-
   it('says a calibrated version uses each week’s values and links to the season', () => {
     const runState = buildRunState({
       V2: {
@@ -116,6 +98,24 @@ describe('SeasonPredictionsComparisonSection', () => {
 
     expect(screen.getByText(/V2 uses each week’s own calibration values/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'View calibration' })).toHaveAttribute('href', '/admin/calibration?season=2024');
+  });
+
+  it('shows a status badge for each selected version', () => {
+    renderSection({
+      runState: buildRunState({ V1: { error: null, result: null, status: 'pending' } }),
+      selectedVersions: ['V1', 'V2'],
+    });
+
+    expect(screen.getByText('V1: Running…')).toBeInTheDocument();
+    expect(screen.getByText('V2: Idle')).toBeInTheDocument();
+  });
+
+  it('shows an error alert for a version that failed', () => {
+    renderSection({
+      runState: buildRunState({ V1: { error: new Error('V1 calculation failed'), result: null, status: 'error' } }),
+    });
+
+    expect(screen.getByText('V1 calculation failed')).toBeInTheDocument();
   });
 
   it('toggles the collapsible content when the heading is clicked', () => {

@@ -25,7 +25,20 @@ const MOBILE_LABEL_CLASSES = 'block text-xs font-medium text-text-muted uppercas
  * One row per calibration value: what the week uses now, what's suggested, the editable new value, and how
  * far the new value moves from the current one.
  */
-export function PredictionCalibrationValues({ currentValues, fieldErrors, inputIdPrefix, inputValues, isLocked, isSuggestionLoading, onChange, parameters, suggestedValues, suggestionNotes }: PredictionCalibrationValuesProps) {
+export function PredictionCalibrationValues({
+  currentValues,
+  fieldErrors,
+  inputIdPrefix,
+  inputValues,
+  isLocked,
+  isSuggestionLoading,
+  onChange,
+  parameters,
+  suggestedValues,
+  suggestionNotes,
+}: PredictionCalibrationValuesProps) {
+  const notedParameters = suggestionNotes ? parameters.filter((p) => Boolean(suggestionNotes[p.key])) : [];
+
   return (
     <div className="space-y-4">
       <div className={`${ROW_GRID} hidden sm:grid pb-2 border-b border-border`} aria-hidden="true">
@@ -56,7 +69,7 @@ export function PredictionCalibrationValues({ currentValues, fieldErrors, inputI
               </div>
               <div className="text-sm tabular-nums text-text-secondary">
                 <span className={MOBILE_LABEL_CLASSES}>Suggested</span>
-                {isSuggestionLoading ? <span className="text-text-muted">...</span> : formatCalibrationValue(suggestedValues?.[p.key])}
+                {isSuggestionLoading ? <span className="text-text-muted">…</span> : formatCalibrationValue(suggestedValues?.[p.key])}
               </div>
               <div>
                 <span className={MOBILE_LABEL_CLASSES}>New value</span>
@@ -74,7 +87,7 @@ export function PredictionCalibrationValues({ currentValues, fieldErrors, inputI
                   value={inputValues[p.key] ?? ''}
                 />
                 <p className="text-xs text-text-muted mt-1 whitespace-nowrap">Range {p.min} to {p.max}</p>
-                {fieldError && <p className="text-xs text-red-600 mt-1">{fieldError}</p>}
+                {fieldError !== null && <p className="text-xs text-red-600 mt-1">{fieldError}</p>}
               </div>
               <div className="text-sm tabular-nums whitespace-nowrap">
                 <span className={MOBILE_LABEL_CLASSES}>Change</span>
@@ -87,11 +100,11 @@ export function PredictionCalibrationValues({ currentValues, fieldErrors, inputI
         })}
       </div>
 
-      {suggestionNotes && (
+      {notedParameters.length > 0 && (
         <div className="text-xs text-text-muted max-w-prose space-y-1">
           <p className="font-medium text-text-secondary">How the suggestions were worked out</p>
           <ul className="list-disc pl-4 space-y-1">
-            {parameters.map((p) => suggestionNotes[p.key] && <li key={p.key}>{p.label}: {suggestionNotes[p.key]}</li>)}
+            {notedParameters.map((p) => <li key={p.key}>{p.label}: {suggestionNotes?.[p.key]}</li>)}
           </ul>
         </div>
       )}

@@ -132,21 +132,19 @@ vi.mock('../../hooks/use-prediction-calibration', () => ({
   usePredictionCalibration: (_token: string | null, season: number | null, week: number | null) => ({
     data: mockCalibrationSupported
       ? {
-        carriedFromSeason: null,
-
-        carriedFromWeek: null,
-
-        draftUsesDifferentValues: false,
-        isLocked: false,
-        isStored: true,
-        isSupported: true,
-        parameters: [{ defaultValue: 0, description: '', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 }],
-        season,
-        source: 'Manual',
-        updatedAt: null,
-        values: { paramA: 0 },
-        week,
-      }
+          carriedFromSeason: null,
+          carriedFromWeek: null,
+          draftUsesDifferentValues: false,
+          isLocked: false,
+          isStored: true,
+          isSupported: true,
+          parameters: [{ defaultValue: 0, description: '', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 }],
+          season,
+          source: 'Manual',
+          updatedAt: null,
+          values: { paramA: 0 },
+          week,
+        }
       : undefined,
     error: null,
     isLoading: false,

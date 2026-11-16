@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PredictionCalibrationResponse } from '../../../schemas/admin';
 
 import { ExperimentalCalibrationNote } from '../../../components/admin';
+import { buildCalibration } from '../../fixtures/calibration';
 
 let mockCalibration: PredictionCalibrationResponse | undefined = undefined;
 
@@ -15,27 +16,6 @@ vi.mock('../../../hooks/use-auth', () => ({
 vi.mock('../../../hooks/use-prediction-calibration', () => ({
   usePredictionCalibration: () => ({ data: mockCalibration }),
 }));
-
-function buildCalibration(overrides: Partial<PredictionCalibrationResponse> = {}): PredictionCalibrationResponse {
-  return {
-    carriedFromSeason: null,
-    carriedFromWeek: null,
-    draftUsesDifferentValues: false,
-    isLocked: false,
-    isStored: true,
-    isSupported: true,
-    parameters: [
-      { defaultValue: 0, description: '', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 },
-      { defaultValue: 0, description: '', key: 'paramB', label: 'Param B', max: 10, min: -10, step: 0.1 },
-    ],
-    season: 2026,
-    source: 'Manual',
-    updatedAt: null,
-    values: { paramA: 0, paramB: 0 },
-    week: 10,
-    ...overrides,
-  };
-}
 
 function renderNote() {
   return render(

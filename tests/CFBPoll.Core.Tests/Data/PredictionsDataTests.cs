@@ -635,6 +635,47 @@ public class PredictionsDataTests
     }
 
     [Fact]
+    public async Task SaveAsync_AppliedCalibration_RoundTripsValues()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+            var predictions = CreatePredictionsResult(2024, 5);
+            predictions.AppliedCalibration = new Dictionary<string, double> { ["paramA"] = 1.5, ["paramB"] = -0.8 };
+
+            await data.SaveAsync(predictions);
+            var result = await data.GetAsync(2024, 5);
+
+            Assert.Equal(1.5, result!.AppliedCalibration!["paramA"]);
+            Assert.Equal(-0.8, result.AppliedCalibration["paramB"]);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task SaveAsync_NoAppliedCalibration_RoundTripsNull()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            await data.SaveAsync(CreatePredictionsResult(2024, 5));
+            var result = await data.GetAsync(2024, 5);
+
+            Assert.Null(result!.AppliedCalibration);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
     public async Task SaveAsync_OverwritingGradedRow_ResetsGradedAndResultsPublished()
     {
         var (data, tempPath) = CreatePredictionsDataWithFile();

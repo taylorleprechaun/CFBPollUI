@@ -1,8 +1,35 @@
 import { describe, expect, it } from 'vitest';
 
-import { calibrationSourceLabel, formatCalibrationSummary, formatCalibrationValue, formatCalibrationVerdict, formatRecordChange, sumRecords, validateCalibrationInput } from '../../lib/calibration-utils';
+import {
+  CALIBRATION_RECORDS,
+  calibrationPageUrl,
+  calibrationSourceLabel,
+  formatCalibrationSummary,
+  formatCalibrationValue,
+  formatCalibrationVerdict,
+  formatRecordChange,
+  formatSignedNumber,
+  recordDifference,
+  validateCalibrationInput,
+} from '../../lib/calibration-utils';
 
 const parameter = { defaultValue: 0, description: '', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 };
+
+describe('CALIBRATION_RECORDS', () => {
+  it('lists the records in Winner, Spread, O/U order', () => {
+    expect(CALIBRATION_RECORDS.map((r) => r.label)).toEqual(['Winner', 'Spread', 'O/U']);
+  });
+});
+
+describe('calibrationPageUrl', () => {
+  it('links to a season and week', () => {
+    expect(calibrationPageUrl(2026, 10)).toBe('/admin/calibration?season=2026&week=10');
+  });
+
+  it('links to a season alone when no week is given', () => {
+    expect(calibrationPageUrl(2026)).toBe('/admin/calibration?season=2026');
+  });
+});
 
 describe('calibrationSourceLabel', () => {
   it('labels accepted and manual values', () => {
@@ -89,13 +116,21 @@ describe('formatRecordChange', () => {
   });
 });
 
-describe('sumRecords', () => {
-  it('adds each part of the records together', () => {
-    expect(sumRecords([{ correct: 24, incorrect: 26, push: 0 }, { correct: 30, incorrect: 20, push: 2 }])).toEqual({ correct: 54, incorrect: 46, push: 2 });
+describe('formatSignedNumber', () => {
+  it('adds a plus sign to positive numbers only', () => {
+    expect(formatSignedNumber(3)).toBe('+3');
+    expect(formatSignedNumber(0)).toBe('0');
+    expect(formatSignedNumber(-2)).toBe('-2');
+  });
+});
+
+describe('recordDifference', () => {
+  it('counts how many more picks the compared record got right', () => {
+    expect(recordDifference({ correct: 24, incorrect: 26, push: 0 }, { correct: 27, incorrect: 23, push: 0 })).toBe(3);
   });
 
-  it('returns an empty record when there are none', () => {
-    expect(sumRecords([])).toEqual({ correct: 0, incorrect: 0, push: 0 });
+  it('is negative when the compared record got fewer right', () => {
+    expect(recordDifference({ correct: 24, incorrect: 26, push: 0 }, { correct: 22, incorrect: 28, push: 0 })).toBe(-2);
   });
 });
 

@@ -20,7 +20,7 @@ public class PredictionCalibrationModule : IPredictionCalibrationModule
         if (stored is null)
             return null;
 
-        stored.Values = Normalize(stored.Values, parameters);
+        stored.Values = PredictionCalibrationValues.Normalize(stored.Values, parameters);
         return stored;
     }
 
@@ -29,15 +29,9 @@ public class PredictionCalibrationModule : IPredictionCalibrationModule
         return await _predictionCalibrationData.GetSeasonAsync(season).ConfigureAwait(false);
     }
 
-    public async Task<PredictionCalibration> ResolveEffectiveAsync(int season, int week, IEnumerable<PredictionCalibrationParameter> parameters)
+    public async Task<PredictionCalibration> ResolveCarriedForwardAsync(int season, int week, IEnumerable<PredictionCalibrationParameter> parameters)
     {
         ArgumentNullException.ThrowIfNull(parameters);
-
-        var parameterList = parameters.ToList();
-
-        var stored = await GetAsync(season, week, parameterList).ConfigureAwait(false);
-        if (stored is not null)
-            return stored;
 
         var previous = await _predictionCalibrationData.GetLatestBeforeAsync(season, week).ConfigureAwait(false);
 
@@ -51,9 +45,19 @@ public class PredictionCalibrationModule : IPredictionCalibrationModule
             CarriedFromWeek = previousIsCarried ? previous!.CarriedFromWeek : previous?.Week,
             Season = season,
             Source = PredictionCalibrationSource.CarriedForward,
-            Values = Normalize(previous?.Values ?? new Dictionary<string, double>(), parameterList),
+            Values = PredictionCalibrationValues.Normalize(previous?.Values ?? new Dictionary<string, double>(), parameters),
             Week = week
         };
+    }
+
+    public async Task<PredictionCalibration> ResolveEffectiveAsync(int season, int week, IEnumerable<PredictionCalibrationParameter> parameters)
+    {
+        ArgumentNullException.ThrowIfNull(parameters);
+
+        var parameterList = parameters.ToList();
+
+        return await GetAsync(season, week, parameterList).ConfigureAwait(false)
+            ?? await ResolveCarriedForwardAsync(season, week, parameterList).ConfigureAwait(false);
     }
 
     public async Task<bool> SaveAsync(PredictionCalibration calibration)
@@ -63,14 +67,10 @@ public class PredictionCalibrationModule : IPredictionCalibrationModule
         return await _predictionCalibrationData.SaveAsync(calibration).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// Keeps only the given parameters' keys, fills any missing key with its default, and clamps each
-    /// value to its parameter's range.
-    /// </summary>
-    private IReadOnlyDictionary<string, double> Normalize(IReadOnlyDictionary<string, double> values, IEnumerable<PredictionCalibrationParameter> parameters)
+    public async Task<bool> SaveIfMissingAsync(PredictionCalibration calibration)
     {
-        return parameters.ToDictionary(
-            p => p.Key,
-            p => Math.Clamp(values.TryGetValue(p.Key, out var value) ? value : p.DefaultValue, p.Min, p.Max));
+        ArgumentNullException.ThrowIfNull(calibration);
+
+        return await _predictionCalibrationData.SaveIfMissingAsync(calibration).ConfigureAwait(false);
     }
 }

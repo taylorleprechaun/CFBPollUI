@@ -47,7 +47,7 @@ export function ExperimentalMatchupResults({ runState, submittedMatchup }: Exper
             <div key={version} className="flex-1 min-w-64 flex flex-col">
               <div className="mb-2">
                 <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">{version}</h3>
-                {runState[version].status === 'success' && runState[version].result?.appliedCalibration && (
+                {runState[version].status === 'success' && runState[version].result?.appliedCalibration != null && (
                   <ExperimentalCalibrationNote appliedCalibration={runState[version].result.appliedCalibration} season={season} week={week} />
                 )}
               </div>

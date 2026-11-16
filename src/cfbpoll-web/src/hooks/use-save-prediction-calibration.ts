@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { invalidateCalibrationAfterSave } from '../lib/calibration-query-utils';
 import { savePredictionCalibration } from '../services/admin-api';
 
 interface SavePredictionCalibrationParams {
@@ -19,7 +20,7 @@ export function useSavePredictionCalibration(token: string | null) {
     },
     onSuccess: (result, { season, week }) => {
       queryClient.setQueryData(['prediction-calibration', season, week], result);
-      queryClient.invalidateQueries({ queryKey: ['prediction-calibration-history', season] });
+      invalidateCalibrationAfterSave(queryClient, season, week);
     },
   });
 }

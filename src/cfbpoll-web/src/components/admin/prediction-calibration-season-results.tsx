@@ -1,12 +1,15 @@
 import { useId, useState } from 'react';
 
+import type { CalibrationRecordKey, CalibrationRecordSet } from '../../lib/calibration-utils';
 import type { TrackRecordTotals } from '../../schemas';
 import type { PredictionCalibrationAnalysis, PredictionCalibrationBacktestWeek, PredictionCalibrationHistoryEntry, PredictionCalibrationParameter, PredictionCalibrationSource } from '../../schemas/admin';
 import type { CalibrationChartPoint } from './prediction-calibration-chart';
 
-import { formatCalibrationSummary, formatCalibrationValue, formatCalibrationVerdict, sumRecords } from '../../lib/calibration-utils';
+import { CALIBRATION_RECORDS, formatCalibrationSummary, formatCalibrationValue, formatCalibrationVerdict, recordDifference } from '../../lib/calibration-utils';
+import { sumTotals } from '../../lib/track-record-utils';
 import { getWeekLabel } from '../../lib/week-utils';
 import { SELECT_BASE } from '../ui/button-styles';
+import { SegmentedToggle } from '../ui/segmented-toggle';
 import { CalibrationRecordChange } from './calibration-record-change';
 import { PredictionCalibrationChart } from './prediction-calibration-chart';
 
@@ -21,23 +24,20 @@ interface PredictionCalibrationSeasonResultsProps {
 }
 
 type RangeChoice = number | 'season';
-type RecordKey = (typeof RECORD_COLUMNS)[number]['key'];
 
 const DEFAULT_RANGE: RangeChoice = 8;
 const HEADER_CLASSES = 'px-3 py-2 text-xs font-medium text-text-muted uppercase tracking-wider';
 const CELL_CLASSES = 'px-3 py-2 align-top text-sm';
 const RANGE_OPTIONS: RangeChoice[] = [2, 4, 6, 8, 'season'];
-const RECORD_COLUMNS = [
-  { key: 'winner', label: 'Winner' },
-  { key: 'spread', label: 'Spread' },
-  { key: 'overUnder', label: 'O/U' },
+const COMPARISON_OPTIONS = [
+  { label: 'Suggestions', value: 'suggested' },
+  { label: 'Your values', value: 'candidate' },
 ] as const;
 const SOURCE_TAGS: Record<PredictionCalibrationSource, string> = {
   Accepted: 'Accepted',
   CarriedForward: 'Carried',
   Manual: 'Manual',
 };
-const TOGGLE_CLASSES = 'px-3 py-1.5 text-sm font-medium transition-colors duration-150';
 
 /**
  * Every completed week of the season, graded with the values it used and with either the values suggested at
@@ -52,7 +52,7 @@ export function PredictionCalibrationSeasonResults({ analysis, comparison, histo
   const shownWeeks = range === 'season' ? analysis.backtestWeeks : analysis.backtestWeeks.slice(-range);
   const sourceByWeek = new Map(historyEntries.map((e) => [e.week, e.source]));
 
-  function comparedRecord(week: PredictionCalibrationBacktestWeek, key: RecordKey): TrackRecordTotals {
+  function comparedRecord(week: PredictionCalibrationBacktestWeek, key: CalibrationRecordKey): TrackRecordTotals {
     return (isHindsight && week.candidate ? week.candidate : week.suggested)[key];
   }
 
@@ -62,12 +62,10 @@ export function PredictionCalibrationSeasonResults({ analysis, comparison, histo
 
   const chartPoints: CalibrationChartPoint[] = shownWeeks.map((w) => ({
     label: getWeekLabel(w.week).replace('Week ', 'Wk '),
-    overUnder: comparedRecord(w, 'overUnder').correct - w.used.overUnder.correct,
-    spread: comparedRecord(w, 'spread').correct - w.used.spread.correct,
-    winner: comparedRecord(w, 'winner').correct - w.used.winner.correct,
+    ...(Object.fromEntries(CALIBRATION_RECORDS.map((r) => [r.key, recordDifference(w.used[r.key], comparedRecord(w, r.key))])) as Record<CalibrationRecordKey, number>),
   }));
-  const comparedTotals = Object.fromEntries(RECORD_COLUMNS.map((c) => [c.key, sumRecords(shownWeeks.map((w) => comparedRecord(w, c.key)))])) as Record<RecordKey, TrackRecordTotals>;
-  const usedTotals = Object.fromEntries(RECORD_COLUMNS.map((c) => [c.key, sumRecords(shownWeeks.map((w) => w.used[c.key]))])) as Record<RecordKey, TrackRecordTotals>;
+  const comparedTotals = Object.fromEntries(CALIBRATION_RECORDS.map((r) => [r.key, sumTotals(shownWeeks.map((w) => comparedRecord(w, r.key)))])) as CalibrationRecordSet;
+  const usedTotals = Object.fromEntries(CALIBRATION_RECORDS.map((r) => [r.key, sumTotals(shownWeeks.map((w) => w.used[r.key]))])) as CalibrationRecordSet;
   const verdict = formatCalibrationVerdict({
     compared: comparedTotals,
     period: range === 'season' ? 'So far this season' : shownWeeks.length === 1 ? 'Last week' : `Over the last ${shownWeeks.length} weeks`,
@@ -90,24 +88,12 @@ export function PredictionCalibrationSeasonResults({ analysis, comparison, histo
         </div>
         <div className="flex flex-wrap items-end gap-3">
           {candidateValues !== null && (
-            <div className="inline-flex rounded-lg border border-border overflow-hidden" role="group" aria-label="Compare against">
-              <button
-                aria-pressed={!isHindsight}
-                className={`${TOGGLE_CLASSES} ${!isHindsight ? 'bg-accent text-white' : 'bg-surface text-text-secondary hover:bg-surface-alt'}`}
-                onClick={() => onComparisonChange('suggested')}
-                type="button"
-              >
-                Suggestions
-              </button>
-              <button
-                aria-pressed={isHindsight}
-                className={`${TOGGLE_CLASSES} ${isHindsight ? 'bg-accent text-white' : 'bg-surface text-text-secondary hover:bg-surface-alt'}`}
-                onClick={() => onComparisonChange('candidate')}
-                type="button"
-              >
-                Your values
-              </button>
-            </div>
+            <SegmentedToggle
+              ariaLabel="Compare against"
+              onChange={onComparisonChange}
+              options={COMPARISON_OPTIONS}
+              value={isHindsight ? 'candidate' : 'suggested'}
+            />
           )}
           <div>
             <label htmlFor={rangeId} className="block text-xs font-medium text-text-muted mb-1">Show</label>
@@ -134,7 +120,7 @@ export function PredictionCalibrationSeasonResults({ analysis, comparison, histo
           <div>
             <p className="text-xs font-medium text-text-muted mb-2">Totals for the weeks shown</p>
             <dl className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {RECORD_COLUMNS.map((c) => (
+              {CALIBRATION_RECORDS.map((c) => (
                 <div key={c.key} className="rounded-lg border border-border p-3">
                   <dt className="text-xs font-medium text-text-muted uppercase tracking-wider mb-1">{c.label}</dt>
                   <dd>
@@ -158,7 +144,7 @@ export function PredictionCalibrationSeasonResults({ analysis, comparison, histo
                   {parameters.map((p) => (
                     <th key={p.key} className={`${HEADER_CLASSES} text-right hidden sm:table-cell`}>{p.label}</th>
                   ))}
-                  {RECORD_COLUMNS.map((c) => (
+                  {CALIBRATION_RECORDS.map((c) => (
                     <th key={c.key} className={`${HEADER_CLASSES} text-right`}>{c.label}</th>
                   ))}
                 </tr>
@@ -170,14 +156,14 @@ export function PredictionCalibrationSeasonResults({ analysis, comparison, histo
                     <tr key={`${w.season}-${w.week}`}>
                       <td className={`${CELL_CLASSES} whitespace-nowrap`}>
                         <span className="font-medium text-text-primary">{getWeekLabel(w.week)}</span>
-                        {source && <span className="block text-xs text-text-muted">{SOURCE_TAGS[source]}</span>}
+                        {source !== undefined && <span className="block text-xs text-text-muted">{SOURCE_TAGS[source]}</span>}
                       </td>
                       {parameters.map((p) => (
                         <td key={p.key} className={`${CELL_CLASSES} text-right tabular-nums whitespace-nowrap text-text-secondary hidden sm:table-cell`}>
                           {formatCalibrationValue(w.usedValues[p.key] ?? p.defaultValue)} → {formatCalibrationValue(comparedValues(w)[p.key] ?? p.defaultValue)}
                         </td>
                       ))}
-                      {RECORD_COLUMNS.map((c) => (
+                      {CALIBRATION_RECORDS.map((c) => (
                         <td key={c.key} className={`${CELL_CLASSES} text-right`}>
                           <CalibrationRecordChange compared={comparedRecord(w, c.key)} used={w.used[c.key]} />
                         </td>

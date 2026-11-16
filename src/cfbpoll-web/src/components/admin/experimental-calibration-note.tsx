@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 import { useAuth } from '../../hooks/use-auth';
 import { usePredictionCalibration } from '../../hooks/use-prediction-calibration';
-import { formatCalibrationSummary } from '../../lib/calibration-utils';
+import { calibrationPageUrl, formatCalibrationSummary } from '../../lib/calibration-utils';
 import { getWeekLabel } from '../../lib/week-utils';
 
 interface ExperimentalCalibrationNoteProps {
@@ -31,7 +31,7 @@ export function ExperimentalCalibrationNote({ appliedCalibration, season, week }
       <Link
         aria-label={`${action} calibration for ${season} ${getWeekLabel(week)}`}
         className="text-accent hover:underline"
-        to={`/admin/calibration?season=${season}&week=${week}`}
+        to={calibrationPageUrl(season, week)}
       >
         {action}
       </Link>
