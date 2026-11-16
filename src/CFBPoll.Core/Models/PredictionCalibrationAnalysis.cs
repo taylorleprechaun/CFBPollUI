@@ -1,18 +1,20 @@
 namespace CFBPoll.Core.Models;
 
 /// <summary>
-/// Suggested calibration values for a week, and how a candidate set of values would have done over the
-/// most recent completed weeks compared with the values actually used.
+/// Suggested calibration values for a week, and how each completed week of the season did with the values it
+/// used compared with the values suggested at the time and, optionally, a candidate set of values.
 /// </summary>
 public class PredictionCalibrationAnalysis
 {
+    /// <summary>
+    /// Every completed prediction week of the season, oldest first.
+    /// </summary>
     public IReadOnlyList<PredictionCalibrationBacktestWeek> BacktestWeeks { get; set; } = [];
-    public PredictionRecordSummary CandidateTotal { get; set; } = new();
 
     /// <summary>
-    /// The values the backtest evaluated: the submitted values, or the suggestion when none were submitted.
+    /// The submitted values each week was also graded with, or null when none were submitted.
     /// </summary>
-    public IReadOnlyDictionary<string, double> CandidateValues { get; set; } = new Dictionary<string, double>();
+    public IReadOnlyDictionary<string, double>? CandidateValues { get; set; }
 
     /// <summary>
     /// How each suggested value was estimated, keyed by parameter key.
@@ -20,5 +22,4 @@ public class PredictionCalibrationAnalysis
     public IReadOnlyDictionary<string, string> SuggestionNotes { get; set; } = new Dictionary<string, string>();
 
     public IReadOnlyDictionary<string, double> SuggestedValues { get; set; } = new Dictionary<string, double>();
-    public PredictionRecordSummary UsedTotal { get; set; } = new();
 }

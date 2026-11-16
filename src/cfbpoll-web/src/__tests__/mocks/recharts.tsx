@@ -38,6 +38,7 @@ export const rechartsMock = {
     return null;
   },
   ReferenceArea: () => null,
+  ReferenceLine: () => null,
   LineChart: ({ children, onClick }: { children: ReactNode; onClick?: () => void }) => (
     <div data-testid="line-chart" onClick={onClick}>{children}</div>
   ),

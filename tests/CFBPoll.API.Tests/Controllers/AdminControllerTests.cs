@@ -25,21 +25,10 @@ public class AdminControllerTests
         _controller = new AdminController(_mockAdminModule.Object, _mockLogger.Object, _mockRankingsModule.Object);
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(16)]
-    public async Task AnalyzePredictionCalibration_BacktestWeeksOutOfRange_ReturnsBadRequest(int backtestWeeks)
-    {
-        var result = await _controller.AnalyzePredictionCalibration(2026, 4, new AnalyzePredictionCalibrationRequestDTO { BacktestWeeks = backtestWeeks });
-
-        Assert.IsType<BadRequestObjectResult>(result.Result);
-        _mockAdminModule.Verify(x => x.AnalyzePredictionCalibrationAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IReadOnlyDictionary<string, double>?>(), It.IsAny<int>()), Times.Never);
-    }
-
     [Fact]
     public async Task AnalyzePredictionCalibration_InvalidValues_ReturnsBadRequestWithMessage()
     {
-        _mockAdminModule.Setup(x => x.AnalyzePredictionCalibrationAsync(2026, 4, It.IsAny<IReadOnlyDictionary<string, double>?>(), 4))
+        _mockAdminModule.Setup(x => x.AnalyzePredictionCalibrationAsync(2026, 4, It.IsAny<IReadOnlyDictionary<string, double>?>()))
             .ReturnsAsync(new AnalyzePredictionCalibrationResult { ErrorMessage = "Param A must be between -5 and 5", Outcome = AnalyzePredictionCalibrationOutcome.InvalidValues });
 
         var result = await _controller.AnalyzePredictionCalibration(2026, 4, new AnalyzePredictionCalibrationRequestDTO { Values = new Dictionary<string, double> { ["paramA"] = 9 } });
@@ -57,10 +46,10 @@ public class AdminControllerTests
             CandidateValues = new Dictionary<string, double> { ["paramA"] = 1.5 },
             SuggestedValues = new Dictionary<string, double> { ["paramA"] = 1.5 }
         };
-        _mockAdminModule.Setup(x => x.AnalyzePredictionCalibrationAsync(2026, 4, null, 6))
+        _mockAdminModule.Setup(x => x.AnalyzePredictionCalibrationAsync(2026, 4, null))
             .ReturnsAsync(new AnalyzePredictionCalibrationResult { Analysis = analysis, Outcome = AnalyzePredictionCalibrationOutcome.Success });
 
-        var result = await _controller.AnalyzePredictionCalibration(2026, 4, new AnalyzePredictionCalibrationRequestDTO { BacktestWeeks = 6 });
+        var result = await _controller.AnalyzePredictionCalibration(2026, 4, new AnalyzePredictionCalibrationRequestDTO());
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var response = Assert.IsType<PredictionCalibrationAnalysisResponseDTO>(okResult.Value);
@@ -71,7 +60,7 @@ public class AdminControllerTests
     [Fact]
     public async Task AnalyzePredictionCalibration_NotSupported_ReturnsBadRequest()
     {
-        _mockAdminModule.Setup(x => x.AnalyzePredictionCalibrationAsync(2024, 4, null, 4))
+        _mockAdminModule.Setup(x => x.AnalyzePredictionCalibrationAsync(2024, 4, null))
             .ReturnsAsync(new AnalyzePredictionCalibrationResult { Outcome = AnalyzePredictionCalibrationOutcome.NotSupported });
 
         var result = await _controller.AnalyzePredictionCalibration(2024, 4, new AnalyzePredictionCalibrationRequestDTO());

@@ -24,30 +24,28 @@ describe('useAnalyzePredictionCalibration', () => {
     vi.resetAllMocks();
   });
 
-  it('calls analyzePredictionCalibration with the backtest weeks and values', async () => {
+  it('calls analyzePredictionCalibration with the typed values', async () => {
     vi.mocked(analyzePredictionCalibration).mockResolvedValue({
       backtestWeeks: [],
-      candidateTotal: { gradedGameCount: 0, marginBias: null, marginMAE: null, marginRMSE: null, overUnder: { correct: 0, incorrect: 0, push: 0 }, spread: { correct: 0, incorrect: 0, push: 0 }, winner: { correct: 0, incorrect: 0, push: 0 } },
-      candidateValues: {},
+      candidateValues: { paramA: 1 },
       suggestedValues: {},
       suggestionNotes: {},
-      usedTotal: { gradedGameCount: 0, marginBias: null, marginMAE: null, marginRMSE: null, overUnder: { correct: 0, incorrect: 0, push: 0 }, spread: { correct: 0, incorrect: 0, push: 0 }, winner: { correct: 0, incorrect: 0, push: 0 } },
     });
 
     const { result } = renderHook(() => useAnalyzePredictionCalibration('test-token'), { wrapper: createWrapper() });
 
     await act(async () => {
-      await result.current.mutateAsync({ backtestWeeks: 6, season: 2026, values: { paramA: 1 }, week: 10 });
+      await result.current.mutateAsync({ season: 2026, values: { paramA: 1 }, week: 10 });
     });
 
-    expect(analyzePredictionCalibration).toHaveBeenCalledWith('test-token', 2026, 10, { backtestWeeks: 6, values: { paramA: 1 } });
+    expect(analyzePredictionCalibration).toHaveBeenCalledWith('test-token', 2026, 10, { values: { paramA: 1 } });
   });
 
   it('rejects with Authentication required when token is null', async () => {
     const { result } = renderHook(() => useAnalyzePredictionCalibration(null), { wrapper: createWrapper() });
 
     await expect(
-      act(() => result.current.mutateAsync({ backtestWeeks: 4, season: 2026, week: 10 }))
+      act(() => result.current.mutateAsync({ season: 2026, values: { paramA: 1 }, week: 10 }))
     ).rejects.toThrow('Authentication required');
   });
 });

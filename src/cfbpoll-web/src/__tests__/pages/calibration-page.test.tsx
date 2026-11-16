@@ -57,6 +57,10 @@ vi.mock('../../hooks/use-prediction-calibration', () => ({
   }),
 }));
 
+vi.mock('../../hooks/use-prediction-calibration-analysis', () => ({
+  usePredictionCalibrationAnalysis: () => ({ data: undefined, error: null, isLoading: false }),
+}));
+
 vi.mock('../../hooks/use-prediction-calibration-history', () => ({
   usePredictionCalibrationHistory: () => ({ data: [], isLoading: false }),
 }));
@@ -80,19 +84,19 @@ describe('CalibrationPage', () => {
   it('defaults to the current season and latest complete week', () => {
     renderPage();
 
-    expect(screen.getByRole('heading', { name: '2024 Week 6' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Values for 2024 Week 6' })).toBeInTheDocument();
   });
 
   it('ignores season and week params that are not whole numbers', () => {
     renderPage('/admin/calibration?season=abc&week=1.5');
 
-    expect(screen.getByRole('heading', { name: '2024 Week 6' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Values for 2024 Week 6' })).toBeInTheDocument();
   });
 
   it('opens the season and week given in the URL', () => {
     renderPage('/admin/calibration?season=2023&week=1');
 
-    expect(screen.getByRole('heading', { name: '2023 Week 2' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Values for 2023 Week 2' })).toBeInTheDocument();
   });
 
   it('renders the page heading', () => {
@@ -106,6 +110,6 @@ describe('CalibrationPage', () => {
 
     await userEvent.selectOptions(screen.getByLabelText('Week'), '9');
 
-    expect(screen.getByRole('heading', { name: '2024 Week 10' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Values for 2024 Week 10' })).toBeInTheDocument();
   });
 });

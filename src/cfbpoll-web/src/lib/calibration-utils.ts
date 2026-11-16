@@ -53,6 +53,16 @@ export function formatRecordChange(used: TrackRecordTotals, candidate: TrackReco
 }
 
 /**
+ * Adds records together, e.g. a run of weeks into one total.
+ */
+export function sumRecords(records: TrackRecordTotals[]): TrackRecordTotals {
+  return records.reduce(
+    (total, r) => ({ correct: total.correct + r.correct, incorrect: total.incorrect + r.incorrect, push: total.push + r.push }),
+    { correct: 0, incorrect: 0, push: 0 }
+  );
+}
+
+/**
  * Returns why a typed calibration value is invalid for its parameter, or null when it's valid.
  */
 export function validateCalibrationInput(raw: string, parameter: PredictionCalibrationParameter): string | null {

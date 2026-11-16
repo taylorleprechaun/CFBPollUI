@@ -44,8 +44,9 @@ export function CalibrationPage() {
 
       <div className="bg-surface border border-border rounded-xl p-4 sm:p-6 space-y-4">
         <p className="text-sm text-text-secondary max-w-prose">
-          Calibration values adjust a week’s predictions when they are generated. A week without its own values
-          uses the most recent earlier week’s. Values lock once the week’s predictions are published.
+          Calibration values adjust a week’s predictions when they are generated. Compare the suggestion with the
+          current values, check below how following the suggestions has done this season, then save. A week without
+          its own values uses the most recent earlier week’s. Values lock once the week’s predictions are published.
         </p>
         <SeasonWeekSelect
           onSeasonChange={handleSeasonChange}

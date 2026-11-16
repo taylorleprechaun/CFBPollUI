@@ -19,30 +19,60 @@ public class PredictionCalibrationMapperTests
     }
 
     [Fact]
-    public void ToAnalysisResponseDTO_MapsValuesNotesWeeksAndTotals()
+    public void ToAnalysisResponseDTO_MapsValuesNotesAndWeeks()
     {
-        var usedTotal = new PredictionRecordSummary { GradedGameCount = 50 };
-        usedTotal.Spread.Correct = 24;
+        var used = new PredictionRecordSummary { GradedGameCount = 50 };
+        used.Spread.Correct = 24;
+        var suggested = new PredictionRecordSummary { GradedGameCount = 50 };
+        suggested.Spread.Correct = 27;
+        var candidate = new PredictionRecordSummary { GradedGameCount = 50 };
+        candidate.Spread.Correct = 26;
         var analysis = new PredictionCalibrationAnalysis
         {
-            BacktestWeeks = [new PredictionCalibrationBacktestWeek { Season = 2026, UsedValues = new Dictionary<string, double> { ["paramA"] = 0 }, Week = 9 }],
-            CandidateTotal = new PredictionRecordSummary { GradedGameCount = 50 },
+            BacktestWeeks =
+            [
+                new PredictionCalibrationBacktestWeek
+                {
+                    Candidate = candidate,
+                    Season = 2026,
+                    Suggested = suggested,
+                    SuggestedValues = new Dictionary<string, double> { ["paramA"] = 1.2 },
+                    Used = used,
+                    UsedValues = new Dictionary<string, double> { ["paramA"] = 0 },
+                    Week = 9
+                }
+            ],
             CandidateValues = new Dictionary<string, double> { ["paramA"] = 1 },
             SuggestionNotes = new Dictionary<string, string> { ["paramA"] = "Estimated from recent games." },
-            SuggestedValues = new Dictionary<string, double> { ["paramA"] = 1.5 },
-            UsedTotal = usedTotal
+            SuggestedValues = new Dictionary<string, double> { ["paramA"] = 1.5 }
         };
 
         var result = PredictionCalibrationMapper.ToAnalysisResponseDTO(analysis);
 
-        Assert.Equal(1, result.CandidateValues["paramA"]);
+        Assert.Equal(1, result.CandidateValues!["paramA"]);
         Assert.Equal(1.5, result.SuggestedValues["paramA"]);
         Assert.Equal("Estimated from recent games.", result.SuggestionNotes["paramA"]);
         var week = Assert.Single(result.BacktestWeeks);
         Assert.Equal(9, week.Week);
         Assert.Equal(0, week.UsedValues["paramA"]);
-        Assert.Equal(24, result.UsedTotal.Spread.Correct);
-        Assert.Equal(50, result.CandidateTotal.GradedGameCount);
+        Assert.Equal(1.2, week.SuggestedValues["paramA"]);
+        Assert.Equal(24, week.Used.Spread.Correct);
+        Assert.Equal(27, week.Suggested.Spread.Correct);
+        Assert.Equal(26, week.Candidate!.Spread.Correct);
+    }
+
+    [Fact]
+    public void ToAnalysisResponseDTO_NoCandidate_LeavesCandidateFieldsNull()
+    {
+        var analysis = new PredictionCalibrationAnalysis
+        {
+            BacktestWeeks = [new PredictionCalibrationBacktestWeek { Season = 2026, Week = 9 }]
+        };
+
+        var result = PredictionCalibrationMapper.ToAnalysisResponseDTO(analysis);
+
+        Assert.Null(result.CandidateValues);
+        Assert.Null(Assert.Single(result.BacktestWeeks).Candidate);
     }
 
     [Fact]

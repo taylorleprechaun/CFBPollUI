@@ -53,7 +53,7 @@ export async function analyzePredictionCalibration(
   token: string,
   season: number,
   week: number,
-  request: { backtestWeeks: number; values?: Record<string, number> }
+  request: { values?: Record<string, number> }
 ): Promise<PredictionCalibrationAnalysis> {
   const response = await safeFetch(
     `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction-calibration/analysis`,

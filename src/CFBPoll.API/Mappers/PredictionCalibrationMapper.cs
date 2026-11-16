@@ -13,17 +13,17 @@ public static class PredictionCalibrationMapper
         {
             BacktestWeeks = analysis.BacktestWeeks.Select(w => new PredictionCalibrationBacktestWeekDTO
             {
-                Candidate = PredictionsMapper.ToDTO(w.Candidate),
+                Candidate = w.Candidate is null ? null : PredictionsMapper.ToDTO(w.Candidate),
                 Season = w.Season,
+                Suggested = PredictionsMapper.ToDTO(w.Suggested),
+                SuggestedValues = w.SuggestedValues.ToDictionary(v => v.Key, v => v.Value),
                 Used = PredictionsMapper.ToDTO(w.Used),
                 UsedValues = w.UsedValues.ToDictionary(v => v.Key, v => v.Value),
                 Week = w.Week
             }).ToList(),
-            CandidateTotal = PredictionsMapper.ToDTO(analysis.CandidateTotal),
-            CandidateValues = analysis.CandidateValues.ToDictionary(v => v.Key, v => v.Value),
+            CandidateValues = analysis.CandidateValues?.ToDictionary(v => v.Key, v => v.Value),
             SuggestionNotes = analysis.SuggestionNotes.ToDictionary(v => v.Key, v => v.Value),
-            SuggestedValues = analysis.SuggestedValues.ToDictionary(v => v.Key, v => v.Value),
-            UsedTotal = PredictionsMapper.ToDTO(analysis.UsedTotal)
+            SuggestedValues = analysis.SuggestedValues.ToDictionary(v => v.Key, v => v.Value)
         };
     }
 

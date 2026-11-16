@@ -87,14 +87,14 @@ public class AdminModuleTests
     {
         var calculator = SetUpCalibrationAnalysis(2026, 4);
 
-        await _adminModule.AnalyzePredictionCalibrationAsync(2026, 4, null, 3);
+        await _adminModule.AnalyzePredictionCalibrationAsync(2026, 4, null);
 
         _mockDataService.Verify(x => x.GetBettingLinesAsync(2026, 1), Times.Once);
         _mockDataService.Verify(x => x.GetBettingLinesAsync(2026, 3), Times.Never);
         _mockDataService.Verify(x => x.GetBettingLinesAsync(2026, 4), Times.Never);
         _mockDataService.Verify(x => x.GetBettingLinesAsync(2024, 1), Times.Once);
         _mockDataService.Verify(x => x.GetBettingLinesAsync(2025, 2), Times.Once);
-        calculator.Verify(x => x.AnalyzeCalibrationAsync(It.IsAny<SeasonData>(), It.IsAny<IEnumerable<HistoricalGameLine>>(), It.IsAny<IReadOnlyDictionary<int, IReadOnlyDictionary<string, double>>>(), null, 3), Times.Once);
+        calculator.Verify(x => x.AnalyzeCalibrationAsync(It.IsAny<SeasonData>(), It.IsAny<IEnumerable<HistoricalGameLine>>(), It.IsAny<IReadOnlyDictionary<int, IReadOnlyDictionary<string, double>>>(), null), Times.Once);
     }
 
     [Fact]
@@ -102,11 +102,11 @@ public class AdminModuleTests
     {
         var calculator = SetUpCalibratedCalculator(2026);
 
-        var result = await _adminModule.AnalyzePredictionCalibrationAsync(2026, 4, CalibrationValues(9, 0), 4);
+        var result = await _adminModule.AnalyzePredictionCalibrationAsync(2026, 4, CalibrationValues(9, 0));
 
         Assert.Equal(AnalyzePredictionCalibrationOutcome.InvalidValues, result.Outcome);
         Assert.Contains("Param A", result.ErrorMessage);
-        calculator.Verify(x => x.AnalyzeCalibrationAsync(It.IsAny<SeasonData>(), It.IsAny<IEnumerable<HistoricalGameLine>>(), It.IsAny<IReadOnlyDictionary<int, IReadOnlyDictionary<string, double>>>(), It.IsAny<IReadOnlyDictionary<string, double>?>(), It.IsAny<int>()), Times.Never);
+        calculator.Verify(x => x.AnalyzeCalibrationAsync(It.IsAny<SeasonData>(), It.IsAny<IEnumerable<HistoricalGameLine>>(), It.IsAny<IReadOnlyDictionary<int, IReadOnlyDictionary<string, double>>>(), It.IsAny<IReadOnlyDictionary<string, double>?>()), Times.Never);
     }
 
     [Fact]
@@ -118,11 +118,11 @@ public class AdminModuleTests
         List<HistoricalGameLine>? lines = null;
         IReadOnlyDictionary<int, IReadOnlyDictionary<string, double>>? appliedByWeek = null;
         calculator
-            .Setup(x => x.AnalyzeCalibrationAsync(It.IsAny<SeasonData>(), It.IsAny<IEnumerable<HistoricalGameLine>>(), It.IsAny<IReadOnlyDictionary<int, IReadOnlyDictionary<string, double>>>(), It.IsAny<IReadOnlyDictionary<string, double>?>(), It.IsAny<int>()))
-            .Callback<SeasonData, IEnumerable<HistoricalGameLine>, IReadOnlyDictionary<int, IReadOnlyDictionary<string, double>>, IReadOnlyDictionary<string, double>?, int>((_, l, a, _, _) => { lines = l.ToList(); appliedByWeek = a; })
+            .Setup(x => x.AnalyzeCalibrationAsync(It.IsAny<SeasonData>(), It.IsAny<IEnumerable<HistoricalGameLine>>(), It.IsAny<IReadOnlyDictionary<int, IReadOnlyDictionary<string, double>>>(), It.IsAny<IReadOnlyDictionary<string, double>?>()))
+            .Callback<SeasonData, IEnumerable<HistoricalGameLine>, IReadOnlyDictionary<int, IReadOnlyDictionary<string, double>>, IReadOnlyDictionary<string, double>?>((_, l, a, _) => { lines = l.ToList(); appliedByWeek = a; })
             .ReturnsAsync(new PredictionCalibrationAnalysis());
 
-        await _adminModule.AnalyzePredictionCalibrationAsync(2026, 4, null, 3);
+        await _adminModule.AnalyzePredictionCalibrationAsync(2026, 4, null);
 
         var snapshotLine = Assert.Single(lines!, l => l.HomeTeam == "Team A");
         Assert.Equal(4, snapshotLine.GameWeek);
@@ -138,10 +138,10 @@ public class AdminModuleTests
         var calculator = SetUpCalibrationAnalysis(2026, 4);
         var analysis = new PredictionCalibrationAnalysis { SuggestedValues = CalibrationValues(1.2, -0.8) };
         calculator
-            .Setup(x => x.AnalyzeCalibrationAsync(It.IsAny<SeasonData>(), It.IsAny<IEnumerable<HistoricalGameLine>>(), It.IsAny<IReadOnlyDictionary<int, IReadOnlyDictionary<string, double>>>(), It.IsAny<IReadOnlyDictionary<string, double>?>(), It.IsAny<int>()))
+            .Setup(x => x.AnalyzeCalibrationAsync(It.IsAny<SeasonData>(), It.IsAny<IEnumerable<HistoricalGameLine>>(), It.IsAny<IReadOnlyDictionary<int, IReadOnlyDictionary<string, double>>>(), It.IsAny<IReadOnlyDictionary<string, double>?>()))
             .ReturnsAsync(analysis);
 
-        var result = await _adminModule.AnalyzePredictionCalibrationAsync(2026, 4, CalibrationValues(1, 1), 4);
+        var result = await _adminModule.AnalyzePredictionCalibrationAsync(2026, 4, CalibrationValues(1, 1));
 
         Assert.Equal(AnalyzePredictionCalibrationOutcome.Success, result.Outcome);
         Assert.Same(analysis, result.Analysis);
@@ -150,7 +150,7 @@ public class AdminModuleTests
     [Fact]
     public async Task AnalyzePredictionCalibrationAsync_UncalibratedCalculator_ReturnsNotSupported()
     {
-        var result = await _adminModule.AnalyzePredictionCalibrationAsync(2024, 4, null, 4);
+        var result = await _adminModule.AnalyzePredictionCalibrationAsync(2024, 4, null);
 
         Assert.Equal(AnalyzePredictionCalibrationOutcome.NotSupported, result.Outcome);
         Assert.Null(result.Analysis);
@@ -2601,7 +2601,7 @@ public class AdminModuleTests
     {
         var calculator = SetUpCalibratedCalculator(season);
         calculator
-            .Setup(x => x.AnalyzeCalibrationAsync(It.IsAny<SeasonData>(), It.IsAny<IEnumerable<HistoricalGameLine>>(), It.IsAny<IReadOnlyDictionary<int, IReadOnlyDictionary<string, double>>>(), It.IsAny<IReadOnlyDictionary<string, double>?>(), It.IsAny<int>()))
+            .Setup(x => x.AnalyzeCalibrationAsync(It.IsAny<SeasonData>(), It.IsAny<IEnumerable<HistoricalGameLine>>(), It.IsAny<IReadOnlyDictionary<int, IReadOnlyDictionary<string, double>>>(), It.IsAny<IReadOnlyDictionary<string, double>?>()))
             .ReturnsAsync(new PredictionCalibrationAnalysis());
 
         _mockDataService.Setup(x => x.GetSeasonDataAsync(season, week)).ReturnsAsync(new SeasonData { Season = season, Week = week, Teams = new Dictionary<string, TeamInfo>() });

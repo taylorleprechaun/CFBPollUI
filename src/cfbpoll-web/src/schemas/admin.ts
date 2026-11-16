@@ -164,8 +164,10 @@ export const PredictionCalibrationHistoryEntrySchema = z.object({
 export const PredictionCalibrationHistoryResponseSchema = z.array(PredictionCalibrationHistoryEntrySchema);
 
 export const PredictionCalibrationBacktestWeekSchema = z.object({
-  candidate: PredictionRecordSummarySchema,
+  candidate: PredictionRecordSummarySchema.nullable(),
   season: z.number(),
+  suggested: PredictionRecordSummarySchema,
+  suggestedValues: z.record(z.string(), z.number()),
   used: PredictionRecordSummarySchema,
   usedValues: z.record(z.string(), z.number()),
   week: z.number(),
@@ -173,11 +175,9 @@ export const PredictionCalibrationBacktestWeekSchema = z.object({
 
 export const PredictionCalibrationAnalysisSchema = z.object({
   backtestWeeks: z.array(PredictionCalibrationBacktestWeekSchema),
-  candidateTotal: PredictionRecordSummarySchema,
-  candidateValues: z.record(z.string(), z.number()),
+  candidateValues: z.record(z.string(), z.number()).nullable(),
   suggestedValues: z.record(z.string(), z.number()),
   suggestionNotes: z.record(z.string(), z.string()),
-  usedTotal: PredictionRecordSummarySchema,
 });
 
 export const CfbdTopEndpointSchema = z.object({

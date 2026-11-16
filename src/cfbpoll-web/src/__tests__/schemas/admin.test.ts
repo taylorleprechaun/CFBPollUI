@@ -451,22 +451,30 @@ describe('Admin schemas', () => {
   describe('PredictionCalibrationAnalysisSchema', () => {
     const summary = { gradedGameCount: 1, marginBias: null, marginMAE: null, marginRMSE: null, overUnder: { correct: 1, incorrect: 0, push: 0 }, spread: { correct: 1, incorrect: 0, push: 0 }, winner: { correct: 1, incorrect: 0, push: 0 } };
     const validAnalysis = {
-      backtestWeeks: [{ candidate: summary, season: 2026, used: summary, usedValues: { paramA: 0 }, week: 9 }],
-      candidateTotal: summary,
+      backtestWeeks: [{ candidate: summary, season: 2026, suggested: summary, suggestedValues: { paramA: 1.2 }, used: summary, usedValues: { paramA: 0 }, week: 9 }],
       candidateValues: { paramA: 1 },
       suggestedValues: { paramA: 1.5 },
       suggestionNotes: { paramA: 'Note.' },
-      usedTotal: summary,
     };
 
     it('accepts a valid analysis', () => {
       expect(PredictionCalibrationAnalysisSchema.safeParse(validAnalysis).success).toBe(true);
     });
 
+    it('accepts an analysis without candidate values', () => {
+      const result = PredictionCalibrationAnalysisSchema.safeParse({
+        ...validAnalysis,
+        backtestWeeks: [{ ...validAnalysis.backtestWeeks[0], candidate: null }],
+        candidateValues: null,
+      });
+
+      expect(result.success).toBe(true);
+    });
+
     it('rejects a backtest week without its used record', () => {
       const result = PredictionCalibrationAnalysisSchema.safeParse({
         ...validAnalysis,
-        backtestWeeks: [{ candidate: summary, season: 2026, usedValues: {}, week: 9 }],
+        backtestWeeks: [{ candidate: summary, season: 2026, suggested: summary, suggestedValues: {}, usedValues: {}, week: 9 }],
       });
 
       expect(result.success).toBe(false);

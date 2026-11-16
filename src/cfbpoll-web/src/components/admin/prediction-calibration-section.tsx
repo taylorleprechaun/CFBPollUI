@@ -1,19 +1,21 @@
 import { useId, useState } from 'react';
 
 import type { PredictionCalibrationResponse } from '../../schemas/admin';
+import type { CalibrationComparison } from './prediction-calibration-season-results';
 import type { ActionFeedback } from './types';
 
 import { useAnalyzePredictionCalibration } from '../../hooks/use-analyze-prediction-calibration';
 import { usePredictionCalibration } from '../../hooks/use-prediction-calibration';
+import { usePredictionCalibrationAnalysis } from '../../hooks/use-prediction-calibration-analysis';
 import { usePredictionCalibrationHistory } from '../../hooks/use-prediction-calibration-history';
 import { useSavePredictionCalibration } from '../../hooks/use-save-prediction-calibration';
-import { calibrationSourceLabel, formatCalibrationValue, validateCalibrationInput } from '../../lib/calibration-utils';
+import { calibrationSourceLabel, validateCalibrationInput } from '../../lib/calibration-utils';
 import { toErrorMessage } from '../../lib/error-utils';
 import { getWeekLabel } from '../../lib/week-utils';
-import { BUTTON_GHOST, BUTTON_PRIMARY, BUTTON_SECONDARY, SELECT_BASE } from '../ui/button-styles';
+import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '../ui/button-styles';
 import { FeedbackIndicator } from './feedback-indicator';
-import { PredictionCalibrationAnalysis } from './prediction-calibration-analysis';
-import { PredictionCalibrationHistory } from './prediction-calibration-history';
+import { PredictionCalibrationSeasonResults } from './prediction-calibration-season-results';
+import { PredictionCalibrationValues } from './prediction-calibration-values';
 
 interface PredictionCalibrationSectionProps {
   season: number;
@@ -32,56 +34,33 @@ interface CalibrationEdits {
   values: Record<string, string>;
 }
 
-type BacktestChoice = number | 'season';
-
-const BACKTEST_WEEK_OPTIONS: BacktestChoice[] = [2, 4, 6, 8, 'season'];
-// About 440 lined games: few enough to reflect current conditions, enough that a 1-2 point gap isn't pure noise.
-const DEFAULT_BACKTEST_WEEKS: BacktestChoice = 8;
-// The analysis endpoint's upper limit on backtest weeks.
-const MAX_BACKTEST_WEEKS = 15;
-const SECTION_CLASSES = 'bg-surface border border-border rounded-xl p-4 sm:p-6';
+const CARD_CLASSES = 'bg-surface border border-border rounded-xl p-4 sm:p-6';
 
 export function PredictionCalibrationSection({ season, token, week }: PredictionCalibrationSectionProps) {
   const [edits, setEdits] = useState<CalibrationEdits | null>(null);
   const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
-  const [backtestChoice, setBacktestChoice] = useState<BacktestChoice>(DEFAULT_BACKTEST_WEEKS);
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [comparison, setComparison] = useState<CalibrationComparison>('suggested');
 
-  const backtestWeeksId = useId();
   const inputIdPrefix = useId();
 
   const { data: calibration, error, isLoading } = usePredictionCalibration(token, season, week);
-  const history = usePredictionCalibrationHistory(token, season, isHistoryOpen && (calibration?.isSupported ?? false));
+  const isSupported = calibration?.isSupported ?? false;
+  const analysisQuery = usePredictionCalibrationAnalysis(token, season, week, isSupported);
+  const history = usePredictionCalibrationHistory(token, season, isSupported);
   const saveMutation = useSavePredictionCalibration(token);
-  const analyzeMutation = useAnalyzePredictionCalibration(token);
+  const previewMutation = useAnalyzePredictionCalibration(token);
 
-  const heading = <h2 className="text-lg font-semibold text-text-primary mb-2">{season} {getWeekLabel(week)}</h2>;
+  const weekTitle = `${season} ${getWeekLabel(week)}`;
 
-  if (isLoading) {
+  if (isLoading || error || !calibration || !calibration.isSupported) {
     return (
-      <section className={SECTION_CLASSES}>
-        {heading}
-        <p className="text-sm text-text-muted">Loading calibration...</p>
-      </section>
-    );
-  }
-
-  if (error) {
-    return (
-      <section className={SECTION_CLASSES}>
-        {heading}
-        <p role="alert" className="text-sm text-red-600">{toErrorMessage(error, 'Failed to load calibration')}</p>
-      </section>
-    );
-  }
-
-  if (!calibration) return null;
-
-  if (!calibration.isSupported) {
-    return (
-      <section className={SECTION_CLASSES}>
-        {heading}
-        <p className="text-sm text-text-muted">This season’s prediction algorithm doesn’t take calibration values.</p>
+      <section className={CARD_CLASSES}>
+        <h2 className="text-lg font-semibold text-text-primary mb-2">{weekTitle}</h2>
+        {isLoading && <p className="text-sm text-text-muted">Loading calibration...</p>}
+        {error && <p role="alert" className="text-sm text-red-600">{toErrorMessage(error, 'Failed to load calibration')}</p>}
+        {calibration && !calibration.isSupported && (
+          <p className="text-sm text-text-muted">This season’s prediction algorithm doesn’t take calibration values.</p>
+        )}
       </section>
     );
   }
@@ -94,36 +73,33 @@ export function PredictionCalibrationSection({ season, token, week }: Prediction
   const hasErrors = Object.values(fieldErrors).some((e) => e !== null);
   const isDirty = calibration.parameters.some((p) => Number(inputValues[p.key]) !== calibration.values[p.key]);
   const feedbackKey = `prediction-calibration-${season}-${week}`;
-  // Season to date covers every earlier prediction week of the season.
-  const backtestWeeks = backtestChoice === 'season' ? Math.min(Math.max(week - 1, 1), MAX_BACKTEST_WEEKS) : backtestChoice;
-  // Results belong to the week they were run for; switching weeks hides them rather than showing stale numbers.
-  const analysisIsCurrent = analyzeMutation.variables?.season === season && analyzeMutation.variables.week === week;
-  const analysis = analysisIsCurrent ? analyzeMutation.data : undefined;
-  const analysisError = analysisIsCurrent ? analyzeMutation.error : null;
-  const isPreview = analysisIsCurrent && analyzeMutation.variables?.values !== undefined;
+  const analysis = analysisQuery.data;
+  // A preview belongs to the week it was run for; switching weeks falls back to the plain analysis.
+  const previewIsCurrent = previewMutation.variables?.season === season && previewMutation.variables.week === week;
+  const preview = previewIsCurrent && !previewMutation.isPending ? previewMutation.data : undefined;
+  const previewError = previewIsCurrent ? previewMutation.error : null;
+  const resultsAnalysis = preview ?? analysis;
+
+  function handleApplySuggestion() {
+    if (!calibration || !analysis) return;
+    const suggested = analysis.suggestedValues;
+    setEdits({
+      fromSuggestion: true,
+      key: editKey,
+      values: Object.fromEntries(calibration.parameters.map((p) => [p.key, String(suggested[p.key] ?? p.defaultValue)])),
+    });
+  }
 
   function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = event.target;
     setEdits({ fromSuggestion: false, key: editKey, values: { ...inputValues, [name]: value } });
   }
 
-  function handleApplySuggestion(values: Record<string, number>) {
-    if (!calibration) return;
-    setEdits({
-      fromSuggestion: true,
-      key: editKey,
-      values: Object.fromEntries(calibration.parameters.map((p) => [p.key, String(values[p.key] ?? p.defaultValue)])),
-    });
-  }
-
-  function handleGetSuggestion() {
-    analyzeMutation.mutate({ backtestWeeks, season, week });
-  }
-
   function handlePreview() {
     if (!calibration) return;
     const values = Object.fromEntries(calibration.parameters.map((p) => [p.key, Number(inputValues[p.key])]));
-    analyzeMutation.mutate({ backtestWeeks, season, values, week });
+    setComparison('candidate');
+    previewMutation.mutate({ season, values, week });
   }
 
   async function handleSave() {
@@ -140,124 +116,74 @@ export function PredictionCalibrationSection({ season, token, week }: Prediction
   }
 
   return (
-    <section className={SECTION_CLASSES}>
-      {heading}
-      <p className="text-sm text-text-secondary mb-4">
-        {calibrationSourceLabel(calibration)}
-        {calibration.isLocked && ' · Locked because this week’s predictions are published'}
-      </p>
-
-      <div className="space-y-3">
-        {calibration.parameters.map((p) => {
-          const inputId = `${inputIdPrefix}-${p.key}`;
-          const fieldError = fieldErrors[p.key];
-
-          return (
-            <div key={p.key} className="flex flex-wrap items-start gap-x-4 gap-y-1">
-              <div className="w-full sm:w-64">
-                <label htmlFor={inputId} className="text-sm font-medium text-text-primary">{p.label}</label>
-                <p className="text-xs text-text-muted">{p.description}</p>
-              </div>
-              <div>
-                <input
-                  aria-invalid={fieldError !== null}
-                  className="w-28 rounded-lg border border-border-strong bg-surface text-text-primary px-2 py-1 text-sm tabular-nums disabled:bg-surface-alt"
-                  disabled={calibration.isLocked}
-                  id={inputId}
-                  max={p.max}
-                  min={p.min}
-                  name={p.key}
-                  onChange={handleInputChange}
-                  step={p.step}
-                  type="number"
-                  value={inputValues[p.key] ?? ''}
-                />
-                <p className="text-xs text-text-muted mt-1">
-                  Default {formatCalibrationValue(p.defaultValue)}, range {p.min} to {p.max}
-                </p>
-                {fieldError && <p className="text-xs text-red-600 mt-1">{fieldError}</p>}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {!calibration.isLocked && (
-        <div className="flex flex-wrap items-center gap-2 mt-4">
-          <button
-            className={BUTTON_PRIMARY}
-            disabled={hasErrors || saveMutation.isPending || (!isDirty && calibration.isStored)}
-            onClick={handleSave}
-            type="button"
-          >
-            {saveMutation.isPending ? 'Saving...' : 'Save'}
-          </button>
-          <button className={BUTTON_SECONDARY} disabled={!isDirty} onClick={() => setEdits(null)} type="button">
-            Reset
-          </button>
-          <FeedbackIndicator feedback={feedback} feedbackKey={feedbackKey} onClear={() => setFeedback(null)} />
+    <div className="space-y-6">
+      <section className={CARD_CLASSES}>
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold text-text-primary">Values for {weekTitle}</h2>
+          <p className="text-sm text-text-secondary mt-1">
+            {calibrationSourceLabel(calibration)}
+            {calibration.isLocked && ' · Locked because this week’s predictions are published'}
+          </p>
         </div>
-      )}
 
-      <div className="mt-6 border-t border-border pt-4 space-y-4">
-        <div className="flex flex-wrap items-end gap-2">
-          <div>
-            <label htmlFor={backtestWeeksId} className="block text-sm font-medium text-text-secondary mb-1">Weeks to compare</label>
-            <select
-              className={`px-3 py-2 ${SELECT_BASE}`}
-              id={backtestWeeksId}
-              onChange={(e) => setBacktestChoice(e.target.value === 'season' ? 'season' : Number(e.target.value))}
-              value={backtestChoice}
+        <PredictionCalibrationValues
+          currentValues={calibration.values}
+          fieldErrors={fieldErrors}
+          inputIdPrefix={inputIdPrefix}
+          inputValues={inputValues}
+          isLocked={calibration.isLocked}
+          isSuggestionLoading={analysisQuery.isLoading}
+          onChange={handleInputChange}
+          parameters={calibration.parameters}
+          suggestedValues={analysis?.suggestedValues}
+          suggestionNotes={analysis?.suggestionNotes}
+        />
+
+        {!calibration.isLocked && (
+          <div className="flex flex-wrap items-center gap-2 mt-5 pt-4 border-t border-border">
+            <button className={BUTTON_SECONDARY} disabled={!analysis} onClick={handleApplySuggestion} type="button">
+              Use suggested values
+            </button>
+            <button className={BUTTON_SECONDARY} disabled={hasErrors || previewMutation.isPending} onClick={handlePreview} type="button">
+              {previewMutation.isPending ? 'Testing...' : 'Test my values on past weeks'}
+            </button>
+            <button className={BUTTON_SECONDARY} disabled={!isDirty} onClick={() => setEdits(null)} type="button">
+              Reset
+            </button>
+            <button
+              className={BUTTON_PRIMARY}
+              disabled={hasErrors || saveMutation.isPending || (!isDirty && calibration.isStored)}
+              onClick={handleSave}
+              type="button"
             >
-              {BACKTEST_WEEK_OPTIONS.map((option) => (
-                <option key={option} value={option}>{option === 'season' ? 'Season to date' : option}</option>
-              ))}
-            </select>
+              {saveMutation.isPending ? 'Saving...' : 'Save'}
+            </button>
+            <FeedbackIndicator feedback={feedback} feedbackKey={feedbackKey} onClear={() => setFeedback(null)} />
           </div>
-          <button className={BUTTON_SECONDARY} disabled={analyzeMutation.isPending} onClick={handleGetSuggestion} type="button">
-            Get suggestion
-          </button>
-          <button className={BUTTON_SECONDARY} disabled={analyzeMutation.isPending || hasErrors} onClick={handlePreview} type="button">
-            Preview my values
-          </button>
-        </div>
-        {analyzeMutation.isPending && (
+        )}
+      </section>
+
+      <section className={CARD_CLASSES}>
+        <h2 className="text-lg font-semibold text-text-primary mb-4">Season so far</h2>
+        {previewError && (
+          <p role="alert" className="text-sm text-red-600 mb-3">{toErrorMessage(previewError, 'Failed to test your values')}</p>
+        )}
+        {analysisQuery.isLoading || previewMutation.isPending ? (
           <p className="text-sm text-text-muted">Running the analysis. It replays every past season, so it can take a few seconds.</p>
-        )}
-        {analysisError && (
-          <p role="alert" className="text-sm text-red-600">{toErrorMessage(analysisError, 'Failed to run the analysis')}</p>
-        )}
-        {analysis && !analyzeMutation.isPending && (
-          <PredictionCalibrationAnalysis
-            analysis={analysis}
-            canApply={!calibration.isLocked}
-            candidateLabel={isPreview ? 'your values' : 'suggested values'}
-            onApplySuggestion={handleApplySuggestion}
+        ) : analysisQuery.error && !resultsAnalysis ? (
+          <p role="alert" className="text-sm text-red-600">{toErrorMessage(analysisQuery.error, 'Failed to run the analysis')}</p>
+        ) : resultsAnalysis ? (
+          <PredictionCalibrationSeasonResults
+            key={`${season}-${week}`}
+            analysis={resultsAnalysis}
+            comparison={preview ? comparison : 'suggested'}
+            historyEntries={history.data ?? []}
+            onComparisonChange={setComparison}
             parameters={calibration.parameters}
           />
-        )}
-      </div>
-
-      <div className="mt-4">
-        <button
-          aria-expanded={isHistoryOpen}
-          className={BUTTON_GHOST}
-          onClick={() => setIsHistoryOpen((prev) => !prev)}
-          type="button"
-        >
-          {isHistoryOpen ? 'Hide season history' : 'Show season history'}
-        </button>
-        {isHistoryOpen && (
-          <div className="mt-2">
-            <PredictionCalibrationHistory
-              entries={history.data ?? []}
-              isLoading={history.isLoading}
-              parameters={calibration.parameters}
-            />
-          </div>
-        )}
-      </div>
-    </section>
+        ) : null}
+      </section>
+    </div>
   );
 }
 

@@ -67,7 +67,7 @@ public class AdminModule : IAdminModule
         _trackRecordModule = trackRecordModule ?? throw new ArgumentNullException(nameof(trackRecordModule));
     }
 
-    public async Task<AnalyzePredictionCalibrationResult> AnalyzePredictionCalibrationAsync(int season, int week, IReadOnlyDictionary<string, double>? candidate, int backtestWeeks)
+    public async Task<AnalyzePredictionCalibrationResult> AnalyzePredictionCalibrationAsync(int season, int week, IReadOnlyDictionary<string, double>? candidate)
     {
         if (_predictionAlgorithmResolver.ResolveForSeason(season) is not ICalibratedPredictionCalculator calibratedCalculator)
             return new AnalyzePredictionCalibrationResult { Outcome = AnalyzePredictionCalibrationOutcome.NotSupported };
@@ -80,7 +80,7 @@ public class AdminModule : IAdminModule
                 return new AnalyzePredictionCalibrationResult { ErrorMessage = validationError, Outcome = AnalyzePredictionCalibrationOutcome.InvalidValues };
         }
 
-        _logger.LogInformation("Analyzing prediction calibration for season {Season}, week {Week} over {BacktestWeeks} weeks", season, week, backtestWeeks);
+        _logger.LogInformation("Analyzing prediction calibration for season {Season}, week {Week}", season, week);
 
         var seasonDataTask = _dataService.GetSeasonDataAsync(season, week);
         var fullScheduleTask = _dataService.GetFullSeasonScheduleAsync(season);
@@ -94,11 +94,11 @@ public class AdminModule : IAdminModule
             .ToList();
 
         var linesTask = BuildCalibrationLineHistoryAsync(season, week, snapshots, fullScheduleTask.Result);
-        var appliedTask = BuildAppliedCalibrationByWeekAsync(season, week, backtestWeeks, snapshots, parameters);
+        var appliedTask = BuildAppliedCalibrationByWeekAsync(season, week, snapshots, parameters);
         await Task.WhenAll(linesTask, appliedTask).ConfigureAwait(false);
 
         var analysis = await calibratedCalculator
-            .AnalyzeCalibrationAsync(seasonDataTask.Result, linesTask.Result, appliedTask.Result, candidate, backtestWeeks)
+            .AnalyzeCalibrationAsync(seasonDataTask.Result, linesTask.Result, appliedTask.Result, candidate)
             .ConfigureAwait(false);
 
         return new AnalyzePredictionCalibrationResult { Analysis = analysis, Outcome = AnalyzePredictionCalibrationOutcome.Success };
@@ -753,17 +753,17 @@ public class AdminModule : IAdminModule
     }
 
     /// <summary>
-    /// The values each backtested prediction week was generated with: its saved snapshot's applied values
-    /// (the defaults for a snapshot generated before calibration existed), or the values that would apply
-    /// to it now when it has no snapshot.
+    /// The values each of the season's earlier prediction weeks was generated with: its saved snapshot's
+    /// applied values (the defaults for a snapshot generated before calibration existed), or the values that
+    /// would apply to it now when it has no snapshot.
     /// </summary>
-    private async Task<IReadOnlyDictionary<int, IReadOnlyDictionary<string, double>>> BuildAppliedCalibrationByWeekAsync(int season, int week, int backtestWeeks, IEnumerable<PredictionsResult> snapshots, IReadOnlyList<PredictionCalibrationParameter> parameters)
+    private async Task<IReadOnlyDictionary<int, IReadOnlyDictionary<string, double>>> BuildAppliedCalibrationByWeekAsync(int season, int week, IEnumerable<PredictionsResult> snapshots, IReadOnlyList<PredictionCalibrationParameter> parameters)
     {
         var snapshotsByWeek = snapshots.ToDictionary(s => s.Week);
         var defaults = parameters.ToDictionary(p => p.Key, p => p.DefaultValue);
         var appliedByWeek = new Dictionary<int, IReadOnlyDictionary<string, double>>();
 
-        for (var predictionWeek = Math.Max(1, week - backtestWeeks); predictionWeek < week; predictionWeek++)
+        for (var predictionWeek = 1; predictionWeek < week; predictionWeek++)
         {
             appliedByWeek[predictionWeek] = snapshotsByWeek.TryGetValue(predictionWeek, out var snapshot)
                 ? snapshot.AppliedCalibration ?? defaults

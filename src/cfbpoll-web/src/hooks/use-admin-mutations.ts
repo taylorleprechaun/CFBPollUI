@@ -96,9 +96,11 @@ export function useViewRankingsSnapshot(token: string | null) {
 }
 
 // Generating, publishing or deleting a week changes its calibration's lock state, draft-mismatch flag,
-// or (for a first generate) whether a carried-forward row was saved.
+// or (for a first generate) whether a carried-forward row was saved. It also changes the values later
+// weeks' analyses report as used, so every analysis for the season is refreshed.
 function invalidatePredictionCalibration(queryClient: QueryClient, season: number, week: number) {
   queryClient.invalidateQueries({ queryKey: ['prediction-calibration', season, week] });
+  queryClient.invalidateQueries({ queryKey: ['prediction-calibration-analysis', season] });
   queryClient.invalidateQueries({ queryKey: ['prediction-calibration-history', season] });
 }
 

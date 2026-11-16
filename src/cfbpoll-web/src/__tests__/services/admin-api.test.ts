@@ -55,26 +55,24 @@ describe('Admin API service', () => {
   });
 
   describe('analyzePredictionCalibration', () => {
-    it('sends POST with the backtest weeks and values and parses the analysis', async () => {
+    it('sends POST with the values and parses the analysis', async () => {
       const summary = { gradedGameCount: 1, marginBias: null, marginMAE: null, marginRMSE: null, overUnder: { correct: 1, incorrect: 0, push: 0 }, spread: { correct: 1, incorrect: 0, push: 0 }, winner: { correct: 1, incorrect: 0, push: 0 } };
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({
-          backtestWeeks: [{ candidate: summary, season: 2026, used: summary, usedValues: { paramA: 0 }, week: 9 }],
-          candidateTotal: summary,
+          backtestWeeks: [{ candidate: summary, season: 2026, suggested: summary, suggestedValues: { paramA: 1.2 }, used: summary, usedValues: { paramA: 0 }, week: 9 }],
           candidateValues: { paramA: 1 },
           suggestedValues: { paramA: 1.5 },
           suggestionNotes: { paramA: 'Note.' },
-          usedTotal: summary,
         }),
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      const result = await analyzePredictionCalibration('token', 2026, 10, { backtestWeeks: 4, values: { paramA: 1 } });
+      const result = await analyzePredictionCalibration('token', 2026, 10, { values: { paramA: 1 } });
 
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/api/v1/admin/seasons/2026/weeks/10/prediction-calibration/analysis'),
-        expect.objectContaining({ body: JSON.stringify({ backtestWeeks: 4, values: { paramA: 1 } }), method: 'POST' })
+        expect.objectContaining({ body: JSON.stringify({ values: { paramA: 1 } }), method: 'POST' })
       );
       expect(result.suggestedValues.paramA).toBe(1.5);
       expect(result.backtestWeeks).toHaveLength(1);
@@ -84,10 +82,10 @@ describe('Admin API service', () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
         ok: false,
         status: 400,
-        json: () => Promise.resolve({ message: 'Backtest weeks must be between 1 and 15' }),
+        json: () => Promise.resolve({ message: 'Param A must be between -5 and 5' }),
       }));
 
-      await expect(analyzePredictionCalibration('token', 2026, 10, { backtestWeeks: 40 })).rejects.toThrow('Backtest weeks');
+      await expect(analyzePredictionCalibration('token', 2026, 10, { values: { paramA: 9 } })).rejects.toThrow('Param A must be between');
     });
   });
 

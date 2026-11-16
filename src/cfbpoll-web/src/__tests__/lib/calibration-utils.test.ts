@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { calibrationSourceLabel, formatCalibrationSummary, formatCalibrationValue, formatRecordChange, validateCalibrationInput } from '../../lib/calibration-utils';
+import { calibrationSourceLabel, formatCalibrationSummary, formatCalibrationValue, formatRecordChange, sumRecords, validateCalibrationInput } from '../../lib/calibration-utils';
 
 const parameter = { defaultValue: 0, description: '', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 };
 
@@ -67,6 +67,16 @@ describe('formatCalibrationValue', () => {
 describe('formatRecordChange', () => {
   it('shows the used and candidate records side by side', () => {
     expect(formatRecordChange({ correct: 24, incorrect: 26, push: 0 }, { correct: 27, incorrect: 22, push: 1 })).toBe('24-26 → 27-22-1');
+  });
+});
+
+describe('sumRecords', () => {
+  it('adds each part of the records together', () => {
+    expect(sumRecords([{ correct: 24, incorrect: 26, push: 0 }, { correct: 30, incorrect: 20, push: 2 }])).toEqual({ correct: 54, incorrect: 46, push: 2 });
+  });
+
+  it('returns an empty record when there are none', () => {
+    expect(sumRecords([])).toEqual({ correct: 0, incorrect: 0, push: 0 });
   });
 });
 
