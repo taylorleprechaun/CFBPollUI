@@ -60,10 +60,24 @@ describe('PredictionCalibrationSeasonResults', () => {
     expect(screen.getByText(/^Last week, your values would have changed correct picks by: Winner \+5, Spread \+5/)).toBeInTheDocument();
   });
 
+  it('compares the values used with no calibration', () => {
+    renderResults({ analysis: buildSeasonAnalysis({ backtestWeeks: Array.from({ length: 8 }, (_, i) => buildBacktestWeek(i + 1, 25, 26, null, 23)) }) });
+
+    expect(screen.getByText('Over the last 8 weeks, compared with no calibration, the values used changed correct picks by: Winner +16, Spread +16, O/U +16. The Winner, Spread and O/U differences are unlikely to be luck alone.')).toBeInTheDocument();
+  });
+
   it('hides the comparison toggle when no values were tested', () => {
     renderResults();
 
     expect(screen.queryByRole('button', { name: 'Your values' })).not.toBeInTheDocument();
+  });
+
+  it('labels differences that luck alone could explain', () => {
+    renderResults({ analysis: buildSeasonAnalysis({ backtestWeeks: [buildBacktestWeek(1, 25, 26)] }) });
+
+    expect(screen.getByText(/would have changed correct picks by: Winner \+1, Spread \+1, O\/U \+1\. All of these differences are within what luck alone would produce\.$/)).toBeInTheDocument();
+    expect(screen.getByText(/changed correct picks by: Winner 0, Spread 0, O\/U 0\. No picks changed\.$/)).toBeInTheDocument();
+    expect(screen.getAllByText('1 pick changed, 1-0 · within noise')).toHaveLength(3);
   });
 
   it('lists the weeks oldest first, in chart order, with the source and the suggestion at the time', () => {
@@ -74,6 +88,7 @@ describe('PredictionCalibrationSeasonResults', () => {
     expect(newest.getByText('Accepted')).toBeInTheDocument();
     expect(newest.getByText('0 → +1')).toBeInTheDocument();
     expect(newest.getAllByText('+1')).toHaveLength(3);
+    expect(newest.getAllByText('1 pick changed, 1-0')).toHaveLength(3);
   });
 
   it('shows a message when there are no completed weeks', () => {
@@ -88,6 +103,7 @@ describe('PredictionCalibrationSeasonResults', () => {
     expect(bodyRows()).toHaveLength(8);
     expect(screen.getAllByText('+8')).toHaveLength(3);
     expect(screen.getAllByText('200-200 → 208-192')).toHaveLength(3);
+    expect(screen.getAllByText('8 picks changed, 8-0 · unlikely to be luck alone')).toHaveLength(3);
   });
 
   it('shows the whole season when chosen', async () => {
@@ -103,7 +119,7 @@ describe('PredictionCalibrationSeasonResults', () => {
   it('sums up the spread result in one sentence', () => {
     renderResults();
 
-    expect(screen.getByText('Over the last 8 weeks, following the suggestions would have changed correct picks by: Winner +8, Spread +8, O/U +8.')).toBeInTheDocument();
+    expect(screen.getByText('Over the last 8 weeks, following the suggestions would have changed correct picks by: Winner +8, Spread +8, O/U +8. The Winner, Spread and O/U differences are unlikely to be luck alone.')).toBeInTheDocument();
   });
 
   it('switches back to the suggestions from the toggle', async () => {

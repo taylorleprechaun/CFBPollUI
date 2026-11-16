@@ -57,10 +57,12 @@ describe('Admin API service', () => {
   describe('analyzePredictionCalibration', () => {
     it('sends POST with the values and parses the analysis', async () => {
       const summary = { gradedGameCount: 1, marginBias: null, marginMAE: null, marginRMSE: null, overUnder: { correct: 1, incorrect: 0, push: 0 }, spread: { correct: 1, incorrect: 0, push: 0 }, winner: { correct: 1, incorrect: 0, push: 0 } };
+      const change = { changed: 2, comparedCorrect: 1, usedCorrect: 1 };
+      const changes = { overUnder: change, spread: change, winner: change };
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({
-          backtestWeeks: [{ candidate: summary, season: 2026, suggested: summary, suggestedValues: { paramA: 1.2 }, used: summary, usedValues: { paramA: 0 }, week: 9 }],
+          backtestWeeks: [{ baseline: summary, baselineChanges: changes, candidate: summary, candidateChanges: changes, season: 2026, suggested: summary, suggestedChanges: changes, suggestedValues: { paramA: 1.2 }, used: summary, usedValues: { paramA: 0 }, week: 9 }],
           candidateValues: { paramA: 1 },
           suggestedValues: { paramA: 1.5 },
           suggestionNotes: { paramA: 'Note.' },

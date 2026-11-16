@@ -1,5 +1,5 @@
 import type { TrackRecordTotals } from '../schemas';
-import type { PredictionCalibrationParameter, PredictionCalibrationSource } from '../schemas/admin';
+import type { PredictionCalibrationParameter, PredictionCalibrationSource, PredictionPickChange } from '../schemas/admin';
 
 import { formatTotals } from './track-record-utils';
 import { getWeekLabel } from './week-utils';
@@ -9,6 +9,13 @@ interface CalibrationSourceInfo {
   carriedFromWeek: number | null;
   isStored?: boolean;
   source: PredictionCalibrationSource | null;
+}
+
+interface CalibrationBaselineVerdictInput {
+  baseline: CalibrationRecordSet;
+  /** When the records cover, e.g. "Over the last 8 weeks". */
+  period: string;
+  used: CalibrationRecordSet;
 }
 
 interface CalibrationVerdictInput {
@@ -22,6 +29,7 @@ interface CalibrationVerdictInput {
 
 export type CalibrationRecordKey = (typeof CALIBRATION_RECORDS)[number]['key'];
 export type CalibrationRecordSet = Record<CalibrationRecordKey, TrackRecordTotals>;
+export type CalibrationPickChangeSet = Record<CalibrationRecordKey, PredictionPickChange>;
 
 /**
  * The pick records the calibration comparison reports, in the site's standard order.
@@ -31,6 +39,11 @@ export const CALIBRATION_RECORDS = [
   { key: 'spread', label: 'Spread', noun: 'spreads' },
   { key: 'overUnder', label: 'O/U', noun: 'over/unders' },
 ] as const;
+
+/**
+ * A sign test p-value below this marks a difference as unlikely to be luck alone.
+ */
+const NOISE_P_VALUE = 0.05;
 
 const SOURCE_LABELS: Record<Exclude<PredictionCalibrationSource, 'CarriedForward'>, string> = {
   Accepted: 'Accepted suggestion',
@@ -61,6 +74,21 @@ export function calibrationSourceLabel({ carriedFromSeason, carriedFromWeek, isS
 }
 
 /**
+ * Describes whether a set of changed picks split more unevenly than luck alone would explain.
+ */
+export function describeNoise(change: PredictionPickChange): string {
+  return isWithinNoise(change) ? 'within noise' : 'unlikely to be luck alone';
+}
+
+/**
+ * Sums up how the values used compare with no calibration, e.g. "Over the last 8 weeks, compared with no
+ * calibration, the values used changed correct picks by: Winner 0, Spread +4, O/U -1."
+ */
+export function formatBaselineVerdict({ baseline, period, used }: CalibrationBaselineVerdictInput): string {
+  return `${period}, compared with no calibration, the values used changed correct picks by: ${formatRecordChanges(baseline, used)}.`;
+}
+
+/**
  * Lists every parameter with its value, e.g. "Param A +1.5 · Param B -2".
  */
 export function formatCalibrationSummary(parameters: PredictionCalibrationParameter[], values: Record<string, number>): string {
@@ -77,11 +105,28 @@ export function formatCalibrationValue(value: number | undefined): string {
  * changed correct picks by: Winner +3, Spread +8, O/U -1."
  */
 export function formatCalibrationVerdict({ compared, period, subject, used }: CalibrationVerdictInput): string {
-  const changes = CALIBRATION_RECORDS
-    .map((r) => `${r.label} ${formatSignedNumber(recordDifference(used[r.key], compared[r.key]))}`)
-    .join(', ');
+  return `${period}, ${subject} would have changed correct picks by: ${formatRecordChanges(used, compared)}.`;
+}
 
-  return `${period}, ${subject} would have changed correct picks by: ${changes}.`;
+/**
+ * Says whether the records' differences are bigger than luck alone would produce, naming the ones that are.
+ */
+export function formatNoiseVerdict(changes: CalibrationPickChangeSet): string {
+  if (CALIBRATION_RECORDS.every((r) => changes[r.key].changed === 0)) return 'No picks changed.';
+
+  const beyondNoise = CALIBRATION_RECORDS.filter((r) => !isWithinNoise(changes[r.key])).map((r) => r.label);
+  if (beyondNoise.length === 0) return 'All of these differences are within what luck alone would produce.';
+
+  const names = beyondNoise.length === 1 ? beyondNoise[0] : `${beyondNoise.slice(0, -1).join(', ')} and ${beyondNoise[beyondNoise.length - 1]}`;
+  return `The ${names} ${beyondNoise.length === 1 ? 'difference is' : 'differences are'} unlikely to be luck alone.`;
+}
+
+/**
+ * Counts the picks that differ and how they split, compared side first, e.g. "7 picks changed, 5-2".
+ */
+export function formatPickChange(change: PredictionPickChange): string {
+  if (change.changed === 0) return 'No picks changed';
+  return `${change.changed} ${change.changed === 1 ? 'pick' : 'picks'} changed, ${change.comparedCorrect}-${change.usedCorrect}`;
 }
 
 /**
@@ -99,10 +144,45 @@ export function formatSignedNumber(value: number): string {
 }
 
 /**
+ * True when the changed picks split evenly enough that luck alone could explain the difference. Pushes are
+ * left out. Five or fewer decided picks can never clear the bar.
+ */
+export function isWithinNoise(change: PredictionPickChange): boolean {
+  return signTestPValue(change.comparedCorrect, change.usedCorrect) >= NOISE_P_VALUE;
+}
+
+/**
  * How many more picks were correct with the compared values than with the values used (negative when fewer).
  */
 export function recordDifference(used: TrackRecordTotals, compared: TrackRecordTotals): number {
   return compared.correct - used.correct;
+}
+
+/**
+ * Two-sided exact sign test: how likely a split at least this uneven is when each pick is a coin flip.
+ */
+export function signTestPValue(wins: number, losses: number): number {
+  const n = wins + losses;
+  if (n === 0) return 1;
+
+  let term = Math.pow(0.5, n);
+  let tail = term;
+  for (let i = 0; i < Math.min(wins, losses); i++) {
+    term = (term * (n - i)) / (i + 1);
+    tail += term;
+  }
+
+  return Math.min(1, 2 * tail);
+}
+
+/**
+ * Sums changed picks across weeks.
+ */
+export function sumPickChanges(changes: PredictionPickChange[]): PredictionPickChange {
+  return changes.reduce(
+    (total, c) => ({ changed: total.changed + c.changed, comparedCorrect: total.comparedCorrect + c.comparedCorrect, usedCorrect: total.usedCorrect + c.usedCorrect }),
+    { changed: 0, comparedCorrect: 0, usedCorrect: 0 }
+  );
 }
 
 /**
@@ -116,4 +196,11 @@ export function validateCalibrationInput(raw: string, parameter: PredictionCalib
   if (value < parameter.min || value > parameter.max) return `Must be between ${parameter.min} and ${parameter.max}`;
 
   return null;
+}
+
+/**
+ * Lists each record's change in correct picks from `from` to `to`, e.g. "Winner +3, Spread +8, O/U -1".
+ */
+function formatRecordChanges(from: CalibrationRecordSet, to: CalibrationRecordSet): string {
+  return CALIBRATION_RECORDS.map((r) => `${r.label} ${formatSignedNumber(recordDifference(from[r.key], to[r.key]))}`).join(', ');
 }

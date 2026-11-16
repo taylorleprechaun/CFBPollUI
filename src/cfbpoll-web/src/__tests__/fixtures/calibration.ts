@@ -3,6 +3,8 @@ import type {
   PredictionCalibrationBacktestWeek,
   PredictionCalibrationParameter,
   PredictionCalibrationResponse,
+  PredictionPickChange,
+  PredictionPickChanges,
   PredictionRecordSummary,
 } from '../../schemas/admin';
 
@@ -25,13 +27,19 @@ export function buildAnalysis(overrides: Partial<PredictionCalibrationAnalysis> 
 }
 
 /**
- * A completed week where every record type has the given correct counts out of 50 graded games.
+ * A completed week where every record type has the given correct counts out of 50 graded games. Changed picks
+ * are the smallest set that explains each difference (all won by the side with more correct picks), and the
+ * baseline matches the values used unless given.
  */
-export function buildBacktestWeek(week: number, usedCorrect: number, suggestedCorrect: number, candidateCorrect: number | null = null): PredictionCalibrationBacktestWeek {
+export function buildBacktestWeek(week: number, usedCorrect: number, suggestedCorrect: number, candidateCorrect: number | null = null, baselineCorrect: number = usedCorrect): PredictionCalibrationBacktestWeek {
   return {
+    baseline: buildRecordSummary(baselineCorrect, 50 - baselineCorrect),
+    baselineChanges: buildPickChanges(usedCorrect, baselineCorrect),
     candidate: candidateCorrect === null ? null : buildRecordSummary(candidateCorrect, 50 - candidateCorrect),
+    candidateChanges: candidateCorrect === null ? null : buildPickChanges(usedCorrect, candidateCorrect),
     season: 2026,
     suggested: buildRecordSummary(suggestedCorrect, 50 - suggestedCorrect),
+    suggestedChanges: buildPickChanges(usedCorrect, suggestedCorrect),
     suggestedValues: { paramA: week / 10, paramB: 0 },
     used: buildRecordSummary(usedCorrect, 50 - usedCorrect),
     usedValues: { paramA: 0, paramB: 0 },
@@ -55,6 +63,18 @@ export function buildCalibration(overrides: Partial<PredictionCalibrationRespons
     week: 10,
     ...overrides,
   };
+}
+
+/**
+ * The same changed picks for Winner, Spread and O/U: every change won by the side with more correct picks.
+ */
+export function buildPickChanges(usedCorrect: number, comparedCorrect: number): PredictionPickChanges {
+  const change: PredictionPickChange = {
+    changed: Math.abs(comparedCorrect - usedCorrect),
+    comparedCorrect: Math.max(0, comparedCorrect - usedCorrect),
+    usedCorrect: Math.max(0, usedCorrect - comparedCorrect),
+  };
+  return { overUnder: change, spread: change, winner: change };
 }
 
 /**

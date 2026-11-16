@@ -22,4 +22,10 @@ describe('CalibrationRecordChange', () => {
 
     expect(screen.getByText('0')).toHaveClass('bg-gray-100');
   });
+
+  it('shows the changed picks when given', () => {
+    render(<CalibrationRecordChange change={{ changed: 5, comparedCorrect: 4, usedCorrect: 1 }} compared={{ correct: 28, incorrect: 28, push: 0 }} used={{ correct: 25, incorrect: 31, push: 0 }} />);
+
+    expect(screen.getByText('5 picks changed, 4-1')).toBeInTheDocument();
+  });
 });

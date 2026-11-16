@@ -16,15 +16,21 @@ public class PredictionCalibrationMapperTests
         suggested.Spread.Correct = 27;
         var candidate = new PredictionRecordSummary { GradedGameCount = 50 };
         candidate.Spread.Correct = 26;
+        var baseline = new PredictionRecordSummary { GradedGameCount = 50 };
+        baseline.Spread.Correct = 23;
         var analysis = new PredictionCalibrationAnalysis
         {
             BacktestWeeks =
             [
                 new PredictionCalibrationBacktestWeek
                 {
+                    Baseline = baseline,
+                    BaselineChanges = new PredictionPickChanges { Spread = new PredictionPickChange { Changed = 3, ComparedCorrect = 1, UsedCorrect = 2 } },
                     Candidate = candidate,
+                    CandidateChanges = new PredictionPickChanges { Winner = new PredictionPickChange { Changed = 1, ComparedCorrect = 1 } },
                     Season = 2026,
                     Suggested = suggested,
+                    SuggestedChanges = new PredictionPickChanges { OverUnder = new PredictionPickChange { Changed = 5, ComparedCorrect = 4, UsedCorrect = 1 } },
                     SuggestedValues = new Dictionary<string, double> { ["paramA"] = 1.2 },
                     Used = used,
                     UsedValues = new Dictionary<string, double> { ["paramA"] = 0 },
@@ -48,6 +54,11 @@ public class PredictionCalibrationMapperTests
         Assert.Equal(24, week.Used.Spread.Correct);
         Assert.Equal(27, week.Suggested.Spread.Correct);
         Assert.Equal(26, week.Candidate!.Spread.Correct);
+        Assert.Equal(23, week.Baseline.Spread.Correct);
+        Assert.Equal(2, week.BaselineChanges.Spread.UsedCorrect);
+        Assert.Equal(1, week.CandidateChanges!.Winner.ComparedCorrect);
+        Assert.Equal(5, week.SuggestedChanges.OverUnder.Changed);
+        Assert.Equal(4, week.SuggestedChanges.OverUnder.ComparedCorrect);
     }
 
     [Fact]
@@ -61,7 +72,9 @@ public class PredictionCalibrationMapperTests
         var result = PredictionCalibrationMapper.ToAnalysisResponseDTO(analysis);
 
         Assert.Null(result.CandidateValues);
-        Assert.Null(Assert.Single(result.BacktestWeeks).Candidate);
+        var week = Assert.Single(result.BacktestWeeks);
+        Assert.Null(week.Candidate);
+        Assert.Null(week.CandidateChanges);
     }
 
     [Fact]

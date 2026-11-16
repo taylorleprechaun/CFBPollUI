@@ -1,11 +1,11 @@
 import { useId, useState } from 'react';
 
-import type { CalibrationRecordKey, CalibrationRecordSet } from '../../lib/calibration-utils';
+import type { CalibrationPickChangeSet, CalibrationRecordKey, CalibrationRecordSet } from '../../lib/calibration-utils';
 import type { TrackRecordTotals } from '../../schemas';
-import type { PredictionCalibrationAnalysis, PredictionCalibrationBacktestWeek, PredictionCalibrationHistoryEntry, PredictionCalibrationParameter, PredictionCalibrationSource } from '../../schemas/admin';
+import type { PredictionCalibrationAnalysis, PredictionCalibrationBacktestWeek, PredictionCalibrationHistoryEntry, PredictionCalibrationParameter, PredictionCalibrationSource, PredictionPickChange } from '../../schemas/admin';
 import type { CalibrationChartPoint } from './prediction-calibration-chart';
 
-import { CALIBRATION_RECORDS, formatCalibrationSummary, formatCalibrationValue, formatCalibrationVerdict, recordDifference } from '../../lib/calibration-utils';
+import { CALIBRATION_RECORDS, describeNoise, formatBaselineVerdict, formatCalibrationSummary, formatCalibrationValue, formatCalibrationVerdict, formatNoiseVerdict, formatPickChange, recordDifference, sumPickChanges } from '../../lib/calibration-utils';
 import { sumTotals } from '../../lib/track-record-utils';
 import { getWeekLabel } from '../../lib/week-utils';
 import { SELECT_BASE } from '../ui/button-styles';
@@ -52,6 +52,10 @@ export function PredictionCalibrationSeasonResults({ analysis, comparison, histo
   const shownWeeks = range === 'season' ? analysis.backtestWeeks : analysis.backtestWeeks.slice(-range);
   const sourceByWeek = new Map(historyEntries.map((e) => [e.week, e.source]));
 
+  function comparedChange(week: PredictionCalibrationBacktestWeek, key: CalibrationRecordKey): PredictionPickChange {
+    return (isHindsight && week.candidateChanges ? week.candidateChanges : week.suggestedChanges)[key];
+  }
+
   function comparedRecord(week: PredictionCalibrationBacktestWeek, key: CalibrationRecordKey): TrackRecordTotals {
     return (isHindsight && week.candidate ? week.candidate : week.suggested)[key];
   }
@@ -64,14 +68,19 @@ export function PredictionCalibrationSeasonResults({ analysis, comparison, histo
     label: getWeekLabel(w.week).replace('Week ', 'Wk '),
     ...(Object.fromEntries(CALIBRATION_RECORDS.map((r) => [r.key, recordDifference(w.used[r.key], comparedRecord(w, r.key))])) as Record<CalibrationRecordKey, number>),
   }));
+  const baselineChangeTotals = Object.fromEntries(CALIBRATION_RECORDS.map((r) => [r.key, sumPickChanges(shownWeeks.map((w) => w.baselineChanges[r.key]))])) as CalibrationPickChangeSet;
+  const baselineTotals = Object.fromEntries(CALIBRATION_RECORDS.map((r) => [r.key, sumTotals(shownWeeks.map((w) => w.baseline[r.key]))])) as CalibrationRecordSet;
+  const comparedChangeTotals = Object.fromEntries(CALIBRATION_RECORDS.map((r) => [r.key, sumPickChanges(shownWeeks.map((w) => comparedChange(w, r.key)))])) as CalibrationPickChangeSet;
   const comparedTotals = Object.fromEntries(CALIBRATION_RECORDS.map((r) => [r.key, sumTotals(shownWeeks.map((w) => comparedRecord(w, r.key)))])) as CalibrationRecordSet;
   const usedTotals = Object.fromEntries(CALIBRATION_RECORDS.map((r) => [r.key, sumTotals(shownWeeks.map((w) => w.used[r.key]))])) as CalibrationRecordSet;
+  const period = range === 'season' ? 'So far this season' : shownWeeks.length === 1 ? 'Last week' : `Over the last ${shownWeeks.length} weeks`;
   const verdict = formatCalibrationVerdict({
     compared: comparedTotals,
-    period: range === 'season' ? 'So far this season' : shownWeeks.length === 1 ? 'Last week' : `Over the last ${shownWeeks.length} weeks`,
+    period,
     subject: isHindsight ? 'your values' : 'following the suggestions',
     used: usedTotals,
   });
+  const baselineVerdict = formatBaselineVerdict({ baseline: baselineTotals, period, used: usedTotals });
 
   return (
     <div className="space-y-5">
@@ -115,7 +124,10 @@ export function PredictionCalibrationSeasonResults({ analysis, comparison, histo
         <p className="text-sm text-text-muted">No completed weeks this season to compare yet.</p>
       ) : (
         <>
-          <p className="rounded-lg border-l-4 border-accent bg-surface-alt px-4 py-3 text-sm text-text-secondary">{verdict}</p>
+          <div className="rounded-lg border-l-4 border-accent bg-surface-alt px-4 py-3 text-sm text-text-secondary space-y-2 max-w-prose">
+            <p>{verdict} {formatNoiseVerdict(comparedChangeTotals)}</p>
+            <p>{baselineVerdict} {formatNoiseVerdict(baselineChangeTotals)}</p>
+          </div>
 
           <div>
             <p className="text-xs font-medium text-text-muted mb-2">Totals for the weeks shown</p>
@@ -125,6 +137,10 @@ export function PredictionCalibrationSeasonResults({ analysis, comparison, histo
                   <dt className="text-xs font-medium text-text-muted uppercase tracking-wider mb-1">{c.label}</dt>
                   <dd>
                     <CalibrationRecordChange align="start" compared={comparedTotals[c.key]} used={usedTotals[c.key]} />
+                    <p className="text-xs text-text-muted mt-1">
+                      {formatPickChange(comparedChangeTotals[c.key])}
+                      {comparedChangeTotals[c.key].changed > 0 && ` · ${describeNoise(comparedChangeTotals[c.key])}`}
+                    </p>
                   </dd>
                 </div>
               ))}
@@ -136,7 +152,9 @@ export function PredictionCalibrationSeasonResults({ analysis, comparison, histo
           )}
 
           <div className="overflow-x-auto">
-            <p className="text-xs text-text-muted mb-1">Each cell reads: what you used → {isHindsight ? 'your values' : 'the suggestion at the time'}.</p>
+            <p className="text-xs text-text-muted mb-1">
+              Each cell reads: what you used → {isHindsight ? 'your values' : 'the suggestion at the time'}. “Picks changed, 5-2” counts the picks that differ and how many each side got right, {isHindsight ? 'your values' : 'the suggestion'} first.
+            </p>
             <table className="min-w-full divide-y divide-border">
               <thead className="bg-surface-alt">
                 <tr>
@@ -165,7 +183,7 @@ export function PredictionCalibrationSeasonResults({ analysis, comparison, histo
                       ))}
                       {CALIBRATION_RECORDS.map((c) => (
                         <td key={c.key} className={`${CELL_CLASSES} text-right`}>
-                          <CalibrationRecordChange compared={comparedRecord(w, c.key)} used={w.used[c.key]} />
+                          <CalibrationRecordChange change={comparedChange(w, c.key)} compared={comparedRecord(w, c.key)} used={w.used[c.key]} />
                         </td>
                       ))}
                     </tr>

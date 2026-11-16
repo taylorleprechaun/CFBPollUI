@@ -166,10 +166,26 @@ export const PredictionCalibrationHistoryEntrySchema = z.object({
 
 export const PredictionCalibrationHistoryResponseSchema = z.array(PredictionCalibrationHistoryEntrySchema);
 
+export const PredictionPickChangeSchema = z.object({
+  changed: z.number(),
+  comparedCorrect: z.number(),
+  usedCorrect: z.number(),
+});
+
+export const PredictionPickChangesSchema = z.object({
+  overUnder: PredictionPickChangeSchema,
+  spread: PredictionPickChangeSchema,
+  winner: PredictionPickChangeSchema,
+});
+
 export const PredictionCalibrationBacktestWeekSchema = z.object({
+  baseline: PredictionRecordSummarySchema,
+  baselineChanges: PredictionPickChangesSchema,
   candidate: PredictionRecordSummarySchema.nullable(),
+  candidateChanges: PredictionPickChangesSchema.nullable(),
   season: z.number(),
   suggested: PredictionRecordSummarySchema,
+  suggestedChanges: PredictionPickChangesSchema,
   suggestedValues: z.record(z.string(), z.number()),
   used: PredictionRecordSummarySchema,
   usedValues: z.record(z.string(), z.number()),
@@ -257,6 +273,8 @@ export type PredictionCalibrationHistoryEntry = z.infer<typeof PredictionCalibra
 export type PredictionCalibrationParameter = z.infer<typeof PredictionCalibrationParameterSchema>;
 export type PredictionCalibrationResponse = z.infer<typeof PredictionCalibrationResponseSchema>;
 export type PredictionCalibrationSource = z.infer<typeof PredictionCalibrationSourceSchema>;
+export type PredictionPickChange = z.infer<typeof PredictionPickChangeSchema>;
+export type PredictionPickChanges = z.infer<typeof PredictionPickChangesSchema>;
 export type PredictionRecordSummary = z.infer<typeof PredictionRecordSummarySchema>;
 export type PredictionsResponse = z.infer<typeof PredictionsResponseSchema>;
 export type PredictionsSummary = z.infer<typeof PredictionsSummarySchema>;

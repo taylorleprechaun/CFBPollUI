@@ -13,9 +13,13 @@ public static class PredictionCalibrationMapper
         {
             BacktestWeeks = analysis.BacktestWeeks.Select(w => new PredictionCalibrationBacktestWeekDTO
             {
+                Baseline = PredictionsMapper.ToDTO(w.Baseline),
+                BaselineChanges = ToPickChangesDTO(w.BaselineChanges),
                 Candidate = w.Candidate is null ? null : PredictionsMapper.ToDTO(w.Candidate),
+                CandidateChanges = w.CandidateChanges is null ? null : ToPickChangesDTO(w.CandidateChanges),
                 Season = w.Season,
                 Suggested = PredictionsMapper.ToDTO(w.Suggested),
+                SuggestedChanges = ToPickChangesDTO(w.SuggestedChanges),
                 SuggestedValues = w.SuggestedValues.ToDictionary(v => v.Key, v => v.Value),
                 Used = PredictionsMapper.ToDTO(w.Used),
                 UsedValues = w.UsedValues.ToDictionary(v => v.Key, v => v.Value),
@@ -76,6 +80,26 @@ public static class PredictionCalibrationMapper
             Max = parameter.Max,
             Min = parameter.Min,
             Step = parameter.Step
+        };
+    }
+
+    private static PredictionPickChangeDTO ToPickChangeDTO(PredictionPickChange change)
+    {
+        return new PredictionPickChangeDTO
+        {
+            Changed = change.Changed,
+            ComparedCorrect = change.ComparedCorrect,
+            UsedCorrect = change.UsedCorrect
+        };
+    }
+
+    private static PredictionPickChangesDTO ToPickChangesDTO(PredictionPickChanges changes)
+    {
+        return new PredictionPickChangesDTO
+        {
+            OverUnder = ToPickChangeDTO(changes.OverUnder),
+            Spread = ToPickChangeDTO(changes.Spread),
+            Winner = ToPickChangeDTO(changes.Winner)
         };
     }
 }

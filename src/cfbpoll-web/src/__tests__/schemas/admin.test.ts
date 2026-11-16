@@ -451,12 +451,22 @@ describe('Admin schemas', () => {
 
   describe('PredictionCalibrationAnalysisSchema', () => {
     const summary = { gradedGameCount: 1, marginBias: null, marginMAE: null, marginRMSE: null, overUnder: { correct: 1, incorrect: 0, push: 0 }, spread: { correct: 1, incorrect: 0, push: 0 }, winner: { correct: 1, incorrect: 0, push: 0 } };
+    const change = { changed: 2, comparedCorrect: 1, usedCorrect: 1 };
+    const changes = { overUnder: change, spread: change, winner: change };
     const validAnalysis = {
-      backtestWeeks: [{ candidate: summary, season: 2026, suggested: summary, suggestedValues: { paramA: 1.2 }, used: summary, usedValues: { paramA: 0 }, week: 9 }],
+      backtestWeeks: [{ baseline: summary, baselineChanges: changes, candidate: summary, candidateChanges: changes, season: 2026, suggested: summary, suggestedChanges: changes, suggestedValues: { paramA: 1.2 }, used: summary, usedValues: { paramA: 0 }, week: 9 }],
       candidateValues: { paramA: 1 },
       suggestedValues: { paramA: 1.5 },
       suggestionNotes: { paramA: 'Note.' },
     };
+
+    it('rejects a backtest week without its changed picks', () => {
+      const weekWithoutChanges: Partial<(typeof validAnalysis.backtestWeeks)[0]> = { ...validAnalysis.backtestWeeks[0] };
+      delete weekWithoutChanges.suggestedChanges;
+      const result = PredictionCalibrationAnalysisSchema.safeParse({ ...validAnalysis, backtestWeeks: [weekWithoutChanges] });
+
+      expect(result.success).toBe(false);
+    });
 
     it('rejects a backtest week without its used record', () => {
       const result = PredictionCalibrationAnalysisSchema.safeParse({
@@ -474,7 +484,7 @@ describe('Admin schemas', () => {
     it('validates an analysis without candidate values', () => {
       const result = PredictionCalibrationAnalysisSchema.safeParse({
         ...validAnalysis,
-        backtestWeeks: [{ ...validAnalysis.backtestWeeks[0], candidate: null }],
+        backtestWeeks: [{ ...validAnalysis.backtestWeeks[0], candidate: null, candidateChanges: null }],
         candidateValues: null,
       });
 
