@@ -46,6 +46,7 @@ Last Updated 8/6/2026
 - **Game Predictions**: Generate game predictions with spread and over/under picks using team ratings and betting line data
 - **Admin Dashboard**: JWT-authenticated admin panel to calculate, preview, and publish rankings and predictions with a two-step draft/publish workflow
 - **Experimental Rating & Prediction Comparison**: Admin-only calculation of rankings and predictions against multiple algorithm versions at once for any season/week, compared side-by-side, without persisting or publishing — used to validate a candidate algorithm against the current one before it becomes a season's default. A "Compare Season" mode extends this to predictions across an admin-selected subset of a season's weeks at once, showing a season-overall summary plus a per-week breakdown per algorithm version
+- **Prediction Calibration**: Admin page for reviewing and setting per-week calibration values that adjust V2 predictions when they are generated. Shows the current, suggested and new values for a week, how each completed week did with the values it used compared with the suggestion made at the time, and lets typed values be tested against past weeks (labeled as hindsight). Values carry forward to later weeks until changed and lock once the week's predictions are published; Experimental runs apply the selected week's values
 - **Excel Export**: Download rankings and predictions as Excel spreadsheets with rating breakdowns and pick/grade detail
 - **SQLite Persistence**: Rankings and predictions snapshots stored in SQLite for fast retrieval without redundant API calls
 - **REST API**: Full API with Swagger documentation
@@ -98,6 +99,7 @@ AdminController                    AdminModule
                                      -> IPersistentCache
                                      -> IPollLeadersModule
                                      -> IPredictionCalculatorModule
+                                     -> IPredictionCalibrationModule
                                      -> IPredictionGradingModule
                                      -> IPredictionsModule
                                      -> IRankingsModule
@@ -128,6 +130,9 @@ PollLeadersController              PollLeadersModule
   -> IPollLeadersModule              -> ICFBDataService
                                      -> IPersistentCache
                                      -> IRankingsModule
+
+                                   PredictionCalibrationModule       PredictionCalibrationData
+                                     -> IPredictionCalibrationData     -> SQLite
 
 PredictionsController              PredictionsModule
   -> IPredictionsModule              -> IPredictionsData              PredictionsData
@@ -160,7 +165,7 @@ TrackRecordController              TrackRecordModule
                                      -> IPredictionsModule
 ```
 
-Only `RankingsModule` has a direct dependency on `IRankingsData`, only `PredictionsModule` has a direct dependency on `IPredictionsData`, only `CacheModule` has a direct dependency on `ICacheData`, and only `PageVisibilityModule` has a direct dependency on `IPageVisibilityData`. Controllers never reference data-layer interfaces. `IPredictionGradingModule` (grading logic) and `IConferenceModule` (conference data transformation) have no further module or data-layer dependencies of their own.
+Only `RankingsModule` has a direct dependency on `IRankingsData`, only `PredictionsModule` has a direct dependency on `IPredictionsData`, only `PredictionCalibrationModule` has a direct dependency on `IPredictionCalibrationData`, only `CacheModule` has a direct dependency on `ICacheData`, and only `PageVisibilityModule` has a direct dependency on `IPageVisibilityData`. Controllers never reference data-layer interfaces. `IPredictionGradingModule` (grading logic) and `IConferenceModule` (conference data transformation) have no further module or data-layer dependencies of their own.
 
 ## Prerequisites
 
@@ -321,22 +326,26 @@ The frontend runs at `http://localhost:5173`.
 | `GET /api/v1/admin/cfbd-usage` | Get the site's CollegeFootballData.com API account status (remaining/used calls, tier, reset date, request totals), cached server-side until the next nightly cache refresh (3:30am US Eastern); pass `?forceRefresh=true` to bypass the cache |
 | `GET /api/v1/admin/predictions` | List all persisted prediction summaries |
 | `GET /api/v1/admin/rankings` | List all persisted rankings |
+| `GET /api/v1/admin/seasons/{season}/prediction-calibration` | List a season's saved calibration values by week, with their source and lock state |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/export` | Download experimental rankings as Excel for a chosen algorithm version, without persisting or publishing |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Retrieve persisted predictions for a season/week without recalculating or re-grading |
+| `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction-calibration` | Get the calibration parameters and the values that apply to a week (its own, or carried forward from an earlier week), with lock and draft-mismatch flags |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction/export` | Download predictions as Excel |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/ranking` | Retrieve the persisted rankings snapshot for a season/week without recalculating |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/ranking/export` | Download rankings as Excel |
 | `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Update a prediction (currently supports publishing) |
 | `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/prediction/results` | Publish graded results, making them visible on the public predictions page |
 | `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/ranking` | Update a ranking (currently supports publishing) |
-| `POST /api/v1/admin/seasons/{season}/experimental/{algorithmVersion}/predictions` | Calculate predictions for an explicit subset of weeks within a season using an explicitly chosen algorithm version, grading each week and returning a season-overall summary plus a per-week breakdown, without persisting anything |
+| `POST /api/v1/admin/seasons/{season}/experimental/{algorithmVersion}/predictions` | Calculate predictions for an explicit subset of weeks within a season using an explicitly chosen algorithm version, grading each week and returning a season-overall summary plus a per-week breakdown (each week uses its own calibration values for calibrated versions), without persisting anything |
 | `POST /api/v1/admin/seasons/{season}/experimental/{algorithmVersion}/trends` | Calculate season trends (top-25 rank progression) live across every week of a season using an explicitly chosen algorithm version, without persisting or publishing |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/cache` | Clear cached CollegeFootballData API responses for a season/week without recalculating |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}` | Calculate rankings using an explicitly chosen algorithm version, without persisting or publishing |
-| `POST /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/prediction` | Calculate predictions for a season/week using an explicitly chosen algorithm version and grade them against actual final scores when available, without persisting anything |
+| `POST /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/prediction` | Calculate predictions for a season/week using an explicitly chosen algorithm version (with the week's calibration values for calibrated versions) and grade them against actual final scores when available, without persisting anything |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Calculate predictions for a season/week and save as draft |
+| `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction-calibration/analysis` | Suggest calibration values for a week and grade each completed week of the season with the values it used, the values suggested at the time, and optionally submitted values, without persisting anything |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction/grade` | Grade predictions against actual final scores and save as draft |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/ranking` | Calculate rankings for a season/week and save as draft |
+| `PUT /api/v1/admin/seasons/{season}/weeks/{week}/prediction-calibration` | Save a week's calibration values; rejected once the week's predictions are published |
 | `PUT /api/v1/page-visibility` | Update page visibility settings |
 
 ## Code Conventions
