@@ -73,6 +73,7 @@ public static class PredictionCalibrationMapper
     {
         return new PredictionCalibrationParameterDTO
         {
+            CarriesAcrossSeasons = parameter.CarriesAcrossSeasons,
             DefaultValue = parameter.DefaultValue,
             Description = parameter.Description,
             Key = parameter.Key,

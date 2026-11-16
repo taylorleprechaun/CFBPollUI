@@ -5,8 +5,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { PredictionCalibrationValues } from '../../../components/admin';
 
 const parameters = [
-  { defaultValue: 0, description: 'First parameter', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 },
-  { defaultValue: 0, description: 'Second parameter', key: 'paramB', label: 'Param B', max: 10, min: -10, step: 0.1 },
+  { carriesAcrossSeasons: true, defaultValue: 0, description: 'First parameter', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 },
+  { carriesAcrossSeasons: true, defaultValue: 0, description: 'Second parameter', key: 'paramB', label: 'Param B', max: 10, min: -10, step: 0.1 },
 ];
 
 function renderValues(overrides: Partial<Parameters<typeof PredictionCalibrationValues>[0]> = {}) {
@@ -43,6 +43,13 @@ describe('PredictionCalibrationValues', () => {
 
     expect(screen.getByText('Param A: Note for A.')).toBeInTheDocument();
     expect(screen.getByText('Param B: Note for B.')).toBeInTheDocument();
+  });
+
+  it('notes a value that resets each season', () => {
+    renderValues({ parameters: [parameters[0], { ...parameters[1], carriesAcrossSeasons: false }] });
+
+    expect(within(rowFor('Param B')).getByText('Resets to 0 at the start of each season.')).toBeInTheDocument();
+    expect(within(rowFor('Param A')).queryByText(/Resets to/)).not.toBeInTheDocument();
   });
 
   it('reports typing to the parent', async () => {

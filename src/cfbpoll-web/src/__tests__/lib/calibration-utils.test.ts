@@ -20,7 +20,7 @@ import {
   validateCalibrationInput,
 } from '../../lib/calibration-utils';
 
-const parameter = { defaultValue: 0, description: '', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 };
+const parameter = { carriesAcrossSeasons: true, defaultValue: 0, description: '', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 };
 const noChange = { changed: 0, comparedCorrect: 0, usedCorrect: 0 };
 const evenSplit = { changed: 10, comparedCorrect: 6, usedCorrect: 4 };
 const lopsidedSplit = { changed: 10, comparedCorrect: 10, usedCorrect: 0 };
@@ -55,6 +55,13 @@ describe('calibrationSourceLabel', () => {
   it('notes carried-forward values that are not saved yet', () => {
     expect(calibrationSourceLabel({ carriedFromSeason: 2026, carriedFromWeek: 11, isStored: false, source: 'CarriedForward' }))
       .toBe('Carried forward from 2026 Week 12, not saved yet');
+  });
+
+  it('notes values carried from last season', () => {
+    expect(calibrationSourceLabel({ carriedFromSeason: 2025, carriedFromWeek: 15, season: 2026, source: 'CarriedForward' }))
+      .toBe('Carried forward from 2025 Week 16 (last season)');
+    expect(calibrationSourceLabel({ carriedFromSeason: 2026, carriedFromWeek: 11, season: 2026, source: 'CarriedForward' }))
+      .toBe('Carried forward from 2026 Week 12');
   });
 
   it('returns Unknown for a null source', () => {

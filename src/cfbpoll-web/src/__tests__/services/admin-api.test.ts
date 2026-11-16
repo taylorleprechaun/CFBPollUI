@@ -41,7 +41,7 @@ const mockCalibrationResponse = {
   isLocked: false,
   isStored: true,
   isSupported: true,
-  parameters: [{ defaultValue: 0, description: 'Desc', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 }],
+  parameters: [{ carriesAcrossSeasons: true, defaultValue: 0, description: 'Desc', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 }],
   season: 2026,
   source: 'Manual',
   updatedAt: '2026-11-01T12:00:00Z',

@@ -14,6 +14,15 @@ public class PredictionCalibrationModuleTests
         new PredictionCalibrationParameter { DefaultValue = 1, Key = "paramB", Max = 10, Min = -10, Step = 0.1 }
     ];
 
+    /// <summary>
+    /// The same parameters, except paramB starts each season from its default.
+    /// </summary>
+    private static readonly IReadOnlyList<PredictionCalibrationParameter> SeasonScopedParameters =
+    [
+        Parameters[0],
+        new PredictionCalibrationParameter { CarriesAcrossSeasons = false, DefaultValue = 1, Key = "paramB", Max = 10, Min = -10, Step = 0.1 }
+    ];
+
     private readonly Mock<IPredictionCalibrationData> _mockData;
     private readonly PredictionCalibrationModule _module;
 
@@ -60,6 +69,30 @@ public class PredictionCalibrationModuleTests
         var result = await _module.GetSeasonAsync(2025);
 
         Assert.Equal(2, result.Count());
+    }
+
+    [Fact]
+    public async Task ResolveCarriedForwardAsync_PreviousSeason_ResetsSeasonScopedValuesAndKeepsOthers()
+    {
+        _mockData.Setup(x => x.GetLatestBeforeAsync(2026, 1)).ReturnsAsync(CreateCalibration(2025, 15, ("paramA", 1.5), ("paramB", -2)));
+
+        var result = await _module.ResolveCarriedForwardAsync(2026, 1, SeasonScopedParameters);
+
+        Assert.Equal(1.5, result.Values["paramA"]);
+        Assert.Equal(1, result.Values["paramB"]);
+        Assert.Equal(2025, result.CarriedFromSeason);
+        Assert.Equal(15, result.CarriedFromWeek);
+    }
+
+    [Fact]
+    public async Task ResolveCarriedForwardAsync_SameSeason_KeepsSeasonScopedValues()
+    {
+        _mockData.Setup(x => x.GetLatestBeforeAsync(2026, 6)).ReturnsAsync(CreateCalibration(2026, 5, ("paramA", 1.5), ("paramB", -2)));
+
+        var result = await _module.ResolveCarriedForwardAsync(2026, 6, SeasonScopedParameters);
+
+        Assert.Equal(1.5, result.Values["paramA"]);
+        Assert.Equal(-2, result.Values["paramB"]);
     }
 
     [Fact]

@@ -129,6 +129,7 @@ export const PredictionsSummariesResponseSchema = z.array(PredictionsSummarySche
 export const PredictionCalibrationSourceSchema = z.enum(['Accepted', 'CarriedForward', 'Manual']);
 
 export const PredictionCalibrationParameterSchema = z.object({
+  carriesAcrossSeasons: z.boolean(),
   defaultValue: z.number(),
   description: z.string(),
   key: z.string(),

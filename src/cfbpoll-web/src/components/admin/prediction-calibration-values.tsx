@@ -62,6 +62,7 @@ export function PredictionCalibrationValues({
               <div className="col-span-2 sm:col-span-1">
                 <label htmlFor={inputId} className="text-sm font-medium text-text-primary">{p.label}</label>
                 <p className="text-xs text-text-muted max-w-prose">{p.description}</p>
+                {!p.carriesAcrossSeasons && <p className="text-xs text-text-muted">Resets to {formatCalibrationValue(p.defaultValue)} at the start of each season.</p>}
               </div>
               <div className="text-sm tabular-nums text-text-secondary">
                 <span className={MOBILE_LABEL_CLASSES}>Current</span>

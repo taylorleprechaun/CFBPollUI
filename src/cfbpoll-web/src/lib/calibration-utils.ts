@@ -8,6 +8,8 @@ interface CalibrationSourceInfo {
   carriedFromSeason: number | null;
   carriedFromWeek: number | null;
   isStored?: boolean;
+  /** The season the values apply to, so values carried from the season before can say so. */
+  season?: number;
   source: PredictionCalibrationSource | null;
 }
 
@@ -59,15 +61,17 @@ export function calibrationPageUrl(season: number, week?: number): string {
 
 /**
  * Describes where a week's calibration values came from. Carried-forward values name the week they
- * were carried from, or say they are the defaults when nothing earlier was saved.
+ * were carried from (noting when that was last season), or say they are the defaults when nothing earlier
+ * was saved.
  */
-export function calibrationSourceLabel({ carriedFromSeason, carriedFromWeek, isStored = true, source }: CalibrationSourceInfo): string {
+export function calibrationSourceLabel({ carriedFromSeason, carriedFromWeek, isStored = true, season, source }: CalibrationSourceInfo): string {
   if (source === null) return 'Unknown';
 
   if (source !== 'CarriedForward') return SOURCE_LABELS[source];
 
+  const fromLastSeason = season !== undefined && carriedFromSeason === season - 1 ? ' (last season)' : '';
   const origin = carriedFromSeason !== null && carriedFromWeek !== null
-    ? `Carried forward from ${carriedFromSeason} ${getWeekLabel(carriedFromWeek)}`
+    ? `Carried forward from ${carriedFromSeason} ${getWeekLabel(carriedFromWeek)}${fromLastSeason}`
     : 'Defaults (nothing saved earlier)';
 
   return isStored ? origin : `${origin}, not saved yet`;

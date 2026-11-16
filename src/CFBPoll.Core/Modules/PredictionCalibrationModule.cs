@@ -33,11 +33,16 @@ public class PredictionCalibrationModule : IPredictionCalibrationModule
     {
         ArgumentNullException.ThrowIfNull(parameters);
 
+        var parameterList = parameters.ToList();
         var previous = await _predictionCalibrationData.GetLatestBeforeAsync(season, week).ConfigureAwait(false);
 
         // A carried-forward row passes on its own origin (null when it carried the defaults), so a chain of
         // carried weeks points back to the week that actually set the values.
         var previousIsCarried = previous?.Source == PredictionCalibrationSource.CarriedForward;
+
+        var values = PredictionCalibrationValues.Normalize(previous?.Values ?? new Dictionary<string, double>(), parameterList);
+        if (previous is not null && previous.Season < season)
+            values = ResetSeasonScopedValues(values, parameterList);
 
         return new PredictionCalibration
         {
@@ -45,7 +50,7 @@ public class PredictionCalibrationModule : IPredictionCalibrationModule
             CarriedFromWeek = previousIsCarried ? previous!.CarriedFromWeek : previous?.Week,
             Season = season,
             Source = PredictionCalibrationSource.CarriedForward,
-            Values = PredictionCalibrationValues.Normalize(previous?.Values ?? new Dictionary<string, double>(), parameters),
+            Values = values,
             Week = week
         };
     }
@@ -72,5 +77,17 @@ public class PredictionCalibrationModule : IPredictionCalibrationModule
         ArgumentNullException.ThrowIfNull(calibration);
 
         return await _predictionCalibrationData.SaveIfMissingAsync(calibration).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Returns the values with every parameter that doesn't carry across seasons set back to its default.
+    /// </summary>
+    private IReadOnlyDictionary<string, double> ResetSeasonScopedValues(IReadOnlyDictionary<string, double> values, IEnumerable<PredictionCalibrationParameter> parameters)
+    {
+        var reset = new Dictionary<string, double>(values);
+        foreach (var parameter in parameters.Where(p => !p.CarriesAcrossSeasons))
+            reset[parameter.Key] = parameter.DefaultValue;
+
+        return reset;
     }
 }

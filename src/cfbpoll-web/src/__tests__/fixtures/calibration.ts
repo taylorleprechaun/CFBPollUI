@@ -12,8 +12,8 @@ import type {
  * Shared calibration test data. Parameters are generic placeholders: tests never use real parameter names.
  */
 export const CALIBRATION_PARAMETERS: PredictionCalibrationParameter[] = [
-  { defaultValue: 0, description: 'First parameter', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 },
-  { defaultValue: 0, description: 'Second parameter', key: 'paramB', label: 'Param B', max: 8, min: -8, step: 0.5 },
+  { carriesAcrossSeasons: true, defaultValue: 0, description: 'First parameter', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 },
+  { carriesAcrossSeasons: true, defaultValue: 0, description: 'Second parameter', key: 'paramB', label: 'Param B', max: 8, min: -8, step: 0.5 },
 ];
 
 export function buildAnalysis(overrides: Partial<PredictionCalibrationAnalysis> = {}): PredictionCalibrationAnalysis {

@@ -16,7 +16,7 @@ import { PredictionCalibrationSeasonResults } from '../../../components/admin';
 import { buildAnalysis, buildBacktestWeek } from '../../fixtures/calibration';
 
 const parameters = [
-  { defaultValue: 0, description: '', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 },
+  { carriesAcrossSeasons: true, defaultValue: 0, description: '', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 },
 ];
 
 function bodyRows() {

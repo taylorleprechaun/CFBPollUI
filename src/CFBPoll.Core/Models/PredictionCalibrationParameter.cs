@@ -7,6 +7,12 @@ namespace CFBPoll.Core.Models;
 /// </summary>
 public class PredictionCalibrationParameter
 {
+    /// <summary>
+    /// Whether a value carried forward into a new season keeps last season's value. When false, the first
+    /// week of a season without its own values starts from <see cref="DefaultValue"/> instead.
+    /// </summary>
+    public bool CarriesAcrossSeasons { get; init; } = true;
+
     public double DefaultValue { get; init; }
     public string Description { get; init; } = string.Empty;
     public string Key { get; init; } = string.Empty;

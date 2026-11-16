@@ -144,7 +144,7 @@ public class PredictionCalibrationMapperTests
             IsSupported = true,
             Parameters =
             [
-                new PredictionCalibrationParameter { DefaultValue = 0, Description = "Desc", Key = "paramA", Label = "Param A", Max = 5, Min = -5, Step = 0.1 }
+                new PredictionCalibrationParameter { CarriesAcrossSeasons = false, DefaultValue = 0, Description = "Desc", Key = "paramA", Label = "Param A", Max = 5, Min = -5, Step = 0.1 }
             ],
             Season = 2026,
             Week = 7
@@ -163,6 +163,7 @@ public class PredictionCalibrationMapperTests
         Assert.Equal(-5, parameter.Min);
         Assert.Equal(5, parameter.Max);
         Assert.Equal(0.1, parameter.Step);
+        Assert.False(parameter.CarriesAcrossSeasons);
     }
 
     [Fact]
