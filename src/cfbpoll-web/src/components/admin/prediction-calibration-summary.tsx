@@ -32,6 +32,11 @@ export function PredictionCalibrationSummary({ season, token, week }: Prediction
           {calibration.isLocked ? 'View calibration' : 'Edit calibration'}
         </Link>
       </div>
+      {calibration.source === 'CarriedForward' && !calibration.isLocked && (
+        <p className="text-sm text-text-muted">
+          Not reviewed for this week yet. Review the calibration before generating if you want to change it.
+        </p>
+      )}
       {calibration.draftUsesDifferentValues && (
         <p className="text-amber-600 text-sm">
           {calibration.isLocked

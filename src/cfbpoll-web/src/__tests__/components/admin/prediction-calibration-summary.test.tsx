@@ -43,6 +43,12 @@ describe('PredictionCalibrationSummary', () => {
     mockError = null;
   });
 
+  it('flags a carried-forward week as not reviewed', () => {
+    renderSummary();
+
+    expect(screen.getByText(/Not reviewed for this week yet/)).toBeInTheDocument();
+  });
+
   it('labels the link View calibration once the week is locked', () => {
     mockCalibration = buildCarriedCalibration({ isLocked: true });
 
@@ -55,6 +61,17 @@ describe('PredictionCalibrationSummary', () => {
     renderSummary();
 
     expect(screen.getByRole('link', { name: 'Edit calibration' })).toHaveAttribute('href', '/admin/calibration?season=2026&week=10');
+  });
+
+  it.each([
+    ['has its own values', { isStored: true, source: 'Manual' as const }],
+    ['is locked', { isLocked: true }],
+  ])('omits the not-reviewed note when the week %s', (_, overrides) => {
+    mockCalibration = buildCarriedCalibration(overrides);
+
+    renderSummary();
+
+    expect(screen.queryByText(/Not reviewed for this week yet/)).not.toBeInTheDocument();
   });
 
   it('renders nothing when the season does not support calibration', () => {

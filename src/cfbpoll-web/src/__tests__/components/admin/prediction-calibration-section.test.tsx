@@ -105,6 +105,18 @@ describe('PredictionCalibrationSection', () => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
   });
 
+  it('flags a test of typed values as out of date once the values change', async () => {
+    mockPreview = buildAnalysis({ candidateValues: { paramA: 1, paramB: 0 } });
+    mockPreviewVariables = { season: 2026, values: { paramA: 1, paramB: 0 }, week: 10 };
+    renderSection();
+
+    await userEvent.clear(screen.getByLabelText('Param A'));
+    await userEvent.type(screen.getByLabelText('Param A'), '2');
+
+    expect(screen.getByText(/Your values have changed since this test/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Your values' })).toBeInTheDocument();
+  });
+
   it('ignores a test of typed values run for a different week', () => {
     mockPreview = buildAnalysis({ candidateValues: { paramA: 2, paramB: 0 } });
     mockPreviewVariables = { season: 2026, values: { paramA: 2, paramB: 0 }, week: 9 };
@@ -192,6 +204,15 @@ describe('PredictionCalibrationSection', () => {
 
     expect(screen.getByText('Must be between -5 and 5')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  it('shows no out-of-date note while the values match the test', () => {
+    mockPreview = buildAnalysis({ candidateValues: { paramA: 1, paramB: 0 } });
+    mockPreviewVariables = { season: 2026, values: { paramA: 1, paramB: 0 }, week: 10 };
+
+    renderSection();
+
+    expect(screen.queryByText(/Your values have changed since this test/)).not.toBeInTheDocument();
   });
 
   it('shows progress while testing typed values', () => {

@@ -84,6 +84,8 @@ export function PredictionCalibrationSection({ season, token, week }: Prediction
   const preview = previewIsCurrent && !previewMutation.isPending ? previewMutation.data : undefined;
   const previewError = previewIsCurrent ? previewMutation.error : null;
   const resultsAnalysis = preview ?? analysis;
+  const previewIsStale = preview !== undefined
+    && calibration.parameters.some((p) => Number(inputValues[p.key]) !== preview.candidateValues?.[p.key]);
 
   let seasonBody: React.ReactNode = null;
   if (analysisQuery.isLoading || previewMutation.isPending) {
@@ -205,6 +207,11 @@ export function PredictionCalibrationSection({ season, token, week }: Prediction
         <h2 className="text-lg font-semibold text-text-primary mb-4">Season so far</h2>
         {previewError !== null && (
           <p role="alert" className="text-sm text-red-600 mb-3">{toErrorMessage(previewError, 'Failed to test your values')}</p>
+        )}
+        {previewIsStale && (
+          <p className="text-sm text-amber-600 mb-3 max-w-prose">
+            Your values have changed since this test. Run “Test my values on past weeks” again to see the new values.
+          </p>
         )}
         {seasonBody}
       </section>

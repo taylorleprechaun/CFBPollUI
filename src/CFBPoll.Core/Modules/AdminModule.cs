@@ -8,6 +8,12 @@ namespace CFBPoll.Core.Modules;
 public class AdminModule : IAdminModule
 {
     /// <summary>
+    /// Caps the calibration analysis's per-week betting-line fetches. Lines are cached per week, so on a cold
+    /// cache each one is a separate CFBD request.
+    /// </summary>
+    private const int MAX_CONCURRENT_LINE_FETCHES = 4;
+
+    /// <summary>
     /// Caps how many weeks <see cref="CalculateExperimentalSeasonPredictionsAsync"/> calculates concurrently.
     /// Each week loads a full <see cref="SeasonData"/> into memory, so an unbounded fan-out scales memory
     /// linearly with the number of weeks requested.
@@ -803,7 +809,8 @@ public class AdminModule : IAdminModule
             .Where(w => w.SeasonType is not null && w.SeasonType.Equals("regular", scoic))
             .Select(w => (c.Season, GameWeek: w.Week))));
 
-        var fetched = await Task.WhenAll(weeksToFetch.Select(async w => (w.Season, w.GameWeek, Lines: await _dataService.GetBettingLinesAsync(w.Season, w.GameWeek).ConfigureAwait(false)))).ConfigureAwait(false);
+        using var throttle = new SemaphoreSlim(MAX_CONCURRENT_LINE_FETCHES);
+        var fetched = await Task.WhenAll(weeksToFetch.Select(async w => (w.Season, w.GameWeek, Lines: await FetchThrottledBettingLinesAsync(w.Season, w.GameWeek, throttle).ConfigureAwait(false)))).ConfigureAwait(false);
         lines.AddRange(fetched.SelectMany(f => f.Lines.Select(l => new HistoricalGameLine
         {
             AwayTeam = l.AwayTeam,
@@ -825,6 +832,19 @@ public class AdminModule : IAdminModule
         try
         {
             return await CalculateExperimentalPredictionsAsync(season, week, algorithmVersion).ConfigureAwait(false);
+        }
+        finally
+        {
+            throttle.Release();
+        }
+    }
+
+    private async Task<IEnumerable<BettingLine>> FetchThrottledBettingLinesAsync(int season, int week, SemaphoreSlim throttle)
+    {
+        await throttle.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            return await _dataService.GetBettingLinesAsync(season, week).ConfigureAwait(false);
         }
         finally
         {

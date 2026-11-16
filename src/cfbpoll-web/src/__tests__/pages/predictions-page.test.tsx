@@ -151,6 +151,12 @@ vi.mock('../../hooks/use-prediction-calibration', () => ({
   }),
 }));
 
+// The Publish check fetches the week's calibration directly; keep it off the network.
+vi.mock('../../services/admin-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../services/admin-api')>()),
+  fetchPredictionCalibration: vi.fn().mockResolvedValue({ draftUsesDifferentValues: false, isSupported: false }),
+}));
+
 vi.mock('../../hooks/use-prediction-calibration-history', () => ({
   usePredictionCalibrationHistory: () => ({ data: [], isLoading: false }),
 }));

@@ -110,6 +110,30 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task AnalyzePredictionCalibrationAsync_ManyUncachedWeeks_LimitsConcurrentLineFetches()
+    {
+        SetUpCalibrationAnalysis(2026, 12);
+        var inFlight = 0;
+        var peakInFlight = 0;
+        var fetchCount = 0;
+        _mockDataService.Setup(x => x.GetBettingLinesAsync(It.IsAny<int>(), It.IsAny<int>()))
+            .Returns(async () =>
+            {
+                var current = Interlocked.Increment(ref inFlight);
+                InterlockedMax(ref peakInFlight, current);
+                Interlocked.Increment(ref fetchCount);
+                await Task.Delay(20);
+                Interlocked.Decrement(ref inFlight);
+                return new List<BettingLine>();
+            });
+
+        await _adminModule.AnalyzePredictionCalibrationAsync(2026, 12, null);
+
+        Assert.Equal(14, fetchCount);
+        Assert.InRange(peakInFlight, 1, 4);
+    }
+
+    [Fact]
     public async Task AnalyzePredictionCalibrationAsync_PassesSnapshotLinesAndEachWeeksAppliedValues()
     {
         var calculator = SetUpCalibrationAnalysis(2026, 4);
@@ -2694,6 +2718,17 @@ public class AdminModuleTests
     private Dictionary<string, double> CalibrationValues(double paramA, double paramB)
     {
         return new Dictionary<string, double> { ["paramA"] = paramA, ["paramB"] = paramB };
+    }
+
+    /// <summary>
+    /// Raises <paramref name="target"/> to <paramref name="value"/> if it is higher, safely across threads.
+    /// </summary>
+    private void InterlockedMax(ref int target, int value)
+    {
+        int observed;
+        while (value > (observed = Volatile.Read(ref target)) && Interlocked.CompareExchange(ref target, value, observed) != observed)
+        {
+        }
     }
 
     private (Mock<ICalibratedPredictionCalculator> Calculator, SeasonData SeasonData, Dictionary<string, RatingDetails> Ratings) SetUpCalibratedCalculation(int season, int week)
