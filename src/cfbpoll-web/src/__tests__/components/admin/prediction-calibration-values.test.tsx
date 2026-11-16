@@ -28,7 +28,7 @@ function renderValues(overrides: Partial<Parameters<typeof PredictionCalibration
 }
 
 function rowFor(label: string) {
-  return screen.getByLabelText(label).closest('tr')!;
+  return screen.getByRole('group', { name: `${label} values` });
 }
 
 describe('PredictionCalibrationValues', () => {

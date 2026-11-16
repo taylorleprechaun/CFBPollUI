@@ -11,6 +11,17 @@ interface CalibrationSourceInfo {
   source: PredictionCalibrationSource | null;
 }
 
+interface CalibrationVerdictInput {
+  compared: CalibrationRecordSet;
+  /** When the records cover, e.g. "Over the last 8 weeks". */
+  period: string;
+  /** Who would have done better or worse, e.g. "following the suggestions". */
+  subject: string;
+  used: CalibrationRecordSet;
+}
+
+export type CalibrationRecordSet = Record<'overUnder' | 'spread' | 'winner', TrackRecordTotals>;
+
 const SOURCE_LABELS: Record<Exclude<PredictionCalibrationSource, 'CarriedForward'>, string> = {
   Accepted: 'Accepted suggestion',
   Manual: 'Set manually',
@@ -43,6 +54,20 @@ export function formatCalibrationValue(value: number | undefined): string {
   if (value === undefined) return '-';
   const rounded = Number(value.toFixed(2));
   return rounded > 0 ? `+${rounded}` : `${rounded}`;
+}
+
+/**
+ * Sums up a comparison in one sentence, e.g. "Over the last 8 weeks, following the suggestions would have
+ * changed correct picks by: Winner +3, Spread +8, O/U -1."
+ */
+export function formatCalibrationVerdict({ compared, period, subject, used }: CalibrationVerdictInput): string {
+  const signed = (record: keyof CalibrationRecordSet) => {
+    const difference = compared[record].correct - used[record].correct;
+    return difference > 0 ? `+${difference}` : `${difference}`;
+  };
+
+  return `${period}, ${subject} would have changed correct picks by: Winner ${signed('winner')}, `
+    + `Spread ${signed('spread')}, O/U ${signed('overUnder')}.`;
 }
 
 /**

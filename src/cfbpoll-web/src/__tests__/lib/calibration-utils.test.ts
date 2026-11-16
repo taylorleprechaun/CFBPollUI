@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { calibrationSourceLabel, formatCalibrationSummary, formatCalibrationValue, formatRecordChange, sumRecords, validateCalibrationInput } from '../../lib/calibration-utils';
+import { calibrationSourceLabel, formatCalibrationSummary, formatCalibrationValue, formatCalibrationVerdict, formatRecordChange, sumRecords, validateCalibrationInput } from '../../lib/calibration-utils';
 
 const parameter = { defaultValue: 0, description: '', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 };
 
@@ -62,6 +62,25 @@ describe('formatCalibrationValue', () => {
   it('rounds to two decimals', () => {
     expect(formatCalibrationValue(1.23456)).toBe('+1.23');
   });
+});
+
+describe('formatCalibrationVerdict', () => {
+  const used = { overUnder: { correct: 10, incorrect: 10, push: 0 }, spread: { correct: 10, incorrect: 10, push: 0 }, winner: { correct: 12, incorrect: 8, push: 0 } };
+
+  it('lists the changes in Winner, Spread, O/U order', () => {
+    const compared = { overUnder: { correct: 10, incorrect: 10, push: 0 }, spread: { correct: 9, incorrect: 11, push: 0 }, winner: { correct: 13, incorrect: 7, push: 0 } };
+
+    expect(formatCalibrationVerdict({ compared, period: 'Last week', subject: 'your values', used }))
+      .toBe('Last week, your values would have changed correct picks by: Winner +1, Spread -1, O/U 0.');
+  });
+
+  it('shows gains with a plus sign', () => {
+    const compared = { ...used, overUnder: { correct: 8, incorrect: 12, push: 0 }, spread: { correct: 13, incorrect: 7, push: 0 } };
+
+    expect(formatCalibrationVerdict({ compared, period: 'Over the last 4 weeks', subject: 'following the suggestions', used }))
+      .toBe('Over the last 4 weeks, following the suggestions would have changed correct picks by: Winner 0, Spread +3, O/U -2.');
+  });
+
 });
 
 describe('formatRecordChange', () => {

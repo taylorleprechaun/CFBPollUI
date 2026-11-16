@@ -80,6 +80,7 @@ describe('PredictionCalibrationSeasonResults', () => {
     expect(screen.getByText(/so this flatters them/)).toBeInTheDocument();
     expect(within(bodyRows()[0]).getByText('0 → +2')).toBeInTheDocument();
     expect(within(bodyRows()[0]).getAllByText('+5')).toHaveLength(3);
+    expect(screen.getByText(/^Last week, your values would have changed correct picks by: Winner \+5, Spread \+5/)).toBeInTheDocument();
   });
 
   it('hides the comparison toggle when no values were tested', () => {
@@ -88,10 +89,11 @@ describe('PredictionCalibrationSeasonResults', () => {
     expect(screen.queryByRole('button', { name: 'Your values' })).not.toBeInTheDocument();
   });
 
-  it('lists the newest week first with its source and the suggestion at the time', () => {
+  it('lists the weeks oldest first, in chart order, with the source and the suggestion at the time', () => {
     renderResults();
 
-    const newest = within(bodyRows()[0]);
+    const newest = within(bodyRows()[7]);
+    expect(within(bodyRows()[0]).getByText('Week 4')).toBeInTheDocument();
     expect(newest.getByText('Accepted')).toBeInTheDocument();
     expect(newest.getByText('0 → +1')).toBeInTheDocument();
     expect(newest.getAllByText('+1')).toHaveLength(3);
@@ -118,6 +120,13 @@ describe('PredictionCalibrationSeasonResults', () => {
 
     expect(bodyRows()).toHaveLength(10);
     expect(screen.getAllByText('+10')).toHaveLength(3);
+    expect(screen.getByText(/^So far this season, following the suggestions/)).toBeInTheDocument();
+  });
+
+  it('sums up the spread result in one sentence', () => {
+    renderResults();
+
+    expect(screen.getByText('Over the last 8 weeks, following the suggestions would have changed correct picks by: Winner +8, Spread +8, O/U +8.')).toBeInTheDocument();
   });
 
   it('switches back to the suggestions from the toggle', async () => {

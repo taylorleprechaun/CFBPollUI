@@ -4,7 +4,7 @@ import type { TrackRecordTotals } from '../../schemas';
 import type { PredictionCalibrationAnalysis, PredictionCalibrationBacktestWeek, PredictionCalibrationHistoryEntry, PredictionCalibrationParameter, PredictionCalibrationSource } from '../../schemas/admin';
 import type { CalibrationChartPoint } from './prediction-calibration-chart';
 
-import { formatCalibrationSummary, formatCalibrationValue, sumRecords } from '../../lib/calibration-utils';
+import { formatCalibrationSummary, formatCalibrationValue, formatCalibrationVerdict, sumRecords } from '../../lib/calibration-utils';
 import { getWeekLabel } from '../../lib/week-utils';
 import { SELECT_BASE } from '../ui/button-styles';
 import { CalibrationRecordChange } from './calibration-record-change';
@@ -21,6 +21,7 @@ interface PredictionCalibrationSeasonResultsProps {
 }
 
 type RangeChoice = number | 'season';
+type RecordKey = (typeof RECORD_COLUMNS)[number]['key'];
 
 const DEFAULT_RANGE: RangeChoice = 8;
 const HEADER_CLASSES = 'px-3 py-2 text-xs font-medium text-text-muted uppercase tracking-wider';
@@ -40,7 +41,7 @@ const TOGGLE_CLASSES = 'px-3 py-1.5 text-sm font-medium transition-colors durati
 
 /**
  * Every completed week of the season, graded with the values it used and with either the values suggested at
- * the time or the admin's typed values, with season totals and a running chart of the difference.
+ * the time or the admin's typed values, with a one-line verdict, totals and a per-week chart of the differences.
  */
 export function PredictionCalibrationSeasonResults({ analysis, comparison, historyEntries, onComparisonChange, parameters }: PredictionCalibrationSeasonResultsProps) {
   const [range, setRange] = useState<RangeChoice>(DEFAULT_RANGE);
@@ -51,7 +52,7 @@ export function PredictionCalibrationSeasonResults({ analysis, comparison, histo
   const shownWeeks = range === 'season' ? analysis.backtestWeeks : analysis.backtestWeeks.slice(-range);
   const sourceByWeek = new Map(historyEntries.map((e) => [e.week, e.source]));
 
-  function comparedRecord(week: PredictionCalibrationBacktestWeek, key: (typeof RECORD_COLUMNS)[number]['key']): TrackRecordTotals {
+  function comparedRecord(week: PredictionCalibrationBacktestWeek, key: RecordKey): TrackRecordTotals {
     return (isHindsight && week.candidate ? week.candidate : week.suggested)[key];
   }
 
@@ -59,16 +60,20 @@ export function PredictionCalibrationSeasonResults({ analysis, comparison, histo
     return isHindsight && candidateValues ? candidateValues : week.suggestedValues;
   }
 
-  const chartPoints = shownWeeks.reduce<CalibrationChartPoint[]>((points, w) => {
-    const previous = points.at(-1) ?? { label: '', overUnder: 0, spread: 0, winner: 0 };
-    points.push({
-      label: getWeekLabel(w.week).replace('Week ', 'Wk '),
-      overUnder: previous.overUnder + comparedRecord(w, 'overUnder').correct - w.used.overUnder.correct,
-      spread: previous.spread + comparedRecord(w, 'spread').correct - w.used.spread.correct,
-      winner: previous.winner + comparedRecord(w, 'winner').correct - w.used.winner.correct,
-    });
-    return points;
-  }, []);
+  const chartPoints: CalibrationChartPoint[] = shownWeeks.map((w) => ({
+    label: getWeekLabel(w.week).replace('Week ', 'Wk '),
+    overUnder: comparedRecord(w, 'overUnder').correct - w.used.overUnder.correct,
+    spread: comparedRecord(w, 'spread').correct - w.used.spread.correct,
+    winner: comparedRecord(w, 'winner').correct - w.used.winner.correct,
+  }));
+  const comparedTotals = Object.fromEntries(RECORD_COLUMNS.map((c) => [c.key, sumRecords(shownWeeks.map((w) => comparedRecord(w, c.key)))])) as Record<RecordKey, TrackRecordTotals>;
+  const usedTotals = Object.fromEntries(RECORD_COLUMNS.map((c) => [c.key, sumRecords(shownWeeks.map((w) => w.used[c.key]))])) as Record<RecordKey, TrackRecordTotals>;
+  const verdict = formatCalibrationVerdict({
+    compared: comparedTotals,
+    period: range === 'season' ? 'So far this season' : shownWeeks.length === 1 ? 'Last week' : `Over the last ${shownWeeks.length} weeks`,
+    subject: isHindsight ? 'your values' : 'following the suggestions',
+    used: usedTotals,
+  });
 
   return (
     <div className="space-y-5">
@@ -124,22 +129,25 @@ export function PredictionCalibrationSeasonResults({ analysis, comparison, histo
         <p className="text-sm text-text-muted">No completed weeks this season to compare yet.</p>
       ) : (
         <>
-          <dl className="grid grid-cols-3 gap-3">
-            {RECORD_COLUMNS.map((c) => (
-              <div key={c.key} className="rounded-lg border border-border p-3">
-                <dt className="text-xs font-medium text-text-muted uppercase tracking-wider mb-1">{c.label}</dt>
-                <dd>
-                  <CalibrationRecordChange
-                    align="start"
-                    compared={sumRecords(shownWeeks.map((w) => comparedRecord(w, c.key)))}
-                    used={sumRecords(shownWeeks.map((w) => w.used[c.key]))}
-                  />
-                </dd>
-              </div>
-            ))}
-          </dl>
+          <p className="rounded-lg border-l-4 border-accent bg-surface-alt px-4 py-3 text-sm text-text-secondary">{verdict}</p>
 
-          {shownWeeks.length > 1 && <PredictionCalibrationChart points={chartPoints} />}
+          <div>
+            <p className="text-xs font-medium text-text-muted mb-2">Totals for the weeks shown</p>
+            <dl className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {RECORD_COLUMNS.map((c) => (
+                <div key={c.key} className="rounded-lg border border-border p-3">
+                  <dt className="text-xs font-medium text-text-muted uppercase tracking-wider mb-1">{c.label}</dt>
+                  <dd>
+                    <CalibrationRecordChange align="start" compared={comparedTotals[c.key]} used={usedTotals[c.key]} />
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          {shownWeeks.length > 1 && (
+            <PredictionCalibrationChart comparedLabel={isHindsight ? 'your values' : 'the suggestions'} points={chartPoints} />
+          )}
 
           <div className="overflow-x-auto">
             <p className="text-xs text-text-muted mb-1">Each cell reads: what you used → {isHindsight ? 'your values' : 'the suggestion at the time'}.</p>
@@ -156,7 +164,7 @@ export function PredictionCalibrationSeasonResults({ analysis, comparison, histo
                 </tr>
               </thead>
               <tbody className="bg-surface divide-y divide-border">
-                {[...shownWeeks].reverse().map((w) => {
+                {shownWeeks.map((w) => {
                   const source = sourceByWeek.get(w.week);
                   return (
                     <tr key={`${w.season}-${w.week}`}>
