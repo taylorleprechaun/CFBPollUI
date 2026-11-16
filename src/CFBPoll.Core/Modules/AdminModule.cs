@@ -179,15 +179,14 @@ public class AdminModule : IAdminModule
             Week = gameWeek
         };
 
-        var predictions = await _predictionAlgorithmResolver
-            .Resolve(algorithmVersion)
-            .GeneratePredictionsAsync(seasonData, ratingsTask.Result, [matchupGame], bettingLinesTask.Result)
+        var (predictions, appliedCalibration) = await GenerateExperimentalPredictionsAsync(algorithmVersion, season, week, seasonData, ratingsTask.Result, [matchupGame], bettingLinesTask.Result)
             .ConfigureAwait(false);
 
         return new ExperimentalMatchupResult
         {
             ActualGames = seasonMeetingsTask.Result,
             AlgorithmVersion = algorithmVersion,
+            AppliedCalibration = appliedCalibration,
             Outcome = ExperimentalMatchupOutcome.Success,
             Prediction = predictions.FirstOrDefault()
         };
@@ -231,9 +230,7 @@ public class AdminModule : IAdminModule
                     : g.Week == gameWeek))
             .ToList();
 
-        var gamePredictions = await _predictionAlgorithmResolver
-            .Resolve(algorithmVersion)
-            .GeneratePredictionsAsync(seasonData, ratings, upcomingGames, bettingLines)
+        var (gamePredictions, appliedCalibration) = await GenerateExperimentalPredictionsAsync(algorithmVersion, season, week, seasonData, ratings, upcomingGames, bettingLines)
             .ConfigureAwait(false);
         var predictions = gamePredictions.ToList();
 
@@ -251,6 +248,7 @@ public class AdminModule : IAdminModule
         return new ExperimentalPredictionsResult
         {
             AlgorithmVersion = algorithmVersion,
+            AppliedCalibration = appliedCalibration,
             Predictions = predictions,
             Summary = PredictionRecordSummarizer.Summarize(predictions)
         };
@@ -283,7 +281,7 @@ public class AdminModule : IAdminModule
         await Task.WhenAll(weekTasks).ConfigureAwait(false);
 
         var weeklyResults = weekNumbers
-            .Zip(weekTasks, (week, task) => new SeasonExperimentalPredictionsWeek { Summary = task.Result.Summary, Week = week })
+            .Zip(weekTasks, (week, task) => new SeasonExperimentalPredictionsWeek { AppliedCalibration = task.Result.AppliedCalibration, Summary = task.Result.Summary, Week = week })
             .OrderBy(w => w.Week)
             .ToList();
         var allPredictions = weekTasks.SelectMany(t => t.Result.Predictions);
@@ -927,6 +925,22 @@ public class AdminModule : IAdminModule
                 };
             })
             .ToList();
+    }
+
+    /// <summary>
+    /// Generates experimental predictions with the requested algorithm version. A calibrated calculator gets the
+    /// week's effective calibration values, which are returned with the predictions; nothing is saved, so a week
+    /// with no stored values uses the carried-forward values without recording them.
+    /// </summary>
+    private async Task<(IEnumerable<GamePrediction> Predictions, IReadOnlyDictionary<string, double>? AppliedCalibration)> GenerateExperimentalPredictionsAsync(RatingAlgorithmVersion algorithmVersion, int season, int week, SeasonData seasonData, IDictionary<string, RatingDetails> ratings, IEnumerable<ScheduleGame> games, IEnumerable<BettingLine> bettingLines)
+    {
+        var calculator = _predictionAlgorithmResolver.Resolve(algorithmVersion);
+        if (calculator is not ICalibratedPredictionCalculator calibratedCalculator)
+            return (await calculator.GeneratePredictionsAsync(seasonData, ratings, games, bettingLines).ConfigureAwait(false), null);
+
+        var calibration = await _predictionCalibrationModule.ResolveEffectiveAsync(season, week, calibratedCalculator.CalibrationParameters).ConfigureAwait(false);
+        var predictions = await calibratedCalculator.GeneratePredictionsAsync(seasonData, ratings, games, bettingLines, calibration.Values).ConfigureAwait(false);
+        return (predictions, calibration.Values);
     }
 
     /// <summary>

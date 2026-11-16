@@ -238,6 +238,7 @@ public class PredictionsMapperTests
     {
         var week = new SeasonExperimentalPredictionsWeek
         {
+            AppliedCalibration = new Dictionary<string, double> { ["paramA"] = 1.5 },
             Summary = new PredictionRecordSummary { GradedGameCount = 12 },
             Week = 6
         };
@@ -246,6 +247,7 @@ public class PredictionsMapperTests
 
         Assert.Equal(6, result.Week);
         Assert.Equal(12, result.Summary.GradedGameCount);
+        Assert.Equal(1.5, result.AppliedCalibration!["paramA"]);
     }
 
     [Fact]
@@ -278,6 +280,7 @@ public class PredictionsMapperTests
         var result = PredictionsMapper.ToExperimentalMatchupResponseDTO(matchupResult);
 
         Assert.Equal("V1", result.AlgorithmVersion);
+        Assert.Null(result.AppliedCalibration);
         Assert.Null(result.Prediction);
         Assert.Empty(result.ActualGames);
     }
@@ -299,17 +302,46 @@ public class PredictionsMapperTests
                 new MatchupActualGame { AwayTeam = "USC", HomeTeam = "Oklahoma", AwayPoints = 17, HomePoints = 10, Week = 12 }
             ],
             AlgorithmVersion = RatingAlgorithmVersion.V2,
+            AppliedCalibration = new Dictionary<string, double> { ["paramA"] = -0.5 },
             Prediction = new GamePrediction { AwayTeam = "USC", HomeTeam = "Oklahoma", PredictedWinner = "USC" }
         };
 
         var result = PredictionsMapper.ToExperimentalMatchupResponseDTO(matchupResult);
 
         Assert.Equal("V2", result.AlgorithmVersion);
+        Assert.Equal(-0.5, result.AppliedCalibration!["paramA"]);
         Assert.NotNull(result.Prediction);
         Assert.Equal("USC", result.Prediction.PredictedWinner);
         Assert.Collection(result.ActualGames,
             game => Assert.Equal(3, game.Week),
             game => Assert.Equal(12, game.Week));
+    }
+
+    [Fact]
+    public void ToExperimentalResponseDTO_MapsVersionCalibrationPredictionsAndSummary()
+    {
+        var experimentalResult = new ExperimentalPredictionsResult
+        {
+            AlgorithmVersion = RatingAlgorithmVersion.V2,
+            AppliedCalibration = new Dictionary<string, double> { ["paramA"] = 1.5 },
+            Predictions = [new GamePrediction { AwayTeam = "Iowa", HomeTeam = "Texas", PredictedWinner = "Texas" }],
+            Summary = new PredictionRecordSummary { GradedGameCount = 1 }
+        };
+
+        var result = PredictionsMapper.ToExperimentalResponseDTO(experimentalResult);
+
+        Assert.Equal("V2", result.AlgorithmVersion);
+        Assert.Equal(1.5, result.AppliedCalibration!["paramA"]);
+        Assert.Equal("Texas", Assert.Single(result.Predictions).PredictedWinner);
+        Assert.Equal(1, result.Summary.GradedGameCount);
+    }
+
+    [Fact]
+    public void ToExperimentalResponseDTO_NoCalibration_MapsNull()
+    {
+        var result = PredictionsMapper.ToExperimentalResponseDTO(new ExperimentalPredictionsResult { AlgorithmVersion = RatingAlgorithmVersion.V1 });
+
+        Assert.Null(result.AppliedCalibration);
     }
 
     [Fact]

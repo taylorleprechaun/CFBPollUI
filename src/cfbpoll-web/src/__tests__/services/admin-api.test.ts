@@ -130,7 +130,7 @@ describe('Admin API service', () => {
     it('sends POST to the matchup endpoint with the matchup body and auth header', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ actualGames: [], algorithmVersion: 'V2', prediction: null }),
+        json: () => Promise.resolve({ actualGames: [], algorithmVersion: 'V2', appliedCalibration: null, prediction: null }),
       });
       vi.stubGlobal('fetch', mockFetch);
 
@@ -175,6 +175,7 @@ describe('Admin API service', () => {
         json: () =>
           Promise.resolve({
             algorithmVersion: 'V2',
+            appliedCalibration: null,
             predictions: [],
             summary: {
               gradedGameCount: 0,

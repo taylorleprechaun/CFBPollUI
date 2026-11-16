@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 
 import type { AlgorithmRunState } from '../../../hooks/use-algorithm-run-state';
@@ -91,6 +92,30 @@ describe('SeasonPredictionsComparisonSection', () => {
     });
 
     expect(screen.getByText('V1 calculation failed')).toBeInTheDocument();
+  });
+
+  it('says a calibrated version uses each week’s values and links to the season', () => {
+    const runState = buildRunState({
+      V2: {
+        error: null,
+        result: {
+          algorithmVersion: 'V2',
+          overallSummary: emptySummary,
+          season: 2024,
+          weeks: [{ appliedCalibration: { paramA: 1 }, summary: emptySummary, week: 5 }],
+        },
+        status: 'success',
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <SeasonPredictionsComparisonSection runState={runState} season={2024} selectedVersions={['V2']} weeks={[5]} />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText(/V2 uses each week’s own calibration values/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View calibration' })).toHaveAttribute('href', '/admin/calibration?season=2024');
   });
 
   it('toggles the collapsible content when the heading is clicked', () => {

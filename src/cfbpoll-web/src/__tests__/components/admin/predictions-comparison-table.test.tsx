@@ -1,9 +1,13 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { GamePredictionPublic } from '../../../schemas';
 
 import { PredictionsComparisonTable } from '../../../components/admin';
+
+vi.mock('../../../components/admin/experimental-calibration-note', () => ({
+  ExperimentalCalibrationNote: ({ season, week }: { season: number; week: number }) => <p>Calibration note for {season} week {week}</p>,
+}));
 
 const createMockPrediction = (overrides: Partial<GamePredictionPublic> = {}): GamePredictionPublic => ({
   actualAwayScore: null,
@@ -45,9 +49,11 @@ describe('PredictionsComparisonTable', () => {
     render(
       <PredictionsComparisonTable
         entries={[
-          { algorithmVersion: 'V1', result: { algorithmVersion: 'V1', predictions: [createMockPrediction()], summary: emptySummary } },
-          { algorithmVersion: 'V2', result: { algorithmVersion: 'V2', predictions: [createMockPrediction()], summary: emptySummary } },
+          { algorithmVersion: 'V1', result: { algorithmVersion: 'V1', appliedCalibration: null, predictions: [createMockPrediction()], summary: emptySummary } },
+          { algorithmVersion: 'V2', result: { algorithmVersion: 'V2', appliedCalibration: null, predictions: [createMockPrediction()], summary: emptySummary } },
         ]}
+        season={2024}
+        week={5}
       />
     );
 
@@ -59,9 +65,11 @@ describe('PredictionsComparisonTable', () => {
     render(
       <PredictionsComparisonTable
         entries={[
-          { algorithmVersion: 'V1', result: { algorithmVersion: 'V1', predictions: [createMockPrediction()], summary: emptySummary } },
-          { algorithmVersion: 'V2', result: { algorithmVersion: 'V2', predictions: [createMockPrediction()], summary: emptySummary } },
+          { algorithmVersion: 'V1', result: { algorithmVersion: 'V1', appliedCalibration: null, predictions: [createMockPrediction()], summary: emptySummary } },
+          { algorithmVersion: 'V2', result: { algorithmVersion: 'V2', appliedCalibration: null, predictions: [createMockPrediction()], summary: emptySummary } },
         ]}
+        season={2024}
+        week={5}
       />
     );
 
@@ -76,14 +84,33 @@ describe('PredictionsComparisonTable', () => {
             algorithmVersion: 'V1',
             result: {
               algorithmVersion: 'V1',
+              appliedCalibration: null,
               predictions: [createMockPrediction(), createMockPrediction({ awayTeam: 'Michigan', homeTeam: 'Ohio State' })],
               summary: emptySummary,
             },
           },
         ]}
+        season={2024}
+        week={5}
       />
     );
 
     expect(screen.getAllByText('Winner')).toHaveLength(2);
+  });
+
+  it('shows the calibration line only under a version that applied calibration', () => {
+    render(
+      <PredictionsComparisonTable
+        entries={[
+          { algorithmVersion: 'V1', result: { algorithmVersion: 'V1', appliedCalibration: null, predictions: [createMockPrediction()], summary: emptySummary } },
+          { algorithmVersion: 'V2', result: { algorithmVersion: 'V2', appliedCalibration: { paramA: 2 }, predictions: [createMockPrediction()], summary: emptySummary } },
+        ]}
+        season={2024}
+        week={5}
+      />
+    );
+
+    const note = screen.getByText('Calibration note for 2024 week 5');
+    expect(note.parentElement).toHaveTextContent(/^V2/);
   });
 });

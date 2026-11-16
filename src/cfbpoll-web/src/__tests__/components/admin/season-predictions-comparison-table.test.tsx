@@ -39,8 +39,8 @@ describe('SeasonPredictionsComparisonTable', () => {
               overallSummary: emptySummary,
               season: 2024,
               weeks: [
-                { summary: emptySummary, week: 5 },
-                { summary: emptySummary, week: 6 },
+                { appliedCalibration: null, summary: emptySummary, week: 5 },
+                { appliedCalibration: null, summary: emptySummary, week: 6 },
               ],
             },
           },

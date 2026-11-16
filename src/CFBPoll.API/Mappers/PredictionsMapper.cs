@@ -22,6 +22,7 @@ public static class PredictionsMapper
 
         return new SeasonExperimentalPredictionsWeekDTO
         {
+            AppliedCalibration = week.AppliedCalibration?.ToDictionary(v => v.Key, v => v.Value),
             Summary = ToDTO(week.Summary),
             Week = week.Week
         };
@@ -100,6 +101,7 @@ public static class PredictionsMapper
         {
             ActualGames = result.ActualGames.Select(ToDTO).ToList(),
             AlgorithmVersion = result.AlgorithmVersion.ToString(),
+            AppliedCalibration = result.AppliedCalibration?.ToDictionary(v => v.Key, v => v.Value),
             Prediction = result.Prediction is null ? null : ToDTO(result.Prediction)
         };
     }
@@ -111,6 +113,7 @@ public static class PredictionsMapper
         return new ExperimentalPredictionsResponseDTO
         {
             AlgorithmVersion = result.AlgorithmVersion.ToString(),
+            AppliedCalibration = result.AppliedCalibration?.ToDictionary(v => v.Key, v => v.Value),
             Predictions = result.Predictions.Select(p => ToDTO(p)),
             Summary = ToDTO(result.Summary)
         };

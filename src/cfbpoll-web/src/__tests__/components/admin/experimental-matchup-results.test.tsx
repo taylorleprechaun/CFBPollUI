@@ -1,11 +1,15 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { AlgorithmRunState } from '../../../hooks/use-algorithm-run-state';
 import type { SubmittedMatchup } from '../../../hooks/use-experimental-matchup-state';
 import type { ExperimentalMatchupResponse } from '../../../schemas/admin';
 
 import { ExperimentalMatchupResults } from '../../../components/admin/experimental-matchup-results';
+
+vi.mock('../../../components/admin/experimental-calibration-note', () => ({
+  ExperimentalCalibrationNote: ({ season, week }: { season: number; week: number }) => <p>Calibration note for {season} week {week}</p>,
+}));
 
 const IDLE = { error: null, result: null, status: 'idle' as const };
 
@@ -61,7 +65,7 @@ describe('ExperimentalMatchupResults', () => {
     render(
       <ExperimentalMatchupResults
         runState={createRunState({
-          V1: { error: null, result: { actualGames: [], algorithmVersion: 'V1', prediction: null }, status: 'success' },
+          V1: { error: null, result: { actualGames: [], algorithmVersion: 'V1', appliedCalibration: null, prediction: null }, status: 'success' },
           V2: { error: new Error('V2 boom'), result: null, status: 'error' },
         })}
         submittedMatchup={submittedMatchup}
@@ -79,7 +83,7 @@ describe('ExperimentalMatchupResults', () => {
     render(
       <ExperimentalMatchupResults
         runState={createRunState({
-          V2: { error: null, result: { actualGames: [meeting], algorithmVersion: 'V2', prediction: null }, status: 'success' },
+          V2: { error: null, result: { actualGames: [meeting], algorithmVersion: 'V2', appliedCalibration: null, prediction: null }, status: 'success' },
         })}
         submittedMatchup={submittedMatchup}
       />
@@ -88,5 +92,19 @@ describe('ExperimentalMatchupResults', () => {
     expect(screen.queryByRole('heading', { name: 'V1' })).not.toBeInTheDocument();
     expect(screen.getByText('Season Meetings')).toBeInTheDocument();
     expect(screen.getByText('Florida 10 at Notre Dame 21')).toBeInTheDocument();
+  });
+
+  it('shows the calibration a version applied for the submitted week', () => {
+    render(
+      <ExperimentalMatchupResults
+        runState={createRunState({
+          V1: { error: null, result: { actualGames: [], algorithmVersion: 'V1', appliedCalibration: null, prediction: null }, status: 'success' },
+          V2: { error: null, result: { actualGames: [], algorithmVersion: 'V2', appliedCalibration: { paramA: 1.5 }, prediction: null }, status: 'success' },
+        })}
+        submittedMatchup={submittedMatchup}
+      />
+    );
+
+    expect(screen.getAllByText('Calibration note for 2024 week 5')).toHaveLength(1);
   });
 });

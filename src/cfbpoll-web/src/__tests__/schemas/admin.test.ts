@@ -131,12 +131,12 @@ describe('Admin schemas', () => {
 
   describe('ExperimentalMatchupResponseSchema', () => {
     it('rejects missing actualGames', () => {
-      const result = ExperimentalMatchupResponseSchema.safeParse({ algorithmVersion: 'V1', prediction: null });
+      const result = ExperimentalMatchupResponseSchema.safeParse({ algorithmVersion: 'V1', appliedCalibration: null, prediction: null });
       expect(result.success).toBe(false);
     });
 
     it('validates a response with a null prediction and no meetings', () => {
-      const result = ExperimentalMatchupResponseSchema.safeParse({ actualGames: [], algorithmVersion: 'V1', prediction: null });
+      const result = ExperimentalMatchupResponseSchema.safeParse({ actualGames: [], algorithmVersion: 'V1', appliedCalibration: null, prediction: null });
       expect(result.success).toBe(true);
     });
 
@@ -144,6 +144,7 @@ describe('Admin schemas', () => {
       const result = ExperimentalMatchupResponseSchema.safeParse({
         actualGames: [validMatchupActualGame],
         algorithmVersion: 'V2',
+        appliedCalibration: null,
         prediction: validMatchupPrediction,
       });
       expect(result.success).toBe(true);
@@ -763,8 +764,8 @@ describe('Admin schemas', () => {
         overallSummary: validSummary,
         season: 2024,
         weeks: [
-          { summary: validSummary, week: 5 },
-          { summary: validSummary, week: 6 },
+          { appliedCalibration: null, summary: validSummary, week: 5 },
+          { appliedCalibration: null, summary: validSummary, week: 6 },
         ],
       };
       const result = SeasonExperimentalPredictionsResponseSchema.safeParse(data);

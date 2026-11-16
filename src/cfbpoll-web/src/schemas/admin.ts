@@ -34,11 +34,13 @@ export const PredictionRecordSummarySchema = z.object({
 
 export const ExperimentalPredictionsResponseSchema = z.object({
   algorithmVersion: z.string(),
+  appliedCalibration: z.record(z.string(), z.number()).nullable(),
   predictions: z.array(GamePredictionPublicSchema),
   summary: PredictionRecordSummarySchema,
 });
 
 export const SeasonExperimentalPredictionsWeekSchema = z.object({
+  appliedCalibration: z.record(z.string(), z.number()).nullable(),
   summary: PredictionRecordSummarySchema,
   week: z.number(),
 });
@@ -66,6 +68,7 @@ export const MatchupActualGameSchema = z.object({
 export const ExperimentalMatchupResponseSchema = z.object({
   actualGames: z.array(MatchupActualGameSchema),
   algorithmVersion: z.string(),
+  appliedCalibration: z.record(z.string(), z.number()).nullable(),
   prediction: GamePredictionPublicSchema.nullable(),
 });
 

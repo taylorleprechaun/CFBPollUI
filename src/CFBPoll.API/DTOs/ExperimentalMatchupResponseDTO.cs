@@ -4,5 +4,6 @@ public class ExperimentalMatchupResponseDTO
 {
     public IEnumerable<MatchupActualGameDTO> ActualGames { get; set; } = [];
     public string AlgorithmVersion { get; set; } = string.Empty;
+    public IDictionary<string, double>? AppliedCalibration { get; set; }
     public GamePredictionDTO? Prediction { get; set; }
 }

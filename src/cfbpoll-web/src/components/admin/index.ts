@@ -9,6 +9,7 @@ export { CalibrationRecordChange } from './calibration-record-change';
 export { CfbdUsageSection } from './cfbd-usage-section';
 export { CompareSeasonWeeksModal } from './compare-season-weeks-modal';
 export { ExperimentalCalculateSection } from './experimental-calculate-section';
+export { ExperimentalCalibrationNote } from './experimental-calibration-note';
 export { ExperimentalMatchupPanel } from './experimental-matchup-panel';
 export { ExperimentalMatchupResults } from './experimental-matchup-results';
 export { ExperimentalPredictionsCalculateSection } from './experimental-predictions-calculate-section';
