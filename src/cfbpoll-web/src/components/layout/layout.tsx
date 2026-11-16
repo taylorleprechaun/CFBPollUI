@@ -25,6 +25,7 @@ const MOBILE_SUBLINK_INACTIVE = `${MOBILE_SUBLINK_BASE} text-white/80 hover:bg-n
 const ADMIN_ITEMS: NavItem[] = [
   { label: 'Manage Rankings', to: '/admin/rankings' },
   { label: 'Manage Predictions', to: '/admin/predictions' },
+  { label: 'Calibration', to: '/admin/calibration' },
   { label: 'Experimental', to: '/admin/experimental' },
   { label: 'Settings', to: '/admin/settings' },
   { label: 'Cache', to: '/admin/cache' },

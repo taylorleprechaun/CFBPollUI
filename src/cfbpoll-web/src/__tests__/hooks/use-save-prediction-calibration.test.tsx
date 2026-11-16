@@ -13,6 +13,8 @@ vi.mock('../../services/admin-api', () => ({
 import { savePredictionCalibration } from '../../services/admin-api';
 
 const savedResponse = {
+  carriedFromSeason: null,
+  carriedFromWeek: null,
   draftUsesDifferentValues: true,
   isLocked: false,
   isStored: true,

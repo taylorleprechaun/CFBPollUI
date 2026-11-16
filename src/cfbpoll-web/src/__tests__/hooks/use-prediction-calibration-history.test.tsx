@@ -45,7 +45,7 @@ describe('usePredictionCalibrationHistory', () => {
   });
 
   it('fetches the season history when enabled', async () => {
-    const entries = [{ isLocked: true, season: 2026, source: 'Manual' as const, updatedAt: null, values: {}, week: 9 }];
+    const entries = [{ carriedFromSeason: null, carriedFromWeek: null, isLocked: true, season: 2026, source: 'Manual' as const, updatedAt: null, values: {}, week: 9 }];
     vi.mocked(fetchPredictionCalibrationHistory).mockResolvedValue(entries);
 
     const { result } = renderHook(() => usePredictionCalibrationHistory('test-token', 2026, true), { wrapper: createWrapper() });

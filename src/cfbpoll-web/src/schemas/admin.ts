@@ -136,6 +136,8 @@ export const PredictionCalibrationParameterSchema = z.object({
 });
 
 export const PredictionCalibrationResponseSchema = z.object({
+  carriedFromSeason: z.number().nullable(),
+  carriedFromWeek: z.number().nullable(),
   draftUsesDifferentValues: z.boolean(),
   isLocked: z.boolean(),
   isStored: z.boolean(),
@@ -149,6 +151,8 @@ export const PredictionCalibrationResponseSchema = z.object({
 });
 
 export const PredictionCalibrationHistoryEntrySchema = z.object({
+  carriedFromSeason: z.number().nullable(),
+  carriedFromWeek: z.number().nullable(),
   isLocked: z.boolean(),
   season: z.number(),
   source: PredictionCalibrationSourceSchema,

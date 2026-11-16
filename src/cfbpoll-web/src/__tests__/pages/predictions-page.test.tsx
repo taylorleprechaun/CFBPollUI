@@ -126,6 +126,41 @@ vi.mock('../../hooks/use-predictions-summaries', () => ({
   }),
 }));
 
+let mockCalibrationSupported = false;
+
+vi.mock('../../hooks/use-prediction-calibration', () => ({
+  usePredictionCalibration: (_token: string | null, season: number | null, week: number | null) => ({
+    data: mockCalibrationSupported
+      ? {
+        carriedFromSeason: null,
+
+        carriedFromWeek: null,
+
+        draftUsesDifferentValues: false,
+        isLocked: false,
+        isStored: true,
+        isSupported: true,
+        parameters: [{ defaultValue: 0, description: '', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 }],
+        season,
+        source: 'Manual',
+        updatedAt: null,
+        values: { paramA: 0 },
+        week,
+      }
+      : undefined,
+    error: null,
+    isLoading: false,
+  }),
+}));
+
+vi.mock('../../hooks/use-prediction-calibration-history', () => ({
+  usePredictionCalibrationHistory: () => ({ data: [], isLoading: false }),
+}));
+
+vi.mock('../../hooks/use-save-prediction-calibration', () => ({
+  useSavePredictionCalibration: () => ({ isPending: false, mutateAsync: vi.fn() }),
+}));
+
 vi.mock('../../hooks/use-page-visibility', () => ({
   usePageVisibility: () => ({
     allTimeEnabled: true,
@@ -266,6 +301,7 @@ describe('PredictionsPage', () => {
     mockRefreshCacheIsPending = false;
     mockGradeIsPending = false;
     mockPublishResultsIsPending = false;
+    mockCalibrationSupported = false;
   });
 
   it('allows manually changing the week selector after a view loads without it snapping back', async () => {
@@ -853,6 +889,11 @@ describe('PredictionsPage', () => {
     expect(screen.getByRole('heading', { name: 'Predictions' })).toBeInTheDocument();
   });
 
+  it('renders no calibration summary when the season does not support calibration', () => {
+    renderPredictionsPage();
+    expect(screen.queryByRole('link', { name: 'Edit calibration' })).not.toBeInTheDocument();
+  });
+
   it('renders persisted summaries when data exists', () => {
     mockSummariesData = [
       { season: 2024, week: 1, isPublished: true, createdAt: '2024-09-01T00:00:00Z', gameCount: 10, gradedAt: null, isGraded: false, resultsPublished: false },
@@ -866,6 +907,13 @@ describe('PredictionsPage', () => {
   it('renders refresh cached data button', () => {
     renderPredictionsPage();
     expect(screen.getByRole('button', { name: 'Refresh Cached Data' })).toBeInTheDocument();
+  });
+
+  it('renders the calibration summary linking to the selected week when supported', () => {
+    mockCalibrationSupported = true;
+    renderPredictionsPage();
+    expect(screen.getByText(/Param A 0/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Edit calibration' })).toHaveAttribute('href', '/admin/calibration?season=2024&week=5');
   });
 
   it('shows active view section after successful generation', async () => {

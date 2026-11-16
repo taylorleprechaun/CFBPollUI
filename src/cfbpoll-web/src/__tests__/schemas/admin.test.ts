@@ -450,7 +450,7 @@ describe('Admin schemas', () => {
   describe('PredictionCalibrationHistoryEntrySchema', () => {
     it('accepts an entry with a null updatedAt', () => {
       const result = PredictionCalibrationHistoryEntrySchema.safeParse({
-        isLocked: true, season: 2026, source: 'CarriedForward', updatedAt: null, values: { paramA: 0 }, week: 9,
+        carriedFromSeason: null, carriedFromWeek: null, isLocked: true, season: 2026, source: 'CarriedForward', updatedAt: null, values: { paramA: 0 }, week: 9,
       });
 
       expect(result.success).toBe(true);
@@ -458,7 +458,7 @@ describe('Admin schemas', () => {
 
     it('rejects a non-numeric value', () => {
       const result = PredictionCalibrationHistoryEntrySchema.safeParse({
-        isLocked: true, season: 2026, source: 'Manual', updatedAt: null, values: { paramA: 'high' }, week: 9,
+        carriedFromSeason: null, carriedFromWeek: null, isLocked: true, season: 2026, source: 'Manual', updatedAt: null, values: { paramA: 'high' }, week: 9,
       });
 
       expect(result.success).toBe(false);
@@ -467,6 +467,10 @@ describe('Admin schemas', () => {
 
   describe('PredictionCalibrationResponseSchema', () => {
     const validResponse = {
+      carriedFromSeason: null,
+
+      carriedFromWeek: null,
+
       draftUsesDifferentValues: false,
       isLocked: false,
       isStored: false,

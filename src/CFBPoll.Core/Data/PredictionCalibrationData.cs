@@ -11,7 +11,7 @@ namespace CFBPoll.Core.Data;
 
 public class PredictionCalibrationData : IPredictionCalibrationData
 {
-    private const string SELECT_COLUMNS = "SELECT Season, Week, ValuesJson, Source, UpdatedAt FROM PredictionCalibration";
+    private const string SELECT_COLUMNS = "SELECT Season, Week, ValuesJson, Source, UpdatedAt, CarriedFromSeason, CarriedFromWeek FROM PredictionCalibration";
 
     private readonly string _connectionString;
     private readonly ILogger<PredictionCalibrationData> _logger;
@@ -93,6 +93,8 @@ public class PredictionCalibrationData : IPredictionCalibrationData
                 ValuesJson TEXT NOT NULL,
                 Source TEXT NOT NULL,
                 UpdatedAt TEXT NOT NULL,
+                CarriedFromSeason INTEGER NULL,
+                CarriedFromWeek INTEGER NULL,
                 PRIMARY KEY (Season, Week)
             )
             """;
@@ -111,14 +113,16 @@ public class PredictionCalibrationData : IPredictionCalibrationData
 
         await using var command = connection.CreateCommand();
         command.CommandText = """
-            INSERT OR REPLACE INTO PredictionCalibration (Season, Week, ValuesJson, Source, UpdatedAt)
-            VALUES (@Season, @Week, @ValuesJson, @Source, @UpdatedAt)
+            INSERT OR REPLACE INTO PredictionCalibration (Season, Week, ValuesJson, Source, UpdatedAt, CarriedFromSeason, CarriedFromWeek)
+            VALUES (@Season, @Week, @ValuesJson, @Source, @UpdatedAt, @CarriedFromSeason, @CarriedFromWeek)
             """;
         command.Parameters.AddWithValue("@Season", calibration.Season);
         command.Parameters.AddWithValue("@Week", calibration.Week);
         command.Parameters.AddWithValue("@ValuesJson", JsonSerializer.Serialize(calibration.Values));
         command.Parameters.AddWithValue("@Source", calibration.Source.ToString());
         command.Parameters.AddWithValue("@UpdatedAt", DateTime.UtcNow.ToString("o"));
+        command.Parameters.AddWithValue("@CarriedFromSeason", (object?)calibration.CarriedFromSeason ?? DBNull.Value);
+        command.Parameters.AddWithValue("@CarriedFromWeek", (object?)calibration.CarriedFromWeek ?? DBNull.Value);
 
         var rowsAffected = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
 
@@ -148,6 +152,8 @@ public class PredictionCalibrationData : IPredictionCalibrationData
     {
         return new PredictionCalibration
         {
+            CarriedFromSeason = reader.IsDBNull(5) ? null : reader.GetInt32(5),
+            CarriedFromWeek = reader.IsDBNull(6) ? null : reader.GetInt32(6),
             Season = reader.GetInt32(0),
             Week = reader.GetInt32(1),
             Values = JsonSerializer.Deserialize<Dictionary<string, double>>(reader.GetString(2)) ?? [],

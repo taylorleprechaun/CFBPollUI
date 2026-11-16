@@ -22,6 +22,8 @@ function createWrapper() {
 }
 
 const mockResponse = {
+  carriedFromSeason: null,
+  carriedFromWeek: null,
   draftUsesDifferentValues: false,
   isLocked: false,
   isStored: true,

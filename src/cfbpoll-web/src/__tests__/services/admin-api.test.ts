@@ -32,6 +32,10 @@ import {
 } from '../../services/admin-api';
 
 const mockCalibrationResponse = {
+  carriedFromSeason: null,
+
+  carriedFromWeek: null,
+
   draftUsesDifferentValues: false,
   isLocked: false,
   isStored: true,
@@ -800,7 +804,7 @@ describe('Admin API service', () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () => Promise.resolve([
-          { isLocked: true, season: 2026, source: 'CarriedForward', updatedAt: null, values: { paramA: 0 }, week: 9 },
+          { carriedFromSeason: null, carriedFromWeek: null, isLocked: true, season: 2026, source: 'CarriedForward', updatedAt: null, values: { paramA: 0 }, week: 9 },
         ]),
       });
       vi.stubGlobal('fetch', mockFetch);

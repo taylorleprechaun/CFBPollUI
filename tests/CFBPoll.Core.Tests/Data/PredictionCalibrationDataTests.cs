@@ -29,6 +29,29 @@ public class PredictionCalibrationDataTests
     }
 
     [Fact]
+    public async Task GetAsync_CarriedForwardRow_RoundTripsOrigin()
+    {
+        var (data, tempPath) = CreateDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+            var calibration = CreateCalibration(2025, 3, PredictionCalibrationSource.CarriedForward, ("paramA", 1));
+            calibration.CarriedFromSeason = 2024;
+            calibration.CarriedFromWeek = 15;
+            await data.SaveAsync(calibration);
+
+            var result = await data.GetAsync(2025, 3);
+
+            Assert.Equal(2024, result!.CarriedFromSeason);
+            Assert.Equal(15, result.CarriedFromWeek);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
     public async Task GetAsync_NoRow_ReturnsNull()
     {
         var (data, tempPath) = CreateDataWithFile();
@@ -64,6 +87,8 @@ public class PredictionCalibrationDataTests
             Assert.Equal(1.25, result.Values["paramA"]);
             Assert.Equal(-3, result.Values["paramB"]);
             Assert.Equal(DateTimeKind.Utc, result.UpdatedAt!.Value.Kind);
+            Assert.Null(result.CarriedFromSeason);
+            Assert.Null(result.CarriedFromWeek);
         }
         finally
         {

@@ -7,6 +7,7 @@ import {
   CalculateSection,
   IncompleteWeekBanner,
   PersistedPredictionsSection,
+  PredictionCalibrationSummary,
 } from '../components/admin';
 import { ErrorAlert, ErrorBoundary } from '../components/error';
 import { BUTTON_GHOST } from '../components/ui/button-styles';
@@ -205,6 +206,12 @@ export function PredictionsPage() {
 
       {selectedSeason !== null && selectedWeek !== null && !isSelectedWeekComplete && (
         <IncompleteWeekBanner season={selectedSeason} token={token} variant="predictions" week={selectedWeek} />
+      )}
+
+      {selectedSeason !== null && selectedWeek !== null && (
+        <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render prediction calibration')} />}>
+          <PredictionCalibrationSummary season={selectedSeason} token={token} week={selectedWeek} />
+        </ErrorBoundary>
       )}
 
       {existingSummaryForSelection && selectedSeason !== null && selectedWeek !== null && !selectionMatchesActiveView && (

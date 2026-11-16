@@ -1,14 +1,40 @@
 import type { PredictionCalibrationParameter, PredictionCalibrationSource } from '../schemas/admin';
 
-const SOURCE_LABELS: Record<PredictionCalibrationSource, string> = {
+import { getWeekLabel } from './week-utils';
+
+interface CalibrationSourceInfo {
+  carriedFromSeason: number | null;
+  carriedFromWeek: number | null;
+  isStored?: boolean;
+  source: PredictionCalibrationSource | null;
+}
+
+const SOURCE_LABELS: Record<Exclude<PredictionCalibrationSource, 'CarriedForward'>, string> = {
   Accepted: 'Accepted suggestion',
-  CarriedForward: 'Carried forward',
   Manual: 'Set manually',
 };
 
-export function calibrationSourceLabel(source: PredictionCalibrationSource | null, isStored = true): string {
-  if (!isStored) return 'Carried forward (not saved yet)';
-  return source ? SOURCE_LABELS[source] : 'Unknown';
+/**
+ * Describes where a week's calibration values came from. Carried-forward values name the week they
+ * were carried from, or say they are the defaults when nothing earlier was saved.
+ */
+export function calibrationSourceLabel({ carriedFromSeason, carriedFromWeek, isStored = true, source }: CalibrationSourceInfo): string {
+  if (source === null) return 'Unknown';
+
+  if (source !== 'CarriedForward') return SOURCE_LABELS[source];
+
+  const origin = carriedFromSeason !== null && carriedFromWeek !== null
+    ? `Carried forward from ${carriedFromSeason} ${getWeekLabel(carriedFromWeek)}`
+    : 'Defaults (nothing saved earlier)';
+
+  return isStored ? origin : `${origin}, not saved yet`;
+}
+
+/**
+ * Lists every parameter with its value, e.g. "Param A +1.5 · Param B -2".
+ */
+export function formatCalibrationSummary(parameters: PredictionCalibrationParameter[], values: Record<string, number>): string {
+  return parameters.map((p) => `${p.label} ${formatCalibrationValue(values[p.key] ?? p.defaultValue)}`).join(' · ');
 }
 
 export function formatCalibrationValue(value: number | undefined): string {

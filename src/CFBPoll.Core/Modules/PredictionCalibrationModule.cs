@@ -41,8 +41,14 @@ public class PredictionCalibrationModule : IPredictionCalibrationModule
 
         var previous = await _predictionCalibrationData.GetLatestBeforeAsync(season, week).ConfigureAwait(false);
 
+        // A carried-forward row passes on its own origin (null when it carried the defaults), so a chain of
+        // carried weeks points back to the week that actually set the values.
+        var previousIsCarried = previous?.Source == PredictionCalibrationSource.CarriedForward;
+
         return new PredictionCalibration
         {
+            CarriedFromSeason = previousIsCarried ? previous!.CarriedFromSeason : previous?.Season,
+            CarriedFromWeek = previousIsCarried ? previous!.CarriedFromWeek : previous?.Week,
             Season = season,
             Source = PredictionCalibrationSource.CarriedForward,
             Values = Normalize(previous?.Values ?? new Dictionary<string, double>(), parameterList),

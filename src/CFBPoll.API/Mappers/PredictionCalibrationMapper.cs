@@ -11,6 +11,8 @@ public static class PredictionCalibrationMapper
 
         return new PredictionCalibrationHistoryEntryDTO
         {
+            CarriedFromSeason = entry.Calibration.CarriedFromSeason,
+            CarriedFromWeek = entry.Calibration.CarriedFromWeek,
             IsLocked = entry.IsLocked,
             Season = entry.Calibration.Season,
             Source = entry.Calibration.Source.ToString(),
@@ -26,6 +28,8 @@ public static class PredictionCalibrationMapper
 
         return new PredictionCalibrationResponseDTO
         {
+            CarriedFromSeason = view.Calibration?.CarriedFromSeason,
+            CarriedFromWeek = view.Calibration?.CarriedFromWeek,
             DraftUsesDifferentValues = view.DraftUsesDifferentValues,
             IsLocked = view.IsLocked,
             IsStored = view.IsStored,

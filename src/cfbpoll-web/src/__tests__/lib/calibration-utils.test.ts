@@ -1,22 +1,44 @@
 import { describe, expect, it } from 'vitest';
 
-import { calibrationSourceLabel, formatCalibrationValue, validateCalibrationInput } from '../../lib/calibration-utils';
+import { calibrationSourceLabel, formatCalibrationSummary, formatCalibrationValue, validateCalibrationInput } from '../../lib/calibration-utils';
 
 const parameter = { defaultValue: 0, description: '', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 };
 
 describe('calibrationSourceLabel', () => {
-  it('labels each stored source', () => {
-    expect(calibrationSourceLabel('Accepted')).toBe('Accepted suggestion');
-    expect(calibrationSourceLabel('CarriedForward')).toBe('Carried forward');
-    expect(calibrationSourceLabel('Manual')).toBe('Set manually');
+  it('labels accepted and manual values', () => {
+    expect(calibrationSourceLabel({ carriedFromSeason: null, carriedFromWeek: null, source: 'Accepted' })).toBe('Accepted suggestion');
+    expect(calibrationSourceLabel({ carriedFromSeason: null, carriedFromWeek: null, source: 'Manual' })).toBe('Set manually');
+  });
+
+  it('names the week carried-forward values came from', () => {
+    expect(calibrationSourceLabel({ carriedFromSeason: 2026, carriedFromWeek: 11, source: 'CarriedForward' }))
+      .toBe('Carried forward from 2026 Week 12');
+  });
+
+  it('notes carried-forward values that are not saved yet', () => {
+    expect(calibrationSourceLabel({ carriedFromSeason: 2026, carriedFromWeek: 11, isStored: false, source: 'CarriedForward' }))
+      .toBe('Carried forward from 2026 Week 12, not saved yet');
   });
 
   it('returns Unknown for a null source', () => {
-    expect(calibrationSourceLabel(null)).toBe('Unknown');
+    expect(calibrationSourceLabel({ carriedFromSeason: null, carriedFromWeek: null, source: null })).toBe('Unknown');
   });
 
-  it('says not saved yet when the values are not stored', () => {
-    expect(calibrationSourceLabel('CarriedForward', false)).toBe('Carried forward (not saved yet)');
+  it('says defaults when nothing earlier was saved', () => {
+    expect(calibrationSourceLabel({ carriedFromSeason: null, carriedFromWeek: null, source: 'CarriedForward' }))
+      .toBe('Defaults (nothing saved earlier)');
+  });
+});
+
+describe('formatCalibrationSummary', () => {
+  it('falls back to the default for a missing value', () => {
+    expect(formatCalibrationSummary([parameter], {})).toBe('Param A 0');
+  });
+
+  it('lists each parameter with its formatted value', () => {
+    const second = { ...parameter, key: 'paramB', label: 'Param B' };
+
+    expect(formatCalibrationSummary([parameter, second], { paramA: 2, paramB: -1.5 })).toBe('Param A +2 · Param B -1.5');
   });
 });
 

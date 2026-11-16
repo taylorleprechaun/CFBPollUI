@@ -63,6 +63,36 @@ public class PredictionCalibrationModuleTests
     }
 
     [Fact]
+    public async Task ResolveEffectiveAsync_EarlierRowCarriedDefaults_KeepsNullOrigin()
+    {
+        var carriedDefaults = CreateCalibration(2025, 5, ("paramA", 0), ("paramB", 1));
+        carriedDefaults.Source = PredictionCalibrationSource.CarriedForward;
+        _mockData.Setup(x => x.GetAsync(2025, 6)).ReturnsAsync((PredictionCalibration?)null);
+        _mockData.Setup(x => x.GetLatestBeforeAsync(2025, 6)).ReturnsAsync(carriedDefaults);
+
+        var result = await _module.ResolveEffectiveAsync(2025, 6, Parameters);
+
+        Assert.Null(result.CarriedFromSeason);
+        Assert.Null(result.CarriedFromWeek);
+    }
+
+    [Fact]
+    public async Task ResolveEffectiveAsync_EarlierRowItselfCarriedForward_PassesOnOriginalWeek()
+    {
+        var carried = CreateCalibration(2025, 5, ("paramA", 1.5), ("paramB", -2));
+        carried.CarriedFromSeason = 2024;
+        carried.CarriedFromWeek = 14;
+        carried.Source = PredictionCalibrationSource.CarriedForward;
+        _mockData.Setup(x => x.GetAsync(2025, 6)).ReturnsAsync((PredictionCalibration?)null);
+        _mockData.Setup(x => x.GetLatestBeforeAsync(2025, 6)).ReturnsAsync(carried);
+
+        var result = await _module.ResolveEffectiveAsync(2025, 6, Parameters);
+
+        Assert.Equal(2024, result.CarriedFromSeason);
+        Assert.Equal(14, result.CarriedFromWeek);
+    }
+
+    [Fact]
     public async Task ResolveEffectiveAsync_NoHistory_ReturnsDefaultsAsCarriedForward()
     {
         _mockData.Setup(x => x.GetAsync(2025, 1)).ReturnsAsync((PredictionCalibration?)null);
@@ -75,6 +105,8 @@ public class PredictionCalibrationModuleTests
         Assert.Equal(1, result.Values["paramB"]);
         Assert.Equal(2025, result.Season);
         Assert.Equal(1, result.Week);
+        Assert.Null(result.CarriedFromSeason);
+        Assert.Null(result.CarriedFromWeek);
     }
 
     [Fact]
@@ -89,6 +121,8 @@ public class PredictionCalibrationModuleTests
         Assert.Equal(6, result.Week);
         Assert.Equal(1.5, result.Values["paramA"]);
         Assert.Equal(-2, result.Values["paramB"]);
+        Assert.Equal(2025, result.CarriedFromSeason);
+        Assert.Equal(5, result.CarriedFromWeek);
         _mockData.Verify(x => x.SaveAsync(It.IsAny<PredictionCalibration>()), Times.Never);
     }
 

@@ -26,6 +26,8 @@ public class PredictionCalibrationMapperTests
         {
             Calibration = new PredictionCalibration
             {
+                CarriedFromSeason = 2026,
+                CarriedFromWeek = 4,
                 Season = 2026,
                 Source = PredictionCalibrationSource.CarriedForward,
                 UpdatedAt = updatedAt,
@@ -43,6 +45,8 @@ public class PredictionCalibrationMapperTests
         Assert.Equal("CarriedForward", result.Source);
         Assert.Equal(updatedAt, result.UpdatedAt);
         Assert.Equal(-1.5, result.Values["paramA"]);
+        Assert.Equal(2026, result.CarriedFromSeason);
+        Assert.Equal(4, result.CarriedFromWeek);
     }
 
     [Fact]

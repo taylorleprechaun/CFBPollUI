@@ -2,6 +2,8 @@ namespace CFBPoll.API.DTOs;
 
 public class PredictionCalibrationResponseDTO
 {
+    public int? CarriedFromSeason { get; set; }
+    public int? CarriedFromWeek { get; set; }
     public bool DraftUsesDifferentValues { get; set; }
     public bool IsLocked { get; set; }
     public bool IsStored { get; set; }
