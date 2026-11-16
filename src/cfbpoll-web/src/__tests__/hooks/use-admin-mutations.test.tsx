@@ -52,6 +52,38 @@ function createWrapper() {
   );
 }
 
+function expectCalibrationRefreshedAfterPredictionChange(queryClient: QueryClient) {
+  expect(queryClient.getQueryState(['prediction-calibration', 2024, 3])?.isInvalidated).toBe(true);
+  expect(queryClient.getQueryState(['prediction-calibration', 2024, 5])?.isInvalidated).toBe(true);
+  expect(queryClient.getQueryState(['prediction-calibration-analysis', 2024, 5])?.isInvalidated).toBe(true);
+  expect(queryClient.getQueryState(['prediction-calibration-history', 2024])?.isInvalidated).toBe(true);
+  expect(queryClient.getQueryState(['prediction-calibration-analysis', 2024, 3])?.isInvalidated).toBe(false);
+}
+
+function expectCalibrationRefreshedAfterPublish(queryClient: QueryClient) {
+  expect(queryClient.getQueryState(['prediction-calibration', 2024, 3])?.isInvalidated).toBe(true);
+  expect(queryClient.getQueryState(['prediction-calibration-history', 2024])?.isInvalidated).toBe(true);
+  expect(queryClient.getQueryState(['prediction-calibration', 2024, 5])?.isInvalidated).toBe(false);
+  expect(queryClient.getQueryState(['prediction-calibration-analysis', 2024, 5])?.isInvalidated).toBe(false);
+}
+
+/**
+ * Seeds calibration views and analyses for the mutated week (2024 week 3) and a later week, plus the season history,
+ * returning a wrapper bound to that client so tests can check which entries were invalidated.
+ */
+function seedCalibrationQueries() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  queryClient.setQueryData(['prediction-calibration', 2024, 3], {});
+  queryClient.setQueryData(['prediction-calibration', 2024, 5], {});
+  queryClient.setQueryData(['prediction-calibration-analysis', 2024, 3], {});
+  queryClient.setQueryData(['prediction-calibration-analysis', 2024, 5], {});
+  queryClient.setQueryData(['prediction-calibration-history', 2024], []);
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+  return { queryClient, wrapper };
+}
+
 describe('null token guard', () => {
   beforeEach(() => vi.resetAllMocks());
 
@@ -194,6 +226,19 @@ describe('useCalculatePredictions', () => {
     expect(calculatePredictions).toHaveBeenCalledWith('test-token', 2024, 3);
   });
 
+  it('invalidates the week, later weeks and their analyses, and the season history on success', async () => {
+    vi.mocked(calculatePredictions).mockResolvedValue({ isPersisted: true, predictions: { isGraded: false, resultsPublished: false, season: 2024, week: 3, predictions: [] } });
+    const { queryClient, wrapper } = seedCalibrationQueries();
+
+    const { result } = renderHook(() => useCalculatePredictions('test-token'), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ season: 2024, week: 3 });
+    });
+
+    expectCalibrationRefreshedAfterPredictionChange(queryClient);
+  });
+
   it('rejects on failure', async () => {
     vi.mocked(calculatePredictions).mockRejectedValue(new Error('Failed'));
 
@@ -273,6 +318,19 @@ describe('useDeletePredictions', () => {
     });
 
     expect(queryClient.getQueryData(['admin-prediction', 2024, 5])).toBeDefined();
+  });
+
+  it('invalidates the week, later weeks and their analyses, and the season history on success', async () => {
+    vi.mocked(deletePredictions).mockResolvedValue(undefined);
+    const { queryClient, wrapper } = seedCalibrationQueries();
+
+    const { result } = renderHook(() => useDeletePredictions('test-token'), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ season: 2024, week: 3 });
+    });
+
+    expectCalibrationRefreshedAfterPredictionChange(queryClient);
   });
 
   it('removes the admin-prediction cache entry for the deleted week on success', async () => {
@@ -455,6 +513,19 @@ describe('usePublishPredictions', () => {
     });
 
     expect(queryClient.getQueryData(['admin-prediction', 2024, 3])).toBeUndefined();
+  });
+
+  it('invalidates only the week calibration and season history on success', async () => {
+    vi.mocked(publishPredictions).mockResolvedValue(undefined);
+    const { queryClient, wrapper } = seedCalibrationQueries();
+
+    const { result } = renderHook(() => usePublishPredictions('test-token'), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ season: 2024, week: 3 });
+    });
+
+    expectCalibrationRefreshedAfterPublish(queryClient);
   });
 
   it('marks the admin-prediction cache entry as published on success', async () => {

@@ -7,6 +7,7 @@ import { usePageVisibility } from './hooks/use-page-visibility';
 
 const AllTimePage = lazy(() => import('./pages/all-time-page'));
 const CachePage = lazy(() => import('./pages/cache-page'));
+const CalibrationPage = lazy(() => import('./pages/calibration-page'));
 const ExperimentalPage = lazy(() => import('./pages/experimental-page'));
 const HomePage = lazy(() => import('./pages/home-page'));
 const LoginPage = lazy(() => import('./pages/login-page'));
@@ -84,6 +85,9 @@ function App() {
           } />
           <Route path="admin/predictions" element={
             <LazyPage><PredictionsPage /></LazyPage>
+          } />
+          <Route path="admin/calibration" element={
+            <LazyPage><CalibrationPage /></LazyPage>
           } />
           <Route path="admin/experimental" element={
             <LazyPage><ExperimentalPage /></LazyPage>

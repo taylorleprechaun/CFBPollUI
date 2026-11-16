@@ -32,6 +32,12 @@ import {
   GradePredictionsResponseSchema,
   type IncompleteGamesResponse,
   IncompleteGamesResponseSchema,
+  type PredictionCalibrationAnalysis,
+  PredictionCalibrationAnalysisSchema,
+  type PredictionCalibrationHistoryEntry,
+  PredictionCalibrationHistoryResponseSchema,
+  type PredictionCalibrationResponse,
+  PredictionCalibrationResponseSchema,
   PredictionsSummariesResponseSchema,
   type PredictionsSummary,
   type RankingsSnapshot,
@@ -42,6 +48,23 @@ import {
   type SeasonExperimentalPredictionsResponse,
   SeasonExperimentalPredictionsResponseSchema,
 } from '../schemas/admin';
+
+export async function analyzePredictionCalibration(
+  token: string,
+  season: number,
+  week: number,
+  request: { values?: Record<string, number> }
+): Promise<PredictionCalibrationAnalysis> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction-calibration/analysis`,
+    withAuth(token, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    })
+  );
+  return parseResponse(response, PredictionCalibrationAnalysisSchema);
+}
 
 export async function calculateExperimental(
   token: string,
@@ -253,6 +276,29 @@ export async function fetchPrediction(
   return parseResponse(response, AdminPredictionsResponseSchema);
 }
 
+export async function fetchPredictionCalibration(
+  token: string,
+  season: number,
+  week: number
+): Promise<PredictionCalibrationResponse> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction-calibration`,
+    withAuth(token)
+  );
+  return parseResponse(response, PredictionCalibrationResponseSchema);
+}
+
+export async function fetchPredictionCalibrationHistory(
+  token: string,
+  season: number
+): Promise<PredictionCalibrationHistoryEntry[]> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/prediction-calibration`,
+    withAuth(token)
+  );
+  return parseResponse(response, PredictionCalibrationHistoryResponseSchema);
+}
+
 export async function fetchPredictionsSummaries(
   token: string
 ): Promise<PredictionsSummary[]> {
@@ -363,6 +409,24 @@ export async function refreshCache(
     withAuth(token, { method: 'POST' })
   );
   return parseResponse(response, RefreshCacheResponseSchema);
+}
+
+export async function savePredictionCalibration(
+  token: string,
+  season: number,
+  week: number,
+  values: Record<string, number>,
+  isAcceptedSuggestion = false
+): Promise<PredictionCalibrationResponse> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction-calibration`,
+    withAuth(token, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isAcceptedSuggestion, values }),
+    })
+  );
+  return parseResponse(response, PredictionCalibrationResponseSchema);
 }
 
 export async function updatePageVisibility(

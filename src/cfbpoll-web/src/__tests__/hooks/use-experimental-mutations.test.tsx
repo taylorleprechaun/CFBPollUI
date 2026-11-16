@@ -138,7 +138,7 @@ describe('useCalculateExperimentalMatchup', () => {
   beforeEach(() => vi.resetAllMocks());
 
   it('calls calculateExperimentalMatchup with token, params, and matchup', async () => {
-    vi.mocked(calculateExperimentalMatchup).mockResolvedValue({ actualGames: [], algorithmVersion: 'V2', prediction: null });
+    vi.mocked(calculateExperimentalMatchup).mockResolvedValue({ actualGames: [], algorithmVersion: 'V2', appliedCalibration: null, prediction: null });
 
     const { result } = renderHook(() => useCalculateExperimentalMatchup('test-token'), {
       wrapper: createWrapper(),
@@ -170,6 +170,7 @@ describe('useCalculateExperimentalPredictions', () => {
   it('calls calculateExperimentalPredictions with token and params', async () => {
     const mockResult = {
       algorithmVersion: 'V2',
+      appliedCalibration: null,
       predictions: [],
       summary: {
         gradedGameCount: 0,

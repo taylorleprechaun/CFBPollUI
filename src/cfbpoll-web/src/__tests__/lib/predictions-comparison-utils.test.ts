@@ -36,6 +36,7 @@ describe('buildPredictionsComparisonRows', () => {
         algorithmVersion: 'V1',
         result: {
           algorithmVersion: 'V1',
+          appliedCalibration: null,
           predictions: [createMockPrediction(), createMockPrediction({ awayTeam: 'Michigan', homeTeam: 'Ohio State' })],
           summary: { gradedGameCount: 0, marginBias: null, marginMAE: null, marginRMSE: null, overUnder: { correct: 0, incorrect: 0, push: 0 }, spread: { correct: 0, incorrect: 0, push: 0 }, winner: { correct: 0, incorrect: 0, push: 0 } },
         },
@@ -44,6 +45,7 @@ describe('buildPredictionsComparisonRows', () => {
         algorithmVersion: 'V2',
         result: {
           algorithmVersion: 'V2',
+          appliedCalibration: null,
           predictions: [createMockPrediction()],
           summary: { gradedGameCount: 0, marginBias: null, marginMAE: null, marginRMSE: null, overUnder: { correct: 0, incorrect: 0, push: 0 }, spread: { correct: 0, incorrect: 0, push: 0 }, winner: { correct: 0, incorrect: 0, push: 0 } },
         },
@@ -61,6 +63,7 @@ describe('buildPredictionsComparisonRows', () => {
         algorithmVersion: 'V1',
         result: {
           algorithmVersion: 'V1',
+          appliedCalibration: null,
           predictions: [createMockPrediction()],
           summary: { gradedGameCount: 0, marginBias: null, marginMAE: null, marginRMSE: null, overUnder: { correct: 0, incorrect: 0, push: 0 }, spread: { correct: 0, incorrect: 0, push: 0 }, winner: { correct: 0, incorrect: 0, push: 0 } },
         },
@@ -78,6 +81,7 @@ describe('buildPredictionsComparisonRows', () => {
         algorithmVersion: 'V1',
         result: {
           algorithmVersion: 'V1',
+          appliedCalibration: null,
           predictions: [createMockPrediction({ predictedWinner: 'Iowa' })],
           summary: { gradedGameCount: 0, marginBias: null, marginMAE: null, marginRMSE: null, overUnder: { correct: 0, incorrect: 0, push: 0 }, spread: { correct: 0, incorrect: 0, push: 0 }, winner: { correct: 0, incorrect: 0, push: 0 } },
         },
@@ -86,6 +90,7 @@ describe('buildPredictionsComparisonRows', () => {
         algorithmVersion: 'V2',
         result: {
           algorithmVersion: 'V2',
+          appliedCalibration: null,
           predictions: [createMockPrediction({ predictedWinner: 'Nebraska' })],
           summary: { gradedGameCount: 0, marginBias: null, marginMAE: null, marginRMSE: null, overUnder: { correct: 0, incorrect: 0, push: 0 }, spread: { correct: 0, incorrect: 0, push: 0 }, winner: { correct: 0, incorrect: 0, push: 0 } },
         },

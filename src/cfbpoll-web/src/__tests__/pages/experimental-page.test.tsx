@@ -149,6 +149,7 @@ describe('ExperimentalPage', () => {
     mockCalculatePredictionsMutateAsync.mockImplementation(({ algorithmVersion }: { algorithmVersion: string }) =>
       Promise.resolve({
         algorithmVersion,
+        appliedCalibration: null,
         predictions: [],
         summary: {
           gradedGameCount: 0,
@@ -343,6 +344,7 @@ describe('ExperimentalPage', () => {
   it('shows a comparison with summary cards after a successful predictions calculation', async () => {
     mockCalculatePredictionsMutateAsync.mockResolvedValue({
       algorithmVersion: 'V2',
+      appliedCalibration: null,
       predictions: [],
       summary: {
         gradedGameCount: 1,

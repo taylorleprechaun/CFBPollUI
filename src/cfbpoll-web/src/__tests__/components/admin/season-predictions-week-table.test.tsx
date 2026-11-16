@@ -7,6 +7,7 @@ import { SeasonPredictionsWeekTable } from '../../../components/admin';
 
 function buildWeek(overrides: Partial<SeasonExperimentalPredictionsWeek> = {}): SeasonExperimentalPredictionsWeek {
   return {
+    appliedCalibration: null,
     summary: {
       gradedGameCount: 5,
       marginBias: 0.5,

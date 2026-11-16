@@ -1,10 +1,14 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { AlgorithmRunState } from '../../../hooks/use-algorithm-run-state';
 import type { ExperimentalPredictionsResponse } from '../../../schemas/admin';
 
 import { PredictionsComparisonSection } from '../../../components/admin';
+
+vi.mock('../../../components/admin/experimental-calibration-note', () => ({
+  ExperimentalCalibrationNote: ({ season, week }: { season: number; week: number }) => <p>Calibration note for {season} week {week}</p>,
+}));
 
 const idleEntry = { error: null, result: null, status: 'idle' as const };
 
@@ -41,7 +45,7 @@ describe('PredictionsComparisonSection', () => {
   it('renders a summary section per successful algorithm', () => {
     renderSection({
       runState: buildRunState({
-        V1: { error: null, status: 'success', result: { algorithmVersion: 'V1', predictions: [], summary: emptySummary } },
+        V1: { error: null, status: 'success', result: { algorithmVersion: 'V1', appliedCalibration: null, predictions: [], summary: emptySummary } },
       }),
     });
 
@@ -80,6 +84,18 @@ describe('PredictionsComparisonSection', () => {
     });
 
     expect(screen.getByText('V1 calculation failed')).toBeInTheDocument();
+  });
+
+  it('shows the calibration note only for a version that applied calibration', () => {
+    renderSection({
+      runState: buildRunState({
+        V1: { error: null, status: 'success', result: { algorithmVersion: 'V1', appliedCalibration: null, predictions: [], summary: emptySummary } },
+        V2: { error: null, status: 'success', result: { algorithmVersion: 'V2', appliedCalibration: { paramA: 1.5 }, predictions: [], summary: emptySummary } },
+      }),
+      selectedVersions: ['V1', 'V2'],
+    });
+
+    expect(screen.getAllByText('Calibration note for 2024 week 5')).toHaveLength(1);
   });
 
   it('toggles the collapsible content when the heading is clicked', () => {

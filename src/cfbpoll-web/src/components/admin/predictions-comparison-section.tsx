@@ -62,7 +62,7 @@ export function PredictionsComparisonSection({
               <ErrorAlert key={version} error={runState[version].error as Error} />
             ))}
           {successfulEntries.length > 0 && (
-            <PredictionsComparisonTable entries={successfulEntries} />
+            <PredictionsComparisonTable entries={successfulEntries} season={season} week={week} />
           )}
         </div>
       </CollapsibleContent>

@@ -34,11 +34,13 @@ export const PredictionRecordSummarySchema = z.object({
 
 export const ExperimentalPredictionsResponseSchema = z.object({
   algorithmVersion: z.string(),
+  appliedCalibration: z.record(z.string(), z.number()).nullable(),
   predictions: z.array(GamePredictionPublicSchema),
   summary: PredictionRecordSummarySchema,
 });
 
 export const SeasonExperimentalPredictionsWeekSchema = z.object({
+  appliedCalibration: z.record(z.string(), z.number()).nullable(),
   summary: PredictionRecordSummarySchema,
   week: z.number(),
 });
@@ -66,6 +68,7 @@ export const MatchupActualGameSchema = z.object({
 export const ExperimentalMatchupResponseSchema = z.object({
   actualGames: z.array(MatchupActualGameSchema),
   algorithmVersion: z.string(),
+  appliedCalibration: z.record(z.string(), z.number()).nullable(),
   prediction: GamePredictionPublicSchema.nullable(),
 });
 
@@ -122,6 +125,80 @@ export const PredictionsSummarySchema = z.object({
 });
 
 export const PredictionsSummariesResponseSchema = z.array(PredictionsSummarySchema);
+
+export const PredictionCalibrationSourceSchema = z.enum(['Accepted', 'CarriedForward', 'Manual']);
+
+export const PredictionCalibrationParameterSchema = z.object({
+  carriesAcrossSeasons: z.boolean(),
+  defaultValue: z.number(),
+  description: z.string(),
+  key: z.string(),
+  label: z.string(),
+  max: z.number(),
+  min: z.number(),
+  step: z.number(),
+});
+
+export const PredictionCalibrationResponseSchema = z.object({
+  carriedFromSeason: z.number().nullable(),
+  carriedFromWeek: z.number().nullable(),
+  draftUsesDifferentValues: z.boolean(),
+  isLocked: z.boolean(),
+  isStored: z.boolean(),
+  isSupported: z.boolean(),
+  parameters: z.array(PredictionCalibrationParameterSchema),
+  season: z.number(),
+  source: PredictionCalibrationSourceSchema.nullable(),
+  updatedAt: z.string().nullable(),
+  values: z.record(z.string(), z.number()),
+  week: z.number(),
+});
+
+export const PredictionCalibrationHistoryEntrySchema = z.object({
+  carriedFromSeason: z.number().nullable(),
+  carriedFromWeek: z.number().nullable(),
+  isLocked: z.boolean(),
+  season: z.number(),
+  source: PredictionCalibrationSourceSchema,
+  updatedAt: z.string().nullable(),
+  values: z.record(z.string(), z.number()),
+  week: z.number(),
+});
+
+export const PredictionCalibrationHistoryResponseSchema = z.array(PredictionCalibrationHistoryEntrySchema);
+
+export const PredictionPickChangeSchema = z.object({
+  changed: z.number(),
+  comparedCorrect: z.number(),
+  usedCorrect: z.number(),
+});
+
+export const PredictionPickChangesSchema = z.object({
+  overUnder: PredictionPickChangeSchema,
+  spread: PredictionPickChangeSchema,
+  winner: PredictionPickChangeSchema,
+});
+
+export const PredictionCalibrationBacktestWeekSchema = z.object({
+  baseline: PredictionRecordSummarySchema,
+  baselineChanges: PredictionPickChangesSchema,
+  candidate: PredictionRecordSummarySchema.nullable(),
+  candidateChanges: PredictionPickChangesSchema.nullable(),
+  season: z.number(),
+  suggested: PredictionRecordSummarySchema,
+  suggestedChanges: PredictionPickChangesSchema,
+  suggestedValues: z.record(z.string(), z.number()),
+  used: PredictionRecordSummarySchema,
+  usedValues: z.record(z.string(), z.number()),
+  week: z.number(),
+});
+
+export const PredictionCalibrationAnalysisSchema = z.object({
+  backtestWeeks: z.array(PredictionCalibrationBacktestWeekSchema),
+  candidateValues: z.record(z.string(), z.number()).nullable(),
+  suggestedValues: z.record(z.string(), z.number()),
+  suggestionNotes: z.record(z.string(), z.string()),
+});
 
 export const CfbdTopEndpointSchema = z.object({
   endpoint: z.string(),
@@ -191,6 +268,14 @@ export type IncompleteGame = z.infer<typeof IncompleteGameSchema>;
 export type IncompleteGamesResponse = z.infer<typeof IncompleteGamesResponseSchema>;
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 export type MatchupActualGame = z.infer<typeof MatchupActualGameSchema>;
+export type PredictionCalibrationAnalysis = z.infer<typeof PredictionCalibrationAnalysisSchema>;
+export type PredictionCalibrationBacktestWeek = z.infer<typeof PredictionCalibrationBacktestWeekSchema>;
+export type PredictionCalibrationHistoryEntry = z.infer<typeof PredictionCalibrationHistoryEntrySchema>;
+export type PredictionCalibrationParameter = z.infer<typeof PredictionCalibrationParameterSchema>;
+export type PredictionCalibrationResponse = z.infer<typeof PredictionCalibrationResponseSchema>;
+export type PredictionCalibrationSource = z.infer<typeof PredictionCalibrationSourceSchema>;
+export type PredictionPickChange = z.infer<typeof PredictionPickChangeSchema>;
+export type PredictionPickChanges = z.infer<typeof PredictionPickChangesSchema>;
 export type PredictionRecordSummary = z.infer<typeof PredictionRecordSummarySchema>;
 export type PredictionsResponse = z.infer<typeof PredictionsResponseSchema>;
 export type PredictionsSummary = z.infer<typeof PredictionsSummarySchema>;

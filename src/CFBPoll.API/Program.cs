@@ -54,6 +54,7 @@ try
     builder.Services.AddSingleton<PredictionCalculatorModule>();
     builder.Services.AddSingleton<PredictionCalculatorModuleV2>();
     builder.Services.AddSingleton<IPredictionAlgorithmResolver, PredictionAlgorithmResolver>();
+    builder.Services.AddSingleton<IPredictionCalibrationModule, PredictionCalibrationModule>();
     builder.Services.AddSingleton<IPredictionsModule, PredictionsModule>();
     builder.Services.AddSingleton<IAdminModule, AdminModule>();
     builder.Services.AddSingleton<IAllTimeModule, AllTimeModule>();

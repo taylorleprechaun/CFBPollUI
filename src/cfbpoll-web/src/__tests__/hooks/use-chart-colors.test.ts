@@ -18,7 +18,9 @@ describe('useChartColors', () => {
     const { result } = renderHook(() => useChartColors());
 
     expect(result.current.axis).toBe('#4b5563');
+    expect(result.current.gain).toBe('#22c55e');
     expect(result.current.grid).toBe('#374151');
+    expect(result.current.loss).toBe('#ef4444');
     expect(result.current.text).toBe('#9ca3af');
   });
 
@@ -28,7 +30,9 @@ describe('useChartColors', () => {
     const { result } = renderHook(() => useChartColors());
 
     expect(result.current.axis).toBe('#d1d5db');
+    expect(result.current.gain).toBe('#16a34a');
     expect(result.current.grid).toBe('#e5e7eb');
+    expect(result.current.loss).toBe('#dc2626');
     expect(result.current.text).toBe('#6b7280');
   });
 });

@@ -13,6 +13,9 @@ namespace CFBPoll.API.Controllers;
 public class AdminController : ControllerBase
 {
     private const string CACHE_ENTRY_NOT_FOUND = "Cache entry not found";
+    private const string PREDICTION_CALIBRATION_INVALID = "Invalid calibration values";
+    private const string PREDICTION_CALIBRATION_LOCKED = "Calibration can't be changed after the week's predictions are published";
+    private const string PREDICTION_CALIBRATION_NOT_SUPPORTED = "This season's prediction algorithm doesn't take calibration values";
     private const string PREDICTION_NOT_FOUND = "Prediction not found";
     private const string RANKING_NOT_FOUND = "Ranking not found";
     private const string RANKING_WEEK_INCOMPLETE = "Cannot publish rankings for a week that has not been fully played yet";
@@ -26,6 +29,30 @@ public class AdminController : ControllerBase
         _adminModule = adminModule ?? throw new ArgumentNullException(nameof(adminModule));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
+    }
+
+    /// <summary>
+    /// Suggests calibration values for the specified season and week's predictions and grades each completed
+    /// week of the season with the values it used, the values suggested at the time, and the submitted values
+    /// when given. Persists nothing.
+    /// </summary>
+    [HttpPost("seasons/{season}/weeks/{week}/prediction-calibration/analysis")]
+    public async Task<ActionResult<PredictionCalibrationAnalysisResponseDTO>> AnalyzePredictionCalibration(int season, int week, [FromBody] AnalyzePredictionCalibrationRequestDTO request)
+    {
+        if (request is null)
+            return BadRequest(new ErrorResponseDTO { Message = "Request body is required", StatusCode = 400 });
+
+        _logger.LogInformation("Admin analyzing prediction calibration for season {Season}, week {Week}", season, week);
+
+        var candidate = request.Values?.ToDictionary(v => v.Key, v => v.Value);
+        var result = await _adminModule.AnalyzePredictionCalibrationAsync(season, week, candidate);
+
+        return result.Outcome switch
+        {
+            AnalyzePredictionCalibrationOutcome.NotSupported => BadRequest(new ErrorResponseDTO { Message = PREDICTION_CALIBRATION_NOT_SUPPORTED, StatusCode = 400 }),
+            AnalyzePredictionCalibrationOutcome.InvalidValues => BadRequest(new ErrorResponseDTO { Message = result.ErrorMessage ?? PREDICTION_CALIBRATION_INVALID, StatusCode = 400 }),
+            _ => Ok(PredictionCalibrationMapper.ToAnalysisResponseDTO(result.Analysis!))
+        };
     }
 
     /// <summary>
@@ -352,6 +379,33 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
+    /// Gets the calibration that applies to the specified season and week's predictions: the stored
+    /// values, or the carried-forward values when none are stored, with editing state.
+    /// </summary>
+    [HttpGet("seasons/{season}/weeks/{week}/prediction-calibration")]
+    public async Task<ActionResult<PredictionCalibrationResponseDTO>> GetPredictionCalibration(int season, int week)
+    {
+        _logger.LogInformation("Admin fetching prediction calibration for season {Season}, week {Week}", season, week);
+
+        var view = await _adminModule.GetPredictionCalibrationAsync(season, week);
+
+        return Ok(PredictionCalibrationMapper.ToResponseDTO(view));
+    }
+
+    /// <summary>
+    /// Gets every stored prediction calibration for the specified season, in week order.
+    /// </summary>
+    [HttpGet("seasons/{season}/prediction-calibration")]
+    public async Task<ActionResult<IEnumerable<PredictionCalibrationHistoryEntryDTO>>> GetPredictionCalibrationHistory(int season)
+    {
+        _logger.LogInformation("Admin fetching prediction calibration history for season {Season}", season);
+
+        var history = await _adminModule.GetPredictionCalibrationHistoryAsync(season);
+
+        return Ok(history.Select(PredictionCalibrationMapper.ToHistoryEntryDTO));
+    }
+
+    /// <summary>
     /// Gets all persisted prediction summaries including draft and published.
     /// </summary>
     [HttpGet("predictions")]
@@ -449,6 +503,37 @@ public class AdminController : ControllerBase
             Season = season,
             Week = week
         });
+    }
+
+    /// <summary>
+    /// Saves calibration values for the specified season and week's predictions and returns the updated
+    /// calibration. Rejected once the week's predictions are published.
+    /// </summary>
+    [HttpPut("seasons/{season}/weeks/{week}/prediction-calibration")]
+    public async Task<ActionResult<PredictionCalibrationResponseDTO>> SavePredictionCalibration(int season, int week, [FromBody] SavePredictionCalibrationRequestDTO request)
+    {
+        if (request?.Values is null)
+            return BadRequest(new ErrorResponseDTO { Message = "Calibration values are required", StatusCode = 400 });
+
+        _logger.LogInformation("Admin saving prediction calibration for season {Season}, week {Week}", season, week);
+
+        var source = request.IsAcceptedSuggestion ? PredictionCalibrationSource.Accepted : PredictionCalibrationSource.Manual;
+        var result = await _adminModule.SavePredictionCalibrationAsync(season, week, request.Values.ToDictionary(v => v.Key, v => v.Value), source);
+
+        if (result.Outcome != SavePredictionCalibrationOutcome.Saved)
+        {
+            var message = result.Outcome switch
+            {
+                SavePredictionCalibrationOutcome.Locked => PREDICTION_CALIBRATION_LOCKED,
+                SavePredictionCalibrationOutcome.NotSupported => PREDICTION_CALIBRATION_NOT_SUPPORTED,
+                _ => result.ErrorMessage ?? PREDICTION_CALIBRATION_INVALID
+            };
+            return BadRequest(new ErrorResponseDTO { Message = message, StatusCode = 400 });
+        }
+
+        var view = await _adminModule.GetPredictionCalibrationAsync(season, week);
+
+        return Ok(PredictionCalibrationMapper.ToResponseDTO(view));
     }
 
     /// <summary>

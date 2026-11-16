@@ -3,6 +3,7 @@ import { type QueryClient, useMutation, useQueryClient } from '@tanstack/react-q
 import type { AdminPredictionsResponse } from '../schemas/admin';
 import type { SeasonWeekParams } from './types';
 
+import { invalidateCalibrationAfterPredictionChange, invalidateCalibrationAfterPublish } from '../lib/calibration-query-utils';
 import {
   calculatePredictions,
   calculateRankings,
@@ -19,8 +20,9 @@ import {
 } from '../services/admin-api';
 
 export function useCalculatePredictions(token: string | null) {
-  return useAdminMutation(token, calculatePredictions, (_result, _params, queryClient) => {
+  return useAdminMutation(token, calculatePredictions, (_result, { season, week }, queryClient) => {
     queryClient.invalidateQueries({ queryKey: ['predictions-summaries'] });
+    invalidateCalibrationAfterPredictionChange(queryClient, season, week);
   });
 }
 
@@ -34,6 +36,7 @@ export function useDeletePredictions(token: string | null) {
   return useAdminMutation(token, deletePredictions, (_result, { season, week }, queryClient) => {
     queryClient.invalidateQueries({ queryKey: ['predictions-summaries'] });
     queryClient.removeQueries({ queryKey: ['admin-prediction', season, week], exact: true });
+    invalidateCalibrationAfterPredictionChange(queryClient, season, week);
   });
 }
 
@@ -75,6 +78,7 @@ export function usePublishPredictions(token: string | null) {
       ['admin-prediction', season, week],
       (old: AdminPredictionsResponse | undefined) => old && { ...old, isPublished: true },
     );
+    invalidateCalibrationAfterPublish(queryClient, season, week);
   });
 }
 

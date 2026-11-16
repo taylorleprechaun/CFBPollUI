@@ -5,6 +5,7 @@ import type { ExperimentalMatchupResponse } from '../../schemas/admin';
 import { getWeekLabel } from '../../lib/week-utils';
 import { AlgorithmRunStatusBadge } from './algorithm-run-status-badge';
 import { ALGORITHM_VERSIONS } from './algorithm-versions';
+import { ExperimentalCalibrationNote } from './experimental-calibration-note';
 import { MatchupSeasonMeetings } from './matchup-season-meetings';
 import { MatchupVersionResult } from './matchup-version-result';
 
@@ -43,9 +44,17 @@ export function ExperimentalMatchupResults({ runState, submittedMatchup }: Exper
       <div className="p-6 space-y-6">
         <div className="flex flex-wrap gap-4">
           {runVersions.map((version) => (
-            <div key={version} className="flex-1 min-w-64">
-              <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">{version}</h3>
-              <MatchupVersionResult entry={runState[version]} />
+            <div key={version} className="flex-1 min-w-64 flex flex-col">
+              <div className="mb-2">
+                <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider">{version}</h3>
+                {runState[version].status === 'success' && runState[version].result?.appliedCalibration != null && (
+                  <ExperimentalCalibrationNote appliedCalibration={runState[version].result.appliedCalibration} season={season} week={week} />
+                )}
+              </div>
+              {/* The result card fills the rest of the column, so cards line up whether or not a column has a calibration line. */}
+              <div className="flex-1">
+                <MatchupVersionResult entry={runState[version]} />
+              </div>
             </div>
           ))}
         </div>

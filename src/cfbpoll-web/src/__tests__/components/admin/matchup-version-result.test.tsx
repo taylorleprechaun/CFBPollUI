@@ -52,7 +52,7 @@ describe('MatchupVersionResult', () => {
   it('shows insufficient data when the version returned no prediction', () => {
     render(
       <MatchupVersionResult
-        entry={createEntry({ result: { actualGames: [], algorithmVersion: 'V1', prediction: null }, status: 'success' })}
+        entry={createEntry({ result: { actualGames: [], algorithmVersion: 'V1', appliedCalibration: null, prediction: null }, status: 'success' })}
       />
     );
 
@@ -68,7 +68,7 @@ describe('MatchupVersionResult', () => {
   it('shows the predicted score without spread or O/U rows for a hypothetical game', () => {
     render(
       <MatchupVersionResult
-        entry={createEntry({ result: { actualGames: [], algorithmVersion: 'V2', prediction }, status: 'success' })}
+        entry={createEntry({ result: { actualGames: [], algorithmVersion: 'V2', appliedCalibration: null, prediction }, status: 'success' })}
       />
     );
 
@@ -82,7 +82,7 @@ describe('MatchupVersionResult', () => {
     const scheduledPrediction = { ...prediction, bettingOverUnder: 51.5, bettingSpread: 2.5, myOverUnderPick: 'Under', mySpreadPick: 'Michigan' };
     render(
       <MatchupVersionResult
-        entry={createEntry({ result: { actualGames: [], algorithmVersion: 'V1', prediction: scheduledPrediction }, status: 'success' })}
+        entry={createEntry({ result: { actualGames: [], algorithmVersion: 'V1', appliedCalibration: null, prediction: scheduledPrediction }, status: 'success' })}
       />
     );
 

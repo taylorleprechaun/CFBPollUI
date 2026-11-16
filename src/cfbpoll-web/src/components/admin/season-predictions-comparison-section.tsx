@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import type { AlgorithmRunState } from '../../hooks/use-algorithm-run-state';
 import type { SeasonExperimentalPredictionsResponse } from '../../schemas/admin';
 import type { AlgorithmVersion } from './algorithm-versions';
 
+import { calibrationPageUrl } from '../../lib/calibration-utils';
 import { ErrorAlert } from '../error';
 import { CollapsibleContent } from '../ui/collapsible-content';
 import { CollapsibleTrigger } from '../ui/collapsible-trigger';
@@ -59,6 +61,16 @@ export function SeasonPredictionsComparisonSection({
             .filter((version) => runState[version].status === 'error')
             .map((version) => (
               <ErrorAlert key={version} error={runState[version].error as Error} />
+            ))}
+          {successfulEntries
+            .filter(({ result }) => result.weeks.some((w) => w.appliedCalibration !== null))
+            .map(({ algorithmVersion }) => (
+              <p key={algorithmVersion} className="text-xs text-text-muted">
+                {algorithmVersion} uses each week’s own calibration values.{' '}
+                <Link className="text-accent hover:underline" to={calibrationPageUrl(season)}>
+                  View calibration
+                </Link>
+              </p>
             ))}
           {successfulEntries.length > 0 && (
             <SeasonPredictionsComparisonTable entries={successfulEntries} />

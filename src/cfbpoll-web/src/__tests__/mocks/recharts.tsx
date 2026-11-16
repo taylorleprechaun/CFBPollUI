@@ -16,7 +16,10 @@ export const mockUseYAxisDomain = vi.fn(
 );
 
 export const rechartsMock = {
+  Bar: ({ children }: { children?: ReactNode }) => <g data-testid="bar">{children}</g>,
+  BarChart: ({ children }: { children: ReactNode }) => <div data-testid="bar-chart">{children}</div>,
   CartesianGrid: () => null,
+  Cell: ({ fill }: { fill?: string }) => <rect data-testid="bar-cell" fill={fill} />,
   getNiceTickValues: (domain: [number, number]) => {
     const [min, max] = domain;
     if (min === max) return [min];
@@ -38,6 +41,7 @@ export const rechartsMock = {
     return null;
   },
   ReferenceArea: () => null,
+  ReferenceLine: () => null,
   LineChart: ({ children, onClick }: { children: ReactNode; onClick?: () => void }) => (
     <div data-testid="line-chart" onClick={onClick}>{children}</div>
   ),

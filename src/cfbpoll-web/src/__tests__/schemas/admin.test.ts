@@ -12,6 +12,9 @@ import {
   IncompleteGamesResponseSchema,
   LoginResponseSchema,
   MatchupActualGameSchema,
+  PredictionCalibrationAnalysisSchema,
+  PredictionCalibrationHistoryEntrySchema,
+  PredictionCalibrationResponseSchema,
   PredictionsResponseSchema,
   PredictionsSummariesResponseSchema,
   PredictionsSummarySchema,
@@ -128,12 +131,12 @@ describe('Admin schemas', () => {
 
   describe('ExperimentalMatchupResponseSchema', () => {
     it('rejects missing actualGames', () => {
-      const result = ExperimentalMatchupResponseSchema.safeParse({ algorithmVersion: 'V1', prediction: null });
+      const result = ExperimentalMatchupResponseSchema.safeParse({ algorithmVersion: 'V1', appliedCalibration: null, prediction: null });
       expect(result.success).toBe(false);
     });
 
     it('validates a response with a null prediction and no meetings', () => {
-      const result = ExperimentalMatchupResponseSchema.safeParse({ actualGames: [], algorithmVersion: 'V1', prediction: null });
+      const result = ExperimentalMatchupResponseSchema.safeParse({ actualGames: [], algorithmVersion: 'V1', appliedCalibration: null, prediction: null });
       expect(result.success).toBe(true);
     });
 
@@ -141,6 +144,7 @@ describe('Admin schemas', () => {
       const result = ExperimentalMatchupResponseSchema.safeParse({
         actualGames: [validMatchupActualGame],
         algorithmVersion: 'V2',
+        appliedCalibration: null,
         prediction: validMatchupPrediction,
       });
       expect(result.success).toBe(true);
@@ -445,6 +449,98 @@ describe('Admin schemas', () => {
     });
   });
 
+  describe('PredictionCalibrationAnalysisSchema', () => {
+    const summary = { gradedGameCount: 1, marginBias: null, marginMAE: null, marginRMSE: null, overUnder: { correct: 1, incorrect: 0, push: 0 }, spread: { correct: 1, incorrect: 0, push: 0 }, winner: { correct: 1, incorrect: 0, push: 0 } };
+    const change = { changed: 2, comparedCorrect: 1, usedCorrect: 1 };
+    const changes = { overUnder: change, spread: change, winner: change };
+    const validAnalysis = {
+      backtestWeeks: [{ baseline: summary, baselineChanges: changes, candidate: summary, candidateChanges: changes, season: 2026, suggested: summary, suggestedChanges: changes, suggestedValues: { paramA: 1.2 }, used: summary, usedValues: { paramA: 0 }, week: 9 }],
+      candidateValues: { paramA: 1 },
+      suggestedValues: { paramA: 1.5 },
+      suggestionNotes: { paramA: 'Note.' },
+    };
+
+    it('rejects a backtest week without its changed picks', () => {
+      const weekWithoutChanges: Partial<(typeof validAnalysis.backtestWeeks)[0]> = { ...validAnalysis.backtestWeeks[0] };
+      delete weekWithoutChanges.suggestedChanges;
+      const result = PredictionCalibrationAnalysisSchema.safeParse({ ...validAnalysis, backtestWeeks: [weekWithoutChanges] });
+
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects a backtest week without its used record', () => {
+      const result = PredictionCalibrationAnalysisSchema.safeParse({
+        ...validAnalysis,
+        backtestWeeks: [{ candidate: summary, season: 2026, suggested: summary, suggestedValues: {}, usedValues: {}, week: 9 }],
+      });
+
+      expect(result.success).toBe(false);
+    });
+
+    it('validates a valid analysis', () => {
+      expect(PredictionCalibrationAnalysisSchema.safeParse(validAnalysis).success).toBe(true);
+    });
+
+    it('validates an analysis without candidate values', () => {
+      const result = PredictionCalibrationAnalysisSchema.safeParse({
+        ...validAnalysis,
+        backtestWeeks: [{ ...validAnalysis.backtestWeeks[0], candidate: null, candidateChanges: null }],
+        candidateValues: null,
+      });
+
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('PredictionCalibrationHistoryEntrySchema', () => {
+    it('rejects a non-numeric value', () => {
+      const result = PredictionCalibrationHistoryEntrySchema.safeParse({
+        carriedFromSeason: null, carriedFromWeek: null, isLocked: true, season: 2026, source: 'Manual', updatedAt: null, values: { paramA: 'high' }, week: 9,
+      });
+
+      expect(result.success).toBe(false);
+    });
+
+    it('validates an entry with a null updatedAt', () => {
+      const result = PredictionCalibrationHistoryEntrySchema.safeParse({
+        carriedFromSeason: null, carriedFromWeek: null, isLocked: true, season: 2026, source: 'CarriedForward', updatedAt: null, values: { paramA: 0 }, week: 9,
+      });
+
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('PredictionCalibrationResponseSchema', () => {
+    const validResponse = {
+      carriedFromSeason: null,
+      carriedFromWeek: null,
+      draftUsesDifferentValues: false,
+      isLocked: false,
+      isStored: false,
+      isSupported: true,
+      parameters: [{ carriesAcrossSeasons: true, defaultValue: 0, description: 'Desc', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 }],
+      season: 2026,
+      source: 'CarriedForward',
+      updatedAt: null,
+      values: { paramA: 1.5 },
+      week: 10,
+    };
+
+    it('rejects an unknown source', () => {
+      expect(PredictionCalibrationResponseSchema.safeParse({ ...validResponse, source: 'Guessed' }).success).toBe(false);
+    });
+
+    it('validates a valid response', () => {
+      expect(PredictionCalibrationResponseSchema.safeParse(validResponse).success).toBe(true);
+    });
+
+    it('validates an unsupported season with a null source and no values', () => {
+      const result = PredictionCalibrationResponseSchema.safeParse({ ...validResponse, isSupported: false, parameters: [], source: null, values: {} });
+
+      expect(result.success).toBe(true);
+    });
+  });
+
   describe('PredictionsResponseSchema', () => {
     it('rejects missing isGraded', () => {
       const data = { resultsPublished: false, season: 2024, week: 5, predictions: [] };
@@ -676,8 +772,8 @@ describe('Admin schemas', () => {
         overallSummary: validSummary,
         season: 2024,
         weeks: [
-          { summary: validSummary, week: 5 },
-          { summary: validSummary, week: 6 },
+          { appliedCalibration: null, summary: validSummary, week: 5 },
+          { appliedCalibration: null, summary: validSummary, week: 6 },
         ],
       };
       const result = SeasonExperimentalPredictionsResponseSchema.safeParse(data);

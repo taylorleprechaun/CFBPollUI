@@ -55,6 +55,7 @@ public class PredictionGradingModule : IPredictionGradingModule
 
         var gradedResult = new PredictionsResult
         {
+            AppliedCalibration = stored.AppliedCalibration,
             Season = stored.Season,
             Week = stored.Week,
             Predictions = stored.Predictions

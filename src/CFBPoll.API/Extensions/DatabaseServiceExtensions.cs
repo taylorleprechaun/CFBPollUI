@@ -12,6 +12,7 @@ public static class DatabaseServiceExtensions
     {
         services.Configure<DatabaseOptions>(configuration.GetSection(DatabaseOptions.SECTION_NAME));
         services.AddSingleton<IPageVisibilityData, PageVisibilityData>();
+        services.AddSingleton<IPredictionCalibrationData, PredictionCalibrationData>();
         services.AddSingleton<IPredictionsData, PredictionsData>();
         services.AddSingleton<IRankingsData, RankingsData>();
 
@@ -22,6 +23,9 @@ public static class DatabaseServiceExtensions
     {
         var pageVisibilityData = app.Services.GetRequiredService<IPageVisibilityData>();
         await pageVisibilityData.InitializeAsync().ConfigureAwait(false);
+
+        var predictionCalibrationData = app.Services.GetRequiredService<IPredictionCalibrationData>();
+        await predictionCalibrationData.InitializeAsync().ConfigureAwait(false);
 
         var predictionsData = app.Services.GetRequiredService<IPredictionsData>();
         await predictionsData.InitializeAsync().ConfigureAwait(false);
