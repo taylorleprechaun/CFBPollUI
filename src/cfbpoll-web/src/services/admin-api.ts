@@ -32,6 +32,8 @@ import {
   GradePredictionsResponseSchema,
   type IncompleteGamesResponse,
   IncompleteGamesResponseSchema,
+  type PredictionCalibrationAnalysis,
+  PredictionCalibrationAnalysisSchema,
   type PredictionCalibrationHistoryEntry,
   PredictionCalibrationHistoryResponseSchema,
   type PredictionCalibrationResponse,
@@ -46,6 +48,23 @@ import {
   type SeasonExperimentalPredictionsResponse,
   SeasonExperimentalPredictionsResponseSchema,
 } from '../schemas/admin';
+
+export async function analyzePredictionCalibration(
+  token: string,
+  season: number,
+  week: number,
+  request: { backtestWeeks: number; values?: Record<string, number> }
+): Promise<PredictionCalibrationAnalysis> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction-calibration/analysis`,
+    withAuth(token, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    })
+  );
+  return parseResponse(response, PredictionCalibrationAnalysisSchema);
+}
 
 export async function calculateExperimental(
   token: string,
@@ -396,14 +415,15 @@ export async function savePredictionCalibration(
   token: string,
   season: number,
   week: number,
-  values: Record<string, number>
+  values: Record<string, number>,
+  isAcceptedSuggestion = false
 ): Promise<PredictionCalibrationResponse> {
   const response = await safeFetch(
     `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction-calibration`,
     withAuth(token, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ values }),
+      body: JSON.stringify({ isAcceptedSuggestion, values }),
     })
   );
   return parseResponse(response, PredictionCalibrationResponseSchema);

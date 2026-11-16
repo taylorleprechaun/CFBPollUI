@@ -67,6 +67,43 @@ public class AdminModule : IAdminModule
         _trackRecordModule = trackRecordModule ?? throw new ArgumentNullException(nameof(trackRecordModule));
     }
 
+    public async Task<AnalyzePredictionCalibrationResult> AnalyzePredictionCalibrationAsync(int season, int week, IReadOnlyDictionary<string, double>? candidate, int backtestWeeks)
+    {
+        if (_predictionAlgorithmResolver.ResolveForSeason(season) is not ICalibratedPredictionCalculator calibratedCalculator)
+            return new AnalyzePredictionCalibrationResult { Outcome = AnalyzePredictionCalibrationOutcome.NotSupported };
+
+        var parameters = calibratedCalculator.CalibrationParameters;
+        if (candidate is not null)
+        {
+            var validationError = ValidateCalibrationValues(candidate, parameters);
+            if (validationError is not null)
+                return new AnalyzePredictionCalibrationResult { ErrorMessage = validationError, Outcome = AnalyzePredictionCalibrationOutcome.InvalidValues };
+        }
+
+        _logger.LogInformation("Analyzing prediction calibration for season {Season}, week {Week} over {BacktestWeeks} weeks", season, week, backtestWeeks);
+
+        var seasonDataTask = _dataService.GetSeasonDataAsync(season, week);
+        var fullScheduleTask = _dataService.GetFullSeasonScheduleAsync(season);
+        var summariesTask = _predictionsModule.GetAllSummariesAsync();
+        await Task.WhenAll(seasonDataTask, fullScheduleTask, summariesTask).ConfigureAwait(false);
+
+        var snapshotWeeks = summariesTask.Result.Where(s => s.Season == season && s.Week < week).Select(s => s.Week).ToList();
+        var snapshots = (await Task.WhenAll(snapshotWeeks.Select(w => _predictionsModule.GetAsync(season, w))).ConfigureAwait(false))
+            .Where(s => s is not null)
+            .Select(s => s!)
+            .ToList();
+
+        var linesTask = BuildCalibrationLineHistoryAsync(season, week, snapshots, fullScheduleTask.Result);
+        var appliedTask = BuildAppliedCalibrationByWeekAsync(season, week, backtestWeeks, snapshots, parameters);
+        await Task.WhenAll(linesTask, appliedTask).ConfigureAwait(false);
+
+        var analysis = await calibratedCalculator
+            .AnalyzeCalibrationAsync(seasonDataTask.Result, linesTask.Result, appliedTask.Result, candidate, backtestWeeks)
+            .ConfigureAwait(false);
+
+        return new AnalyzePredictionCalibrationResult { Analysis = analysis, Outcome = AnalyzePredictionCalibrationOutcome.Success };
+    }
+
     public async Task<ExperimentalCalculateResult> CalculateExperimentalAsync(int season, int week, RatingAlgorithmVersion algorithmVersion)
     {
         _logger.LogInformation(
@@ -684,9 +721,12 @@ public class AdminModule : IAdminModule
         return await _cache.RemoveAsync(key).ConfigureAwait(false);
     }
 
-    public async Task<SavePredictionCalibrationResult> SavePredictionCalibrationAsync(int season, int week, IReadOnlyDictionary<string, double> values)
+    public async Task<SavePredictionCalibrationResult> SavePredictionCalibrationAsync(int season, int week, IReadOnlyDictionary<string, double> values, PredictionCalibrationSource source)
     {
         ArgumentNullException.ThrowIfNull(values);
+
+        if (source == PredictionCalibrationSource.CarriedForward)
+            throw new ArgumentException("Carried-forward values are saved only when predictions are generated.", nameof(source));
 
         if (_predictionAlgorithmResolver.ResolveForSeason(season) is not ICalibratedPredictionCalculator calibratedCalculator)
             return new SavePredictionCalibrationResult { Outcome = SavePredictionCalibrationOutcome.NotSupported };
@@ -702,14 +742,96 @@ public class AdminModule : IAdminModule
         await _predictionCalibrationModule.SaveAsync(new PredictionCalibration
         {
             Season = season,
-            Source = PredictionCalibrationSource.Manual,
+            Source = source,
             Values = values.ToDictionary(v => v.Key, v => v.Value),
             Week = week
         }).ConfigureAwait(false);
 
-        _logger.LogInformation("Saved prediction calibration for season {Season}, week {Week}", season, week);
+        _logger.LogInformation("Saved prediction calibration for season {Season}, week {Week} ({Source})", season, week, source);
 
         return new SavePredictionCalibrationResult { Outcome = SavePredictionCalibrationOutcome.Saved };
+    }
+
+    /// <summary>
+    /// The values each backtested prediction week was generated with: its saved snapshot's applied values
+    /// (the defaults for a snapshot generated before calibration existed), or the values that would apply
+    /// to it now when it has no snapshot.
+    /// </summary>
+    private async Task<IReadOnlyDictionary<int, IReadOnlyDictionary<string, double>>> BuildAppliedCalibrationByWeekAsync(int season, int week, int backtestWeeks, IEnumerable<PredictionsResult> snapshots, IReadOnlyList<PredictionCalibrationParameter> parameters)
+    {
+        var snapshotsByWeek = snapshots.ToDictionary(s => s.Week);
+        var defaults = parameters.ToDictionary(p => p.Key, p => p.DefaultValue);
+        var appliedByWeek = new Dictionary<int, IReadOnlyDictionary<string, double>>();
+
+        for (var predictionWeek = Math.Max(1, week - backtestWeeks); predictionWeek < week; predictionWeek++)
+        {
+            appliedByWeek[predictionWeek] = snapshotsByWeek.TryGetValue(predictionWeek, out var snapshot)
+                ? snapshot.AppliedCalibration ?? defaults
+                : (await _predictionCalibrationModule.ResolveEffectiveAsync(season, predictionWeek, parameters).ConfigureAwait(false)).Values;
+        }
+
+        return appliedByWeek;
+    }
+
+    /// <summary>
+    /// Opening lines for this season's completed regular-season games and the two prior seasons'. This season's
+    /// come from saved prediction snapshots where available, so they match what was graded and cost no API
+    /// calls; other weeks come from cached betting lines, which never expire once a season is over.
+    /// </summary>
+    private async Task<IReadOnlyList<HistoricalGameLine>> BuildCalibrationLineHistoryAsync(int season, int week, IEnumerable<PredictionsResult> snapshots, IEnumerable<ScheduleGame> fullSchedule)
+    {
+        var scheduleList = fullSchedule.ToList();
+        var lines = new List<HistoricalGameLine>();
+        var coveredGameWeeks = new HashSet<int>();
+
+        foreach (var snapshot in snapshots)
+        {
+            var (gameWeek, isPostseason) = GameWeekResolver.Resolve(snapshot.Week, scheduleList);
+            if (isPostseason)
+                continue;
+
+            coveredGameWeeks.Add(gameWeek);
+            lines.AddRange(snapshot.Predictions
+                .Where(p => p.BettingSpread.HasValue || p.BettingOverUnder.HasValue)
+                .Select(p => new HistoricalGameLine
+                {
+                    AwayTeam = p.AwayTeam,
+                    GameWeek = gameWeek,
+                    HomeTeam = p.HomeTeam,
+                    OverUnder = p.BettingOverUnder,
+                    Season = season,
+                    Spread = p.BettingSpread
+                }));
+        }
+
+        var (targetGameWeek, targetIsPostseason) = GameWeekResolver.Resolve(week, scheduleList);
+        var lastCompletedGameWeek = targetIsPostseason
+            ? scheduleList.Where(g => g.SeasonType is not null && g.SeasonType.Equals("regular", StringComparison.OrdinalIgnoreCase)).Select(g => g.Week ?? 0).DefaultIfEmpty(0).Max()
+            : targetGameWeek - 1;
+
+        var weeksToFetch = Enumerable.Range(1, Math.Max(0, lastCompletedGameWeek))
+            .Where(w => !coveredGameWeeks.Contains(w))
+            .Select(w => (Season: season, GameWeek: w))
+            .ToList();
+
+        var priorCalendars = await Task.WhenAll(new[] { season - 2, season - 1 }.Select(async s => (Season: s, Calendar: await _dataService.GetCalendarAsync(s).ConfigureAwait(false)))).ConfigureAwait(false);
+        weeksToFetch.AddRange(priorCalendars.SelectMany(c => c.Calendar
+            .Where(w => w.SeasonType is not null && w.SeasonType.Equals("regular", StringComparison.OrdinalIgnoreCase))
+            .Select(w => (c.Season, GameWeek: w.Week))));
+
+        var fetched = await Task.WhenAll(weeksToFetch.Select(async w => (w.Season, w.GameWeek, Lines: await _dataService.GetBettingLinesAsync(w.Season, w.GameWeek).ConfigureAwait(false)))).ConfigureAwait(false);
+        lines.AddRange(fetched.SelectMany(f => f.Lines.Select(l => new HistoricalGameLine
+        {
+            AwayTeam = l.AwayTeam,
+            GameID = l.GameID,
+            GameWeek = f.GameWeek,
+            HomeTeam = l.HomeTeam,
+            OverUnder = l.OverUnderOpen,
+            Season = f.Season,
+            Spread = l.SpreadOpen
+        })));
+
+        return lines;
     }
 
     private async Task<ExperimentalPredictionsResult> CalculateThrottledExperimentalPredictionsAsync(

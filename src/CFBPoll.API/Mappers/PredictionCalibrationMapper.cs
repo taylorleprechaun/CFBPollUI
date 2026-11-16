@@ -5,6 +5,28 @@ namespace CFBPoll.API.Mappers;
 
 public static class PredictionCalibrationMapper
 {
+    public static PredictionCalibrationAnalysisResponseDTO ToAnalysisResponseDTO(PredictionCalibrationAnalysis analysis)
+    {
+        ArgumentNullException.ThrowIfNull(analysis);
+
+        return new PredictionCalibrationAnalysisResponseDTO
+        {
+            BacktestWeeks = analysis.BacktestWeeks.Select(w => new PredictionCalibrationBacktestWeekDTO
+            {
+                Candidate = PredictionsMapper.ToDTO(w.Candidate),
+                Season = w.Season,
+                Used = PredictionsMapper.ToDTO(w.Used),
+                UsedValues = w.UsedValues.ToDictionary(v => v.Key, v => v.Value),
+                Week = w.Week
+            }).ToList(),
+            CandidateTotal = PredictionsMapper.ToDTO(analysis.CandidateTotal),
+            CandidateValues = analysis.CandidateValues.ToDictionary(v => v.Key, v => v.Value),
+            SuggestionNotes = analysis.SuggestionNotes.ToDictionary(v => v.Key, v => v.Value),
+            SuggestedValues = analysis.SuggestedValues.ToDictionary(v => v.Key, v => v.Value),
+            UsedTotal = PredictionsMapper.ToDTO(analysis.UsedTotal)
+        };
+    }
+
     public static PredictionCalibrationHistoryEntryDTO ToHistoryEntryDTO(PredictionCalibrationHistoryEntry entry)
     {
         ArgumentNullException.ThrowIfNull(entry);

@@ -19,6 +19,39 @@ public class PredictionCalibrationMapperTests
     }
 
     [Fact]
+    public void ToAnalysisResponseDTO_MapsValuesNotesWeeksAndTotals()
+    {
+        var usedTotal = new PredictionRecordSummary { GradedGameCount = 50 };
+        usedTotal.Spread.Correct = 24;
+        var analysis = new PredictionCalibrationAnalysis
+        {
+            BacktestWeeks = [new PredictionCalibrationBacktestWeek { Season = 2026, UsedValues = new Dictionary<string, double> { ["paramA"] = 0 }, Week = 9 }],
+            CandidateTotal = new PredictionRecordSummary { GradedGameCount = 50 },
+            CandidateValues = new Dictionary<string, double> { ["paramA"] = 1 },
+            SuggestionNotes = new Dictionary<string, string> { ["paramA"] = "Estimated from recent games." },
+            SuggestedValues = new Dictionary<string, double> { ["paramA"] = 1.5 },
+            UsedTotal = usedTotal
+        };
+
+        var result = PredictionCalibrationMapper.ToAnalysisResponseDTO(analysis);
+
+        Assert.Equal(1, result.CandidateValues["paramA"]);
+        Assert.Equal(1.5, result.SuggestedValues["paramA"]);
+        Assert.Equal("Estimated from recent games.", result.SuggestionNotes["paramA"]);
+        var week = Assert.Single(result.BacktestWeeks);
+        Assert.Equal(9, week.Week);
+        Assert.Equal(0, week.UsedValues["paramA"]);
+        Assert.Equal(24, result.UsedTotal.Spread.Correct);
+        Assert.Equal(50, result.CandidateTotal.GradedGameCount);
+    }
+
+    [Fact]
+    public void ToAnalysisResponseDTO_NullAnalysis_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => PredictionCalibrationMapper.ToAnalysisResponseDTO(null!));
+    }
+
+    [Fact]
     public void ToHistoryEntryDTO_MapsCalibrationAndLockState()
     {
         var updatedAt = new DateTime(2026, 10, 3, 14, 0, 0, DateTimeKind.Utc);

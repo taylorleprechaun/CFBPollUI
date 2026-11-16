@@ -19,6 +19,7 @@ export { MatchupVersionResult } from './matchup-version-result';
 export { PersistedItemsSection } from './persisted-items-section';
 export { PersistedPredictionsSection } from './persisted-predictions-section';
 export { PersistedRankingsSnapshotsSection } from './persisted-rankings-snapshots-section';
+export { PredictionCalibrationAnalysis } from './prediction-calibration-analysis';
 export { PredictionCalibrationHistory } from './prediction-calibration-history';
 export { PredictionCalibrationSection } from './prediction-calibration-section';
 export { PredictionCalibrationSummary } from './prediction-calibration-summary';

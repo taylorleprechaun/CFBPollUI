@@ -2,16 +2,29 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { PredictionCalibrationResponse } from '../../../schemas/admin';
+import type { PredictionCalibrationAnalysis, PredictionCalibrationResponse } from '../../../schemas/admin';
 
 import { PredictionCalibrationSection } from '../../../components/admin';
 
+const mockAnalyzeMutate = vi.fn();
 const mockMutateAsync = vi.fn();
+let mockAnalysis: PredictionCalibrationAnalysis | undefined = undefined;
+let mockAnalysisVariables: { backtestWeeks: number; season: number; values?: Record<string, number>; week: number } | undefined = undefined;
 let mockCalibration: PredictionCalibrationResponse | undefined = undefined;
 let mockError: Error | null = null;
 let mockHistoryEnabled = false;
 let mockIsLoading = false;
 let mockIsSaving = false;
+
+vi.mock('../../../hooks/use-analyze-prediction-calibration', () => ({
+  useAnalyzePredictionCalibration: () => ({
+    data: mockAnalysis,
+    error: null,
+    isPending: false,
+    mutate: mockAnalyzeMutate,
+    variables: mockAnalysisVariables,
+  }),
+}));
 
 vi.mock('../../../hooks/use-prediction-calibration', () => ({
   usePredictionCalibration: () => ({ data: mockCalibration, error: mockError, isLoading: mockIsLoading }),
@@ -30,6 +43,19 @@ vi.mock('../../../hooks/use-prediction-calibration-history', () => ({
 vi.mock('../../../hooks/use-save-prediction-calibration', () => ({
   useSavePredictionCalibration: () => ({ isPending: mockIsSaving, mutateAsync: mockMutateAsync }),
 }));
+
+function buildAnalysis(): PredictionCalibrationAnalysis {
+  const record = { correct: 30, incorrect: 25, push: 1 };
+  const summary = { gradedGameCount: 56, marginBias: null, marginMAE: null, marginRMSE: null, overUnder: record, spread: record, winner: record };
+  return {
+    backtestWeeks: [{ candidate: summary, season: 2026, used: summary, usedValues: { paramA: 0, paramB: 0 }, week: 9 }],
+    candidateTotal: summary,
+    candidateValues: { paramA: 1.5, paramB: -0.8 },
+    suggestedValues: { paramA: 1.5, paramB: -0.8 },
+    suggestionNotes: { paramA: 'Note for A.', paramB: 'Note for B.' },
+    usedTotal: summary,
+  };
+}
 
 function buildCalibration(overrides: Partial<PredictionCalibrationResponse> = {}): PredictionCalibrationResponse {
   return {
@@ -59,6 +85,8 @@ function renderSection() {
 describe('PredictionCalibrationSection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAnalysis = undefined;
+    mockAnalysisVariables = undefined;
     mockCalibration = buildCalibration();
     mockError = null;
     mockHistoryEnabled = false;
@@ -86,6 +114,15 @@ describe('PredictionCalibrationSection', () => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
   });
 
+  it('hides analysis results that were run for a different week', () => {
+    mockAnalysis = buildAnalysis();
+    mockAnalysisVariables = { backtestWeeks: 4, season: 2026, week: 9 };
+
+    renderSection();
+
+    expect(screen.queryByText('Suggested values')).not.toBeInTheDocument();
+  });
+
   it('loads and shows the season history when expanded', async () => {
     renderSection();
 
@@ -97,10 +134,38 @@ describe('PredictionCalibrationSection', () => {
     expect(screen.getByText('Accepted suggestion')).toBeInTheDocument();
   });
 
+  it('previews the typed values over the chosen weeks', async () => {
+    renderSection();
+
+    await userEvent.clear(screen.getByLabelText('Param A'));
+    await userEvent.type(screen.getByLabelText('Param A'), '2');
+    await userEvent.click(screen.getByRole('button', { name: 'Preview my values' }));
+
+    expect(mockAnalyzeMutate).toHaveBeenCalledWith({ backtestWeeks: 8, season: 2026, values: { paramA: 2, paramB: 0 }, week: 10 });
+  });
+
   it('renders the selected week as the heading', () => {
     renderSection();
 
     expect(screen.getByRole('heading', { name: '2026 Week 11' })).toBeInTheDocument();
+  });
+
+  it('requests a season-to-date comparison covering every earlier week', async () => {
+    renderSection();
+
+    await userEvent.selectOptions(screen.getByLabelText('Weeks to compare'), 'Season to date');
+    await userEvent.click(screen.getByRole('button', { name: 'Get suggestion' }));
+
+    expect(mockAnalyzeMutate).toHaveBeenCalledWith({ backtestWeeks: 9, season: 2026, week: 10 });
+  });
+
+  it('requests a suggestion over the chosen number of weeks', async () => {
+    renderSection();
+
+    await userEvent.selectOptions(screen.getByLabelText('Weeks to compare'), '6');
+    await userEvent.click(screen.getByRole('button', { name: 'Get suggestion' }));
+
+    expect(mockAnalyzeMutate).toHaveBeenCalledWith({ backtestWeeks: 6, season: 2026, week: 10 });
   });
 
   it('resets edits back to the saved values', async () => {
@@ -114,6 +179,22 @@ describe('PredictionCalibrationSection', () => {
     expect(input).toHaveValue(1);
   });
 
+  it('saves an applied suggestion as accepted', async () => {
+    mockAnalysis = buildAnalysis();
+    mockAnalysisVariables = { backtestWeeks: 4, season: 2026, week: 10 };
+    mockMutateAsync.mockResolvedValue(buildCalibration());
+    renderSection();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Use suggested values' }));
+
+    expect(screen.getByLabelText('Param A')).toHaveValue(1.5);
+    expect(screen.getByLabelText('Param B')).toHaveValue(-0.8);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(mockMutateAsync).toHaveBeenCalledWith({ isAcceptedSuggestion: true, season: 2026, values: { paramA: 1.5, paramB: -0.8 }, week: 10 });
+  });
+
   it('saves the typed values and shows a confirmation', async () => {
     mockMutateAsync.mockResolvedValue(buildCalibration({ values: { paramA: 2.5, paramB: 0 } }));
     renderSection();
@@ -122,7 +203,7 @@ describe('PredictionCalibrationSection', () => {
     await userEvent.type(screen.getByLabelText('Param A'), '2.5');
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-    expect(mockMutateAsync).toHaveBeenCalledWith({ season: 2026, values: { paramA: 2.5, paramB: 0 }, week: 10 });
+    expect(mockMutateAsync).toHaveBeenCalledWith({ isAcceptedSuggestion: false, season: 2026, values: { paramA: 2.5, paramB: 0 }, week: 10 });
     expect(await screen.findByRole('status')).toHaveTextContent('Saved');
   });
 
@@ -154,6 +235,17 @@ describe('PredictionCalibrationSection', () => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
   });
 
+  it('shows the analysis for this week with its suggestion and backtest', () => {
+    mockAnalysis = buildAnalysis();
+    mockAnalysisVariables = { backtestWeeks: 4, season: 2026, week: 10 };
+
+    renderSection();
+
+    expect(screen.getByText('Suggested values')).toBeInTheDocument();
+    expect(screen.getByText('Note for A.')).toBeInTheDocument();
+    expect(screen.getByText('Last 1 week: as used vs suggested values')).toBeInTheDocument();
+  });
+
   it('shows the load error', () => {
     mockCalibration = undefined;
     mockError = new Error('Server unavailable');
@@ -182,5 +274,19 @@ describe('PredictionCalibrationSection', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('published');
+  });
+
+  it('treats edits made after applying a suggestion as manual', async () => {
+    mockAnalysis = buildAnalysis();
+    mockAnalysisVariables = { backtestWeeks: 4, season: 2026, week: 10 };
+    mockMutateAsync.mockResolvedValue(buildCalibration());
+    renderSection();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Use suggested values' }));
+    await userEvent.clear(screen.getByLabelText('Param B'));
+    await userEvent.type(screen.getByLabelText('Param B'), '1');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(mockMutateAsync).toHaveBeenCalledWith(expect.objectContaining({ isAcceptedSuggestion: false }));
   });
 });

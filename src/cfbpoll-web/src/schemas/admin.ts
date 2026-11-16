@@ -163,6 +163,23 @@ export const PredictionCalibrationHistoryEntrySchema = z.object({
 
 export const PredictionCalibrationHistoryResponseSchema = z.array(PredictionCalibrationHistoryEntrySchema);
 
+export const PredictionCalibrationBacktestWeekSchema = z.object({
+  candidate: PredictionRecordSummarySchema,
+  season: z.number(),
+  used: PredictionRecordSummarySchema,
+  usedValues: z.record(z.string(), z.number()),
+  week: z.number(),
+});
+
+export const PredictionCalibrationAnalysisSchema = z.object({
+  backtestWeeks: z.array(PredictionCalibrationBacktestWeekSchema),
+  candidateTotal: PredictionRecordSummarySchema,
+  candidateValues: z.record(z.string(), z.number()),
+  suggestedValues: z.record(z.string(), z.number()),
+  suggestionNotes: z.record(z.string(), z.string()),
+  usedTotal: PredictionRecordSummarySchema,
+});
+
 export const CfbdTopEndpointSchema = z.object({
   endpoint: z.string(),
   requestCount: z.number(),
@@ -231,6 +248,8 @@ export type IncompleteGame = z.infer<typeof IncompleteGameSchema>;
 export type IncompleteGamesResponse = z.infer<typeof IncompleteGamesResponseSchema>;
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 export type MatchupActualGame = z.infer<typeof MatchupActualGameSchema>;
+export type PredictionCalibrationAnalysis = z.infer<typeof PredictionCalibrationAnalysisSchema>;
+export type PredictionCalibrationBacktestWeek = z.infer<typeof PredictionCalibrationBacktestWeekSchema>;
 export type PredictionCalibrationHistoryEntry = z.infer<typeof PredictionCalibrationHistoryEntrySchema>;
 export type PredictionCalibrationParameter = z.infer<typeof PredictionCalibrationParameterSchema>;
 export type PredictionCalibrationResponse = z.infer<typeof PredictionCalibrationResponseSchema>;

@@ -8,6 +8,14 @@ namespace CFBPoll.Core.Interfaces;
 public interface IAdminModule
 {
     /// <summary>
+    /// Suggests calibration values for the given season and week's predictions, and grades a candidate set
+    /// of values (or the suggestion, when <paramref name="candidate"/> is null) over the most recent
+    /// completed weeks against the values those weeks used. Persists nothing. Rejected when the season's
+    /// algorithm takes no calibration or the candidate values don't match its parameters.
+    /// </summary>
+    Task<AnalyzePredictionCalibrationResult> AnalyzePredictionCalibrationAsync(int season, int week, IReadOnlyDictionary<string, double>? candidate, int backtestWeeks);
+
+    /// <summary>
     /// Calculates rankings for the given season and week using an explicitly chosen algorithm
     /// version, without persisting or publishing anything. Intended for previewing how a candidate
     /// algorithm would score a historical or current week before it becomes the season default.
@@ -190,5 +198,6 @@ public interface IAdminModule
     /// algorithm takes no calibration, when the week's predictions are already published, or when the
     /// values don't match the algorithm's parameters (unknown or missing keys, out-of-range values).
     /// </summary>
-    Task<SavePredictionCalibrationResult> SavePredictionCalibrationAsync(int season, int week, IReadOnlyDictionary<string, double> values);
+    /// <param name="source">Whether the values were typed in or accepted from a suggestion.</param>
+    Task<SavePredictionCalibrationResult> SavePredictionCalibrationAsync(int season, int week, IReadOnlyDictionary<string, double> values, PredictionCalibrationSource source);
 }

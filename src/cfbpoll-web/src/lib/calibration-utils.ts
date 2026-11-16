@@ -1,5 +1,7 @@
+import type { TrackRecordTotals } from '../schemas';
 import type { PredictionCalibrationParameter, PredictionCalibrationSource } from '../schemas/admin';
 
+import { formatTotals } from './track-record-utils';
 import { getWeekLabel } from './week-utils';
 
 interface CalibrationSourceInfo {
@@ -41,6 +43,13 @@ export function formatCalibrationValue(value: number | undefined): string {
   if (value === undefined) return '-';
   const rounded = Number(value.toFixed(2));
   return rounded > 0 ? `+${rounded}` : `${rounded}`;
+}
+
+/**
+ * Shows a record as used and with a candidate side by side, e.g. "24-26 → 27-23".
+ */
+export function formatRecordChange(used: TrackRecordTotals, candidate: TrackRecordTotals): string {
+  return `${formatTotals(used)} → ${formatTotals(candidate)}`;
 }
 
 /**

@@ -25,6 +25,68 @@ public class AdminControllerTests
         _controller = new AdminController(_mockAdminModule.Object, _mockLogger.Object, _mockRankingsModule.Object);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(16)]
+    public async Task AnalyzePredictionCalibration_BacktestWeeksOutOfRange_ReturnsBadRequest(int backtestWeeks)
+    {
+        var result = await _controller.AnalyzePredictionCalibration(2026, 4, new AnalyzePredictionCalibrationRequestDTO { BacktestWeeks = backtestWeeks });
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        _mockAdminModule.Verify(x => x.AnalyzePredictionCalibrationAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IReadOnlyDictionary<string, double>?>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AnalyzePredictionCalibration_InvalidValues_ReturnsBadRequestWithMessage()
+    {
+        _mockAdminModule.Setup(x => x.AnalyzePredictionCalibrationAsync(2026, 4, It.IsAny<IReadOnlyDictionary<string, double>?>(), 4))
+            .ReturnsAsync(new AnalyzePredictionCalibrationResult { ErrorMessage = "Param A must be between -5 and 5", Outcome = AnalyzePredictionCalibrationOutcome.InvalidValues });
+
+        var result = await _controller.AnalyzePredictionCalibration(2026, 4, new AnalyzePredictionCalibrationRequestDTO { Values = new Dictionary<string, double> { ["paramA"] = 9 } });
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result.Result);
+        Assert.Equal("Param A must be between -5 and 5", Assert.IsType<ErrorResponseDTO>(badRequest.Value).Message);
+    }
+
+    [Fact]
+    public async Task AnalyzePredictionCalibration_NoValues_AnalyzesSuggestionAndReturnsMappedAnalysis()
+    {
+        var analysis = new PredictionCalibrationAnalysis
+        {
+            BacktestWeeks = [new PredictionCalibrationBacktestWeek { Season = 2026, UsedValues = new Dictionary<string, double> { ["paramA"] = 0 }, Week = 3 }],
+            CandidateValues = new Dictionary<string, double> { ["paramA"] = 1.5 },
+            SuggestedValues = new Dictionary<string, double> { ["paramA"] = 1.5 }
+        };
+        _mockAdminModule.Setup(x => x.AnalyzePredictionCalibrationAsync(2026, 4, null, 6))
+            .ReturnsAsync(new AnalyzePredictionCalibrationResult { Analysis = analysis, Outcome = AnalyzePredictionCalibrationOutcome.Success });
+
+        var result = await _controller.AnalyzePredictionCalibration(2026, 4, new AnalyzePredictionCalibrationRequestDTO { BacktestWeeks = 6 });
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<PredictionCalibrationAnalysisResponseDTO>(okResult.Value);
+        Assert.Equal(1.5, response.SuggestedValues["paramA"]);
+        Assert.Equal(3, Assert.Single(response.BacktestWeeks).Week);
+    }
+
+    [Fact]
+    public async Task AnalyzePredictionCalibration_NotSupported_ReturnsBadRequest()
+    {
+        _mockAdminModule.Setup(x => x.AnalyzePredictionCalibrationAsync(2024, 4, null, 4))
+            .ReturnsAsync(new AnalyzePredictionCalibrationResult { Outcome = AnalyzePredictionCalibrationOutcome.NotSupported });
+
+        var result = await _controller.AnalyzePredictionCalibration(2024, 4, new AnalyzePredictionCalibrationRequestDTO());
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task AnalyzePredictionCalibration_NullRequest_ReturnsBadRequest()
+    {
+        var result = await _controller.AnalyzePredictionCalibration(2026, 4, null!);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
     [Fact]
     public async Task Calculate_ReturnsRankingsWithDeltas()
     {
@@ -855,9 +917,24 @@ public class AdminControllerTests
     }
 
     [Fact]
+    public async Task SavePredictionCalibration_AcceptedSuggestion_SavesAsAccepted()
+    {
+        _mockAdminModule.Setup(x => x.SavePredictionCalibrationAsync(2026, 4, It.IsAny<IReadOnlyDictionary<string, double>>(), PredictionCalibrationSource.Accepted))
+            .ReturnsAsync(new SavePredictionCalibrationResult { Outcome = SavePredictionCalibrationOutcome.Saved });
+        _mockAdminModule.Setup(x => x.GetPredictionCalibrationAsync(2026, 4)).ReturnsAsync(CreateCalibrationView(2026, 4, 1.5));
+        var request = CreateSaveCalibrationRequest(1.5);
+        request.IsAcceptedSuggestion = true;
+
+        var result = await _controller.SavePredictionCalibration(2026, 4, request);
+
+        Assert.IsType<OkObjectResult>(result.Result);
+        _mockAdminModule.Verify(x => x.SavePredictionCalibrationAsync(2026, 4, It.IsAny<IReadOnlyDictionary<string, double>>(), PredictionCalibrationSource.Accepted), Times.Once);
+    }
+
+    [Fact]
     public async Task SavePredictionCalibration_InvalidValues_ReturnsBadRequestWithMessage()
     {
-        _mockAdminModule.Setup(x => x.SavePredictionCalibrationAsync(2026, 4, It.IsAny<IReadOnlyDictionary<string, double>>()))
+        _mockAdminModule.Setup(x => x.SavePredictionCalibrationAsync(2026, 4, It.IsAny<IReadOnlyDictionary<string, double>>(), It.IsAny<PredictionCalibrationSource>()))
             .ReturnsAsync(new SavePredictionCalibrationResult { ErrorMessage = "Param A must be between -5 and 5", Outcome = SavePredictionCalibrationOutcome.InvalidValues });
 
         var result = await _controller.SavePredictionCalibration(2026, 4, CreateSaveCalibrationRequest(9));
@@ -869,7 +946,7 @@ public class AdminControllerTests
     [Fact]
     public async Task SavePredictionCalibration_Locked_ReturnsBadRequest()
     {
-        _mockAdminModule.Setup(x => x.SavePredictionCalibrationAsync(2026, 4, It.IsAny<IReadOnlyDictionary<string, double>>()))
+        _mockAdminModule.Setup(x => x.SavePredictionCalibrationAsync(2026, 4, It.IsAny<IReadOnlyDictionary<string, double>>(), It.IsAny<PredictionCalibrationSource>()))
             .ReturnsAsync(new SavePredictionCalibrationResult { Outcome = SavePredictionCalibrationOutcome.Locked });
 
         var result = await _controller.SavePredictionCalibration(2026, 4, CreateSaveCalibrationRequest(1));
@@ -881,7 +958,7 @@ public class AdminControllerTests
     [Fact]
     public async Task SavePredictionCalibration_NotSupported_ReturnsBadRequest()
     {
-        _mockAdminModule.Setup(x => x.SavePredictionCalibrationAsync(2024, 4, It.IsAny<IReadOnlyDictionary<string, double>>()))
+        _mockAdminModule.Setup(x => x.SavePredictionCalibrationAsync(2024, 4, It.IsAny<IReadOnlyDictionary<string, double>>(), It.IsAny<PredictionCalibrationSource>()))
             .ReturnsAsync(new SavePredictionCalibrationResult { Outcome = SavePredictionCalibrationOutcome.NotSupported });
 
         var result = await _controller.SavePredictionCalibration(2024, 4, CreateSaveCalibrationRequest(1));
@@ -895,13 +972,13 @@ public class AdminControllerTests
         var result = await _controller.SavePredictionCalibration(2026, 4, new SavePredictionCalibrationRequestDTO());
 
         Assert.IsType<BadRequestObjectResult>(result.Result);
-        _mockAdminModule.Verify(x => x.SavePredictionCalibrationAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IReadOnlyDictionary<string, double>>()), Times.Never);
+        _mockAdminModule.Verify(x => x.SavePredictionCalibrationAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IReadOnlyDictionary<string, double>>(), It.IsAny<PredictionCalibrationSource>()), Times.Never);
     }
 
     [Fact]
     public async Task SavePredictionCalibration_Saved_ReturnsUpdatedCalibration()
     {
-        _mockAdminModule.Setup(x => x.SavePredictionCalibrationAsync(2026, 4, It.Is<IReadOnlyDictionary<string, double>>(v => v["paramA"] == 2)))
+        _mockAdminModule.Setup(x => x.SavePredictionCalibrationAsync(2026, 4, It.Is<IReadOnlyDictionary<string, double>>(v => v["paramA"] == 2), PredictionCalibrationSource.Manual))
             .ReturnsAsync(new SavePredictionCalibrationResult { Outcome = SavePredictionCalibrationOutcome.Saved });
         _mockAdminModule.Setup(x => x.GetPredictionCalibrationAsync(2026, 4)).ReturnsAsync(CreateCalibrationView(2026, 4, 2));
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { calibrationSourceLabel, formatCalibrationSummary, formatCalibrationValue, validateCalibrationInput } from '../../lib/calibration-utils';
+import { calibrationSourceLabel, formatCalibrationSummary, formatCalibrationValue, formatRecordChange, validateCalibrationInput } from '../../lib/calibration-utils';
 
 const parameter = { defaultValue: 0, description: '', key: 'paramA', label: 'Param A', max: 5, min: -5, step: 0.1 };
 
@@ -61,6 +61,12 @@ describe('formatCalibrationValue', () => {
 
   it('rounds to two decimals', () => {
     expect(formatCalibrationValue(1.23456)).toBe('+1.23');
+  });
+});
+
+describe('formatRecordChange', () => {
+  it('shows the used and candidate records side by side', () => {
+    expect(formatRecordChange({ correct: 24, incorrect: 26, push: 0 }, { correct: 27, incorrect: 22, push: 1 })).toBe('24-26 → 27-22-1');
   });
 });
 

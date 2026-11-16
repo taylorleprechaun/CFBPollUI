@@ -13,6 +13,7 @@ namespace CFBPoll.API.Controllers;
 public class AdminController : ControllerBase
 {
     private const string CACHE_ENTRY_NOT_FOUND = "Cache entry not found";
+    private const int MAX_CALIBRATION_BACKTEST_WEEKS = 15;
     private const string PREDICTION_CALIBRATION_LOCKED = "Calibration can't be changed after the week's predictions are published";
     private const string PREDICTION_CALIBRATION_NOT_SUPPORTED = "This season's prediction algorithm doesn't take calibration values";
     private const string PREDICTION_NOT_FOUND = "Prediction not found";
@@ -28,6 +29,33 @@ public class AdminController : ControllerBase
         _adminModule = adminModule ?? throw new ArgumentNullException(nameof(adminModule));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
+    }
+
+    /// <summary>
+    /// Suggests calibration values for the specified season and week's predictions and grades a candidate
+    /// set of values (the suggestion when none are given) over the most recent completed weeks against the
+    /// values those weeks used. Persists nothing.
+    /// </summary>
+    [HttpPost("seasons/{season}/weeks/{week}/prediction-calibration/analysis")]
+    public async Task<ActionResult<PredictionCalibrationAnalysisResponseDTO>> AnalyzePredictionCalibration(int season, int week, [FromBody] AnalyzePredictionCalibrationRequestDTO request)
+    {
+        if (request is null)
+            return BadRequest(new ErrorResponseDTO { Message = "Request body is required", StatusCode = 400 });
+
+        if (request.BacktestWeeks < 1 || request.BacktestWeeks > MAX_CALIBRATION_BACKTEST_WEEKS)
+            return BadRequest(new ErrorResponseDTO { Message = $"Backtest weeks must be between 1 and {MAX_CALIBRATION_BACKTEST_WEEKS}", StatusCode = 400 });
+
+        _logger.LogInformation("Admin analyzing prediction calibration for season {Season}, week {Week}", season, week);
+
+        var candidate = request.Values?.ToDictionary(v => v.Key, v => v.Value);
+        var result = await _adminModule.AnalyzePredictionCalibrationAsync(season, week, candidate, request.BacktestWeeks);
+
+        return result.Outcome switch
+        {
+            AnalyzePredictionCalibrationOutcome.NotSupported => BadRequest(new ErrorResponseDTO { Message = PREDICTION_CALIBRATION_NOT_SUPPORTED, StatusCode = 400 }),
+            AnalyzePredictionCalibrationOutcome.InvalidValues => BadRequest(new ErrorResponseDTO { Message = result.ErrorMessage ?? "Invalid calibration values", StatusCode = 400 }),
+            _ => Ok(PredictionCalibrationMapper.ToAnalysisResponseDTO(result.Analysis!))
+        };
     }
 
     /// <summary>
@@ -492,7 +520,8 @@ public class AdminController : ControllerBase
 
         _logger.LogInformation("Admin saving prediction calibration for season {Season}, week {Week}", season, week);
 
-        var result = await _adminModule.SavePredictionCalibrationAsync(season, week, request.Values.ToDictionary(v => v.Key, v => v.Value));
+        var source = request.IsAcceptedSuggestion ? PredictionCalibrationSource.Accepted : PredictionCalibrationSource.Manual;
+        var result = await _adminModule.SavePredictionCalibrationAsync(season, week, request.Values.ToDictionary(v => v.Key, v => v.Value), source);
 
         switch (result.Outcome)
         {

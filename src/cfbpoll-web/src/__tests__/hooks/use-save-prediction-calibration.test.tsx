@@ -50,7 +50,20 @@ describe('useSavePredictionCalibration', () => {
       await result.current.mutateAsync({ season: 2026, values: { paramA: 2 }, week: 10 });
     });
 
-    expect(savePredictionCalibration).toHaveBeenCalledWith('test-token', 2026, 10, { paramA: 2 });
+    expect(savePredictionCalibration).toHaveBeenCalledWith('test-token', 2026, 10, { paramA: 2 }, false);
+  });
+
+  it('passes the accepted-suggestion flag through', async () => {
+    vi.mocked(savePredictionCalibration).mockResolvedValue(savedResponse);
+    const { wrapper } = createClientAndWrapper();
+
+    const { result } = renderHook(() => useSavePredictionCalibration('test-token'), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ isAcceptedSuggestion: true, season: 2026, values: { paramA: 2 }, week: 10 });
+    });
+
+    expect(savePredictionCalibration).toHaveBeenCalledWith('test-token', 2026, 10, { paramA: 2 }, true);
   });
 
   it('rejects with Authentication required when token is null', async () => {

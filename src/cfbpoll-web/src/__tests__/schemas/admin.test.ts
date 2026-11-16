@@ -12,6 +12,7 @@ import {
   IncompleteGamesResponseSchema,
   LoginResponseSchema,
   MatchupActualGameSchema,
+  PredictionCalibrationAnalysisSchema,
   PredictionCalibrationHistoryEntrySchema,
   PredictionCalibrationResponseSchema,
   PredictionsResponseSchema,
@@ -444,6 +445,31 @@ describe('Admin schemas', () => {
     it('validates a valid game', () => {
       const result = MatchupActualGameSchema.safeParse(validMatchupActualGame);
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe('PredictionCalibrationAnalysisSchema', () => {
+    const summary = { gradedGameCount: 1, marginBias: null, marginMAE: null, marginRMSE: null, overUnder: { correct: 1, incorrect: 0, push: 0 }, spread: { correct: 1, incorrect: 0, push: 0 }, winner: { correct: 1, incorrect: 0, push: 0 } };
+    const validAnalysis = {
+      backtestWeeks: [{ candidate: summary, season: 2026, used: summary, usedValues: { paramA: 0 }, week: 9 }],
+      candidateTotal: summary,
+      candidateValues: { paramA: 1 },
+      suggestedValues: { paramA: 1.5 },
+      suggestionNotes: { paramA: 'Note.' },
+      usedTotal: summary,
+    };
+
+    it('accepts a valid analysis', () => {
+      expect(PredictionCalibrationAnalysisSchema.safeParse(validAnalysis).success).toBe(true);
+    });
+
+    it('rejects a backtest week without its used record', () => {
+      const result = PredictionCalibrationAnalysisSchema.safeParse({
+        ...validAnalysis,
+        backtestWeeks: [{ candidate: summary, season: 2026, usedValues: {}, week: 9 }],
+      });
+
+      expect(result.success).toBe(false);
     });
   });
 
