@@ -20,6 +20,20 @@ public static class CacheKeys
         yield return Games(season, "postseason");
     }
 
+    /// <summary>
+    /// The entries a postseason week's new-game check reads that change as postseason games are scheduled and
+    /// played. CFBD serves every postseason betting line under week 1.
+    /// </summary>
+    public static IEnumerable<string> GetPostseasonKeys(int season)
+    {
+        yield return FullSchedule(season);
+        yield return Games(season, "postseason");
+        yield return AdvancedGameStats(season, "postseason");
+        yield return GameTeamStats(season, "postseason");
+        yield return SeasonStats(season, null);
+        yield return BettingLines(season, 1);
+    }
+
     public static IEnumerable<string> GetSeasonScopedKeys(int season, int week)
     {
         var gameWeek = week + 1;

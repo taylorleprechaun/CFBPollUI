@@ -1039,6 +1039,22 @@ public class CachingCFBDataServiceTests
     }
 
     [Fact]
+    public async Task RefreshPostseasonAsync_RefreshesOnlyCachedPostseasonKeys()
+    {
+        SetupCachedKeys("fullSchedule_2026", "games_2026_postseason", "games_2026_regular", "teams_2026");
+        _mockInnerService.Setup(x => x.GetFullSeasonScheduleAsync(2026)).ReturnsAsync([new ScheduleGame()]);
+        _mockInnerService.Setup(x => x.GetGamesAsync(2026, "postseason")).ReturnsAsync([new Game()]);
+
+        var result = await _service.RefreshPostseasonAsync(2026);
+
+        Assert.Equal(2, result.RefreshedCount);
+        Assert.Equal(0, result.FailedCount);
+        _mockInnerService.Verify(x => x.GetGamesAsync(2026, "regular"), Times.Never);
+        _mockInnerService.Verify(x => x.GetFBSTeamsAsync(It.IsAny<int>()), Times.Never);
+        _mockCache.Verify(x => x.SetAsync("games_2026_postseason", It.IsAny<List<Game>>(), _dailyExpiration), Times.Once);
+    }
+
+    [Fact]
     public async Task RefreshSeasonScopedAsync_CountsFailed_AndKeepsExistingCopy_WhenFetchThrows()
     {
         SetupCachedKeys("fullSchedule_2026", "teams_2026");

@@ -24,6 +24,7 @@ interface ActiveViewMeta {
 export interface ActivePredictionView {
   isGraded: boolean;
   isPersisted: boolean | null;
+  isPostseason: boolean;
   isPublished: boolean;
   predictions: PredictionsResponse;
   resultsPublished: boolean;
@@ -61,7 +62,16 @@ export function usePredictionsActiveView(token: string | null) {
 
   const applyCalculated = useCallback((result: CalculatePredictionsResponse) => {
     const { season: s, week: w } = result.predictions;
-    queryClient.setQueryData(['admin-prediction', s, w], { isPublished: false, predictions: result.predictions });
+    // A freshly calculated week already holds every scheduled game, so an unknown postseason flag can
+    // stay false until the week is next loaded.
+    queryClient.setQueryData(
+      ['admin-prediction', s, w],
+      (old: AdminPredictionsResponse | undefined) => ({
+        isPostseason: old?.isPostseason ?? false,
+        isPublished: false,
+        predictions: result.predictions,
+      }),
+    );
     setMeta({ isPersisted: result.isPersisted, season: s, source: 'calculated', week: w });
     setActiveParams(s, w);
   }, [queryClient, setActiveParams]);
@@ -70,7 +80,11 @@ export function usePredictionsActiveView(token: string | null) {
     const { season: s, week: w } = result.predictions;
     queryClient.setQueryData(
       ['admin-prediction', s, w],
-      (old: AdminPredictionsResponse | undefined) => ({ isPublished: old?.isPublished ?? false, predictions: result.predictions }),
+      (old: AdminPredictionsResponse | undefined) => ({
+        isPostseason: old?.isPostseason ?? false,
+        isPublished: old?.isPublished ?? false,
+        predictions: result.predictions,
+      }),
     );
     setMeta({
       isPersisted: result.isPersisted,
@@ -106,6 +120,7 @@ export function usePredictionsActiveView(token: string | null) {
       // the cache is kept accurate through every transition (generate, grade, publish), and a
       // week can be published/graded more than once within the same session without navigating
       // away, so "haven't left the page" must not be conflated with "definitely unpublished".
+      isPostseason: query.data.isPostseason,
       isPublished: query.data.isPublished,
       predictions: query.data.predictions,
       resultsPublished: query.data.predictions.resultsPublished,

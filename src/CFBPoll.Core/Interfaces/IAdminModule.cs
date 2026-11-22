@@ -8,6 +8,14 @@ namespace CFBPoll.Core.Interfaces;
 public interface IAdminModule
 {
     /// <summary>
+    /// Adds predictions for newly scheduled games, as returned by <see cref="PreviewNewPredictionGamesAsync"/>, to a
+    /// postseason week's stored predictions, keeping its existing picks and its publish and grade state. A game is
+    /// added only if it has a betting line, is still scheduled and not kicked off, and isn't already in the week.
+    /// Predictions are stored as given, so they should carry no results.
+    /// </summary>
+    Task<AddNewPredictionGamesResult> AddNewPredictionGamesAsync(int season, int week, IEnumerable<GamePrediction> games);
+
+    /// <summary>
     /// Suggests calibration values for the given season and week's predictions, and grades each completed
     /// week of the season with the values it used, the values suggested at the time, and the candidate
     /// values when <paramref name="candidate"/> is given. Persists nothing. Rejected when the season's
@@ -155,6 +163,12 @@ public interface IAdminModule
     /// result as a draft. Returns null if no predictions have been generated for the week.
     /// </summary>
     Task<GradePredictionsResult?> GradePredictionsAsync(int season, int week);
+
+    /// <summary>
+    /// Lists postseason games scheduled since a week's predictions were saved that haven't kicked off yet,
+    /// with predictions for those that have a betting line. Persists nothing.
+    /// </summary>
+    Task<NewPredictionGamesPreview> PreviewNewPredictionGamesAsync(int season, int week);
 
     /// <summary>
     /// Publishes graded results for the given season and week, making them visible on the public

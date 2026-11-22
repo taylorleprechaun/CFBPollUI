@@ -833,6 +833,71 @@ public class PredictionsDataTests
         }
     }
 
+    [Fact]
+    public async Task UpdatePredictionsAsync_ExistingRow_ReplacesPredictionsAndGameCountKeepingFlags()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+            await data.SaveAsync(CreatePredictionsResult(2025, 15, "Texas", "Iowa"));
+            await data.PublishAsync(2025, 15);
+            await data.SaveGradedResultAsync(CreatePredictionsResult(2025, 15, "Texas", "Iowa"));
+            await data.PublishGradedResultsAsync(2025, 15);
+
+            var updated = CreatePredictionsResult(2025, 15, "Texas", "Iowa");
+            updated.Predictions = [.. updated.Predictions, new GamePrediction { AwayTeam = "Team A", HomeTeam = "Team B", PredictedWinner = "Team B" }];
+
+            var saved = await data.UpdatePredictionsAsync(updated);
+
+            Assert.True(saved);
+            var result = await data.GetAsync(2025, 15);
+            Assert.Equal(["Texas", "Team B"], result!.Predictions.Select(p => p.HomeTeam));
+            var summary = (await data.GetAllSummariesAsync()).Single(s => s.Season == 2025 && s.Week == 15);
+            Assert.Equal(2, summary.GameCount);
+            Assert.True(summary.IsPublished);
+            Assert.True(summary.IsGraded);
+            Assert.True(summary.ResultsPublished);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task UpdatePredictionsAsync_NoExistingRow_ReturnsFalse()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+
+            var saved = await data.UpdatePredictionsAsync(CreatePredictionsResult(2025, 15));
+
+            Assert.False(saved);
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task UpdatePredictionsAsync_ThrowsOnNullPredictions()
+    {
+        var (data, tempPath) = CreatePredictionsDataWithFile();
+        try
+        {
+            await data.InitializeAsync();
+            await Assert.ThrowsAsync<ArgumentNullException>(() => data.UpdatePredictionsAsync(null!));
+        }
+        finally
+        {
+            CleanupFile(tempPath);
+        }
+    }
+
     private static void CleanupFile(string filePath)
     {
         SqliteConnection.ClearAllPools();

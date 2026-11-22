@@ -11,6 +11,7 @@ public static class PredictionsMapper
 
         return new AdminPredictionsResponseDTO
         {
+            IsPostseason = result.IsPostseason,
             IsPublished = result.IsPublished,
             Predictions = ToResponseDTO(result.Predictions, resultsPublished: result.ResultsPublished, isGraded: result.IsGraded)
         };
@@ -118,6 +119,32 @@ public static class PredictionsMapper
             Summary = ToDTO(result.Summary)
         };
     }
+    /// <summary>
+    /// Maps a submitted prediction back to the domain model. Result and grade fields are not mapped, so the
+    /// prediction is always ungraded.
+    /// </summary>
+    public static GamePrediction ToGamePrediction(GamePredictionDTO prediction)
+    {
+        ArgumentNullException.ThrowIfNull(prediction);
+
+        return new GamePrediction
+        {
+            AwayLogoURL = prediction.AwayLogoURL,
+            AwayTeam = prediction.AwayTeam,
+            AwayTeamScore = prediction.AwayTeamScore,
+            BettingOverUnder = prediction.BettingOverUnder,
+            BettingSpread = prediction.BettingSpread,
+            HomeLogoURL = prediction.HomeLogoURL,
+            HomeTeam = prediction.HomeTeam,
+            HomeTeamScore = prediction.HomeTeamScore,
+            MyOverUnderPick = prediction.MyOverUnderPick,
+            MySpreadPick = prediction.MySpreadPick,
+            NeutralSite = prediction.NeutralSite,
+            PredictedMargin = prediction.PredictedMargin,
+            PredictedWinner = prediction.PredictedWinner
+        };
+    }
+
     public static GradePredictionsResponseDTO ToGradeResponseDTO(GradePredictionsResult result)
     {
         ArgumentNullException.ThrowIfNull(result);
@@ -125,8 +152,19 @@ public static class PredictionsMapper
         return new GradePredictionsResponseDTO
         {
             IsPersisted = result.IsPersisted,
-            Predictions = ToResponseDTO(result.Predictions, resultsPublished: false, isGraded: true),
+            Predictions = ToResponseDTO(result.Predictions, resultsPublished: result.ResultsPublished, isGraded: true),
             UnmatchedGameCount = result.UnmatchedGameCount
+        };
+    }
+
+    public static NewPredictionGamesPreviewDTO ToNewGamesPreviewDTO(NewPredictionGamesPreview preview)
+    {
+        ArgumentNullException.ThrowIfNull(preview);
+
+        return new NewPredictionGamesPreviewDTO
+        {
+            Games = preview.Games.Select(p => ToDTO(p, includeGradeDetails: false)),
+            WaitingOnLines = preview.WaitingOnLines.Select(ToWaitingGameDTO)
         };
     }
 
@@ -170,6 +208,18 @@ public static class PredictionsMapper
             ResultsPublished = summary.ResultsPublished,
             Season = summary.Season,
             Week = summary.Week
+        };
+    }
+
+    public static NewPredictionGameWaitingDTO ToWaitingGameDTO(ScheduleGame game)
+    {
+        ArgumentNullException.ThrowIfNull(game);
+
+        return new NewPredictionGameWaitingDTO
+        {
+            AwayTeam = game.AwayTeam ?? string.Empty,
+            HomeTeam = game.HomeTeam ?? string.Empty,
+            StartDate = game.StartDate
         };
     }
 }

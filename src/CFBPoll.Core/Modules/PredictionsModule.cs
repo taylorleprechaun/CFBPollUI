@@ -70,4 +70,11 @@ public class PredictionsModule : IPredictionsModule
 
         return await _predictionsData.SaveGradedResultAsync(gradedPredictions).ConfigureAwait(false);
     }
+
+    public async Task<bool> UpdatePredictionsAsync(PredictionsResult predictions)
+    {
+        ArgumentNullException.ThrowIfNull(predictions);
+
+        return await _predictionsData.UpdatePredictionsAsync(predictions).ConfigureAwait(false);
+    }
 }

@@ -36,6 +36,7 @@ const mockData = {
   overallWinner: { correct: 15, incorrect: 3, push: 0 },
   weeks: [
     {
+      gameCount: 4,
       marginBias: 2,
       marginGameCount: 4,
       marginRMSE: 5,
@@ -46,6 +47,7 @@ const mockData = {
       winner: { correct: 5, incorrect: 0, push: 0 },
     },
     {
+      gameCount: 6,
       marginBias: -3,
       marginGameCount: 6,
       marginRMSE: 3,
@@ -56,6 +58,7 @@ const mockData = {
       winner: { correct: 4, incorrect: 1, push: 0 },
     },
     {
+      gameCount: 2,
       marginBias: -2,
       marginGameCount: 2,
       marginRMSE: 8,
@@ -80,7 +83,7 @@ function buildTrendData(weeks2023: number, weeks2024: number) {
 // Totals-only weeks for exercising the trend windows: 2023 weeks go 6-4 and 2024 weeks go 9-1 in every category.
 function buildTrendWeek(season: number, week: number) {
   const totals = season === 2024 ? { correct: 9, incorrect: 1, push: 0 } : { correct: 6, incorrect: 4, push: 0 };
-  return { marginBias: 0, marginGameCount: 10, marginRMSE: 5, overUnder: totals, season, spread: totals, week, winner: totals };
+  return { gameCount: 10, marginBias: 0, marginGameCount: 10, marginRMSE: 5, overUnder: totals, season, spread: totals, week, winner: totals };
 }
 
 beforeEach(() => {
@@ -154,6 +157,19 @@ describe('TrackRecordPage', () => {
 
     const seasonSelect = screen.getByLabelText('Season:') as HTMLSelectElement;
     expect(seasonSelect.value).toBe('2024');
+  });
+
+  it('does not show the in-progress footnote when every week is fully graded', () => {
+    vi.mocked(useTrackRecord).mockReturnValue({
+      data: mockData,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useTrackRecord>);
+
+    renderPage();
+
+    expect(screen.queryByText(/Week in progress/)).not.toBeInTheDocument();
   });
 
   it('does not show trend lines on the By Season cards', () => {
@@ -405,6 +421,19 @@ describe('TrackRecordPage', () => {
     expect(screen.getAllByText('Up from 68.0% all-time')).toHaveLength(3);
   });
 
+  it('shows the in-progress footnote when the selected season has a week in progress', () => {
+    vi.mocked(useTrackRecord).mockReturnValue({
+      data: { ...mockData, weeks: mockData.weeks.map((w) => (w.week === 3 ? { ...w, gameCount: 10 } : w)) },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useTrackRecord>);
+
+    renderPage();
+
+    expect(screen.getByText('* Week in progress. Totals include only the games played so far.')).toBeInTheDocument();
+  });
+
   it('shows the season-overall summary for the currently selected season, summed from its weeks', () => {
     localStorage.setItem('cfbpoll_show_margin_stats', 'true');
     vi.mocked(useTrackRecord).mockReturnValue({
@@ -430,9 +459,9 @@ describe('TrackRecordPage', () => {
     const outOfOrderData = {
       ...mockData,
       weeks: [
-        { marginBias: -3, marginGameCount: 6, marginRMSE: 3, overUnder: { correct: 2, incorrect: 1, push: 1 }, season: 2024, spread: { correct: 3, incorrect: 2, push: 0 }, week: 3, winner: { correct: 4, incorrect: 1, push: 0 } },
-        { marginBias: -2, marginGameCount: 2, marginRMSE: 8, overUnder: { correct: 1, incorrect: 1, push: 0 }, season: 2023, spread: { correct: 2, incorrect: 0, push: 0 }, week: 2, winner: { correct: 2, incorrect: 0, push: 0 } },
-        { marginBias: 2, marginGameCount: 4, marginRMSE: 5, overUnder: { correct: 3, incorrect: 2, push: 0 }, season: 2024, spread: { correct: 4, incorrect: 1, push: 0 }, week: 1, winner: { correct: 5, incorrect: 0, push: 0 } },
+        { gameCount: 6, marginBias: -3, marginGameCount: 6, marginRMSE: 3, overUnder: { correct: 2, incorrect: 1, push: 1 }, season: 2024, spread: { correct: 3, incorrect: 2, push: 0 }, week: 3, winner: { correct: 4, incorrect: 1, push: 0 } },
+        { gameCount: 2, marginBias: -2, marginGameCount: 2, marginRMSE: 8, overUnder: { correct: 1, incorrect: 1, push: 0 }, season: 2023, spread: { correct: 2, incorrect: 0, push: 0 }, week: 2, winner: { correct: 2, incorrect: 0, push: 0 } },
+        { gameCount: 4, marginBias: 2, marginGameCount: 4, marginRMSE: 5, overUnder: { correct: 3, incorrect: 2, push: 0 }, season: 2024, spread: { correct: 4, incorrect: 1, push: 0 }, week: 1, winner: { correct: 5, incorrect: 0, push: 0 } },
       ],
     };
     vi.mocked(useTrackRecord).mockReturnValue({

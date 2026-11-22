@@ -160,7 +160,7 @@ describe('usePredictionsActiveView', () => {
   });
 
   it('showView sets the active season/week and fetches the persisted week', async () => {
-    vi.mocked(fetchPrediction).mockResolvedValue({ isPublished: true, predictions });
+    vi.mocked(fetchPrediction).mockResolvedValue({ isPostseason: false, isPublished: true, predictions });
 
     const { result } = renderHook(() => usePredictionsActiveView('test-token'), {
       wrapper: createWrapper(),

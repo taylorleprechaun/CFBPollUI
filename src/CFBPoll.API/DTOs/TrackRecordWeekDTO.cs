@@ -2,6 +2,7 @@ namespace CFBPoll.API.DTOs;
 
 public class TrackRecordWeekDTO
 {
+    public int GameCount { get; set; }
     public double? MarginBias { get; set; }
     public int MarginGameCount { get; set; }
     public double? MarginRMSE { get; set; }

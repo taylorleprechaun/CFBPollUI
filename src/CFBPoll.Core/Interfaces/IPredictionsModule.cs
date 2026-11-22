@@ -64,4 +64,9 @@ public interface IPredictionsModule
     /// Saves graded results for the given season and week without changing publish state.
     /// </summary>
     Task<bool> SaveGradedResultAsync(PredictionsResult gradedPredictions);
+
+    /// <summary>
+    /// Replaces the stored predictions for an existing season and week without changing publish or grade state.
+    /// </summary>
+    Task<bool> UpdatePredictionsAsync(PredictionsResult predictions);
 }

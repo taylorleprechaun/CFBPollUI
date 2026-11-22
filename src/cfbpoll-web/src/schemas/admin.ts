@@ -98,6 +98,7 @@ export const PredictionsResponseSchema = z.object({
 });
 
 export const AdminPredictionsResponseSchema = z.object({
+  isPostseason: z.boolean(),
   isPublished: z.boolean(),
   predictions: PredictionsResponseSchema,
 });
@@ -251,6 +252,17 @@ export const IncompleteGamesResponseSchema = z.object({
   week: z.number(),
 });
 
+export const NewPredictionGameWaitingSchema = z.object({
+  awayTeam: z.string(),
+  homeTeam: z.string(),
+  startDate: z.string().nullable(),
+});
+
+export const NewPredictionGamesPreviewSchema = z.object({
+  games: z.array(GamePredictionSchema),
+  waitingOnLines: z.array(NewPredictionGameWaitingSchema),
+});
+
 export type AdminPredictionsResponse = z.infer<typeof AdminPredictionsResponseSchema>;
 export type AdminRankingsResponse = z.infer<typeof AdminRankingsResponseSchema>;
 export type CacheEntry = z.infer<typeof CacheEntrySchema>;
@@ -268,6 +280,8 @@ export type IncompleteGame = z.infer<typeof IncompleteGameSchema>;
 export type IncompleteGamesResponse = z.infer<typeof IncompleteGamesResponseSchema>;
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 export type MatchupActualGame = z.infer<typeof MatchupActualGameSchema>;
+export type NewPredictionGamesPreview = z.infer<typeof NewPredictionGamesPreviewSchema>;
+export type NewPredictionGameWaiting = z.infer<typeof NewPredictionGameWaitingSchema>;
 export type PredictionCalibrationAnalysis = z.infer<typeof PredictionCalibrationAnalysisSchema>;
 export type PredictionCalibrationBacktestWeek = z.infer<typeof PredictionCalibrationBacktestWeekSchema>;
 export type PredictionCalibrationHistoryEntry = z.infer<typeof PredictionCalibrationHistoryEntrySchema>;

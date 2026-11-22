@@ -8,6 +8,7 @@ import { formatMarginBias, formatMarginRMSE, formatTotals } from '../../lib/trac
 import { getWeekLabel } from '../../lib/week-utils';
 import { FactRow } from '../predictions/prediction-card';
 import { ValueBadge } from '../ui/value-badge';
+import { InProgressMarker } from './in-progress-marker';
 
 interface TrackRecordWeekCardProps {
   showMarginStats?: boolean;
@@ -24,6 +25,7 @@ export function TrackRecordWeekCard({ showMarginStats = false, week }: TrackReco
         >
           {week.season} {getWeekLabel(week.week)}
         </Link>
+        <InProgressMarker week={week} />
       </div>
 
       <FactRow label="Winner" value={<ValueBadge classes={winnerClasses(week.winner)} value={formatTotals(week.winner)} />} />

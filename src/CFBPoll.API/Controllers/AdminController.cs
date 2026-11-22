@@ -13,6 +13,8 @@ namespace CFBPoll.API.Controllers;
 public class AdminController : ControllerBase
 {
     private const string CACHE_ENTRY_NOT_FOUND = "Cache entry not found";
+    private const string NEW_GAMES_NONE_ELIGIBLE = "None of the selected games can be added. They may have kicked off, lost their line, or already be in the week";
+    private const string NEW_GAMES_NOT_POSTSEASON = "New games can only be added to a postseason week";
     private const string PREDICTION_CALIBRATION_INVALID = "Invalid calibration values";
     private const string PREDICTION_CALIBRATION_LOCKED = "Calibration can't be changed after the week's predictions are published";
     private const string PREDICTION_CALIBRATION_NOT_SUPPORTED = "This season's prediction algorithm doesn't take calibration values";
@@ -29,6 +31,29 @@ public class AdminController : ControllerBase
         _adminModule = adminModule ?? throw new ArgumentNullException(nameof(adminModule));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _rankingsModule = rankingsModule ?? throw new ArgumentNullException(nameof(rankingsModule));
+    }
+
+    /// <summary>
+    /// Adds predictions from the new-games preview to a postseason week. Each game must still be scheduled, not
+    /// kicked off, lined, and new to the week. Existing picks are kept, and a published week's new picks are public right away.
+    /// </summary>
+    [HttpPost("seasons/{season}/weeks/{week}/prediction/new-games")]
+    public async Task<ActionResult<AdminPredictionsResponseDTO>> AddNewPredictionGames(int season, int week, [FromBody] AddNewPredictionGamesRequestDTO request)
+    {
+        if (request?.Games is null || !request.Games.Any())
+            return BadRequest(new ErrorResponseDTO { Message = "At least one game is required", StatusCode = 400 });
+
+        _logger.LogInformation("Admin adding new games to predictions for season {Season}, week {Week}", season, week);
+
+        var result = await _adminModule.AddNewPredictionGamesAsync(season, week, request.Games.Select(PredictionsMapper.ToGamePrediction));
+
+        return result.Outcome switch
+        {
+            NewPredictionGamesOutcome.NotFound => NotFound(new ErrorResponseDTO { Message = PREDICTION_NOT_FOUND, StatusCode = 404 }),
+            NewPredictionGamesOutcome.NotPostseason => BadRequest(new ErrorResponseDTO { Message = NEW_GAMES_NOT_POSTSEASON, StatusCode = 400 }),
+            NewPredictionGamesOutcome.NoneEligible => BadRequest(new ErrorResponseDTO { Message = NEW_GAMES_NONE_ELIGIBLE, StatusCode = 400 }),
+            _ => Ok(PredictionsMapper.ToAdminResponseDTO(result.Predictions!))
+        };
     }
 
     /// <summary>
@@ -358,6 +383,25 @@ public class AdminController : ControllerBase
         var games = await _adminModule.GetIncompleteGamesAsync(season, week);
 
         return Ok(IncompleteGamesMapper.ToResponseDTO(season, week, games));
+    }
+
+    /// <summary>
+    /// Lists postseason games scheduled since the week's predictions were saved that haven't kicked off, with
+    /// predictions for those that have a betting line. Persists nothing.
+    /// </summary>
+    [HttpGet("seasons/{season}/weeks/{week}/prediction/new-games")]
+    public async Task<ActionResult<NewPredictionGamesPreviewDTO>> GetNewPredictionGames(int season, int week)
+    {
+        _logger.LogInformation("Admin checking for new prediction games for season {Season}, week {Week}", season, week);
+
+        var preview = await _adminModule.PreviewNewPredictionGamesAsync(season, week);
+
+        return preview.Outcome switch
+        {
+            NewPredictionGamesOutcome.NotFound => NotFound(new ErrorResponseDTO { Message = PREDICTION_NOT_FOUND, StatusCode = 404 }),
+            NewPredictionGamesOutcome.NotPostseason => BadRequest(new ErrorResponseDTO { Message = NEW_GAMES_NOT_POSTSEASON, StatusCode = 400 }),
+            _ => Ok(PredictionsMapper.ToNewGamesPreviewDTO(preview))
+        };
     }
 
     /// <summary>

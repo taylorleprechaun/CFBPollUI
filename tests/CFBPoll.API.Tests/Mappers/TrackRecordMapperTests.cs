@@ -29,6 +29,7 @@ public class TrackRecordMapperTests
     {
         var week = new TrackRecordWeek
         {
+            GameCount = 3,
             MarginBias = 0.5,
             MarginGameCount = 2,
             MarginRMSE = 0.7071,
@@ -43,6 +44,7 @@ public class TrackRecordMapperTests
 
         Assert.Equal(2024, result.Season);
         Assert.Equal(5, result.Week);
+        Assert.Equal(3, result.GameCount);
         Assert.Equal(3, result.OverUnder.Correct);
         Assert.Equal(2, result.Spread.Incorrect);
         Assert.Equal(1, result.Winner.Push);

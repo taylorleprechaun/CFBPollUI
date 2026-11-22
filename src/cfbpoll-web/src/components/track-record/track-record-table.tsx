@@ -8,6 +8,7 @@ import { formatMarginBias, formatMarginRMSE, formatTotals } from '../../lib/trac
 import { getWeekLabel } from '../../lib/week-utils';
 import { TableSkeleton } from '../ui/table-skeleton';
 import { ValueBadge } from '../ui/value-badge';
+import { InProgressMarker } from './in-progress-marker';
 import { TrackRecordWeekCard } from './track-record-week-card';
 
 const COLUMN_COUNT_WITH_MARGIN_STATS = 6;
@@ -52,6 +53,7 @@ export function TrackRecordTable({ isLoading = false, showMarginStats = false, w
                   >
                     {w.season} {getWeekLabel(w.week)}
                   </Link>
+                  <InProgressMarker week={w} />
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-text-secondary text-right">
                   <ValueBadge classes={winnerClasses(w.winner)} value={formatTotals(w.winner)} />

@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { GamePrediction } from '../../schemas/admin';
+
 import {
+  addNewPredictionGames,
   analyzePredictionCalibration,
   calculateExperimental,
   calculateExperimentalMatchup,
@@ -17,6 +20,7 @@ import {
   fetchCacheEntries,
   fetchCfbdUsage,
   fetchIncompleteGames,
+  fetchNewPredictionGames,
   fetchPrediction,
   fetchPredictionCalibration,
   fetchPredictionCalibrationHistory,
@@ -49,9 +53,65 @@ const mockCalibrationResponse = {
   week: 10,
 };
 
+const newGamePrediction: GamePrediction = {
+  actualAwayScore: null,
+  actualHomeScore: null,
+  actualOverUnderResult: null,
+  actualSpreadCoveringTeam: null,
+  actualWinner: null,
+  awayLogoURL: '',
+  awayTeam: 'Team A',
+  awayTeamScore: 20,
+  bettingOverUnder: 51.5,
+  bettingSpread: -3.5,
+  homeLogoURL: '',
+  homeTeam: 'Team B',
+  homeTeamScore: 27,
+  myOverUnderPick: 'Under',
+  mySpreadPick: 'Team B',
+  neutralSite: true,
+  overUnderGrade: 'Ungraded',
+  predictedMargin: 7,
+  predictedWinner: 'Team B',
+  spreadGrade: 'Ungraded',
+  winnerGrade: 'Ungraded',
+};
+
 describe('Admin API service', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+  });
+
+  describe('addNewPredictionGames', () => {
+    it('sends POST with the selected games and parses the updated week', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          isPostseason: true,
+          isPublished: true,
+          predictions: { isGraded: false, predictions: [], resultsPublished: false, season: 2026, week: 15 },
+        }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await addNewPredictionGames('token', 2026, 15, [newGamePrediction]);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/seasons/2026/weeks/15/prediction/new-games'),
+        expect.objectContaining({ body: JSON.stringify({ games: [newGamePrediction] }), method: 'POST' })
+      );
+      expect(result.isPostseason).toBe(true);
+    });
+
+    it('surfaces the server message when no selected game can be added', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: () => Promise.resolve({ message: 'None of the selected games can be added' }),
+      }));
+
+      await expect(addNewPredictionGames('token', 2026, 15, [newGamePrediction])).rejects.toThrow('None of the selected games');
+    });
   });
 
   describe('analyzePredictionCalibration', () => {
@@ -776,12 +836,34 @@ describe('Admin API service', () => {
     });
   });
 
+  describe('fetchNewPredictionGames', () => {
+    it('sends GET to the new-games endpoint and parses the preview', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({
+          games: [],
+          waitingOnLines: [{ awayTeam: 'Team C', homeTeam: 'Team D', startDate: '2026-12-27T20:00:00Z' }],
+        }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchNewPredictionGames('token', 2026, 15);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/admin/seasons/2026/weeks/15/prediction/new-games'),
+        expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer token' }) })
+      );
+      expect(result.waitingOnLines[0].homeTeam).toBe('Team D');
+    });
+  });
+
   describe('fetchPrediction', () => {
     it('sends GET to prediction endpoint with auth header', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () =>
           Promise.resolve({
+            isPostseason: false,
             isPublished: true,
             predictions: { isGraded: true, resultsPublished: false, season: 2024, week: 5, predictions: [] },
           }),

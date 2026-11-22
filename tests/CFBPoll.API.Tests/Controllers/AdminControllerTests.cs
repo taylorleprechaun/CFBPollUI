@@ -26,6 +26,88 @@ public class AdminControllerTests
     }
 
     [Fact]
+    public async Task AddNewPredictionGames_EmptyGames_ReturnsBadRequest()
+    {
+        var result = await _controller.AddNewPredictionGames(2025, 15, new AddNewPredictionGamesRequestDTO { Games = [] });
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+        _mockAdminModule.Verify(x => x.AddNewPredictionGamesAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IEnumerable<GamePrediction>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AddNewPredictionGames_NoneEligible_ReturnsBadRequest()
+    {
+        _mockAdminModule.Setup(x => x.AddNewPredictionGamesAsync(2025, 15, It.IsAny<IEnumerable<GamePrediction>>()))
+            .ReturnsAsync(new AddNewPredictionGamesResult { Outcome = NewPredictionGamesOutcome.NoneEligible });
+
+        var result = await _controller.AddNewPredictionGames(2025, 15, CreateAddNewGamesRequest());
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task AddNewPredictionGames_NotFound_ReturnsNotFound()
+    {
+        _mockAdminModule.Setup(x => x.AddNewPredictionGamesAsync(2025, 15, It.IsAny<IEnumerable<GamePrediction>>()))
+            .ReturnsAsync(new AddNewPredictionGamesResult { Outcome = NewPredictionGamesOutcome.NotFound });
+
+        var result = await _controller.AddNewPredictionGames(2025, 15, CreateAddNewGamesRequest());
+
+        Assert.IsType<NotFoundObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task AddNewPredictionGames_NotPostseason_ReturnsBadRequest()
+    {
+        _mockAdminModule.Setup(x => x.AddNewPredictionGamesAsync(2025, 10, It.IsAny<IEnumerable<GamePrediction>>()))
+            .ReturnsAsync(new AddNewPredictionGamesResult { Outcome = NewPredictionGamesOutcome.NotPostseason });
+
+        var result = await _controller.AddNewPredictionGames(2025, 10, CreateAddNewGamesRequest());
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task AddNewPredictionGames_NullRequest_ReturnsBadRequest()
+    {
+        var result = await _controller.AddNewPredictionGames(2025, 15, null!);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task AddNewPredictionGames_Success_ForwardsSelectionsAndReturnsUpdatedWeek()
+    {
+        IEnumerable<GamePrediction>? forwarded = null;
+        _mockAdminModule.Setup(x => x.AddNewPredictionGamesAsync(2025, 15, It.IsAny<IEnumerable<GamePrediction>>()))
+            .Callback<int, int, IEnumerable<GamePrediction>>((_, _, s) => forwarded = s.ToList())
+            .ReturnsAsync(new AddNewPredictionGamesResult
+            {
+                AddedGameCount = 1,
+                Outcome = NewPredictionGamesOutcome.Success,
+                Predictions = new GetPredictionsResult
+                {
+                    IsPostseason = true,
+                    IsPublished = true,
+                    Predictions = new PredictionsResult
+                    {
+                        Predictions = [new GamePrediction { AwayTeam = "Team A", HomeTeam = "Team B", PredictedWinner = "Team B" }],
+                        Season = 2025,
+                        Week = 15
+                    }
+                }
+            });
+
+        var result = await _controller.AddNewPredictionGames(2025, 15, CreateAddNewGamesRequest());
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<AdminPredictionsResponseDTO>(okResult.Value);
+        Assert.True(response.IsPostseason);
+        Assert.Single(response.Predictions.Predictions);
+        Assert.Equal("Team B", Assert.Single(forwarded!).HomeTeam);
+    }
+
+    [Fact]
     public async Task AnalyzePredictionCalibration_InvalidValues_ReturnsBadRequestWithMessage()
     {
         _mockAdminModule.Setup(x => x.AnalyzePredictionCalibrationAsync(2026, 4, It.IsAny<IReadOnlyDictionary<string, double>?>()))
@@ -645,6 +727,47 @@ public class AdminControllerTests
     }
 
     [Fact]
+    public async Task GetNewPredictionGames_NotFound_ReturnsNotFound()
+    {
+        _mockAdminModule.Setup(x => x.PreviewNewPredictionGamesAsync(2025, 15))
+            .ReturnsAsync(new NewPredictionGamesPreview { Outcome = NewPredictionGamesOutcome.NotFound });
+
+        var result = await _controller.GetNewPredictionGames(2025, 15);
+
+        Assert.IsType<NotFoundObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task GetNewPredictionGames_NotPostseason_ReturnsBadRequest()
+    {
+        _mockAdminModule.Setup(x => x.PreviewNewPredictionGamesAsync(2025, 10))
+            .ReturnsAsync(new NewPredictionGamesPreview { Outcome = NewPredictionGamesOutcome.NotPostseason });
+
+        var result = await _controller.GetNewPredictionGames(2025, 10);
+
+        Assert.IsType<BadRequestObjectResult>(result.Result);
+    }
+
+    [Fact]
+    public async Task GetNewPredictionGames_Success_ReturnsMappedPreview()
+    {
+        _mockAdminModule.Setup(x => x.PreviewNewPredictionGamesAsync(2025, 15))
+            .ReturnsAsync(new NewPredictionGamesPreview
+            {
+                Games = [new GamePrediction { AwayTeam = "Team A", BettingSpread = -3.5, HomeTeam = "Team B", PredictedWinner = "Team B" }],
+                Outcome = NewPredictionGamesOutcome.Success,
+                WaitingOnLines = [new ScheduleGame { AwayTeam = "Team C", HomeTeam = "Team D" }]
+            });
+
+        var result = await _controller.GetNewPredictionGames(2025, 15);
+
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var response = Assert.IsType<NewPredictionGamesPreviewDTO>(okResult.Value);
+        Assert.Equal("Team B", Assert.Single(response.Games).HomeTeam);
+        Assert.Equal("Team D", Assert.Single(response.WaitingOnLines).HomeTeam);
+    }
+
+    [Fact]
     public async Task GetPrediction_NullResult_ReturnsNotFound()
     {
         _mockAdminModule.Setup(x => x.GetPredictionsAsync(2024, 5)).ReturnsAsync((GetPredictionsResult?)null);
@@ -1078,6 +1201,11 @@ public class AdminControllerTests
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
         var error = Assert.IsType<ErrorResponseDTO>(badRequestResult.Value);
         Assert.Equal(400, error.StatusCode);
+    }
+
+    private static AddNewPredictionGamesRequestDTO CreateAddNewGamesRequest()
+    {
+        return new AddNewPredictionGamesRequestDTO { Games = [new GamePredictionDTO { AwayTeam = "Team A", BettingSpread = -3.5, HomeTeam = "Team B", PredictedWinner = "Team B" }] };
     }
 
     private static PredictionCalibrationView CreateCalibrationView(int season, int week, double paramAValue)

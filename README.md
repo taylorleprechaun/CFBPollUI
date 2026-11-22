@@ -19,10 +19,9 @@ This was created using Claude Code with a lot of guidelines to follow my code st
 
 ## TODO
 
-Last Updated 8/6/2026
+Last Updated 11/22/2026
 - Performance improvements around the system
 - More QoL upgrades
-- Partial predictions support for bowl season / playoff rounds
 - Shareable rankings card
 - Ongoing algorithm updates for rating and predictions
 - Head-to-head team comparisons, including across seasons
@@ -37,7 +36,7 @@ Last Updated 8/6/2026
 - **All-Time Rankings**: View the best teams, worst teams, and hardest schedules across all seasons with sortable tables
 - **Season Trends**: Interactive line chart showing rank progression throughout a season, with team logos as data points, CSS-driven highlighting, and custom tooltips
 - **Poll Leaders**: Scatter chart showing how frequently teams have been ranked, with team logos as data points, year range filtering, and toggleable all-weeks vs. final-only modes
-- **Track Record**: Historical accuracy of published predictions — Winner, Spread, Over/Under, Margin RMSE, and Margin Bias — viewable all-time and by season, with color-coded quality bands on the By-Season and weekly stats, plus toggleable margin-accuracy detail
+- **Track Record**: Historical accuracy of published predictions — Winner, Spread, Over/Under, Margin RMSE, and Margin Bias — viewable all-time and by season, with color-coded quality bands on the By-Season and weekly stats, plus toggleable margin-accuracy detail. A week whose games are still being graded is marked in progress
 - **Team Prediction Records**: Per-team predicted vs. actual win/loss record for a season, with delta badges showing over/under-performance against predictions
 - **Page Visibility Controls**: Admin toggles to enable/disable the All-Time, Poll Leaders, and Season Trends pages, with deep-link blocking for disabled pages
 - **Historical Data**: Access rankings from 2002 to present
@@ -45,6 +44,7 @@ Last Updated 8/6/2026
 - **Interactive UI**: Sortable rankings table with team logos and colors
 - **Game Predictions**: Generate game predictions with spread and over/under picks using team ratings and betting line data
 - **Admin Dashboard**: JWT-authenticated admin panel to calculate, preview, and publish rankings and predictions with a two-step draft/publish workflow
+- **Postseason New Games**: Postseason prediction weeks can check for newly scheduled games as playoff rounds are set, preview their predicted scores, picks, and lines, and add the lined ones without changing existing picks or the week's publish and grade state
 - **Experimental Rating & Prediction Comparison**: Admin-only calculation of rankings and predictions against multiple algorithm versions at once for any season/week, compared side-by-side, without persisting or publishing — used to validate a candidate algorithm against the current one before it becomes a season's default. A "Compare Season" mode extends this to predictions across an admin-selected subset of a season's weeks at once, showing a season-overall summary plus a per-week breakdown per algorithm version
 - **Prediction Calibration**: Admin page for reviewing and setting per-week calibration values that adjust V2 predictions when they are generated. Shows the current, suggested and new values for a week, how each completed week did with the values it used compared with the suggestion made at the time and with no calibration (with changed picks and a sign test marking differences that luck alone could explain), and lets typed values be tested against past weeks (labeled as hindsight). Values carry forward to later weeks until changed (a parameter can opt to reset to its default at the start of a season) and lock once the week's predictions are published; Experimental runs apply the selected week's values
 - **Excel Export**: Download rankings and predictions as Excel spreadsheets with rating breakdowns and pick/grade detail
@@ -331,6 +331,7 @@ The frontend runs at `http://localhost:5173`.
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Retrieve persisted predictions for a season/week without recalculating or re-grading |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction-calibration` | Get the calibration parameters and the values that apply to a week (its own, or carried forward from an earlier week), with lock and draft-mismatch flags |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction/export` | Download predictions as Excel |
+| `GET /api/v1/admin/seasons/{season}/weeks/{week}/prediction/new-games` | List newly scheduled postseason games not yet in a week's predictions that haven't kicked off, with predictions for those that have a betting line, without persisting anything |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/ranking` | Retrieve the persisted rankings snapshot for a season/week without recalculating |
 | `GET /api/v1/admin/seasons/{season}/weeks/{week}/ranking/export` | Download rankings as Excel |
 | `PATCH /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Update a prediction (currently supports publishing) |
@@ -343,7 +344,8 @@ The frontend runs at `http://localhost:5173`.
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/experimental/{algorithmVersion}/prediction` | Calculate predictions for a season/week using an explicitly chosen algorithm version (with the week's calibration values for calibrated versions) and grade them against actual final scores when available, without persisting anything |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction` | Calculate predictions for a season/week and save as draft |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction-calibration/analysis` | Suggest calibration values for a week and grade each completed week of the season with the values it used, the values suggested at the time, the defaults (no calibration), and optionally submitted values, with the picks that differ for each comparison, without persisting anything |
-| `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction/grade` | Grade predictions against actual final scores and save as draft |
+| `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction/grade` | Grade predictions against actual final scores and save as draft; re-grading a week whose results are published updates the public pages right away |
+| `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction/new-games` | Add previewed predictions for new postseason games to a week after checking each game is still eligible, keeping existing picks and the week's publish and grade state |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/ranking` | Calculate rankings for a season/week and save as draft |
 | `PUT /api/v1/admin/seasons/{season}/weeks/{week}/prediction-calibration` | Save a week's calibration values; rejected once the week's predictions are published |
 | `PUT /api/v1/page-visibility` | Update page visibility settings |

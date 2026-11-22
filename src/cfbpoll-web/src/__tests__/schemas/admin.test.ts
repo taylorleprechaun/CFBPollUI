@@ -12,6 +12,7 @@ import {
   IncompleteGamesResponseSchema,
   LoginResponseSchema,
   MatchupActualGameSchema,
+  NewPredictionGamesPreviewSchema,
   PredictionCalibrationAnalysisSchema,
   PredictionCalibrationHistoryEntrySchema,
   PredictionCalibrationResponseSchema,
@@ -71,8 +72,18 @@ describe('Admin schemas', () => {
       expect(result.success).toBe(false);
     });
 
+    it('rejects missing isPostseason', () => {
+      const data = {
+        isPublished: true,
+        predictions: { isGraded: true, resultsPublished: false, season: 2024, week: 5, predictions: [] },
+      };
+      const result = AdminPredictionsResponseSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
     it('validates a valid admin predictions response', () => {
       const data = {
+        isPostseason: false,
         isPublished: true,
         predictions: { isGraded: true, resultsPublished: false, season: 2024, week: 5, predictions: [] },
       };
@@ -445,6 +456,20 @@ describe('Admin schemas', () => {
 
     it('validates a valid game', () => {
       const result = MatchupActualGameSchema.safeParse(validMatchupActualGame);
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('NewPredictionGamesPreviewSchema', () => {
+    it('rejects a waiting game without team names', () => {
+      const data = { games: [], waitingOnLines: [{ startDate: null }] };
+      const result = NewPredictionGamesPreviewSchema.safeParse(data);
+      expect(result.success).toBe(false);
+    });
+
+    it('validates a preview with waiting games', () => {
+      const data = { games: [], waitingOnLines: [{ awayTeam: 'Team C', homeTeam: 'Team D', startDate: '2026-12-27T20:00:00Z' }] };
+      const result = NewPredictionGamesPreviewSchema.safeParse(data);
       expect(result.success).toBe(true);
     });
   });

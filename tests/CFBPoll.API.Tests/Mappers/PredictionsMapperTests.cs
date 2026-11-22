@@ -1,3 +1,4 @@
+using CFBPoll.API.DTOs;
 using CFBPoll.API.Mappers;
 using CFBPoll.Core.Models;
 using Xunit;
@@ -6,6 +7,16 @@ namespace CFBPoll.API.Tests.Mappers;
 
 public class PredictionsMapperTests
 {
+    [Fact]
+    public void ToAdminResponseDTO_MapsIsPostseason()
+    {
+        var getResult = new GetPredictionsResult { IsPostseason = true, Predictions = new PredictionsResult { Season = 2025, Week = 15 } };
+
+        var result = PredictionsMapper.ToAdminResponseDTO(getResult);
+
+        Assert.True(result.IsPostseason);
+    }
+
     [Fact]
     public void ToAdminResponseDTO_MapsIsPublishedAndDelegatesToToResponseDTO()
     {
@@ -345,6 +356,46 @@ public class PredictionsMapperTests
     }
 
     [Fact]
+    public void ToGamePrediction_MapsPickFieldsAndLeavesResultsUngraded()
+    {
+        var dto = new GamePredictionDTO
+        {
+            ActualAwayScore = 10,
+            ActualHomeScore = 31,
+            ActualWinner = "Team B",
+            AwayTeam = "Team A",
+            AwayTeamScore = 20,
+            BettingOverUnder = 51.5,
+            BettingSpread = -3.5,
+            HomeTeam = "Team B",
+            HomeTeamScore = 27,
+            MyOverUnderPick = "Under",
+            MySpreadPick = "Team B",
+            NeutralSite = true,
+            PredictedMargin = 7,
+            PredictedWinner = "Team B",
+            WinnerGrade = "Correct"
+        };
+
+        var result = PredictionsMapper.ToGamePrediction(dto);
+
+        Assert.Equal("Team B", result.HomeTeam);
+        Assert.Equal(27, result.HomeTeamScore);
+        Assert.Equal(-3.5, result.BettingSpread);
+        Assert.Equal("Under", result.MyOverUnderPick);
+        Assert.True(result.NeutralSite);
+        Assert.Null(result.ActualHomeScore);
+        Assert.Null(result.ActualWinner);
+        Assert.Equal(PredictionGradeStatus.Ungraded, result.WinnerGrade);
+    }
+
+    [Fact]
+    public void ToGamePrediction_NullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => PredictionsMapper.ToGamePrediction(null!));
+    }
+
+    [Fact]
     public void ToGradeResponseDTO_IncludesGradeDetailsRegardlessOfPublishState()
     {
         var gradeResult = new GradePredictionsResult
@@ -398,7 +449,7 @@ public class PredictionsMapperTests
     }
 
     [Fact]
-    public void ToGradeResponseDTO_SetsResultsPublishedFalseAndIsGradedTrue()
+    public void ToGradeResponseDTO_ResultsNotPublished_SetsResultsPublishedFalseAndIsGradedTrue()
     {
         var gradeResult = new GradePredictionsResult
         {
@@ -410,6 +461,48 @@ public class PredictionsMapperTests
 
         Assert.False(result.Predictions.ResultsPublished);
         Assert.True(result.Predictions.IsGraded);
+    }
+
+    [Fact]
+    public void ToGradeResponseDTO_ResultsPublished_SetsResultsPublishedTrue()
+    {
+        var gradeResult = new GradePredictionsResult
+        {
+            IsPersisted = true,
+            Predictions = new PredictionsResult { Season = 2024, Week = 5 },
+            ResultsPublished = true
+        };
+
+        var result = PredictionsMapper.ToGradeResponseDTO(gradeResult);
+
+        Assert.True(result.Predictions.ResultsPublished);
+    }
+
+    [Fact]
+    public void ToNewGamesPreviewDTO_MapsGamesAndWaitingGames()
+    {
+        var kickoff = new DateTime(2025, 12, 27, 20, 0, 0, DateTimeKind.Utc);
+        var preview = new NewPredictionGamesPreview
+        {
+            Games = [new GamePrediction { AwayTeam = "Team A", BettingSpread = -3.5, HomeTeam = "Team B", PredictedWinner = "Team B" }],
+            WaitingOnLines = [new ScheduleGame { AwayTeam = "Team C", HomeTeam = "Team D", StartDate = kickoff }]
+        };
+
+        var result = PredictionsMapper.ToNewGamesPreviewDTO(preview);
+
+        var game = Assert.Single(result.Games);
+        Assert.Equal("Team B", game.HomeTeam);
+        Assert.Equal(-3.5, game.BettingSpread);
+        Assert.Equal("Ungraded", game.WinnerGrade);
+        var waiting = Assert.Single(result.WaitingOnLines);
+        Assert.Equal("Team D", waiting.HomeTeam);
+        Assert.Equal(kickoff, waiting.StartDate);
+    }
+
+    [Fact]
+    public void ToNewGamesPreviewDTO_NullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => PredictionsMapper.ToNewGamesPreviewDTO(null!));
     }
 
     [Fact]
@@ -577,5 +670,21 @@ public class PredictionsMapperTests
         var result = PredictionsMapper.ToSummaryDTO(summary);
 
         Assert.False(result.IsPublished);
+    }
+
+    [Fact]
+    public void ToWaitingGameDTO_MissingTeams_MapsEmptyStrings()
+    {
+        var result = PredictionsMapper.ToWaitingGameDTO(new ScheduleGame());
+
+        Assert.Equal(string.Empty, result.AwayTeam);
+        Assert.Equal(string.Empty, result.HomeTeam);
+        Assert.Null(result.StartDate);
+    }
+
+    [Fact]
+    public void ToWaitingGameDTO_NullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => PredictionsMapper.ToWaitingGameDTO(null!));
     }
 }

@@ -28,10 +28,13 @@ import {
   type ExperimentalPredictionsResponse,
   ExperimentalPredictionsResponseSchema,
   FbsTeamNamesResponseSchema,
+  type GamePrediction,
   type GradePredictionsResponse,
   GradePredictionsResponseSchema,
   type IncompleteGamesResponse,
   IncompleteGamesResponseSchema,
+  type NewPredictionGamesPreview,
+  NewPredictionGamesPreviewSchema,
   type PredictionCalibrationAnalysis,
   PredictionCalibrationAnalysisSchema,
   type PredictionCalibrationHistoryEntry,
@@ -48,6 +51,23 @@ import {
   type SeasonExperimentalPredictionsResponse,
   SeasonExperimentalPredictionsResponseSchema,
 } from '../schemas/admin';
+
+export async function addNewPredictionGames(
+  token: string,
+  season: number,
+  week: number,
+  games: GamePrediction[]
+): Promise<AdminPredictionsResponse> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction/new-games`,
+    withAuth(token, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ games }),
+    })
+  );
+  return parseResponse(response, AdminPredictionsResponseSchema);
+}
 
 export async function analyzePredictionCalibration(
   token: string,
@@ -262,6 +282,18 @@ export async function fetchIncompleteGames(
     withAuth(token)
   );
   return parseResponse(response, IncompleteGamesResponseSchema);
+}
+
+export async function fetchNewPredictionGames(
+  token: string,
+  season: number,
+  week: number
+): Promise<NewPredictionGamesPreview> {
+  const response = await safeFetch(
+    `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction/new-games`,
+    withAuth(token)
+  );
+  return parseResponse(response, NewPredictionGamesPreviewSchema);
 }
 
 export async function fetchPrediction(

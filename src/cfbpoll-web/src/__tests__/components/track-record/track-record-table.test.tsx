@@ -19,6 +19,7 @@ vi.mock('../../../components/track-record/track-record-week-card', () => ({
 
 function buildWeek(overrides: Partial<TrackRecordWeek> = {}): TrackRecordWeek {
   return {
+    gameCount: 5,
     marginBias: 0.5,
     marginGameCount: 5,
     marginRMSE: 8.3,
@@ -71,6 +72,12 @@ describe('TrackRecordTable', () => {
     expect(screen.getByText('3-2')).toHaveClass('bg-green-100');
   });
 
+  it('does not mark a fully graded week as in progress', () => {
+    renderTable({ weeks: [buildWeek({ gameCount: 5, marginGameCount: 5 })] });
+
+    expect(screen.queryByText('*')).not.toBeInTheDocument();
+  });
+
   it('does not render margin RMSE/Bias columns when showMarginStats is false', () => {
     renderTable({ weeks: [buildWeek()] });
 
@@ -83,6 +90,12 @@ describe('TrackRecordTable', () => {
 
     const link = screen.getByRole('link', { name: '2023 Week 5' });
     expect(link).toHaveAttribute('href', '/predictions?season=2023&week=4');
+  });
+
+  it('marks a partially graded week as in progress next to the week label', () => {
+    renderTable({ weeks: [buildWeek({ gameCount: 44, marginGameCount: 10 })] });
+
+    expect(screen.getByLabelText('In progress: 10 of 44 games graded')).toHaveTextContent('*');
   });
 
   it('renders a skeleton when loading', () => {

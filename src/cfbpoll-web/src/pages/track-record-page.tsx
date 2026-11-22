@@ -16,7 +16,7 @@ import { SITE_OWNER_NAME } from '../lib/config';
 import { marginBiasClasses, marginRMSEClasses } from '../lib/margin-quality';
 import { overUnderClasses, spreadClasses, winnerClasses } from '../lib/pick-quality';
 import { TRACK_RECORD_STAT_INFO } from '../lib/track-record-stat-info';
-import { ALL_TIME_TREND_WEEKS, combineMarginBias, combineMarginRMSE, computeRecordTrend, formatMarginBias, formatMarginRMSE, sumTotals } from '../lib/track-record-utils';
+import { ALL_TIME_TREND_WEEKS, combineMarginBias, combineMarginRMSE, computeRecordTrend, formatMarginBias, formatMarginRMSE, isWeekInProgress, sumTotals } from '../lib/track-record-utils';
 
 export function TrackRecordPage() {
   useDocumentTitle(`${SITE_OWNER_NAME} - Track Record`);
@@ -79,6 +79,7 @@ export function TrackRecordPage() {
     () => sumTotals(seasonWeeksDescending.map((w) => w.overUnder)),
     [seasonWeeksDescending]
   );
+  const hasWeekInProgress = seasonWeeksDescending.some(isWeekInProgress);
   const seasonMarginBias = useMemo(() => combineMarginBias(seasonWeeksDescending), [seasonWeeksDescending]);
   const seasonMarginRMSE = useMemo(() => combineMarginRMSE(seasonWeeksDescending), [seasonWeeksDescending]);
 
@@ -192,6 +193,11 @@ export function TrackRecordPage() {
             <div className="bg-surface shadow-md rounded-xl overflow-hidden mt-6">
               <TrackRecordTable weeks={seasonWeeksDescending} showMarginStats={showMarginStats} />
             </div>
+            {hasWeekInProgress && (
+              <p className="text-xs text-text-muted mt-2">
+                * Week in progress. Totals include only the games played so far.
+              </p>
+            )}
           </div>
         </div>
       )}

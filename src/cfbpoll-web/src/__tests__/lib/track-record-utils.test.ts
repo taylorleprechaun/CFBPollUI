@@ -7,6 +7,7 @@ import {
   formatMarginBias,
   formatMarginRMSE,
   formatTotals,
+  isWeekInProgress,
   sumTotals,
   winPercentage,
 } from '../../lib/track-record-utils';
@@ -168,6 +169,20 @@ describe('formatTotals', () => {
 
   it('formats correct-incorrect without a push segment when push is zero', () => {
     expect(formatTotals({ correct: 10, incorrect: 4, push: 0 })).toBe('10-4');
+  });
+});
+
+describe('isWeekInProgress', () => {
+  it('returns false when every game is graded', () => {
+    expect(isWeekInProgress({ gameCount: 44, marginGameCount: 44 })).toBe(false);
+  });
+
+  it('returns false when the game count is missing from older cached data', () => {
+    expect(isWeekInProgress({ gameCount: 0, marginGameCount: 12 })).toBe(false);
+  });
+
+  it('returns true when fewer games are graded than predicted', () => {
+    expect(isWeekInProgress({ gameCount: 44, marginGameCount: 10 })).toBe(true);
   });
 });
 

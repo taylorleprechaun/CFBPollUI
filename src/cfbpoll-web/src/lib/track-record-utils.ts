@@ -60,6 +60,10 @@ export function formatTotals(totals: TrackRecordTotals): string {
     : `${totals.correct}-${totals.incorrect}`;
 }
 
+export function isWeekInProgress(week: Pick<TrackRecordWeek, 'gameCount' | 'marginGameCount'>): boolean {
+  return week.marginGameCount < week.gameCount;
+}
+
 export function sumTotals(totals: TrackRecordTotals[]): TrackRecordTotals {
   return totals.reduce(
     (acc, t) => ({

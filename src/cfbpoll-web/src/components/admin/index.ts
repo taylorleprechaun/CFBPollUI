@@ -18,6 +18,7 @@ export { IncompleteGamesModal } from './incomplete-games-modal';
 export { IncompleteWeekBanner } from './incomplete-week-banner';
 export { MatchupSeasonMeetings } from './matchup-season-meetings';
 export { MatchupVersionResult } from './matchup-version-result';
+export { NewGamesModal } from './new-games-modal';
 export { PersistedItemsSection } from './persisted-items-section';
 export { PersistedPredictionsSection } from './persisted-predictions-section';
 export { PersistedRankingsSnapshotsSection } from './persisted-rankings-snapshots-section';

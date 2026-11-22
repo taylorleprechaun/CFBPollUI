@@ -44,6 +44,16 @@ public class CacheKeysTests
     }
 
     [Fact]
+    public void GetPostseasonKeys_ReturnsScheduleLinesAndPostseasonEntries()
+    {
+        var keys = CacheKeys.GetPostseasonKeys(2026).ToList();
+
+        Assert.Equal(
+            ["fullSchedule_2026", "games_2026_postseason", "advancedGameStats_2026_postseason", "gameTeamStats_2026_postseason", CacheKeys.SeasonStats(2026, null), "bettingLines_2026_1"],
+            keys);
+    }
+
+    [Fact]
     public void GetSeasonScopedKeys_IncludesFullSchedule()
     {
         var keys = CacheKeys.GetSeasonScopedKeys(2024, 5);

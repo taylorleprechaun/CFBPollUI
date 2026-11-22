@@ -4,7 +4,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { GamePrediction } from '../../schemas/admin';
+
 import {
+  useAddNewPredictionGames,
   useCalculatePredictions,
   useCalculateRankings,
   useDeletePredictions,
@@ -18,6 +21,7 @@ import {
 } from '../../hooks/use-admin-mutations';
 
 vi.mock('../../services/admin-api', () => ({
+  addNewPredictionGames: vi.fn(),
   calculatePredictions: vi.fn(),
   calculateRankings: vi.fn(),
   deletePredictions: vi.fn(),
@@ -31,6 +35,7 @@ vi.mock('../../services/admin-api', () => ({
 }));
 
 import {
+  addNewPredictionGames,
   calculatePredictions,
   calculateRankings,
   deletePredictions,
@@ -42,6 +47,30 @@ import {
   publishRankingsSnapshot,
   refreshCache,
 } from '../../services/admin-api';
+
+const newGamePrediction: GamePrediction = {
+  actualAwayScore: null,
+  actualHomeScore: null,
+  actualOverUnderResult: null,
+  actualSpreadCoveringTeam: null,
+  actualWinner: null,
+  awayLogoURL: '',
+  awayTeam: 'Team A',
+  awayTeamScore: 20,
+  bettingOverUnder: 51.5,
+  bettingSpread: -3.5,
+  homeLogoURL: '',
+  homeTeam: 'Team B',
+  homeTeamScore: 27,
+  myOverUnderPick: 'Under',
+  mySpreadPick: 'Team B',
+  neutralSite: true,
+  overUnderGrade: 'Ungraded',
+  predictedMargin: 7,
+  predictedWinner: 'Team B',
+  spreadGrade: 'Ungraded',
+  winnerGrade: 'Ungraded',
+};
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -86,6 +115,18 @@ function seedCalibrationQueries() {
 
 describe('null token guard', () => {
   beforeEach(() => vi.resetAllMocks());
+
+  it('useAddNewPredictionGames rejects with Authentication required when token is null', async () => {
+    const { result } = renderHook(() => useAddNewPredictionGames(null), {
+      wrapper: createWrapper(),
+    });
+
+    await expect(
+      act(() => result.current.mutateAsync({ games: [newGamePrediction], season: 2026, week: 15 }))
+    ).rejects.toThrow('Authentication required');
+
+    expect(addNewPredictionGames).not.toHaveBeenCalled();
+  });
 
   it('useCalculatePredictions rejects with Authentication required when token is null', async () => {
     const { result } = renderHook(() => useCalculatePredictions(null), {
@@ -205,6 +246,34 @@ describe('null token guard', () => {
     ).rejects.toThrow('Authentication required');
 
     expect(refreshCache).not.toHaveBeenCalled();
+  });
+});
+
+describe('useAddNewPredictionGames', () => {
+  beforeEach(() => vi.resetAllMocks());
+
+  it('caches the updated week and discards the new-games preview on success', async () => {
+    const updatedWeek = {
+      isPostseason: true,
+      isPublished: true,
+      predictions: { isGraded: false, predictions: [], resultsPublished: false, season: 2026, week: 15 },
+    };
+    vi.mocked(addNewPredictionGames).mockResolvedValue(updatedWeek);
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData(['new-prediction-games', 2026, 15], { games: [], waitingOnLines: [] });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => useAddNewPredictionGames('test-token'), { wrapper });
+
+    await act(async () => {
+      await result.current.mutateAsync({ games: [newGamePrediction], season: 2026, week: 15 });
+    });
+
+    expect(addNewPredictionGames).toHaveBeenCalledWith('test-token', 2026, 15, [newGamePrediction]);
+    expect(queryClient.getQueryData(['admin-prediction', 2026, 15])).toEqual(updatedWeek);
+    expect(queryClient.getQueryData(['new-prediction-games', 2026, 15])).toBeUndefined();
   });
 });
 

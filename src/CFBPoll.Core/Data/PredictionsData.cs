@@ -286,6 +286,34 @@ public class PredictionsData : IPredictionsData
         return rowsAffected > 0;
     }
 
+    public async Task<bool> UpdatePredictionsAsync(PredictionsResult predictions)
+    {
+        ArgumentNullException.ThrowIfNull(predictions);
+
+        var json = JsonSerializer.Serialize(predictions);
+
+        await using var connection = new SqliteConnection(_connectionString);
+        await connection.OpenAsync().ConfigureAwait(false);
+
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            UPDATE PredictionsSnapshot
+            SET PredictionsJson = @PredictionsJson, GameCount = @GameCount
+            WHERE Season = @Season AND Week = @Week
+            """;
+        command.Parameters.AddWithValue("@Season", predictions.Season);
+        command.Parameters.AddWithValue("@Week", predictions.Week);
+        command.Parameters.AddWithValue("@PredictionsJson", json);
+        command.Parameters.AddWithValue("@GameCount", predictions.Predictions.Count);
+
+        var rowsAffected = await command.ExecuteNonQueryAsync().ConfigureAwait(false);
+
+        _logger.LogInformation("Updated predictions for season {Season}, week {Week} ({GameCount} games): {RowsAffected} rows affected",
+            predictions.Season, predictions.Week, predictions.Predictions.Count, rowsAffected);
+
+        return rowsAffected > 0;
+    }
+
     private void EnsureDirectoryExists()
     {
         var builder = new SqliteConnectionStringBuilder(_connectionString);
