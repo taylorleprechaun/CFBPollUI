@@ -49,6 +49,7 @@ const NOISE_P_VALUE = 0.05;
 
 const SOURCE_LABELS: Record<Exclude<PredictionCalibrationSource, 'CarriedForward'>, string> = {
   Accepted: 'Accepted suggestion',
+  Kept: 'Kept carried-forward values',
   Manual: 'Set manually',
 };
 
@@ -153,6 +154,13 @@ export function formatSignedNumber(value: number): string {
  */
 export function isWithinNoise(change: PredictionPickChange): boolean {
   return signTestPValue(change.comparedCorrect, change.usedCorrect) >= NOISE_P_VALUE;
+}
+
+/**
+ * Link to the admin Predictions page, opened on a season and week.
+ */
+export function predictionsPageUrl(season: number, week: number): string {
+  return `/admin/predictions?season=${season}&week=${week}`;
 }
 
 /**

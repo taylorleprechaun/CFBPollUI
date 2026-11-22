@@ -105,6 +105,15 @@ describe('PredictionCalibrationSection', () => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
   });
 
+  it('explains how to change a locked week', () => {
+    mockCalibration = buildCalibration({ isLocked: true });
+
+    renderSection();
+
+    expect(screen.getByText(/this unpublishes the week/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'generate again on the Predictions page' })).toHaveAttribute('href', '/admin/predictions?season=2026&week=10');
+  });
+
   it('flags a test of typed values as out of date once the values change', async () => {
     mockPreview = buildAnalysis({ candidateValues: { paramA: 1, paramB: 0 } });
     mockPreviewVariables = { season: 2026, values: { paramA: 1, paramB: 0 }, week: 10 };
@@ -126,12 +135,52 @@ describe('PredictionCalibrationSection', () => {
     expect(screen.getByRole('heading', { name: 'How the suggestions have done this season' })).toBeInTheDocument();
   });
 
+  it('keeps the last test of typed values on screen while it re-runs', async () => {
+    mockPreviewMutate.mockImplementation((_params, options: { onSuccess: (data: PredictionCalibrationAnalysis) => void }) => {
+      options.onSuccess(buildAnalysis({ candidateValues: { paramA: 2, paramB: 0 } }));
+    });
+    const { rerender } = renderSection();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Test my values on past weeks' }));
+    mockPreviewPending = true;
+    mockPreviewVariables = { season: 2026, values: { paramA: 2, paramB: 0 }, week: 10 };
+    rerender(
+      <MemoryRouter>
+        <PredictionCalibrationSection season={2026} token="test-token" week={10} />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Re-running the analysis…')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'How your values would have done (hindsight)' })).toBeInTheDocument();
+  });
+
+  it('links to the week’s predictions after saving', async () => {
+    mockMutateAsync.mockResolvedValue(buildCalibration({ values: { paramA: 2, paramB: 0 } }));
+    renderSection();
+
+    expect(screen.queryByRole('link', { name: 'Go to predictions for this week' })).not.toBeInTheDocument();
+
+    await userEvent.clear(screen.getByLabelText('Param A'));
+    await userEvent.type(screen.getByLabelText('Param A'), '2');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByRole('link', { name: 'Go to predictions for this week' })).toHaveAttribute('href', '/admin/predictions?season=2026&week=10');
+  });
+
   it('loads the analysis automatically for a calibrated season', () => {
     renderSection();
 
     expect(mockAnalysisEnabled).toBe(true);
     expect(screen.getByText('Note for A.', { exact: false })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'How the suggestions have done this season' })).toBeInTheDocument();
+  });
+
+  it('notes where carried-forward current values came from', () => {
+    mockCalibration = buildCalibration({ carriedFromSeason: 2026, carriedFromWeek: 8, isStored: false, source: 'CarriedForward' });
+
+    renderSection();
+
+    expect(screen.getByText('Carried from 2026 Week 9')).toBeInTheDocument();
   });
 
   it('renders the selected week in the heading', () => {
@@ -215,14 +264,15 @@ describe('PredictionCalibrationSection', () => {
     expect(screen.queryByText(/Your values have changed since this test/)).not.toBeInTheDocument();
   });
 
-  it('shows progress while testing typed values', () => {
+  it('shows progress while testing typed values and keeps the results on screen', () => {
     mockPreviewPending = true;
     mockPreviewVariables = { season: 2026, values: { paramA: 2, paramB: 0 }, week: 10 };
 
     renderSection();
 
     expect(screen.getByRole('button', { name: 'Testing…' })).toBeDisabled();
-    expect(screen.getByText(/Running the analysis/)).toBeInTheDocument();
+    expect(screen.getByText('Re-running the analysis…')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'How the suggestions have done this season' })).toBeInTheDocument();
   });
 
   it('shows the analysis error', () => {
@@ -317,7 +367,7 @@ describe('PredictionCalibrationSection', () => {
     await userEvent.type(screen.getByLabelText('Param A'), '2');
     await userEvent.click(screen.getByRole('button', { name: 'Test my values on past weeks' }));
 
-    expect(mockPreviewMutate).toHaveBeenCalledWith({ season: 2026, values: { paramA: 2, paramB: 0 }, week: 10 });
+    expect(mockPreviewMutate).toHaveBeenCalledWith({ season: 2026, values: { paramA: 2, paramB: 0 }, week: 10 }, expect.any(Object));
   });
 
   it('treats edits made after applying a suggestion as manual', async () => {

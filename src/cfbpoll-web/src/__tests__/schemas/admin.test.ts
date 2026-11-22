@@ -555,6 +555,10 @@ describe('Admin schemas', () => {
       expect(PredictionCalibrationResponseSchema.safeParse({ ...validResponse, source: 'Guessed' }).success).toBe(false);
     });
 
+    it('validates a kept source', () => {
+      expect(PredictionCalibrationResponseSchema.safeParse({ ...validResponse, isStored: true, source: 'Kept' }).success).toBe(true);
+    });
+
     it('validates a valid response', () => {
       expect(PredictionCalibrationResponseSchema.safeParse(validResponse).success).toBe(true);
     });

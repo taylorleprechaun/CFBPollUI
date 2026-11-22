@@ -2870,9 +2870,41 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task SavePredictionCalibrationAsync_AcceptedSuggestionMatchingCarriedValues_SavesAsAccepted()
+    {
+        SetUpCalibratedCalculator(2026);
+        SetUpEffectiveCalibration(2026, 4, CalibrationValues(1.5, -1));
+        _mockPredictionsModule.Setup(x => x.GetPublishedWeekNumbersAsync(2026)).ReturnsAsync([]);
+        PredictionCalibration? saved = null;
+        _mockPredictionCalibrationModule.Setup(x => x.SaveAsync(It.IsAny<PredictionCalibration>()))
+            .Callback<PredictionCalibration>(c => saved = c)
+            .ReturnsAsync(true);
+
+        await _adminModule.SavePredictionCalibrationAsync(2026, 4, CalibrationValues(1.5, -1), PredictionCalibrationSource.Accepted);
+
+        Assert.Equal(PredictionCalibrationSource.Accepted, saved!.Source);
+    }
+
+    [Fact]
     public async Task SavePredictionCalibrationAsync_CarriedForwardSource_ThrowsArgumentException()
     {
         await Assert.ThrowsAsync<ArgumentException>(() => _adminModule.SavePredictionCalibrationAsync(2026, 4, CalibrationValues(0, 0), PredictionCalibrationSource.CarriedForward));
+    }
+
+    [Fact]
+    public async Task SavePredictionCalibrationAsync_ChangedCarriedForwardValues_SavesAsManual()
+    {
+        SetUpCalibratedCalculator(2026);
+        SetUpEffectiveCalibration(2026, 4, CalibrationValues(1.5, -1));
+        _mockPredictionsModule.Setup(x => x.GetPublishedWeekNumbersAsync(2026)).ReturnsAsync([]);
+        PredictionCalibration? saved = null;
+        _mockPredictionCalibrationModule.Setup(x => x.SaveAsync(It.IsAny<PredictionCalibration>()))
+            .Callback<PredictionCalibration>(c => saved = c)
+            .ReturnsAsync(true);
+
+        await _adminModule.SavePredictionCalibrationAsync(2026, 4, CalibrationValues(2, -1), PredictionCalibrationSource.Manual);
+
+        Assert.Equal(PredictionCalibrationSource.Manual, saved!.Source);
     }
 
     [Fact]
@@ -2973,6 +3005,23 @@ public class AdminModuleTests
 
         Assert.Equal(SavePredictionCalibrationOutcome.NotSupported, result.Outcome);
         _mockPredictionCalibrationModule.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task SavePredictionCalibrationAsync_UnchangedCarriedForwardValues_SavesAsKept()
+    {
+        SetUpCalibratedCalculator(2026);
+        SetUpEffectiveCalibration(2026, 4, CalibrationValues(1.5, -1));
+        _mockPredictionsModule.Setup(x => x.GetPublishedWeekNumbersAsync(2026)).ReturnsAsync([]);
+        PredictionCalibration? saved = null;
+        _mockPredictionCalibrationModule.Setup(x => x.SaveAsync(It.IsAny<PredictionCalibration>()))
+            .Callback<PredictionCalibration>(c => saved = c)
+            .ReturnsAsync(true);
+
+        var result = await _adminModule.SavePredictionCalibrationAsync(2026, 4, CalibrationValues(1.5, -1), PredictionCalibrationSource.Manual);
+
+        Assert.Equal(SavePredictionCalibrationOutcome.Saved, result.Outcome);
+        Assert.Equal(PredictionCalibrationSource.Kept, saved!.Source);
     }
 
     [Fact]

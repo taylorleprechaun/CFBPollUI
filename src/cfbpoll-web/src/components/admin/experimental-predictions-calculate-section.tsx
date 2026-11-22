@@ -1,11 +1,9 @@
-import { useId } from 'react';
-
 import type { Week } from '../../types';
 import type { AlgorithmVersion } from './algorithm-versions';
 
-import { BUTTON_PRIMARY, BUTTON_SECONDARY, SELECT_BASE } from '../ui/button-styles';
+import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '../ui/button-styles';
 import { AlgorithmVersionPicker } from './algorithm-version-picker';
-import { WeekSelect } from './week-select';
+import { SeasonWeekSelect } from './season-week-select';
 
 interface ExperimentalPredictionsCalculateSectionProps {
   isRunning: boolean;
@@ -38,34 +36,21 @@ export function ExperimentalPredictionsCalculateSection({
   weeks,
   weeksLoading,
 }: ExperimentalPredictionsCalculateSectionProps) {
-  const seasonId = useId();
-
   return (
     <div className="bg-surface border border-border rounded-xl p-4 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
         <h2 className="text-lg font-semibold text-text-primary">Experimental Predictions</h2>
       </div>
-      <div className="flex flex-wrap gap-4 items-end">
-        <div>
-          <label htmlFor={seasonId} className="block text-sm font-medium text-text-secondary mb-1">
-            Season
-          </label>
-          <select
-            id={seasonId}
-            value={selectedSeason ?? ''}
-            onChange={(e) => {
-              onSeasonChange(Number(e.target.value));
-              onWeekChange(null);
-            }}
-            disabled={seasonsLoading}
-            className={`px-3 py-2 ${SELECT_BASE}`}
-          >
-            {seasons.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </div>
-        <WeekSelect onWeekChange={onWeekChange} selectedWeek={selectedWeek} weeks={weeks} weeksLoading={weeksLoading} />
+      <SeasonWeekSelect
+        onSeasonChange={onSeasonChange}
+        onWeekChange={onWeekChange}
+        seasons={seasons}
+        seasonsLoading={seasonsLoading}
+        selectedSeason={selectedSeason}
+        selectedWeek={selectedWeek}
+        weeks={weeks}
+        weeksLoading={weeksLoading}
+      >
         <AlgorithmVersionPicker onChange={onSelectedVersionsChange} selectedVersions={selectedVersions} />
         <button
           onClick={onRun}
@@ -81,7 +66,7 @@ export function ExperimentalPredictionsCalculateSection({
         >
           Compare Season
         </button>
-      </div>
+      </SeasonWeekSelect>
     </div>
   );
 }

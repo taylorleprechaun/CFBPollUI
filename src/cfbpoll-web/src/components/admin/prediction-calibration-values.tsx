@@ -3,6 +3,7 @@ import type { PredictionCalibrationParameter } from '../../schemas/admin';
 import { formatCalibrationValue } from '../../lib/calibration-utils';
 
 interface PredictionCalibrationValuesProps {
+  currentNote?: string;
   currentValues: Record<string, number>;
   fieldErrors: Record<string, string | null>;
   inputIdPrefix: string;
@@ -26,6 +27,7 @@ const MOBILE_LABEL_CLASSES = 'block text-xs font-medium text-text-muted uppercas
  * far the new value moves from the current one.
  */
 export function PredictionCalibrationValues({
+  currentNote,
   currentValues,
   fieldErrors,
   inputIdPrefix,
@@ -43,7 +45,10 @@ export function PredictionCalibrationValues({
     <div className="space-y-4">
       <div className={`${ROW_GRID} hidden sm:grid pb-2 border-b border-border`} aria-hidden="true">
         <span className={HEADER_CLASSES}>Value</span>
-        <span className={HEADER_CLASSES}>Current</span>
+        <span className={HEADER_CLASSES}>
+          Current
+          {currentNote !== undefined && <span className="block normal-case tracking-normal font-normal">{currentNote}</span>}
+        </span>
         <span className={HEADER_CLASSES}>Suggested</span>
         <span className={HEADER_CLASSES}>New value</span>
         <span className={HEADER_CLASSES}>Change</span>
@@ -65,7 +70,10 @@ export function PredictionCalibrationValues({
                 {!p.carriesAcrossSeasons && <p className="text-xs text-text-muted">Resets to {formatCalibrationValue(p.defaultValue)} at the start of each season.</p>}
               </div>
               <div className="text-sm tabular-nums text-text-secondary">
-                <span className={MOBILE_LABEL_CLASSES}>Current</span>
+                <span className={MOBILE_LABEL_CLASSES}>
+                  Current
+                  {currentNote !== undefined && <span className="normal-case tracking-normal font-normal">, {currentNote}</span>}
+                </span>
                 {formatCalibrationValue(current)}
               </div>
               <div className="text-sm tabular-nums text-text-secondary">

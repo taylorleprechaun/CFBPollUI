@@ -52,6 +52,13 @@ describe('PredictionCalibrationValues', () => {
     expect(within(rowFor('Param A')).queryByText(/Resets to/)).not.toBeInTheDocument();
   });
 
+  it('notes where the current values came from', () => {
+    renderValues({ currentNote: 'Carried from 2026 Week 9' });
+
+    expect(screen.getByText('Carried from 2026 Week 9')).toBeInTheDocument();
+    expect(within(rowFor('Param A')).getByText(/Carried from 2026 Week 9/)).toBeInTheDocument();
+  });
+
   it('reports typing to the parent', async () => {
     const props = renderValues();
 

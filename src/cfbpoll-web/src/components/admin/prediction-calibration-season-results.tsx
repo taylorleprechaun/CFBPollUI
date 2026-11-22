@@ -36,6 +36,7 @@ const COMPARISON_OPTIONS = [
 const SOURCE_TAGS: Record<PredictionCalibrationSource, string> = {
   Accepted: 'Accepted',
   CarriedForward: 'Carried',
+  Kept: 'Kept',
   Manual: 'Manual',
 };
 
@@ -175,6 +176,9 @@ export function PredictionCalibrationSeasonResults({ analysis, comparison, histo
                       <td className={`${CELL_CLASSES} whitespace-nowrap`}>
                         <span className="font-medium text-text-primary">{getWeekLabel(w.week)}</span>
                         {source !== undefined && <span className="block text-xs text-text-muted">{SOURCE_TAGS[source]}</span>}
+                        <span className="block text-xs text-text-muted tabular-nums whitespace-normal sm:hidden">
+                          {formatCalibrationSummary(parameters, w.usedValues)} → {formatCalibrationSummary(parameters, comparedValues(w))}
+                        </span>
                       </td>
                       {parameters.map((p) => (
                         <td key={p.key} className={`${CELL_CLASSES} text-right tabular-nums whitespace-nowrap text-text-secondary hidden sm:table-cell`}>

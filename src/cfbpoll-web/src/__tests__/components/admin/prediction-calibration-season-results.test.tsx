@@ -106,6 +106,12 @@ describe('PredictionCalibrationSeasonResults', () => {
     expect(screen.getAllByText('8 picks changed, 8-0 · unlikely to be luck alone')).toHaveLength(3);
   });
 
+  it('shows the values used and compared under each week for small screens', () => {
+    renderResults();
+
+    expect(within(bodyRows()[7]).getByText('Param A 0 → Param A +1')).toBeInTheDocument();
+  });
+
   it('shows the whole season when chosen', async () => {
     renderResults();
 
@@ -131,5 +137,13 @@ describe('PredictionCalibrationSeasonResults', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Suggestions' }));
 
     expect(props.onComparisonChange).toHaveBeenCalledWith('suggested');
+  });
+
+  it('tags a week whose carried-forward values were kept', () => {
+    renderResults({
+      historyEntries: [{ carriedFromSeason: null, carriedFromWeek: null, isLocked: true, season: 2026, source: 'Kept' as const, updatedAt: null, values: { paramA: 0 }, week: 10 }],
+    });
+
+    expect(within(bodyRows()[7]).getByText('Kept')).toBeInTheDocument();
   });
 });

@@ -6,6 +6,7 @@ import { SELECT_BASE } from '../ui/button-styles';
 import { WeekSelect } from './week-select';
 
 interface SeasonWeekSelectProps {
+  children?: React.ReactNode;
   onSeasonChange: (season: number) => void;
   onWeekChange: (week: number | null) => void;
   seasons: number[];
@@ -16,7 +17,12 @@ interface SeasonWeekSelectProps {
   weeksLoading: boolean;
 }
 
+/**
+ * Season and week dropdowns for admin pages. Changing the season clears the week. Extra controls passed as
+ * children sit in the same row.
+ */
 export function SeasonWeekSelect({
+  children,
   onSeasonChange,
   onWeekChange,
   seasons,
@@ -28,6 +34,11 @@ export function SeasonWeekSelect({
 }: SeasonWeekSelectProps) {
   const seasonId = useId();
 
+  function handleSeasonChange(event: React.ChangeEvent<HTMLSelectElement>) {
+    onSeasonChange(Number(event.target.value));
+    onWeekChange(null);
+  }
+
   return (
     <div className="flex flex-wrap gap-4 items-end">
       <div>
@@ -37,7 +48,7 @@ export function SeasonWeekSelect({
         <select
           id={seasonId}
           value={selectedSeason ?? ''}
-          onChange={(e) => onSeasonChange(Number(e.target.value))}
+          onChange={handleSeasonChange}
           disabled={seasonsLoading}
           className={`px-3 py-2 ${SELECT_BASE}`}
         >
@@ -47,6 +58,7 @@ export function SeasonWeekSelect({
         </select>
       </div>
       <WeekSelect onWeekChange={onWeekChange} selectedWeek={selectedWeek} weeks={weeks} weeksLoading={weeksLoading} />
+      {children}
     </div>
   );
 }

@@ -832,15 +832,16 @@ public class AdminModule : IAdminModule
             return new SavePredictionCalibrationResult { ErrorMessage = validationError, Outcome = SavePredictionCalibrationOutcome.InvalidValues };
 
         var savedValues = values.ToDictionary(v => v.Key, v => v.Value);
+        var savedSource = await ResolveSaveSourceAsync(season, week, savedValues, source, calibratedCalculator.CalibrationParameters).ConfigureAwait(false);
         await _predictionCalibrationModule.SaveAsync(new PredictionCalibration
         {
             Season = season,
-            Source = source,
+            Source = savedSource,
             Values = savedValues,
             Week = week
         }).ConfigureAwait(false);
 
-        _logger.LogInformation("Saved prediction calibration for season {Season}, week {Week} ({Source})", season, week, source);
+        _logger.LogInformation("Saved prediction calibration for season {Season}, week {Week} ({Source})", season, week, savedSource);
 
         await RefreshLaterCarriedForwardRowsAsync(season, week, savedValues, publishedWeeks).ConfigureAwait(false);
 
@@ -1192,6 +1193,24 @@ public class AdminModule : IAdminModule
         }
 
         return carriedForward.Values;
+    }
+
+    /// <summary>
+    /// The source to save typed values under: <see cref="PredictionCalibrationSource.Kept"/> when the values
+    /// match the week's carried-forward values unchanged, otherwise <paramref name="requested"/>. Only a
+    /// manual save can become Kept, so an accepted suggestion stays Accepted.
+    /// </summary>
+    private async Task<PredictionCalibrationSource> ResolveSaveSourceAsync(int season, int week, IReadOnlyDictionary<string, double> values, PredictionCalibrationSource requested, IEnumerable<PredictionCalibrationParameter> parameters)
+    {
+        if (requested != PredictionCalibrationSource.Manual)
+            return requested;
+
+        var parameterList = parameters.ToList();
+        var effective = await _predictionCalibrationModule.ResolveEffectiveAsync(season, week, parameterList).ConfigureAwait(false);
+
+        return effective?.Source == PredictionCalibrationSource.CarriedForward && HaveSameCalibrationValues(effective.Values, values, parameterList)
+            ? PredictionCalibrationSource.Kept
+            : requested;
     }
 
     /// <summary>

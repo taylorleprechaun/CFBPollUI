@@ -42,10 +42,24 @@ describe('SeasonWeekSelect', () => {
     expect(props.onWeekChange).toHaveBeenCalledWith(2);
   });
 
+  it('clears the week when the season changes', async () => {
+    const props = renderSelect();
+
+    await userEvent.selectOptions(screen.getByLabelText('Season'), '2025');
+
+    expect(props.onWeekChange).toHaveBeenCalledWith(null);
+  });
+
   it('disables the season select while seasons load', () => {
     renderSelect({ seasonsLoading: true });
 
     expect(screen.getByLabelText('Season')).toBeDisabled();
+  });
+
+  it('renders extra controls in the same row', () => {
+    renderSelect({ children: <button type="button">Calculate</button> });
+
+    expect(screen.getByRole('button', { name: 'Calculate' }).parentElement).toBe(screen.getByLabelText('Season').closest('div')?.parentElement);
   });
 
   it('shows the selected season and week', () => {

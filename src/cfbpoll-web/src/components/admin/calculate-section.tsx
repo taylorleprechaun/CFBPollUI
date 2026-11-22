@@ -1,11 +1,9 @@
-import { useId } from 'react';
-
 import type { Week } from '../../types';
 import type { ActionFeedback } from './types';
 
-import { BUTTON_PRIMARY, BUTTON_SECONDARY, SELECT_BASE } from '../ui/button-styles';
+import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '../ui/button-styles';
 import { FeedbackIndicator } from './feedback-indicator';
-import { WeekSelect } from './week-select';
+import { SeasonWeekSelect } from './season-week-select';
 
 interface CalculateSectionProps {
   buttonLabel?: string;
@@ -46,7 +44,6 @@ export function CalculateSection({
   weeks,
   weeksLoading,
 }: CalculateSectionProps) {
-  const seasonId = useId();
   const refreshFeedbackKey = `refresh-cache-${selectedSeason}-${selectedWeek}`;
 
   return (
@@ -70,27 +67,16 @@ export function CalculateSection({
           </div>
         )}
       </div>
-      <div className="flex flex-wrap gap-4 items-end">
-        <div>
-          <label htmlFor={seasonId} className="block text-sm font-medium text-text-secondary mb-1">
-            Season
-          </label>
-          <select
-            id={seasonId}
-            value={selectedSeason ?? ''}
-            onChange={(e) => {
-              onSeasonChange(Number(e.target.value));
-              onWeekChange(null);
-            }}
-            disabled={seasonsLoading}
-            className={`px-3 py-2 ${SELECT_BASE}`}
-          >
-            {seasons.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </div>
-        <WeekSelect onWeekChange={onWeekChange} selectedWeek={selectedWeek} weeks={weeks} weeksLoading={weeksLoading} />
+      <SeasonWeekSelect
+        onSeasonChange={onSeasonChange}
+        onWeekChange={onWeekChange}
+        seasons={seasons}
+        seasonsLoading={seasonsLoading}
+        selectedSeason={selectedSeason}
+        selectedWeek={selectedWeek}
+        weeks={weeks}
+        weeksLoading={weeksLoading}
+      >
         <button
           onClick={onCalculate}
           disabled={isCalculating || selectedSeason === null || selectedWeek === null}
@@ -98,7 +84,7 @@ export function CalculateSection({
         >
           {isCalculating ? buttonPendingLabel : buttonLabel}
         </button>
-      </div>
+      </SeasonWeekSelect>
     </div>
   );
 }
