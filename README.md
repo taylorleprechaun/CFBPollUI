@@ -347,7 +347,7 @@ The frontend runs at `http://localhost:5173`.
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction/grade` | Grade predictions against actual final scores and save as draft; re-grading a week whose results are published updates the public pages right away |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/prediction/new-games` | Add previewed predictions for new postseason games to a week after checking each game is still eligible, keeping existing picks and the week's publish and grade state |
 | `POST /api/v1/admin/seasons/{season}/weeks/{week}/ranking` | Calculate rankings for a season/week and save as draft |
-| `PUT /api/v1/admin/seasons/{season}/weeks/{week}/prediction-calibration` | Save a week's calibration values; rejected once the week's predictions are published |
+| `PUT /api/v1/admin/seasons/{season}/weeks/{week}/prediction-calibration` | Save a week's calibration values (carried-forward values saved unchanged are recorded as kept); rejected once the week's predictions are published |
 | `PUT /api/v1/page-visibility` | Update page visibility settings |
 
 ## Code Conventions
