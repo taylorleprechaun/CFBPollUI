@@ -6,12 +6,12 @@ import type { AlgorithmVersion } from './algorithm-versions';
 import { useExperimentalMatchupState } from '../../hooks/use-experimental-matchup-state';
 import { useSeasonFbsTeams } from '../../hooks/use-season-fbs-teams';
 import { ErrorAlert, ErrorBoundary } from '../error';
-import { BUTTON_PRIMARY, BUTTON_SECONDARY, SELECT_BASE } from '../ui/button-styles';
+import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '../ui/button-styles';
 import { SearchableSelect } from '../ui/searchable-select';
 import { AlgorithmVersionPicker } from './algorithm-version-picker';
 import { DEFAULT_ALGORITHM_VERSIONS } from './algorithm-versions';
 import { ExperimentalMatchupResults } from './experimental-matchup-results';
-import { WeekSelect } from './week-select';
+import { SeasonWeekSelect } from './season-week-select';
 
 interface ExperimentalMatchupPanelProps {
   onSeasonChange: (season: number) => void;
@@ -42,7 +42,6 @@ export function ExperimentalMatchupPanel({
   const [selectedVersions, setSelectedVersions] = useState<AlgorithmVersion[]>(DEFAULT_ALGORITHM_VERSIONS);
 
   const neutralSiteId = useId();
-  const seasonId = useId();
 
   const { data: teams = [], error: teamsError, isLoading: teamsLoading } = useSeasonFbsTeams(token, selectedSeason);
   const { handleRun, isRunning, runState, submittedMatchup } = useExperimentalMatchupState({
@@ -70,9 +69,8 @@ export function ExperimentalMatchupPanel({
     void handleRun(selectedVersions, { awayTeam, homeTeam, neutralSite: isNeutralSite });
   }
 
-  function handleSeasonChange(event: React.ChangeEvent<HTMLSelectElement>) {
-    onSeasonChange(Number(event.target.value));
-    onWeekChange(null);
+  function handleSeasonChange(season: number) {
+    onSeasonChange(season);
     clearTeams();
   }
 
@@ -85,26 +83,18 @@ export function ExperimentalMatchupPanel({
     <>
       <div className="bg-surface border border-border rounded-xl p-4 sm:p-6 space-y-4">
         <h2 className="text-lg font-semibold text-text-primary">Hypothetical Matchup</h2>
-        <div className="flex flex-wrap gap-4 items-end">
-          <div>
-            <label htmlFor={seasonId} className="block text-sm font-medium text-text-secondary mb-1">
-              Season
-            </label>
-            <select
-              id={seasonId}
-              value={selectedSeason ?? ''}
-              onChange={handleSeasonChange}
-              disabled={seasonsLoading}
-              className={`px-3 py-2 ${SELECT_BASE}`}
-            >
-              {seasons.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
-          <WeekSelect onWeekChange={onWeekChange} selectedWeek={selectedWeek} weeks={weeks} weeksLoading={weeksLoading} />
+        <SeasonWeekSelect
+          onSeasonChange={handleSeasonChange}
+          onWeekChange={onWeekChange}
+          seasons={seasons}
+          seasonsLoading={seasonsLoading}
+          selectedSeason={selectedSeason}
+          selectedWeek={selectedWeek}
+          weeks={weeks}
+          weeksLoading={weeksLoading}
+        >
           <AlgorithmVersionPicker onChange={setSelectedVersions} selectedVersions={selectedVersions} />
-        </div>
+        </SeasonWeekSelect>
         <div className="flex flex-wrap gap-4 items-end">
           <SearchableSelect
             disabled={!isTeamPickerEnabled}
