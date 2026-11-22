@@ -1,7 +1,7 @@
 import { useId, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import type { PredictionCalibrationResponse } from '../../schemas/admin';
+import type { PredictionCalibrationAnalysis, PredictionCalibrationResponse } from '../../schemas/admin';
 import type { CalibrationComparison } from './prediction-calibration-season-results';
 import type { ActionFeedback } from './types';
 
@@ -10,7 +10,7 @@ import { usePredictionCalibration } from '../../hooks/use-prediction-calibration
 import { usePredictionCalibrationAnalysis } from '../../hooks/use-prediction-calibration-analysis';
 import { usePredictionCalibrationHistory } from '../../hooks/use-prediction-calibration-history';
 import { useSavePredictionCalibration } from '../../hooks/use-save-prediction-calibration';
-import { calibrationSourceLabel, validateCalibrationInput } from '../../lib/calibration-utils';
+import { calibrationSourceLabel, predictionsPageUrl, validateCalibrationInput } from '../../lib/calibration-utils';
 import { toErrorMessage } from '../../lib/error-utils';
 import { getWeekLabel } from '../../lib/week-utils';
 import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '../ui/button-styles';
@@ -35,6 +35,14 @@ interface CalibrationEdits {
   values: Record<string, string>;
 }
 
+/**
+ * The last completed test of typed values, tagged with its season and week, kept on screen while a new test runs.
+ */
+interface HeldPreview {
+  analysis: PredictionCalibrationAnalysis;
+  key: string;
+}
+
 const CARD_CLASSES = 'bg-surface border border-border rounded-xl p-4 sm:p-6';
 
 /**
@@ -45,6 +53,8 @@ export function PredictionCalibrationSection({ season, token, week }: Prediction
   const [edits, setEdits] = useState<CalibrationEdits | null>(null);
   const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
   const [comparison, setComparison] = useState<CalibrationComparison>('suggested');
+  const [heldPreview, setHeldPreview] = useState<HeldPreview | null>(null);
+  const [savedKey, setSavedKey] = useState<string | null>(null);
 
   const inputIdPrefix = useId();
 
@@ -55,7 +65,9 @@ export function PredictionCalibrationSection({ season, token, week }: Prediction
   const saveMutation = useSavePredictionCalibration(token);
   const previewMutation = useAnalyzePredictionCalibration(token);
 
+  const weekKey = `${season}-${week}`;
   const weekTitle = `${season} ${getWeekLabel(week)}`;
+  const predictionsUrl = predictionsPageUrl(season, week);
 
   if (isLoading || error || !calibration || !calibration.isSupported) {
     return (
@@ -79,27 +91,41 @@ export function PredictionCalibrationSection({ season, token, week }: Prediction
   const isDirty = calibration.parameters.some((p) => Number(inputValues[p.key]) !== calibration.values[p.key]);
   const feedbackKey = `prediction-calibration-${season}-${week}`;
   const analysis = analysisQuery.data;
-  // A preview belongs to the week it was run for; switching weeks falls back to the plain analysis.
+  // A preview belongs to the week it was run for; switching weeks falls back to the plain analysis. The
+  // mutation clears its data while a new test runs, so the last completed test is held and shown meanwhile.
   const previewIsCurrent = previewMutation.variables?.season === season && previewMutation.variables.week === week;
-  const preview = previewIsCurrent && !previewMutation.isPending ? previewMutation.data : undefined;
+  const isRerunning = previewIsCurrent && previewMutation.isPending;
+  const preview = isRerunning
+    ? (heldPreview?.key === weekKey ? heldPreview.analysis : undefined)
+    : (previewIsCurrent ? previewMutation.data : undefined);
   const previewError = previewIsCurrent ? previewMutation.error : null;
   const resultsAnalysis = preview ?? analysis;
-  const previewIsStale = preview !== undefined
+  const previewIsStale = !isRerunning && preview !== undefined
     && calibration.parameters.some((p) => Number(inputValues[p.key]) !== preview.candidateValues?.[p.key]);
+  const currentNote = calibration.source === 'CarriedForward'
+    ? (calibration.carriedFromSeason !== null && calibration.carriedFromWeek !== null
+      ? `Carried from ${calibration.carriedFromSeason} ${getWeekLabel(calibration.carriedFromWeek)}`
+      : 'Defaults')
+    : undefined;
 
   let seasonBody: React.ReactNode = null;
-  if (analysisQuery.isLoading || previewMutation.isPending) {
+  if (analysisQuery.isLoading || (isRerunning && !resultsAnalysis)) {
     seasonBody = <p className="text-sm text-text-muted">Running the analysis. It replays every past season, so it can take a few seconds.</p>;
   } else if (resultsAnalysis) {
     seasonBody = (
-      <PredictionCalibrationSeasonResults
-        key={`${season}-${week}`}
-        analysis={resultsAnalysis}
-        comparison={preview ? comparison : 'suggested'}
-        historyEntries={history.data ?? []}
-        onComparisonChange={setComparison}
-        parameters={calibration.parameters}
-      />
+      <>
+        {isRerunning && <p className="text-sm text-text-muted mb-3">Re-running the analysis…</p>}
+        <div aria-busy={isRerunning} className={isRerunning ? 'opacity-60' : undefined}>
+          <PredictionCalibrationSeasonResults
+            key={weekKey}
+            analysis={resultsAnalysis}
+            comparison={preview ? comparison : 'suggested'}
+            historyEntries={history.data ?? []}
+            onComparisonChange={setComparison}
+            parameters={calibration.parameters}
+          />
+        </div>
+      </>
     );
   } else if (analysisQuery.error !== null) {
     seasonBody = <p role="alert" className="text-sm text-red-600">{toErrorMessage(analysisQuery.error, 'Failed to run the analysis')}</p>;
@@ -124,7 +150,7 @@ export function PredictionCalibrationSection({ season, token, week }: Prediction
     if (!calibration) return;
     const values = Object.fromEntries(calibration.parameters.map((p) => [p.key, Number(inputValues[p.key])]));
     setComparison('candidate');
-    previewMutation.mutate({ season, values, week });
+    previewMutation.mutate({ season, values, week }, { onSuccess: (data) => setHeldPreview({ analysis: data, key: weekKey }) });
   }
 
   async function handleSave() {
@@ -134,6 +160,7 @@ export function PredictionCalibrationSection({ season, token, week }: Prediction
     try {
       await saveMutation.mutateAsync({ isAcceptedSuggestion: edits?.key === editKey && edits.fromSuggestion, season, values, week });
       setEdits(null);
+      setSavedKey(weekKey);
       setFeedback({ key: feedbackKey, message: 'Saved', type: 'success' });
     } catch (err) {
       setFeedback({ key: feedbackKey, message: toErrorMessage(err, 'Failed to save calibration'), type: 'error' });
@@ -149,6 +176,13 @@ export function PredictionCalibrationSection({ season, token, week }: Prediction
             {calibrationSourceLabel(calibration)}
             {calibration.isLocked && ' · Locked because this week’s predictions are published'}
           </p>
+          {calibration.isLocked && (
+            <p className="text-sm text-text-muted mt-1 max-w-prose">
+              To change it,{' '}
+              <Link className="underline hover:no-underline" to={predictionsUrl}>generate again on the Predictions page</Link>{' '}
+              (this unpublishes the week), then edit here.
+            </p>
+          )}
           {calibration.draftUsesDifferentValues && (
             <p className="text-sm text-amber-600 mt-2 max-w-prose">
               {calibration.isLocked
@@ -156,7 +190,7 @@ export function PredictionCalibrationSection({ season, token, week }: Prediction
                 : (
                   <>
                     This week’s draft predictions were generated with different values.{' '}
-                    <Link className="underline hover:no-underline" to={`/admin/predictions?season=${season}&week=${week}`}>
+                    <Link className="underline hover:no-underline" to={predictionsUrl}>
                       Generate again on the Predictions page
                     </Link>{' '}
                     to apply these.
@@ -167,6 +201,7 @@ export function PredictionCalibrationSection({ season, token, week }: Prediction
         </div>
 
         <PredictionCalibrationValues
+          currentNote={currentNote}
           currentValues={calibration.values}
           fieldErrors={fieldErrors}
           inputIdPrefix={inputIdPrefix}
@@ -199,6 +234,11 @@ export function PredictionCalibrationSection({ season, token, week }: Prediction
               {saveMutation.isPending ? 'Saving…' : 'Save'}
             </button>
             <FeedbackIndicator feedback={feedback} feedbackKey={feedbackKey} onClear={() => setFeedback(null)} />
+            {savedKey === weekKey && (
+              <Link className="text-sm underline hover:no-underline text-text-secondary" to={predictionsUrl}>
+                Go to predictions for this week
+              </Link>
+            )}
           </div>
         )}
       </section>

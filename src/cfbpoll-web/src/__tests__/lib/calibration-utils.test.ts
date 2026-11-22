@@ -14,6 +14,7 @@ import {
   formatRecordChange,
   formatSignedNumber,
   isWithinNoise,
+  predictionsPageUrl,
   recordDifference,
   signTestPValue,
   sumPickChanges,
@@ -42,8 +43,9 @@ describe('calibrationPageUrl', () => {
 });
 
 describe('calibrationSourceLabel', () => {
-  it('labels accepted and manual values', () => {
+  it('labels accepted, kept and manual values', () => {
     expect(calibrationSourceLabel({ carriedFromSeason: null, carriedFromWeek: null, source: 'Accepted' })).toBe('Accepted suggestion');
+    expect(calibrationSourceLabel({ carriedFromSeason: null, carriedFromWeek: null, source: 'Kept' })).toBe('Kept carried-forward values');
     expect(calibrationSourceLabel({ carriedFromSeason: null, carriedFromWeek: null, source: 'Manual' })).toBe('Set manually');
   });
 
@@ -207,6 +209,12 @@ describe('isWithinNoise', () => {
 
   it('leaves pushes out of the test', () => {
     expect(isWithinNoise({ changed: 12, comparedCorrect: 6, usedCorrect: 0 })).toBe(false);
+  });
+});
+
+describe('predictionsPageUrl', () => {
+  it('links to the admin Predictions page on a season and week', () => {
+    expect(predictionsPageUrl(2026, 10)).toBe('/admin/predictions?season=2026&week=10');
   });
 });
 
