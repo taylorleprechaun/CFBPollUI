@@ -46,6 +46,14 @@ public interface ICFBDataCacheRefresher
     Task<int> RefreshMaxSeasonYearAsync();
 
     /// <summary>
+    /// Re-fetches and replaces the cached entries that change as a season's postseason games are scheduled and
+    /// played: the schedule, postseason games and stats, season team stats, and postseason betting lines. Only
+    /// entries already in the cache are refreshed; an entry whose fetch fails or comes back empty keeps its existing copy.
+    /// </summary>
+    /// <returns>How many entries were replaced and how many kept their existing copy.</returns>
+    Task<CacheRefreshResult> RefreshPostseasonAsync(int season);
+
+    /// <summary>
     /// Re-fetches and replaces the cached entries scoped to a season and week. Only entries already in the
     /// cache are refreshed; an entry whose fetch fails or comes back empty keeps its existing copy.
     /// </summary>

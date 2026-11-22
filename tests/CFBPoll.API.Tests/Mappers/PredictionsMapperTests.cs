@@ -356,6 +356,46 @@ public class PredictionsMapperTests
     }
 
     [Fact]
+    public void ToGamePrediction_MapsPickFieldsAndLeavesResultsUngraded()
+    {
+        var dto = new GamePredictionDTO
+        {
+            ActualAwayScore = 10,
+            ActualHomeScore = 31,
+            ActualWinner = "Team B",
+            AwayTeam = "Team A",
+            AwayTeamScore = 20,
+            BettingOverUnder = 51.5,
+            BettingSpread = -3.5,
+            HomeTeam = "Team B",
+            HomeTeamScore = 27,
+            MyOverUnderPick = "Under",
+            MySpreadPick = "Team B",
+            NeutralSite = true,
+            PredictedMargin = 7,
+            PredictedWinner = "Team B",
+            WinnerGrade = "Correct"
+        };
+
+        var result = PredictionsMapper.ToGamePrediction(dto);
+
+        Assert.Equal("Team B", result.HomeTeam);
+        Assert.Equal(27, result.HomeTeamScore);
+        Assert.Equal(-3.5, result.BettingSpread);
+        Assert.Equal("Under", result.MyOverUnderPick);
+        Assert.True(result.NeutralSite);
+        Assert.Null(result.ActualHomeScore);
+        Assert.Null(result.ActualWinner);
+        Assert.Equal(PredictionGradeStatus.Ungraded, result.WinnerGrade);
+    }
+
+    [Fact]
+    public void ToGamePrediction_NullInput_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => PredictionsMapper.ToGamePrediction(null!));
+    }
+
+    [Fact]
     public void ToGradeResponseDTO_IncludesGradeDetailsRegardlessOfPublishState()
     {
         var gradeResult = new GradePredictionsResult
@@ -558,21 +598,6 @@ public class PredictionsMapperTests
     public void ToSeasonExperimentalResponseDTO_NullInput_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>(() => PredictionsMapper.ToSeasonExperimentalResponseDTO(null!));
-    }
-
-    [Fact]
-    public void ToSelection_MapsTeams()
-    {
-        var result = PredictionsMapper.ToSelection(new PredictionGameSelectionDTO { AwayTeam = "Team A", HomeTeam = "Team B" });
-
-        Assert.Equal("Team A", result.AwayTeam);
-        Assert.Equal("Team B", result.HomeTeam);
-    }
-
-    [Fact]
-    public void ToSelection_NullInput_ThrowsArgumentNullException()
-    {
-        Assert.Throws<ArgumentNullException>(() => PredictionsMapper.ToSelection(null!));
     }
 
     [Fact]

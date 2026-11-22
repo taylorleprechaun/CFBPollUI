@@ -13,6 +13,9 @@ export const BUTTON_GHOST =
 export const BUTTON_SUCCESS =
   'bg-green-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-green-700 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 font-medium text-sm';
 
+export const BUTTON_HIGHLIGHT =
+  'bg-violet-600 text-white px-4 py-2 rounded-lg shadow-sm hover:bg-violet-700 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 font-medium text-sm';
+
 export const BUTTON_DANGER_GHOST =
   'text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 px-3 py-1.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 font-medium text-sm';
 

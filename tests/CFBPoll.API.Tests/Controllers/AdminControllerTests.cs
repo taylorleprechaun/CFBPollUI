@@ -31,13 +31,13 @@ public class AdminControllerTests
         var result = await _controller.AddNewPredictionGames(2025, 15, new AddNewPredictionGamesRequestDTO { Games = [] });
 
         Assert.IsType<BadRequestObjectResult>(result.Result);
-        _mockAdminModule.Verify(x => x.AddNewPredictionGamesAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IEnumerable<PredictionGameSelection>>()), Times.Never);
+        _mockAdminModule.Verify(x => x.AddNewPredictionGamesAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<IEnumerable<GamePrediction>>()), Times.Never);
     }
 
     [Fact]
     public async Task AddNewPredictionGames_NoneEligible_ReturnsBadRequest()
     {
-        _mockAdminModule.Setup(x => x.AddNewPredictionGamesAsync(2025, 15, It.IsAny<IEnumerable<PredictionGameSelection>>()))
+        _mockAdminModule.Setup(x => x.AddNewPredictionGamesAsync(2025, 15, It.IsAny<IEnumerable<GamePrediction>>()))
             .ReturnsAsync(new AddNewPredictionGamesResult { Outcome = NewPredictionGamesOutcome.NoneEligible });
 
         var result = await _controller.AddNewPredictionGames(2025, 15, CreateAddNewGamesRequest());
@@ -48,7 +48,7 @@ public class AdminControllerTests
     [Fact]
     public async Task AddNewPredictionGames_NotFound_ReturnsNotFound()
     {
-        _mockAdminModule.Setup(x => x.AddNewPredictionGamesAsync(2025, 15, It.IsAny<IEnumerable<PredictionGameSelection>>()))
+        _mockAdminModule.Setup(x => x.AddNewPredictionGamesAsync(2025, 15, It.IsAny<IEnumerable<GamePrediction>>()))
             .ReturnsAsync(new AddNewPredictionGamesResult { Outcome = NewPredictionGamesOutcome.NotFound });
 
         var result = await _controller.AddNewPredictionGames(2025, 15, CreateAddNewGamesRequest());
@@ -59,7 +59,7 @@ public class AdminControllerTests
     [Fact]
     public async Task AddNewPredictionGames_NotPostseason_ReturnsBadRequest()
     {
-        _mockAdminModule.Setup(x => x.AddNewPredictionGamesAsync(2025, 10, It.IsAny<IEnumerable<PredictionGameSelection>>()))
+        _mockAdminModule.Setup(x => x.AddNewPredictionGamesAsync(2025, 10, It.IsAny<IEnumerable<GamePrediction>>()))
             .ReturnsAsync(new AddNewPredictionGamesResult { Outcome = NewPredictionGamesOutcome.NotPostseason });
 
         var result = await _controller.AddNewPredictionGames(2025, 10, CreateAddNewGamesRequest());
@@ -78,9 +78,9 @@ public class AdminControllerTests
     [Fact]
     public async Task AddNewPredictionGames_Success_ForwardsSelectionsAndReturnsUpdatedWeek()
     {
-        IEnumerable<PredictionGameSelection>? forwarded = null;
-        _mockAdminModule.Setup(x => x.AddNewPredictionGamesAsync(2025, 15, It.IsAny<IEnumerable<PredictionGameSelection>>()))
-            .Callback<int, int, IEnumerable<PredictionGameSelection>>((_, _, s) => forwarded = s.ToList())
+        IEnumerable<GamePrediction>? forwarded = null;
+        _mockAdminModule.Setup(x => x.AddNewPredictionGamesAsync(2025, 15, It.IsAny<IEnumerable<GamePrediction>>()))
+            .Callback<int, int, IEnumerable<GamePrediction>>((_, _, s) => forwarded = s.ToList())
             .ReturnsAsync(new AddNewPredictionGamesResult
             {
                 AddedGameCount = 1,
@@ -1205,7 +1205,7 @@ public class AdminControllerTests
 
     private static AddNewPredictionGamesRequestDTO CreateAddNewGamesRequest()
     {
-        return new AddNewPredictionGamesRequestDTO { Games = [new PredictionGameSelectionDTO { AwayTeam = "Team A", HomeTeam = "Team B" }] };
+        return new AddNewPredictionGamesRequestDTO { Games = [new GamePredictionDTO { AwayTeam = "Team A", BettingSpread = -3.5, HomeTeam = "Team B", PredictedWinner = "Team B" }] };
     }
 
     private static PredictionCalibrationView CreateCalibrationView(int season, int week, double paramAValue)

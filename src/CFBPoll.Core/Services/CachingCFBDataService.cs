@@ -268,6 +268,13 @@ public class CachingCFBDataService : ICFBDataService, ICFBDataCacheRefresher
         return year;
     }
 
+    public async Task<CacheRefreshResult> RefreshPostseasonAsync(int season)
+    {
+        return await RefreshCachedEntriesAsync(
+            CacheKeys.GetPostseasonKeys(season),
+            BuildSeasonRefreshers(season, week: null)).ConfigureAwait(false);
+    }
+
     public async Task<CacheRefreshResult> RefreshSeasonScopedAsync(int season, int week)
     {
         return await RefreshCachedEntriesAsync(

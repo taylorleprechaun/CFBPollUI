@@ -37,6 +37,7 @@ public class AdminModuleTests
         _mockCache = new Mock<IPersistentCache>();
         _mockCacheRefresher = new Mock<ICFBDataCacheRefresher>();
         _mockCacheRefresher.Setup(x => x.RefreshGameResultsAsync(It.IsAny<int>())).ReturnsAsync(new CacheRefreshResult());
+        _mockCacheRefresher.Setup(x => x.RefreshPostseasonAsync(It.IsAny<int>())).ReturnsAsync(new CacheRefreshResult());
         _mockCacheRefresher.Setup(x => x.RefreshSeasonScopedAsync(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync(new CacheRefreshResult());
         _mockDataService = new Mock<ICFBDataService>();
         _mockExcelExportModule = new Mock<IExcelExportModule>();
@@ -87,18 +88,39 @@ public class AdminModuleTests
     }
 
     [Fact]
-    public async Task AddNewPredictionGamesAsync_NoSelectedGameEligible_ReturnsNoneEligibleWithoutSaving()
+    public async Task AddNewPredictionGamesAsync_GameAlreadyKickedOff_ReturnsNoneEligibleWithoutSaving()
     {
-        SetUpNewGamesWeek([new() { AwayTeam = "Team C", HomeTeam = "Team D", SeasonType = "postseason", StartDate = new DateTime(2026, 12, 27, 20, 0, 0, DateTimeKind.Utc), Week = 1 }]);
+        SetUpNewGamesWeek([new() { AwayTeam = "Team C", HomeTeam = "Team D", SeasonType = "postseason", StartDate = new DateTime(2026, 12, 19, 20, 0, 0, DateTimeKind.Utc), Week = 1 }]);
 
-        var result = await _adminModule.AddNewPredictionGamesAsync(2026, 15, [new PredictionGameSelection { AwayTeam = "Team E", HomeTeam = "Team F" }]);
+        var result = await _adminModule.AddNewPredictionGamesAsync(2026, 15, [NewGamePrediction("Team C", "Team D")]);
 
         Assert.Equal(NewPredictionGamesOutcome.NoneEligible, result.Outcome);
         _mockPredictionsModule.Verify(x => x.UpdatePredictionsAsync(It.IsAny<PredictionsResult>()), Times.Never);
     }
 
     [Fact]
-    public async Task AddNewPredictionGamesAsync_NullSelections_ThrowsArgumentNullException()
+    public async Task AddNewPredictionGamesAsync_GameNotOnSchedule_ReturnsNoneEligibleWithoutSaving()
+    {
+        SetUpNewGamesWeek([new() { AwayTeam = "Team C", HomeTeam = "Team D", SeasonType = "postseason", StartDate = new DateTime(2026, 12, 27, 20, 0, 0, DateTimeKind.Utc), Week = 1 }]);
+
+        var result = await _adminModule.AddNewPredictionGamesAsync(2026, 15, [NewGamePrediction("Team E", "Team F")]);
+
+        Assert.Equal(NewPredictionGamesOutcome.NoneEligible, result.Outcome);
+        _mockPredictionsModule.Verify(x => x.UpdatePredictionsAsync(It.IsAny<PredictionsResult>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AddNewPredictionGamesAsync_GameWithoutLine_ReturnsNoneEligible()
+    {
+        SetUpNewGamesWeek([new() { AwayTeam = "Team C", HomeTeam = "Team D", SeasonType = "postseason", StartDate = new DateTime(2026, 12, 27, 20, 0, 0, DateTimeKind.Utc), Week = 1 }]);
+
+        var result = await _adminModule.AddNewPredictionGamesAsync(2026, 15, [NewGamePrediction("Team C", "Team D", bettingSpread: null)]);
+
+        Assert.Equal(NewPredictionGamesOutcome.NoneEligible, result.Outcome);
+    }
+
+    [Fact]
+    public async Task AddNewPredictionGamesAsync_NullGames_ThrowsArgumentNullException()
     {
         await Assert.ThrowsAsync<ArgumentNullException>(() => _adminModule.AddNewPredictionGamesAsync(2026, 15, null!));
     }
@@ -109,7 +131,7 @@ public class AdminModuleTests
         SetUpNewGamesWeek([]);
         _mockPredictionsModule.Setup(x => x.GetAsync(2026, 10)).ReturnsAsync(new PredictionsResult { Season = 2026, Week = 10 });
 
-        var result = await _adminModule.AddNewPredictionGamesAsync(2026, 10, [new PredictionGameSelection { AwayTeam = "Team C", HomeTeam = "Team D" }]);
+        var result = await _adminModule.AddNewPredictionGamesAsync(2026, 10, [NewGamePrediction("Team C", "Team D")]);
 
         Assert.Equal(NewPredictionGamesOutcome.NotPostseason, result.Outcome);
     }
@@ -124,17 +146,17 @@ public class AdminModuleTests
             new() { IsGraded = true, IsPublished = true, ResultsPublished = true, Season = 2026, Week = 15 }
         });
 
-        await _adminModule.AddNewPredictionGamesAsync(2026, 15, [new PredictionGameSelection { AwayTeam = "Team C", HomeTeam = "Team D" }]);
+        await _adminModule.AddNewPredictionGamesAsync(2026, 15, [NewGamePrediction("Team C", "Team D")]);
 
         _mockTrackRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
         _mockTeamPredictionRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
     }
 
     [Fact]
-    public async Task AddNewPredictionGamesAsync_SelectedGames_AppendsAfterExistingPicksAndKeepsCalibration()
+    public async Task AddNewPredictionGamesAsync_SubmittedGames_AppendsThemAsSentWithoutRefreshingDataOrRunningTheModel()
     {
         var kickoff = new DateTime(2026, 12, 27, 20, 0, 0, DateTimeKind.Utc);
-        SetUpNewGamesWeek(
+        var (calculator, _, _) = SetUpNewGamesWeek(
         [
             new() { AwayTeam = "Team C", HomeTeam = "Team D", SeasonType = "postseason", StartDate = kickoff, Week = 1 },
             new() { AwayTeam = "Team E", HomeTeam = "Team B", SeasonType = "postseason", StartDate = kickoff.AddHours(4), Week = 1 }
@@ -143,14 +165,19 @@ public class AdminModuleTests
         _mockPredictionsModule.Setup(x => x.UpdatePredictionsAsync(It.IsAny<PredictionsResult>()))
             .Callback<PredictionsResult>(p => saved = p)
             .ReturnsAsync(true);
+        var submitted = NewGamePrediction("Team C", "Team D");
+        submitted.HomeTeamScore = 31;
 
-        var result = await _adminModule.AddNewPredictionGamesAsync(2026, 15, [new PredictionGameSelection { AwayTeam = "Team D", HomeTeam = "Team C" }]);
+        var result = await _adminModule.AddNewPredictionGamesAsync(2026, 15, [submitted, NewGamePrediction("Team C", "Team D")]);
 
         Assert.Equal(NewPredictionGamesOutcome.Success, result.Outcome);
         Assert.Equal(1, result.AddedGameCount);
         Assert.NotNull(saved);
         Assert.Equal(["Team A", "Team D"], saved.Predictions.Select(p => p.HomeTeam));
+        Assert.Equal(31, saved.Predictions[1].HomeTeamScore);
         Assert.Equal(1.5, saved.AppliedCalibration!["paramA"]);
+        _mockCacheRefresher.Verify(x => x.RefreshPostseasonAsync(It.IsAny<int>()), Times.Never);
+        calculator.Verify(x => x.GeneratePredictionsAsync(It.IsAny<SeasonData>(), It.IsAny<IDictionary<string, RatingDetails>>(), It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>(), It.IsAny<IReadOnlyDictionary<string, double>>()), Times.Never);
         _mockTrackRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
     }
 
@@ -2633,7 +2660,8 @@ public class AdminModuleTests
         calculator.Verify(x => x.GeneratePredictionsAsync(
             seasonData, It.IsAny<IDictionary<string, RatingDetails>>(), It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>(),
             It.Is<IReadOnlyDictionary<string, double>>(c => c["paramA"] == 1.5)), Times.Once);
-        _mockCacheRefresher.Verify(x => x.RefreshSeasonScopedAsync(2026, 15), Times.Once);
+        _mockCacheRefresher.Verify(x => x.RefreshPostseasonAsync(2026), Times.Once);
+        _mockCacheRefresher.Verify(x => x.RefreshSeasonScopedAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
     }
 
     [Fact]
@@ -2647,7 +2675,7 @@ public class AdminModuleTests
     }
 
     [Fact]
-    public async Task PreviewNewPredictionGamesAsync_RegularSeasonWeek_ReturnsNotPostseason()
+    public async Task PreviewNewPredictionGamesAsync_RegularSeasonWeek_ReturnsNotPostseasonWithoutRefreshing()
     {
         SetUpNewGamesWeek([]);
         _mockPredictionsModule.Setup(x => x.GetAsync(2026, 10)).ReturnsAsync(new PredictionsResult { Season = 2026, Week = 10 });
@@ -2655,6 +2683,7 @@ public class AdminModuleTests
         var preview = await _adminModule.PreviewNewPredictionGamesAsync(2026, 10);
 
         Assert.Equal(NewPredictionGamesOutcome.NotPostseason, preview.Outcome);
+        _mockCacheRefresher.Verify(x => x.RefreshPostseasonAsync(It.IsAny<int>()), Times.Never);
     }
 
     [Fact]
@@ -2996,6 +3025,23 @@ public class AdminModuleTests
         }
     }
 
+    /// <summary>
+    /// A new-game prediction as the admin's preview would send it back: home team picked by 7 with the given line.
+    /// </summary>
+    private GamePrediction NewGamePrediction(string awayTeam, string homeTeam, double? bettingSpread = -3.5)
+    {
+        return new GamePrediction
+        {
+            AwayTeam = awayTeam,
+            AwayTeamScore = 20,
+            BettingSpread = bettingSpread,
+            HomeTeam = homeTeam,
+            HomeTeamScore = 27,
+            PredictedMargin = 7,
+            PredictedWinner = homeTeam
+        };
+    }
+
     private (Mock<ICalibratedPredictionCalculator> Calculator, SeasonData SeasonData, Dictionary<string, RatingDetails> Ratings) SetUpCalibratedCalculation(int season, int week)
     {
         var seasonData = new SeasonData { Season = season, Week = week, Teams = new Dictionary<string, TeamInfo>() };
@@ -3190,6 +3236,7 @@ public class AdminModuleTests
         ];
 
         _mockPredictionsModule.Setup(x => x.GetAsync(2026, 15)).ReturnsAsync(stored);
+        _mockDataService.Setup(x => x.GetFBSTeamsAsync(2026)).ReturnsAsync(teams.Keys.Select(n => new FBSTeam { Name = n }).ToList());
         _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2026)).ReturnsAsync(schedule);
         _mockDataService.Setup(x => x.GetSeasonDataAsync(2026, 16)).ReturnsAsync(seasonData);
         _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);

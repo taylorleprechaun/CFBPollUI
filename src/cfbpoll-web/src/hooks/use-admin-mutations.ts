@@ -1,6 +1,6 @@
 import { type QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
 
-import type { AdminPredictionsResponse } from '../schemas/admin';
+import type { AdminPredictionsResponse, GamePrediction } from '../schemas/admin';
 import type { SeasonWeekParams } from './types';
 
 import { invalidateCalibrationAfterPredictionChange, invalidateCalibrationAfterPublish } from '../lib/calibration-query-utils';
@@ -21,7 +21,7 @@ import {
 } from '../services/admin-api';
 
 interface AddNewPredictionGamesParams extends SeasonWeekParams {
-  games: { awayTeam: string; homeTeam: string }[];
+  games: GamePrediction[];
 }
 
 export function useAddNewPredictionGames(token: string | null) {

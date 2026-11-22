@@ -28,6 +28,7 @@ import {
   type ExperimentalPredictionsResponse,
   ExperimentalPredictionsResponseSchema,
   FbsTeamNamesResponseSchema,
+  type GamePrediction,
   type GradePredictionsResponse,
   GradePredictionsResponseSchema,
   type IncompleteGamesResponse,
@@ -55,7 +56,7 @@ export async function addNewPredictionGames(
   token: string,
   season: number,
   week: number,
-  games: { awayTeam: string; homeTeam: string }[]
+  games: GamePrediction[]
 ): Promise<AdminPredictionsResponse> {
   const response = await safeFetch(
     `${API_BASE_URL}/api/v1/admin/seasons/${season}/weeks/${week}/prediction/new-games`,

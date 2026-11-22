@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { GamePrediction } from '../../schemas/admin';
+
 import {
   useAddNewPredictionGames,
   useCalculatePredictions,
@@ -45,6 +47,30 @@ import {
   publishRankingsSnapshot,
   refreshCache,
 } from '../../services/admin-api';
+
+const newGamePrediction: GamePrediction = {
+  actualAwayScore: null,
+  actualHomeScore: null,
+  actualOverUnderResult: null,
+  actualSpreadCoveringTeam: null,
+  actualWinner: null,
+  awayLogoURL: '',
+  awayTeam: 'Team A',
+  awayTeamScore: 20,
+  bettingOverUnder: 51.5,
+  bettingSpread: -3.5,
+  homeLogoURL: '',
+  homeTeam: 'Team B',
+  homeTeamScore: 27,
+  myOverUnderPick: 'Under',
+  mySpreadPick: 'Team B',
+  neutralSite: true,
+  overUnderGrade: 'Ungraded',
+  predictedMargin: 7,
+  predictedWinner: 'Team B',
+  spreadGrade: 'Ungraded',
+  winnerGrade: 'Ungraded',
+};
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -96,7 +122,7 @@ describe('null token guard', () => {
     });
 
     await expect(
-      act(() => result.current.mutateAsync({ games: [{ awayTeam: 'Team A', homeTeam: 'Team B' }], season: 2026, week: 15 }))
+      act(() => result.current.mutateAsync({ games: [newGamePrediction], season: 2026, week: 15 }))
     ).rejects.toThrow('Authentication required');
 
     expect(addNewPredictionGames).not.toHaveBeenCalled();
@@ -242,10 +268,10 @@ describe('useAddNewPredictionGames', () => {
     const { result } = renderHook(() => useAddNewPredictionGames('test-token'), { wrapper });
 
     await act(async () => {
-      await result.current.mutateAsync({ games: [{ awayTeam: 'Team A', homeTeam: 'Team B' }], season: 2026, week: 15 });
+      await result.current.mutateAsync({ games: [newGamePrediction], season: 2026, week: 15 });
     });
 
-    expect(addNewPredictionGames).toHaveBeenCalledWith('test-token', 2026, 15, [{ awayTeam: 'Team A', homeTeam: 'Team B' }]);
+    expect(addNewPredictionGames).toHaveBeenCalledWith('test-token', 2026, 15, [newGamePrediction]);
     expect(queryClient.getQueryData(['admin-prediction', 2026, 15])).toEqual(updatedWeek);
     expect(queryClient.getQueryData(['new-prediction-games', 2026, 15])).toBeUndefined();
   });

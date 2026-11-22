@@ -8,11 +8,12 @@ namespace CFBPoll.Core.Interfaces;
 public interface IAdminModule
 {
     /// <summary>
-    /// Adds the selected newly scheduled games to a postseason week's stored predictions, keeping its existing
-    /// picks and its publish and grade state. Only games that would appear in
-    /// <see cref="PreviewNewPredictionGamesAsync"/> with a betting line can be added.
+    /// Adds predictions for newly scheduled games, as returned by <see cref="PreviewNewPredictionGamesAsync"/>, to a
+    /// postseason week's stored predictions, keeping its existing picks and its publish and grade state. A game is
+    /// added only if it has a betting line, is still scheduled and not kicked off, and isn't already in the week.
+    /// Predictions are stored as given, so they should carry no results.
     /// </summary>
-    Task<AddNewPredictionGamesResult> AddNewPredictionGamesAsync(int season, int week, IEnumerable<PredictionGameSelection> selections);
+    Task<AddNewPredictionGamesResult> AddNewPredictionGamesAsync(int season, int week, IEnumerable<GamePrediction> games);
 
     /// <summary>
     /// Suggests calibration values for the given season and week's predictions, and grades each completed

@@ -6,7 +6,7 @@ import type { ActionFeedback } from './types';
 import { derivePredictionStage, predictionStageClasses, predictionStageLabel } from '../../lib/prediction-stage';
 import { getWeekLabel } from '../../lib/week-utils';
 import { PredictionsTable } from '../predictions/predictions-table';
-import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '../ui/button-styles';
+import { BUTTON_HIGHLIGHT, BUTTON_PRIMARY, BUTTON_SUCCESS } from '../ui/button-styles';
 import { CollapsibleContent } from '../ui/collapsible-content';
 import { CollapsibleTrigger } from '../ui/collapsible-trigger';
 import { StatusBadge } from '../ui/status-badge';
@@ -93,7 +93,7 @@ export function ActivePredictionViewSection({
               <button
                 onClick={() => onCheckNewGames(predictions.season, predictions.week)}
                 disabled={isActionPending}
-                className={BUTTON_SECONDARY}
+                className={BUTTON_HIGHLIGHT}
               >
                 Check for New Games
               </button>
@@ -101,7 +101,7 @@ export function ActivePredictionViewSection({
             <button
               onClick={() => onExport(predictions.season, predictions.week)}
               disabled={isActionPending}
-              className={BUTTON_SECONDARY}
+              className={BUTTON_SUCCESS}
             >
               Download Excel
             </button>

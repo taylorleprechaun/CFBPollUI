@@ -84,7 +84,7 @@ describe('NewGamesModal', () => {
     await userEvent.click(screen.getByLabelText(/Team C vs Team D/));
     await userEvent.click(screen.getByRole('button', { name: 'Add & Publish 1 Game' }));
 
-    expect(mutateAsync).toHaveBeenCalledWith({ games: [{ awayTeam: 'Team A', homeTeam: 'Team B' }], season: 2026, week: 15 });
+    expect(mutateAsync).toHaveBeenCalledWith({ games: [buildGame()], season: 2026, week: 15 });
     expect(onClose).toHaveBeenCalled();
   });
 

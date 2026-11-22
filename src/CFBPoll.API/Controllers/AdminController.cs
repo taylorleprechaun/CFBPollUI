@@ -34,8 +34,8 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Adds the selected newly scheduled games to a postseason week's predictions. The predictions are recomputed
-    /// on the server, existing picks are kept, and a published week's new picks are public right away.
+    /// Adds predictions from the new-games preview to a postseason week. Each game must still be scheduled, not
+    /// kicked off, lined, and new to the week. Existing picks are kept, and a published week's new picks are public right away.
     /// </summary>
     [HttpPost("seasons/{season}/weeks/{week}/prediction/new-games")]
     public async Task<ActionResult<AdminPredictionsResponseDTO>> AddNewPredictionGames(int season, int week, [FromBody] AddNewPredictionGamesRequestDTO request)
@@ -45,7 +45,7 @@ public class AdminController : ControllerBase
 
         _logger.LogInformation("Admin adding new games to predictions for season {Season}, week {Week}", season, week);
 
-        var result = await _adminModule.AddNewPredictionGamesAsync(season, week, request.Games.Select(PredictionsMapper.ToSelection));
+        var result = await _adminModule.AddNewPredictionGamesAsync(season, week, request.Games.Select(PredictionsMapper.ToGamePrediction));
 
         return result.Outcome switch
         {

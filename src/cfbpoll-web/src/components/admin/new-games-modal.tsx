@@ -66,7 +66,7 @@ export function NewGamesModal({ isPublished, onClose, season, token, week }: New
   async function handleConfirm() {
     try {
       await addMutation.mutateAsync({
-        games: selectedGames.map((g) => ({ awayTeam: g.awayTeam, homeTeam: g.homeTeam })),
+        games: selectedGames,
         season,
         week,
       });

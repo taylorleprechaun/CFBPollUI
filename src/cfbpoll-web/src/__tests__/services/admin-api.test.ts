@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { GamePrediction } from '../../schemas/admin';
+
 import {
   addNewPredictionGames,
   analyzePredictionCalibration,
@@ -51,6 +53,30 @@ const mockCalibrationResponse = {
   week: 10,
 };
 
+const newGamePrediction: GamePrediction = {
+  actualAwayScore: null,
+  actualHomeScore: null,
+  actualOverUnderResult: null,
+  actualSpreadCoveringTeam: null,
+  actualWinner: null,
+  awayLogoURL: '',
+  awayTeam: 'Team A',
+  awayTeamScore: 20,
+  bettingOverUnder: 51.5,
+  bettingSpread: -3.5,
+  homeLogoURL: '',
+  homeTeam: 'Team B',
+  homeTeamScore: 27,
+  myOverUnderPick: 'Under',
+  mySpreadPick: 'Team B',
+  neutralSite: true,
+  overUnderGrade: 'Ungraded',
+  predictedMargin: 7,
+  predictedWinner: 'Team B',
+  spreadGrade: 'Ungraded',
+  winnerGrade: 'Ungraded',
+};
+
 describe('Admin API service', () => {
   beforeEach(() => {
     vi.resetAllMocks();
@@ -68,11 +94,11 @@ describe('Admin API service', () => {
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      const result = await addNewPredictionGames('token', 2026, 15, [{ awayTeam: 'Team A', homeTeam: 'Team B' }]);
+      const result = await addNewPredictionGames('token', 2026, 15, [newGamePrediction]);
 
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/api/v1/admin/seasons/2026/weeks/15/prediction/new-games'),
-        expect.objectContaining({ body: JSON.stringify({ games: [{ awayTeam: 'Team A', homeTeam: 'Team B' }] }), method: 'POST' })
+        expect.objectContaining({ body: JSON.stringify({ games: [newGamePrediction] }), method: 'POST' })
       );
       expect(result.isPostseason).toBe(true);
     });
@@ -84,7 +110,7 @@ describe('Admin API service', () => {
         json: () => Promise.resolve({ message: 'None of the selected games can be added' }),
       }));
 
-      await expect(addNewPredictionGames('token', 2026, 15, [{ awayTeam: 'Team A', homeTeam: 'Team B' }])).rejects.toThrow('None of the selected games');
+      await expect(addNewPredictionGames('token', 2026, 15, [newGamePrediction])).rejects.toThrow('None of the selected games');
     });
   });
 
