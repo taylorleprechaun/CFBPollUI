@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import type { SeasonWeekParams } from '../hooks/types';
 import type { CalculatePredictionsResponse } from '../schemas/admin';
 
 import {
   ActivePredictionViewSection,
   CalculateSection,
   IncompleteWeekBanner,
+  NewGamesModal,
   PersistedPredictionsSection,
   PredictionCalibrationSummary,
 } from '../components/admin';
@@ -39,7 +41,11 @@ import { getWeekLabel } from '../lib/week-utils';
 export function PredictionsPage() {
   useDocumentTitle(`${SITE_OWNER_NAME} - Manage Predictions`);
 
+  const [newGamesTarget, setNewGamesTarget] = useState<SeasonWeekParams | null>(null);
+
   const { token } = useAuth();
+
+  const handleCloseNewGames = useCallback(() => setNewGamesTarget(null), []);
 
   const {
     nextSeason,
@@ -238,6 +244,7 @@ export function PredictionsPage() {
             gradeFeedback={gradingActionFeedback}
             isActionPending={isActionPending || isPublishingResults || isGrading}
             isGrading={isGrading}
+            onCheckNewGames={(season, week) => setNewGamesTarget({ season, week })}
             onClearGradeFeedback={clearGradingFeedback}
             onClearPublishFeedback={clearFeedback}
             onClearPublishResultsFeedback={clearGradingFeedback}
@@ -251,6 +258,16 @@ export function PredictionsPage() {
           />
         )}
       </ErrorBoundary>
+
+      {newGamesTarget && (
+        <NewGamesModal
+          isPublished={activeView.view?.isPublished ?? false}
+          onClose={handleCloseNewGames}
+          season={newGamesTarget.season}
+          token={token}
+          week={newGamesTarget.week}
+        />
+      )}
 
       <ErrorBoundary fallback={<ErrorAlert error={new Error('Failed to render persisted predictions')} />}>
         <PersistedPredictionsSection

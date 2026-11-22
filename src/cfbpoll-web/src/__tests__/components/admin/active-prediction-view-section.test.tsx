@@ -10,6 +10,7 @@ function buildView(overrides: Partial<ActivePredictionView> = {}): ActivePredict
   return {
     isGraded: false,
     isPersisted: true,
+    isPostseason: false,
     isPublished: false,
     predictions: {
       isGraded: false,
@@ -56,6 +57,7 @@ function defaultProps() {
     gradeFeedback: null,
     isActionPending: false,
     isGrading: false,
+    onCheckNewGames: vi.fn(),
     onClearGradeFeedback: vi.fn(),
     onClearPublishFeedback: vi.fn(),
     onClearPublishResultsFeedback: vi.fn(),
@@ -70,6 +72,16 @@ function defaultProps() {
 }
 
 describe('ActivePredictionViewSection', () => {
+  it('calls onCheckNewGames with season and week when Check for New Games is clicked on a postseason week', async () => {
+    const user = userEvent.setup();
+    const onCheckNewGames = vi.fn();
+
+    render(<ActivePredictionViewSection {...defaultProps()} onCheckNewGames={onCheckNewGames} view={buildView({ isPostseason: true })} />);
+    await user.click(screen.getByRole('button', { name: 'Check for New Games' }));
+
+    expect(onCheckNewGames).toHaveBeenCalledWith(2024, 5);
+  });
+
   it('calls onExport with season and week when Download Excel is clicked', async () => {
     const user = userEvent.setup();
     const onExport = vi.fn();
@@ -152,6 +164,12 @@ describe('ActivePredictionViewSection', () => {
     render(<ActivePredictionViewSection {...defaultProps()} view={buildView({ unmatchedGameCount: null })} />);
 
     expect(screen.queryByText(/Unmatched games:/)).not.toBeInTheDocument();
+  });
+
+  it('does not show Check for New Games for a regular-season week', () => {
+    render(<ActivePredictionViewSection {...defaultProps()} />);
+
+    expect(screen.queryByRole('button', { name: 'Check for New Games' })).not.toBeInTheDocument();
   });
 
   it('does not show Grade for an already-graded view', () => {

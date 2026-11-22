@@ -46,6 +46,7 @@ describe('usePrediction', () => {
 
   it('fetches when token, season, and week are provided', async () => {
     const mockData = {
+      isPostseason: false,
       isPublished: true,
       predictions: { isGraded: true, predictions: [], resultsPublished: false, season: 2024, week: 5 },
     };

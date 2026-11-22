@@ -6,7 +6,7 @@ import type { ActionFeedback } from './types';
 import { derivePredictionStage, predictionStageClasses, predictionStageLabel } from '../../lib/prediction-stage';
 import { getWeekLabel } from '../../lib/week-utils';
 import { PredictionsTable } from '../predictions/predictions-table';
-import { BUTTON_PRIMARY, BUTTON_SUCCESS } from '../ui/button-styles';
+import { BUTTON_PRIMARY, BUTTON_SECONDARY } from '../ui/button-styles';
 import { CollapsibleContent } from '../ui/collapsible-content';
 import { CollapsibleTrigger } from '../ui/collapsible-trigger';
 import { StatusBadge } from '../ui/status-badge';
@@ -22,6 +22,7 @@ interface ActivePredictionViewSectionProps {
   gradeFeedback: ActionFeedback | null;
   isActionPending: boolean;
   isGrading: boolean;
+  onCheckNewGames: (season: number, week: number) => void;
   onClearGradeFeedback: () => void;
   onClearPublishFeedback: () => void;
   onClearPublishResultsFeedback: () => void;
@@ -38,6 +39,7 @@ export function ActivePredictionViewSection({
   gradeFeedback,
   isActionPending,
   isGrading,
+  onCheckNewGames,
   onClearGradeFeedback,
   onClearPublishFeedback,
   onClearPublishResultsFeedback,
@@ -70,7 +72,7 @@ export function ActivePredictionViewSection({
   return (
     <div className="bg-surface shadow-md rounded-xl overflow-hidden">
       <div className="p-6 border-b border-border">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <CollapsibleTrigger
               contentId={contentId}
@@ -86,11 +88,20 @@ export function ActivePredictionViewSection({
             </CollapsibleTrigger>
             <StatusBadge className={predictionStageClasses(stage)} label={stageLabel} />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {view.isPostseason && (
+              <button
+                onClick={() => onCheckNewGames(predictions.season, predictions.week)}
+                disabled={isActionPending}
+                className={BUTTON_SECONDARY}
+              >
+                Check for New Games
+              </button>
+            )}
             <button
               onClick={() => onExport(predictions.season, predictions.week)}
               disabled={isActionPending}
-              className={BUTTON_SUCCESS}
+              className={BUTTON_SECONDARY}
             >
               Download Excel
             </button>

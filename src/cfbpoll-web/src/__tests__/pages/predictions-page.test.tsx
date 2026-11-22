@@ -66,8 +66,14 @@ let mockPublishResultsIsPending = false;
 // "Publish button doesn't disappear/reappears" regressions - they'd just be exercising two
 // disconnected mocks instead of the real cross-hook interaction.
 let mockViewSetter: Dispatch<SetStateAction<MockActiveView | null>> | null = null;
+let mockViewIsPostseason = false;
 
 vi.mock('../../hooks/use-admin-mutations', () => ({
+  useAddNewPredictionGames: () => ({
+    error: null,
+    isPending: false,
+    mutateAsync: vi.fn(),
+  }),
   useCalculatePredictions: () => ({
     mutateAsync: mockCalculateMutateAsync,
     isPending: mockCalculateIsPending,
@@ -157,6 +163,10 @@ vi.mock('../../services/admin-api', async (importOriginal) => ({
   fetchPredictionCalibration: vi.fn().mockResolvedValue({ draftUsesDifferentValues: false, isSupported: false }),
 }));
 
+vi.mock('../../hooks/use-new-prediction-games', () => ({
+  useNewPredictionGames: () => ({ data: { games: [], waitingOnLines: [] }, error: null, isLoading: false }),
+}));
+
 vi.mock('../../hooks/use-prediction-calibration-history', () => ({
   usePredictionCalibrationHistory: () => ({ data: [], isLoading: false }),
 }));
@@ -185,6 +195,7 @@ interface MockPredictionsResponse {
 interface MockActiveView {
   isGraded: boolean;
   isPersisted: boolean | null;
+  isPostseason: boolean;
   isPublished: boolean;
   predictions: MockPredictionsResponse;
   resultsPublished: boolean;
@@ -206,6 +217,7 @@ vi.mock('../../hooks/use-predictions-active-view', () => ({
         setView({
           isGraded: result.predictions.isGraded,
           isPersisted: result.isPersisted,
+          isPostseason: false,
           isPublished: false,
           predictions: result.predictions,
           resultsPublished: result.predictions.resultsPublished,
@@ -222,6 +234,7 @@ vi.mock('../../hooks/use-predictions-active-view', () => ({
           // exact season/week instead of resetting it - grading a published week must not make
           // its Publish button reappear.
           isPersisted: result.isPersisted,
+          isPostseason: prev?.isPostseason ?? false,
           isPublished: prev && prev.season === result.predictions.season && prev.week === result.predictions.week ? prev.isPublished : false,
           predictions: result.predictions,
           resultsPublished: result.predictions.resultsPublished,
@@ -241,6 +254,7 @@ vi.mock('../../hooks/use-predictions-active-view', () => ({
         setView({
           isGraded: false,
           isPersisted: null,
+          isPostseason: mockViewIsPostseason,
           isPublished: true,
           predictions: { isGraded: false, predictions: [], resultsPublished: false, season, week },
           resultsPublished: false,
@@ -306,6 +320,7 @@ describe('PredictionsPage', () => {
     mockGradeIsPending = false;
     mockPublishResultsIsPending = false;
     mockCalibrationSupported = false;
+    mockViewIsPostseason = false;
   });
 
   it('allows manually changing the week selector after a view loads without it snapping back', async () => {
@@ -760,6 +775,25 @@ describe('PredictionsPage', () => {
       expect(screen.getByText('Score')).toBeInTheDocument();
     });
     expect(screen.queryByText(/already has/)).not.toBeInTheDocument();
+  });
+
+  it('opens the new games modal from a postseason week and closes it on Cancel', async () => {
+    const user = userEvent.setup();
+    mockViewIsPostseason = true;
+    mockSummariesData = [
+      { season: 2024, week: 5, isPublished: true, createdAt: '2024-09-01T00:00:00Z', gameCount: 10, gradedAt: null, isGraded: false, resultsPublished: false },
+    ];
+
+    renderPredictionsPage();
+    const banner = screen.getByText(/already has picks published predictions/).closest('div')!;
+    await user.click(within(banner).getByRole('button', { name: 'View' }));
+    await user.click(await screen.findByRole('button', { name: 'Check for New Games' }));
+
+    expect(screen.getByRole('dialog')).toHaveTextContent('No new games found.');
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('publishes graded results from the active view section', async () => {
