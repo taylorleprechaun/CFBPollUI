@@ -35,6 +35,7 @@ public class AdminModule : IAdminModule
     private readonly ISeasonModule _seasonModule;
     private readonly ISeasonTrendsModule _seasonTrendsModule;
     private readonly ITeamPredictionRecordModule _teamPredictionRecordModule;
+    private readonly TimeProvider _timeProvider;
     private readonly ITrackRecordModule _trackRecordModule;
 
     public AdminModule(
@@ -52,6 +53,7 @@ public class AdminModule : IAdminModule
         ISeasonModule seasonModule,
         ISeasonTrendsModule seasonTrendsModule,
         ITeamPredictionRecordModule teamPredictionRecordModule,
+        TimeProvider timeProvider,
         ITrackRecordModule trackRecordModule,
         ILogger<AdminModule> logger)
     {
@@ -70,7 +72,56 @@ public class AdminModule : IAdminModule
         _seasonModule = seasonModule ?? throw new ArgumentNullException(nameof(seasonModule));
         _seasonTrendsModule = seasonTrendsModule ?? throw new ArgumentNullException(nameof(seasonTrendsModule));
         _teamPredictionRecordModule = teamPredictionRecordModule ?? throw new ArgumentNullException(nameof(teamPredictionRecordModule));
+        _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
         _trackRecordModule = trackRecordModule ?? throw new ArgumentNullException(nameof(trackRecordModule));
+    }
+
+    public async Task<AddNewPredictionGamesResult> AddNewPredictionGamesAsync(int season, int week, IEnumerable<PredictionGameSelection> selections)
+    {
+        ArgumentNullException.ThrowIfNull(selections);
+
+        _logger.LogInformation("Adding new games to predictions for season {Season}, week {Week}", season, week);
+
+        // Recomputed here rather than trusting predictions sent back by the client.
+        var (preview, stored) = await BuildNewPredictionGamesAsync(season, week).ConfigureAwait(false);
+        if (preview.Outcome != NewPredictionGamesOutcome.Success || stored is null)
+            return new AddNewPredictionGamesResult { Outcome = preview.Outcome };
+
+        var selectedKeys = selections
+            .SelectMany(s => new[] { PredictionGrader.BuildMatchKey(s.HomeTeam, s.AwayTeam), PredictionGrader.BuildMatchKey(s.AwayTeam, s.HomeTeam) })
+            .ToHashSet();
+        var gamesToAdd = preview.Games
+            .Where(g => selectedKeys.Contains(PredictionGrader.BuildMatchKey(g.HomeTeam, g.AwayTeam)))
+            .ToList();
+        if (gamesToAdd.Count == 0)
+            return new AddNewPredictionGamesResult { Outcome = NewPredictionGamesOutcome.NoneEligible };
+
+        var updated = new PredictionsResult
+        {
+            AppliedCalibration = stored.AppliedCalibration,
+            Predictions = [.. stored.Predictions, .. gamesToAdd],
+            Season = stored.Season,
+            Week = stored.Week
+        };
+
+        if (!await _predictionsModule.UpdatePredictionsAsync(updated).ConfigureAwait(false))
+            return new AddNewPredictionGamesResult { Outcome = NewPredictionGamesOutcome.NotFound };
+
+        _logger.LogInformation("Added {AddedCount} new games to predictions for season {Season}, week {Week}", gamesToAdd.Count, season, week);
+
+        var current = await GetPredictionsAsync(season, week).ConfigureAwait(false);
+        if (current?.ResultsPublished == true)
+        {
+            await _teamPredictionRecordModule.InvalidateCacheAsync().ConfigureAwait(false);
+            await _trackRecordModule.InvalidateCacheAsync().ConfigureAwait(false);
+        }
+
+        return new AddNewPredictionGamesResult
+        {
+            AddedGameCount = gamesToAdd.Count,
+            Outcome = NewPredictionGamesOutcome.Success,
+            Predictions = current
+        };
     }
 
     public async Task<AnalyzePredictionCalibrationResult> AnalyzePredictionCalibrationAsync(int season, int week, IReadOnlyDictionary<string, double>? candidate)
@@ -212,7 +263,6 @@ public class AdminModule : IAdminModule
         var fullSchedule = fullScheduleTask.Result;
         var (gameWeek, isPostseason) = GameWeekResolver.Resolve(week, fullSchedule);
         var fbsTeamNames = new HashSet<string>(seasonData.Teams.Keys, StringComparer.OrdinalIgnoreCase);
-        var scoic = StringComparison.OrdinalIgnoreCase;
 
         // CFBD API serves all postseason betting lines under week 1
         var bettingLinesWeek = isPostseason ? 1 : gameWeek;
@@ -228,13 +278,7 @@ public class AdminModule : IAdminModule
             ? completedGamesTask.Result
             : completedGamesTask.Result.Where(g => g.Week == gameWeek);
 
-        var upcomingGames = fullSchedule
-            .Where(g => g.HomeTeam is not null && fbsTeamNames.Contains(g.HomeTeam)
-                && g.AwayTeam is not null && fbsTeamNames.Contains(g.AwayTeam)
-                && (isPostseason
-                    ? g.SeasonType is not null && g.SeasonType.Equals("postseason", scoic)
-                    : g.Week == gameWeek))
-            .ToList();
+        var upcomingGames = SelectWeekGames(fullSchedule, fbsTeamNames, gameWeek, isPostseason);
 
         var (gamePredictions, appliedCalibration) = await GenerateExperimentalPredictionsAsync(algorithmVersion, season, week, seasonData, ratings, upcomingGames, bettingLines)
             .ConfigureAwait(false);
@@ -337,7 +381,6 @@ public class AdminModule : IAdminModule
         var fullSchedule = fullScheduleTask.Result;
         var (gameWeek, isPostseason) = GameWeekResolver.Resolve(week, fullSchedule);
         var fbsTeamNames = new HashSet<string>(seasonData.Teams.Keys, StringComparer.OrdinalIgnoreCase);
-        var scoic = StringComparison.OrdinalIgnoreCase;
 
         // CFBD API serves all postseason betting lines under week 1
         var bettingLinesWeek = isPostseason ? 1 : gameWeek;
@@ -349,13 +392,7 @@ public class AdminModule : IAdminModule
         var ratings = ratingsTask.Result;
         var bettingLines = bettingLinesTask.Result;
 
-        var upcomingGames = fullSchedule
-            .Where(g => g.HomeTeam is not null && fbsTeamNames.Contains(g.HomeTeam)
-                && g.AwayTeam is not null && fbsTeamNames.Contains(g.AwayTeam)
-                && (isPostseason
-                    ? g.SeasonType is not null && g.SeasonType.Equals("postseason", scoic)
-                    : g.Week == gameWeek))
-            .ToList();
+        var upcomingGames = SelectWeekGames(fullSchedule, fbsTeamNames, gameWeek, isPostseason);
 
         _logger.LogDebug("Found {GameCount} FBS vs FBS games for season {Season}, week {Week}",
             upcomingGames.Count, season, week);
@@ -573,17 +610,20 @@ public class AdminModule : IAdminModule
     {
         var predictionsTask = _predictionsModule.GetAsync(season, week);
         var summariesTask = _predictionsModule.GetAllSummariesAsync();
-        await Task.WhenAll(predictionsTask, summariesTask).ConfigureAwait(false);
+        var fullScheduleTask = _dataService.GetFullSeasonScheduleAsync(season);
+        await Task.WhenAll(predictionsTask, summariesTask, fullScheduleTask).ConfigureAwait(false);
 
         var predictions = predictionsTask.Result;
         if (predictions is null)
             return null;
 
         var summary = summariesTask.Result.FirstOrDefault(s => s.Season == season && s.Week == week);
+        var isPostseason = IsPostseasonWeek(week, fullScheduleTask.Result);
 
         return new GetPredictionsResult
         {
             IsGraded = summary?.IsGraded ?? false,
+            IsPostseason = isPostseason,
             IsPublished = summary?.IsPublished ?? false,
             Predictions = predictions,
             ResultsPublished = summary?.ResultsPublished ?? false
@@ -640,6 +680,14 @@ public class AdminModule : IAdminModule
         }
 
         return result;
+    }
+
+    public async Task<NewPredictionGamesPreview> PreviewNewPredictionGamesAsync(int season, int week)
+    {
+        _logger.LogInformation("Checking for new games for predictions in season {Season}, week {Week}", season, week);
+
+        var (preview, _) = await BuildNewPredictionGamesAsync(season, week).ConfigureAwait(false);
+        return preview;
     }
 
     public async Task<bool> PublishGradedResultsAsync(int season, int week)
@@ -838,6 +886,78 @@ public class AdminModule : IAdminModule
         return lines;
     }
 
+    /// <summary>
+    /// Finds the postseason games scheduled since the week's predictions were saved that haven't kicked off, and
+    /// predicts them with season data that includes the completed postseason games and the week's stored
+    /// calibration values. Also returns the stored predictions so callers can add to them.
+    /// </summary>
+    private async Task<(NewPredictionGamesPreview Preview, PredictionsResult? Stored)> BuildNewPredictionGamesAsync(int season, int week)
+    {
+        var stored = await _predictionsModule.GetAsync(season, week).ConfigureAwait(false);
+        if (stored is null)
+            return (new NewPredictionGamesPreview { Outcome = NewPredictionGamesOutcome.NotFound }, null);
+
+        await RefreshSeasonCacheAsync(season, week).ConfigureAwait(false);
+
+        var fullSchedule = (await _dataService.GetFullSeasonScheduleAsync(season).ConfigureAwait(false)).ToList();
+        if (!IsPostseasonWeek(week, fullSchedule))
+            return (new NewPredictionGamesPreview { Outcome = NewPredictionGamesOutcome.NotPostseason }, stored);
+
+        var (gameWeek, isPostseason) = GameWeekResolver.Resolve(week, fullSchedule);
+        var existingKeys = stored.Predictions
+            .SelectMany(p => new[] { PredictionGrader.BuildMatchKey(p.HomeTeam, p.AwayTeam), PredictionGrader.BuildMatchKey(p.AwayTeam, p.HomeTeam) })
+            .ToHashSet();
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
+
+        // Season data built one week past the last regular week includes the completed postseason games.
+        var seasonData = await _dataService.GetSeasonDataAsync(season, week + 1).ConfigureAwait(false);
+        var fbsTeamNames = new HashSet<string>(seasonData.Teams.Keys, StringComparer.OrdinalIgnoreCase);
+        var newGames = SelectWeekGames(fullSchedule, fbsTeamNames, gameWeek, isPostseason)
+            .Where(g => !g.Completed && (!g.StartDate.HasValue || g.StartDate.Value > now))
+            .Where(g => !existingKeys.Contains(PredictionGrader.BuildMatchKey(g.HomeTeam!, g.AwayTeam!)))
+            .OrderBy(g => g.StartDate ?? DateTime.MaxValue)
+            .ToList();
+
+        if (newGames.Count == 0)
+            return (new NewPredictionGamesPreview { Outcome = NewPredictionGamesOutcome.Success }, stored);
+
+        // CFBD API serves all postseason betting lines under week 1
+        var ratingsTask = _ratingAlgorithmResolver.ResolveForPredictions().RateTeamsAsync(seasonData);
+        var bettingLinesTask = _dataService.GetBettingLinesAsync(season, 1);
+        await Task.WhenAll(ratingsTask, bettingLinesTask).ConfigureAwait(false);
+
+        IReadOnlyDictionary<string, double> storedCalibration = stored.AppliedCalibration ?? new Dictionary<string, double>();
+        var (predictions, _) = await GeneratePredictionsWithCalibrationAsync(
+            _predictionAlgorithmResolver.ResolveForSeason(season), _ => Task.FromResult(storedCalibration),
+            seasonData, ratingsTask.Result, newGames, bettingLinesTask.Result).ConfigureAwait(false);
+
+        var predictionsByKey = predictions
+            .GroupBy(p => PredictionGrader.BuildMatchKey(p.HomeTeam, p.AwayTeam))
+            .ToDictionary(g => g.Key, g => g.First());
+        var games = new List<GamePrediction>();
+        var waitingOnLines = new List<ScheduleGame>();
+
+        foreach (var game in newGames)
+        {
+            if (!predictionsByKey.TryGetValue(PredictionGrader.BuildMatchKey(game.HomeTeam!, game.AwayTeam!), out var prediction))
+            {
+                _logger.LogWarning("No prediction generated for new game {AwayTeam} at {HomeTeam}", game.AwayTeam, game.HomeTeam);
+                continue;
+            }
+
+            if (prediction.BettingSpread.HasValue)
+                games.Add(prediction);
+            else
+                waitingOnLines.Add(game);
+        }
+
+        _logger.LogInformation(
+            "Found {GameCount} new games with lines and {WaitingCount} waiting on lines for season {Season}, week {Week}",
+            games.Count, waitingOnLines.Count, season, week);
+
+        return (new NewPredictionGamesPreview { Games = games, Outcome = NewPredictionGamesOutcome.Success, WaitingOnLines = waitingOnLines }, stored);
+    }
+
     private async Task<ExperimentalPredictionsResult> CalculateThrottledExperimentalPredictionsAsync(
         int season, int week, RatingAlgorithmVersion algorithmVersion, SemaphoreSlim throttle)
     {
@@ -988,6 +1108,17 @@ public class AdminModule : IAdminModule
     }
 
     /// <summary>
+    /// Whether the week's games are postseason games. False when the schedule has no regular-season games, so a
+    /// missing schedule never reads as postseason.
+    /// </summary>
+    private bool IsPostseasonWeek(int week, IEnumerable<ScheduleGame> fullSchedule)
+    {
+        var schedule = fullSchedule.ToList();
+
+        return GameWeekResolver.GetMaxRegularWeek(schedule) > 0 && GameWeekResolver.Resolve(week, schedule).IsPostseason;
+    }
+
+    /// <summary>
     /// After a week's values are saved, points the season's later carried-forward rows at that week and gives
     /// them its values, so they don't keep values carried from before the change. Stops at the first later
     /// week that set its own values or is published (its row records what the published predictions used).
@@ -1046,6 +1177,23 @@ public class AdminModule : IAdminModule
         }
 
         return carriedForward.Values;
+    }
+
+    /// <summary>
+    /// The week's FBS-vs-FBS games: every postseason game for a postseason week, otherwise the games in
+    /// <paramref name="gameWeek"/>.
+    /// </summary>
+    private IReadOnlyList<ScheduleGame> SelectWeekGames(IEnumerable<ScheduleGame> fullSchedule, ISet<string> fbsTeamNames, int gameWeek, bool isPostseason)
+    {
+        var scoic = StringComparison.OrdinalIgnoreCase;
+
+        return fullSchedule
+            .Where(g => g.HomeTeam is not null && fbsTeamNames.Contains(g.HomeTeam)
+                && g.AwayTeam is not null && fbsTeamNames.Contains(g.AwayTeam)
+                && (isPostseason
+                    ? g.SeasonType is not null && g.SeasonType.Equals("postseason", scoic)
+                    : g.Week == gameWeek))
+            .ToList();
     }
 
     /// <summary>

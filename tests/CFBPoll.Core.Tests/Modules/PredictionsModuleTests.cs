@@ -112,4 +112,21 @@ public class PredictionsModuleTests
     {
         await Assert.ThrowsAsync<ArgumentNullException>(() => _predictionsModule.SaveAsync(null!));
     }
+
+    [Fact]
+    public async Task UpdatePredictionsAsync_DelegatesToData()
+    {
+        var predictions = new PredictionsResult { Season = 2025, Week = 15 };
+        _mockPredictionsData.Setup(x => x.UpdatePredictionsAsync(predictions)).ReturnsAsync(true);
+
+        var result = await _predictionsModule.UpdatePredictionsAsync(predictions);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public async Task UpdatePredictionsAsync_ThrowsOnNull()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _predictionsModule.UpdatePredictionsAsync(null!));
+    }
 }

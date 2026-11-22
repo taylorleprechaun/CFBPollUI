@@ -11,6 +11,7 @@ public static class PredictionsMapper
 
         return new AdminPredictionsResponseDTO
         {
+            IsPostseason = result.IsPostseason,
             IsPublished = result.IsPublished,
             Predictions = ToResponseDTO(result.Predictions, resultsPublished: result.ResultsPublished, isGraded: result.IsGraded)
         };
@@ -130,6 +131,17 @@ public static class PredictionsMapper
         };
     }
 
+    public static NewPredictionGamesPreviewDTO ToNewGamesPreviewDTO(NewPredictionGamesPreview preview)
+    {
+        ArgumentNullException.ThrowIfNull(preview);
+
+        return new NewPredictionGamesPreviewDTO
+        {
+            Games = preview.Games.Select(p => ToDTO(p, includeGradeDetails: false)),
+            WaitingOnLines = preview.WaitingOnLines.Select(ToWaitingGameDTO)
+        };
+    }
+
     public static PredictionsResponseDTO ToResponseDTO(PredictionsResult result, bool resultsPublished, bool isGraded)
     {
         ArgumentNullException.ThrowIfNull(result);
@@ -156,6 +168,17 @@ public static class PredictionsMapper
             Weeks = result.Weeks.Select(ToDTO)
         };
     }
+    public static PredictionGameSelection ToSelection(PredictionGameSelectionDTO selection)
+    {
+        ArgumentNullException.ThrowIfNull(selection);
+
+        return new PredictionGameSelection
+        {
+            AwayTeam = selection.AwayTeam,
+            HomeTeam = selection.HomeTeam
+        };
+    }
+
     public static PredictionsSummaryDTO ToSummaryDTO(PredictionsSummary summary)
     {
         ArgumentNullException.ThrowIfNull(summary);
@@ -170,6 +193,18 @@ public static class PredictionsMapper
             ResultsPublished = summary.ResultsPublished,
             Season = summary.Season,
             Week = summary.Week
+        };
+    }
+
+    public static NewPredictionGameWaitingDTO ToWaitingGameDTO(ScheduleGame game)
+    {
+        ArgumentNullException.ThrowIfNull(game);
+
+        return new NewPredictionGameWaitingDTO
+        {
+            AwayTeam = game.AwayTeam ?? string.Empty,
+            HomeTeam = game.HomeTeam ?? string.Empty,
+            StartDate = game.StartDate
         };
     }
 }

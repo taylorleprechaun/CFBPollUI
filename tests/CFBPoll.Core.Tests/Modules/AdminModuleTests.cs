@@ -2,6 +2,7 @@ using CFBPoll.Core.Caching;
 using CFBPoll.Core.Interfaces;
 using CFBPoll.Core.Models;
 using CFBPoll.Core.Modules;
+using CFBPoll.Core.Tests.TestDoubles;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
@@ -29,6 +30,7 @@ public class AdminModuleTests
     private readonly Mock<ISeasonTrendsModule> _mockSeasonTrendsModule;
     private readonly Mock<ITeamPredictionRecordModule> _mockTeamPredictionRecordModule;
     private readonly Mock<ITrackRecordModule> _mockTrackRecordModule;
+    private readonly FixedTimeProvider _timeProvider;
 
     public AdminModuleTests()
     {
@@ -59,6 +61,7 @@ public class AdminModuleTests
         _mockSeasonTrendsModule = new Mock<ISeasonTrendsModule>();
         _mockTeamPredictionRecordModule = new Mock<ITeamPredictionRecordModule>();
         _mockTrackRecordModule = new Mock<ITrackRecordModule>();
+        _timeProvider = new FixedTimeProvider(new DateTimeOffset(2026, 12, 20, 12, 0, 0, TimeSpan.Zero));
 
         _mockDataService.Setup(x => x.GetBettingLinesAsync(It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(new List<BettingLine>());
@@ -78,8 +81,77 @@ public class AdminModuleTests
             _mockSeasonModule.Object,
             _mockSeasonTrendsModule.Object,
             _mockTeamPredictionRecordModule.Object,
+            _timeProvider,
             _mockTrackRecordModule.Object,
             _mockLogger.Object);
+    }
+
+    [Fact]
+    public async Task AddNewPredictionGamesAsync_NoSelectedGameEligible_ReturnsNoneEligibleWithoutSaving()
+    {
+        SetUpNewGamesWeek([new() { AwayTeam = "Team C", HomeTeam = "Team D", SeasonType = "postseason", StartDate = new DateTime(2026, 12, 27, 20, 0, 0, DateTimeKind.Utc), Week = 1 }]);
+
+        var result = await _adminModule.AddNewPredictionGamesAsync(2026, 15, [new PredictionGameSelection { AwayTeam = "Team E", HomeTeam = "Team F" }]);
+
+        Assert.Equal(NewPredictionGamesOutcome.NoneEligible, result.Outcome);
+        _mockPredictionsModule.Verify(x => x.UpdatePredictionsAsync(It.IsAny<PredictionsResult>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AddNewPredictionGamesAsync_NullSelections_ThrowsArgumentNullException()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(() => _adminModule.AddNewPredictionGamesAsync(2026, 15, null!));
+    }
+
+    [Fact]
+    public async Task AddNewPredictionGamesAsync_RegularSeasonWeek_ReturnsNotPostseason()
+    {
+        SetUpNewGamesWeek([]);
+        _mockPredictionsModule.Setup(x => x.GetAsync(2026, 10)).ReturnsAsync(new PredictionsResult { Season = 2026, Week = 10 });
+
+        var result = await _adminModule.AddNewPredictionGamesAsync(2026, 10, [new PredictionGameSelection { AwayTeam = "Team C", HomeTeam = "Team D" }]);
+
+        Assert.Equal(NewPredictionGamesOutcome.NotPostseason, result.Outcome);
+    }
+
+    [Fact]
+    public async Task AddNewPredictionGamesAsync_ResultsPublished_InvalidatesTrackRecordCache()
+    {
+        SetUpNewGamesWeek([new() { AwayTeam = "Team C", HomeTeam = "Team D", SeasonType = "postseason", StartDate = new DateTime(2026, 12, 27, 20, 0, 0, DateTimeKind.Utc), Week = 1 }]);
+        _mockPredictionsModule.Setup(x => x.UpdatePredictionsAsync(It.IsAny<PredictionsResult>())).ReturnsAsync(true);
+        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync()).ReturnsAsync(new List<PredictionsSummary>
+        {
+            new() { IsGraded = true, IsPublished = true, ResultsPublished = true, Season = 2026, Week = 15 }
+        });
+
+        await _adminModule.AddNewPredictionGamesAsync(2026, 15, [new PredictionGameSelection { AwayTeam = "Team C", HomeTeam = "Team D" }]);
+
+        _mockTrackRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
+        _mockTeamPredictionRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task AddNewPredictionGamesAsync_SelectedGames_AppendsAfterExistingPicksAndKeepsCalibration()
+    {
+        var kickoff = new DateTime(2026, 12, 27, 20, 0, 0, DateTimeKind.Utc);
+        SetUpNewGamesWeek(
+        [
+            new() { AwayTeam = "Team C", HomeTeam = "Team D", SeasonType = "postseason", StartDate = kickoff, Week = 1 },
+            new() { AwayTeam = "Team E", HomeTeam = "Team B", SeasonType = "postseason", StartDate = kickoff.AddHours(4), Week = 1 }
+        ]);
+        PredictionsResult? saved = null;
+        _mockPredictionsModule.Setup(x => x.UpdatePredictionsAsync(It.IsAny<PredictionsResult>()))
+            .Callback<PredictionsResult>(p => saved = p)
+            .ReturnsAsync(true);
+
+        var result = await _adminModule.AddNewPredictionGamesAsync(2026, 15, [new PredictionGameSelection { AwayTeam = "Team D", HomeTeam = "Team C" }]);
+
+        Assert.Equal(NewPredictionGamesOutcome.Success, result.Outcome);
+        Assert.Equal(1, result.AddedGameCount);
+        Assert.NotNull(saved);
+        Assert.Equal(["Team A", "Team D"], saved.Predictions.Select(p => p.HomeTeam));
+        Assert.Equal(1.5, saved.AppliedCalibration!["paramA"]);
+        _mockTrackRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
     }
 
     [Fact]
@@ -1461,6 +1533,7 @@ public class AdminModuleTests
                 _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
+                _timeProvider,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -1484,6 +1557,7 @@ public class AdminModuleTests
                 _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
+                _timeProvider,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -1507,6 +1581,7 @@ public class AdminModuleTests
                 _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
+                _timeProvider,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -1530,6 +1605,7 @@ public class AdminModuleTests
                 _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
+                _timeProvider,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -1553,6 +1629,7 @@ public class AdminModuleTests
                 _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
+                _timeProvider,
                 _mockTrackRecordModule.Object,
                 null!));
     }
@@ -1576,6 +1653,7 @@ public class AdminModuleTests
                 _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
+                _timeProvider,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -1599,6 +1677,7 @@ public class AdminModuleTests
                 _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
+                _timeProvider,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -1622,6 +1701,7 @@ public class AdminModuleTests
                 _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
+                _timeProvider,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -1645,6 +1725,7 @@ public class AdminModuleTests
                 _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
+                _timeProvider,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -1668,6 +1749,7 @@ public class AdminModuleTests
                 _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
+                _timeProvider,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -1691,6 +1773,7 @@ public class AdminModuleTests
                 _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
+                _timeProvider,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -1714,6 +1797,7 @@ public class AdminModuleTests
                 _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
+                _timeProvider,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -1737,6 +1821,7 @@ public class AdminModuleTests
                 null!,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
+                _timeProvider,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -1760,6 +1845,7 @@ public class AdminModuleTests
                 _mockSeasonModule.Object,
                 null!,
                 _mockTeamPredictionRecordModule.Object,
+                _timeProvider,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
     }
@@ -1782,6 +1868,31 @@ public class AdminModuleTests
                 _mockRatingAlgorithmResolver.Object,
                 _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
+                null!,
+                _timeProvider,
+                _mockTrackRecordModule.Object,
+                _mockLogger.Object));
+    }
+
+    [Fact]
+    public void Constructor_NullTimeProvider_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(
+            () => new AdminModule(
+                _mockDataService.Object,
+                _mockExcelExportModule.Object,
+                _mockCache.Object,
+                _mockCacheRefresher.Object,
+                _mockPollLeadersModule.Object,
+                _mockPredictionAlgorithmResolver.Object,
+                _mockPredictionCalibrationModule.Object,
+                _mockPredictionGradingModule.Object,
+                _mockPredictionsModule.Object,
+                _mockRankingsModule.Object,
+                _mockRatingAlgorithmResolver.Object,
+                _mockSeasonModule.Object,
+                _mockSeasonTrendsModule.Object,
+                _mockTeamPredictionRecordModule.Object,
                 null!,
                 _mockTrackRecordModule.Object,
                 _mockLogger.Object));
@@ -1806,6 +1917,7 @@ public class AdminModuleTests
                 _mockSeasonModule.Object,
                 _mockSeasonTrendsModule.Object,
                 _mockTeamPredictionRecordModule.Object,
+                _timeProvider,
                 null!,
                 _mockLogger.Object));
     }
@@ -2224,6 +2336,41 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task GetPredictionsAsync_EmptySchedule_IsNotPostseason()
+    {
+        _mockPredictionsModule.Setup(x => x.GetAsync(2024, 5)).ReturnsAsync(new PredictionsResult { Season = 2024, Week = 5 });
+        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync()).ReturnsAsync(new List<PredictionsSummary>());
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2024)).ReturnsAsync(new List<ScheduleGame>());
+
+        var result = await _adminModule.GetPredictionsAsync(2024, 5);
+
+        Assert.False(result!.IsPostseason);
+    }
+
+    [Fact]
+    public async Task GetPredictionsAsync_PostseasonWeek_SetsIsPostseason()
+    {
+        SetUpNewGamesWeek([]);
+        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync()).ReturnsAsync(new List<PredictionsSummary>());
+
+        var result = await _adminModule.GetPredictionsAsync(2026, 15);
+
+        Assert.True(result!.IsPostseason);
+    }
+
+    [Fact]
+    public async Task GetPredictionsAsync_RegularSeasonWeek_IsNotPostseason()
+    {
+        SetUpNewGamesWeek([]);
+        _mockPredictionsModule.Setup(x => x.GetAsync(2026, 10)).ReturnsAsync(new PredictionsResult { Season = 2026, Week = 10 });
+        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync()).ReturnsAsync(new List<PredictionsSummary>());
+
+        var result = await _adminModule.GetPredictionsAsync(2026, 10);
+
+        Assert.False(result!.IsPostseason);
+    }
+
+    [Fact]
     public async Task GetPredictionsAsync_ReturnsComposedResult_WhenMatchingSummaryExists()
     {
         var predictions = new PredictionsResult { Season = 2024, Week = 5 };
@@ -2430,6 +2577,84 @@ public class AdminModuleTests
         Assert.True(result!.ResultsPublished);
         _mockTrackRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
         _mockTeamPredictionRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
+    }
+
+    [Fact]
+    public async Task PreviewNewPredictionGamesAsync_CompletedOrKickedOffGames_AreExcluded()
+    {
+        SetUpNewGamesWeek(
+        [
+            new() { AwayTeam = "Team C", HomeTeam = "Team D", SeasonType = "postseason", StartDate = new DateTime(2026, 12, 19, 20, 0, 0, DateTimeKind.Utc), Week = 1 },
+            new() { AwayTeam = "Team E", HomeTeam = "Team B", Completed = true, SeasonType = "postseason", StartDate = new DateTime(2026, 12, 27, 20, 0, 0, DateTimeKind.Utc), Week = 1 }
+        ]);
+
+        var preview = await _adminModule.PreviewNewPredictionGamesAsync(2026, 15);
+
+        Assert.Equal(NewPredictionGamesOutcome.Success, preview.Outcome);
+        Assert.Empty(preview.Games);
+        Assert.Empty(preview.WaitingOnLines);
+    }
+
+    [Fact]
+    public async Task PreviewNewPredictionGamesAsync_GameAlreadyPredictedWithFlippedHomeAndAway_IsExcluded()
+    {
+        SetUpNewGamesWeek([new() { AwayTeam = "Team A", HomeTeam = "Team B", SeasonType = "postseason", StartDate = new DateTime(2026, 12, 27, 20, 0, 0, DateTimeKind.Utc), Week = 1 }]);
+
+        var preview = await _adminModule.PreviewNewPredictionGamesAsync(2026, 15);
+
+        Assert.Empty(preview.Games);
+    }
+
+    [Fact]
+    public async Task PreviewNewPredictionGamesAsync_GameWithoutLine_IsListedAsWaitingOnLines()
+    {
+        SetUpNewGamesWeek([new() { AwayTeam = "Team E", HomeTeam = "Team F", SeasonType = "postseason", StartDate = new DateTime(2026, 12, 27, 20, 0, 0, DateTimeKind.Utc), Week = 1 }]);
+
+        var preview = await _adminModule.PreviewNewPredictionGamesAsync(2026, 15);
+
+        Assert.Empty(preview.Games);
+        var waiting = Assert.Single(preview.WaitingOnLines);
+        Assert.Equal("Team F", waiting.HomeTeam);
+    }
+
+    [Fact]
+    public async Task PreviewNewPredictionGamesAsync_NewGames_PredictsWithStoredCalibrationAndCompletedPostseasonData()
+    {
+        var kickoff = new DateTime(2026, 12, 27, 20, 0, 0, DateTimeKind.Utc);
+        var (calculator, _, seasonData) = SetUpNewGamesWeek(
+        [
+            new() { AwayTeam = "Team E", HomeTeam = "Team B", SeasonType = "postseason", StartDate = kickoff.AddHours(4), Week = 1 },
+            new() { AwayTeam = "Team C", HomeTeam = "Team D", SeasonType = "postseason", StartDate = kickoff, Week = 1 }
+        ]);
+
+        var preview = await _adminModule.PreviewNewPredictionGamesAsync(2026, 15);
+
+        Assert.Equal(["Team D", "Team B"], preview.Games.Select(g => g.HomeTeam));
+        calculator.Verify(x => x.GeneratePredictionsAsync(
+            seasonData, It.IsAny<IDictionary<string, RatingDetails>>(), It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>(),
+            It.Is<IReadOnlyDictionary<string, double>>(c => c["paramA"] == 1.5)), Times.Once);
+        _mockCacheRefresher.Verify(x => x.RefreshSeasonScopedAsync(2026, 15), Times.Once);
+    }
+
+    [Fact]
+    public async Task PreviewNewPredictionGamesAsync_NoStoredPredictions_ReturnsNotFound()
+    {
+        _mockPredictionsModule.Setup(x => x.GetAsync(2026, 15)).ReturnsAsync((PredictionsResult?)null);
+
+        var preview = await _adminModule.PreviewNewPredictionGamesAsync(2026, 15);
+
+        Assert.Equal(NewPredictionGamesOutcome.NotFound, preview.Outcome);
+    }
+
+    [Fact]
+    public async Task PreviewNewPredictionGamesAsync_RegularSeasonWeek_ReturnsNotPostseason()
+    {
+        SetUpNewGamesWeek([]);
+        _mockPredictionsModule.Setup(x => x.GetAsync(2026, 10)).ReturnsAsync(new PredictionsResult { Season = 2026, Week = 10 });
+
+        var preview = await _adminModule.PreviewNewPredictionGamesAsync(2026, 10);
+
+        Assert.Equal(NewPredictionGamesOutcome.NotPostseason, preview.Outcome);
     }
 
     [Fact]
@@ -2939,5 +3164,48 @@ public class AdminModuleTests
             .ReturnsAsync(predictions.ToList());
 
         return seasonData;
+    }
+
+    /// <summary>
+    /// Sets up 2026 prediction week 15 as a postseason week (the last regular week is 15) whose stored predictions hold Team B at
+    /// Team A with paramA 1.5 applied, plus the given postseason games in the schedule. The calibrated calculator predicts every
+    /// game it's given, with a 3.5-point line unless the home team is Team F.
+    /// </summary>
+    private (Mock<ICalibratedPredictionCalculator> Calculator, PredictionsResult Stored, SeasonData SeasonData) SetUpNewGamesWeek(IEnumerable<ScheduleGame> postseasonGames)
+    {
+        var stored = new PredictionsResult
+        {
+            AppliedCalibration = new Dictionary<string, double> { ["paramA"] = 1.5 },
+            Predictions = [new GamePrediction { AwayTeam = "Team B", BettingSpread = -3, HomeTeam = "Team A", PredictedWinner = "Team A" }],
+            Season = 2026,
+            Week = 15
+        };
+        var teams = new[] { "Team A", "Team B", "Team C", "Team D", "Team E", "Team F" }.ToDictionary(t => t, _ => new TeamInfo());
+        var seasonData = new SeasonData { Season = 2026, Teams = teams, Week = 16 };
+        var ratings = new Dictionary<string, RatingDetails>();
+        List<ScheduleGame> schedule =
+        [
+            new() { AwayTeam = "Team C", HomeTeam = "Team D", SeasonType = "regular", Week = 15 },
+            .. postseasonGames
+        ];
+
+        _mockPredictionsModule.Setup(x => x.GetAsync(2026, 15)).ReturnsAsync(stored);
+        _mockDataService.Setup(x => x.GetFullSeasonScheduleAsync(2026)).ReturnsAsync(schedule);
+        _mockDataService.Setup(x => x.GetSeasonDataAsync(2026, 16)).ReturnsAsync(seasonData);
+        _mockRatingModule.Setup(x => x.RateTeamsAsync(seasonData)).ReturnsAsync(ratings);
+
+        var calculator = SetUpCalibratedCalculator(2026);
+        calculator
+            .Setup(x => x.GeneratePredictionsAsync(It.IsAny<SeasonData>(), It.IsAny<IDictionary<string, RatingDetails>>(), It.IsAny<IEnumerable<ScheduleGame>>(), It.IsAny<IEnumerable<BettingLine>>(), It.IsAny<IReadOnlyDictionary<string, double>>()))
+            .ReturnsAsync((SeasonData _, IDictionary<string, RatingDetails> _, IEnumerable<ScheduleGame> games, IEnumerable<BettingLine> _, IReadOnlyDictionary<string, double> _) =>
+                games.Select(g => new GamePrediction
+                {
+                    AwayTeam = g.AwayTeam!,
+                    BettingSpread = g.HomeTeam == "Team F" ? null : -3.5,
+                    HomeTeam = g.HomeTeam!,
+                    PredictedWinner = g.HomeTeam!
+                }).ToList());
+
+        return (calculator, stored, seasonData);
     }
 }
