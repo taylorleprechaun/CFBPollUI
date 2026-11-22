@@ -23,6 +23,7 @@ public static class TrackRecordMapper
 
         return new TrackRecordWeekDTO
         {
+            GameCount = week.GameCount,
             MarginBias = week.MarginBias,
             MarginGameCount = week.MarginGameCount,
             MarginRMSE = week.MarginRMSE,

@@ -95,6 +95,7 @@ public class TrackRecordModule : ITrackRecordModule
 
             weeks.Add(new TrackRecordWeek
             {
+                GameCount = predictions.Predictions.Count,
                 MarginBias = weekMarginGameCount > 0 ? weekMarginSumResidual / weekMarginGameCount : null,
                 MarginGameCount = weekMarginGameCount,
                 MarginRMSE = weekMarginGameCount > 0 ? Math.Sqrt(weekMarginSumSquaredError / weekMarginGameCount) : null,

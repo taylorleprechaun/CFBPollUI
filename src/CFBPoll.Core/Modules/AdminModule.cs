@@ -626,7 +626,20 @@ public class AdminModule : IAdminModule
             "Refreshed {RefreshedCount} cached game result entries for season {Season} before grading ({FailedCount} kept their last cached data)",
             refreshResult.RefreshedCount, season, refreshResult.FailedCount);
 
-        return await _predictionGradingModule.GradeAsync(season, week).ConfigureAwait(false);
+        var result = await _predictionGradingModule.GradeAsync(season, week).ConfigureAwait(false);
+        if (result is null)
+            return null;
+
+        result.ResultsPublished = await _predictionsModule.AreResultsPublishedAsync(season, week).ConfigureAwait(false);
+
+        if (result.IsPersisted && result.ResultsPublished)
+        {
+            await _teamPredictionRecordModule.InvalidateCacheAsync().ConfigureAwait(false);
+            await _trackRecordModule.InvalidateCacheAsync().ConfigureAwait(false);
+            _logger.LogInformation("Re-graded published results for season {Season}, week {Week} are now live", season, week);
+        }
+
+        return result;
     }
 
     public async Task<bool> PublishGradedResultsAsync(int season, int week)

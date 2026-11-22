@@ -83,6 +83,7 @@ describe('useTrackRecord', () => {
       overallWinner: { correct: 18, incorrect: 2, push: 0 },
       weeks: [
         {
+          gameCount: 5,
           marginBias: 0.5,
           marginGameCount: 5,
           marginRMSE: 8.3,

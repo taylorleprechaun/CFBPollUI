@@ -398,7 +398,7 @@ public class PredictionsMapperTests
     }
 
     [Fact]
-    public void ToGradeResponseDTO_SetsResultsPublishedFalseAndIsGradedTrue()
+    public void ToGradeResponseDTO_ResultsNotPublished_SetsResultsPublishedFalseAndIsGradedTrue()
     {
         var gradeResult = new GradePredictionsResult
         {
@@ -410,6 +410,21 @@ public class PredictionsMapperTests
 
         Assert.False(result.Predictions.ResultsPublished);
         Assert.True(result.Predictions.IsGraded);
+    }
+
+    [Fact]
+    public void ToGradeResponseDTO_ResultsPublished_SetsResultsPublishedTrue()
+    {
+        var gradeResult = new GradePredictionsResult
+        {
+            IsPersisted = true,
+            Predictions = new PredictionsResult { Season = 2024, Week = 5 },
+            ResultsPublished = true
+        };
+
+        var result = PredictionsMapper.ToGradeResponseDTO(gradeResult);
+
+        Assert.True(result.Predictions.ResultsPublished);
     }
 
     [Fact]

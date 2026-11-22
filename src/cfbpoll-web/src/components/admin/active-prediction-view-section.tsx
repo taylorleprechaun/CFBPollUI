@@ -54,7 +54,11 @@ export function ActivePredictionViewSection({
   const { predictions } = view;
   const sourceLabel = SOURCE_LABELS[view.source];
   const stage = derivePredictionStage(view);
-  const hasUngradedGames = predictions.predictions.some((p) => p.winnerGrade === 'Ungraded');
+  const gradedGameCount = predictions.predictions.filter((p) => p.winnerGrade !== 'Ungraded').length;
+  const hasUngradedGames = gradedGameCount < predictions.predictions.length;
+  const stageLabel = stage === 'results-published' && hasUngradedGames
+    ? `${predictionStageLabel(stage)} · ${gradedGameCount}/${predictions.predictions.length} graded`
+    : predictionStageLabel(stage);
   const showGrade = !view.isGraded || hasUngradedGames;
   const showPublish = !view.isPublished;
   const showPublishResults = view.isGraded && view.isPublished && !view.resultsPublished;
@@ -80,7 +84,7 @@ export function ActivePredictionViewSection({
               </span>
               {sourceLabel && <span className="text-sm font-normal text-text-muted">&middot; {sourceLabel}</span>}
             </CollapsibleTrigger>
-            <StatusBadge className={predictionStageClasses(stage)} label={predictionStageLabel(stage)} />
+            <StatusBadge className={predictionStageClasses(stage)} label={stageLabel} />
           </div>
           <div className="flex items-center gap-2">
             <button

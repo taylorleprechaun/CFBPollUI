@@ -30,6 +30,7 @@ export function usePredictionsGradingState({
       mutate: () => gradeMutation.mutateAsync({ season, week }),
       onSuccess: onGradeSuccess,
       setFeedback: setActionFeedback,
+      successMessage: (result) => (result.predictions.resultsPublished ? 'Updated on the public page' : undefined),
     });
   };
 

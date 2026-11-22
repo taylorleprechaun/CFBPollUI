@@ -125,7 +125,7 @@ public static class PredictionsMapper
         return new GradePredictionsResponseDTO
         {
             IsPersisted = result.IsPersisted,
-            Predictions = ToResponseDTO(result.Predictions, resultsPublished: false, isGraded: true),
+            Predictions = ToResponseDTO(result.Predictions, resultsPublished: result.ResultsPublished, isGraded: true),
             UnmatchedGameCount = result.UnmatchedGameCount
         };
     }

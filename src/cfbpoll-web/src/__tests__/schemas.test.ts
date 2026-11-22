@@ -443,6 +443,7 @@ describe('Zod Schemas', () => {
 
     it('validates a valid week', () => {
       const data = {
+        gameCount: 5,
         marginBias: 0.5,
         marginGameCount: 5,
         marginRMSE: 8.3,

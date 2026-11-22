@@ -2393,6 +2393,46 @@ public class AdminModuleTests
     }
 
     [Fact]
+    public async Task GradePredictionsAsync_NotPersisted_DoesNotInvalidateTrackRecordCache()
+    {
+        _mockPredictionGradingModule.Setup(x => x.GradeAsync(2024, 5))
+            .ReturnsAsync(new GradePredictionsResult { IsPersisted = false, Predictions = new PredictionsResult { Season = 2024, Week = 5 } });
+        _mockPredictionsModule.Setup(x => x.AreResultsPublishedAsync(2024, 5)).ReturnsAsync(true);
+
+        await _adminModule.GradePredictionsAsync(2024, 5);
+
+        _mockTrackRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
+        _mockTeamPredictionRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task GradePredictionsAsync_ResultsNotPublished_DoesNotInvalidateTrackRecordCache()
+    {
+        _mockPredictionGradingModule.Setup(x => x.GradeAsync(2024, 5))
+            .ReturnsAsync(new GradePredictionsResult { IsPersisted = true, Predictions = new PredictionsResult { Season = 2024, Week = 5 } });
+        _mockPredictionsModule.Setup(x => x.AreResultsPublishedAsync(2024, 5)).ReturnsAsync(false);
+
+        await _adminModule.GradePredictionsAsync(2024, 5);
+
+        _mockTrackRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
+        _mockTeamPredictionRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Never);
+    }
+
+    [Fact]
+    public async Task GradePredictionsAsync_ResultsPublished_InvalidatesTrackRecordCache()
+    {
+        _mockPredictionGradingModule.Setup(x => x.GradeAsync(2024, 5))
+            .ReturnsAsync(new GradePredictionsResult { IsPersisted = true, Predictions = new PredictionsResult { Season = 2024, Week = 5 } });
+        _mockPredictionsModule.Setup(x => x.AreResultsPublishedAsync(2024, 5)).ReturnsAsync(true);
+
+        var result = await _adminModule.GradePredictionsAsync(2024, 5);
+
+        Assert.True(result!.ResultsPublished);
+        _mockTrackRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
+        _mockTeamPredictionRecordModule.Verify(x => x.InvalidateCacheAsync(), Times.Once);
+    }
+
+    [Fact]
     public async Task PublishGradedResultsAsync_DelegatesToPredictionsModule()
     {
         _mockPredictionsModule.Setup(x => x.PublishGradedResultsAsync(2024, 5)).ReturnsAsync(true);

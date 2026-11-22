@@ -240,6 +240,7 @@ export const TrackRecordTotalsSchema = z.object({
 });
 
 export const TrackRecordWeekSchema = z.object({
+  gameCount: z.number(),
   marginBias: z.number().nullable(),
   marginGameCount: z.number(),
   marginRMSE: z.number().nullable(),

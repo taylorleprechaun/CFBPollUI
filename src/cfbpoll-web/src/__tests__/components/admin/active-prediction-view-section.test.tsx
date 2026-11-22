@@ -272,14 +272,32 @@ describe('ActivePredictionViewSection', () => {
   });
 
   it('shows a Results Published stage badge once results are published', () => {
+    const view = buildView({ isGraded: true, isPublished: true, resultsPublished: true });
+    const gradedGame = { ...view.predictions.predictions[0], winnerGrade: 'Correct' as const };
+
     render(
       <ActivePredictionViewSection
         {...defaultProps()}
-        view={buildView({ isGraded: true, isPublished: true, resultsPublished: true })}
+        view={{ ...view, predictions: { ...view.predictions, predictions: [gradedGame] } }}
       />
     );
 
     expect(screen.getByText('Results Published')).toBeInTheDocument();
+  });
+
+  it('shows a Results Published stage badge with the graded count while some games are ungraded', () => {
+    const view = buildView({ isGraded: true, isPublished: true, resultsPublished: true });
+    const ungradedGame = view.predictions.predictions[0];
+    const gradedGame = { ...ungradedGame, awayTeam: 'Iowa', homeTeam: 'Texas', winnerGrade: 'Correct' as const };
+
+    render(
+      <ActivePredictionViewSection
+        {...defaultProps()}
+        view={{ ...view, predictions: { ...view.predictions, predictions: [gradedGame, ungradedGame] } }}
+      />
+    );
+
+    expect(screen.getByText('Results Published · 1/2 graded')).toBeInTheDocument();
   });
 
   it('shows a source label for a calculated view', () => {

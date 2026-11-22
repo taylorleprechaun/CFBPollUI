@@ -249,6 +249,43 @@ public class TrackRecordModuleTests
     }
 
     [Fact]
+    public async Task GetTrackRecordAsync_PartiallyGradedWeek_ReportsGameCountAndGradedCount()
+    {
+        _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync()).ReturnsAsync(new List<PredictionsSummary>
+        {
+            new() { Season = 2024, Week = 15, IsPublished = true, IsGraded = true, ResultsPublished = true }
+        });
+
+        _mockPredictionsModule.Setup(x => x.GetAsync(2024, 15)).ReturnsAsync(new PredictionsResult
+        {
+            Season = 2024,
+            Week = 15,
+            Predictions = new List<GamePrediction>
+            {
+                new()
+                {
+                    HomeTeam = "Team A",
+                    AwayTeam = "Team B",
+                    PredictedWinner = "Team A",
+                    PredictedMargin = 3,
+                    ActualHomeScore = 21,
+                    ActualAwayScore = 17,
+                    WinnerGrade = PredictionGradeStatus.Correct
+                },
+                new() { HomeTeam = "Team C", AwayTeam = "Team D", PredictedWinner = "Team C", PredictedMargin = 7 },
+                new() { HomeTeam = "Team E", AwayTeam = "Team F", PredictedWinner = "Team F", PredictedMargin = 1 }
+            }
+        });
+
+        var result = await _module.GetTrackRecordAsync();
+
+        var week = Assert.Single(result.Weeks);
+        Assert.Equal(3, week.GameCount);
+        Assert.Equal(1, week.MarginGameCount);
+        Assert.Equal(1, week.Winner.Correct);
+    }
+
+    [Fact]
     public async Task GetTrackRecordAsync_SkipsUnpublishedOrUngradedSummaries()
     {
         _mockPredictionsModule.Setup(x => x.GetAllSummariesAsync()).ReturnsAsync(new List<PredictionsSummary>

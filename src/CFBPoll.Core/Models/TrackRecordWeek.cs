@@ -2,6 +2,7 @@ namespace CFBPoll.Core.Models;
 
 public class TrackRecordWeek
 {
+    public int GameCount { get; set; }
     public double? MarginBias { get; set; }
     public int MarginGameCount { get; set; }
     public double? MarginRMSE { get; set; }

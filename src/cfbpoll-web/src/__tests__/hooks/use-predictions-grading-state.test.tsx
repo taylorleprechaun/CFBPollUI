@@ -71,6 +71,27 @@ describe('usePredictionsGradingState', () => {
     expect(result.current.actionFeedback).toEqual({ key: 'grade-2024-5', type: 'success' });
   });
 
+  it('handleGrade on a week whose results are published reports that the public page was updated', async () => {
+    const publishedGradeResult = { ...gradeResult, predictions: { ...gradeResult.predictions, resultsPublished: true } };
+    const mutateAsync = vi.fn().mockResolvedValue(publishedGradeResult);
+    const options = {
+      ...baseOptions(),
+      gradeMutation: fakeMutation<GradePredictionsResponse, { season: number; week: number }>({ mutateAsync }),
+    };
+
+    const { result } = renderHook(() => usePredictionsGradingState(options));
+
+    await act(async () => {
+      await result.current.handleGrade(2024, 5);
+    });
+
+    expect(result.current.actionFeedback).toEqual({
+      key: 'grade-2024-5',
+      type: 'success',
+      message: 'Updated on the public page',
+    });
+  });
+
   it('handleGrade sets error feedback on failure and does not invoke onGradeSuccess', async () => {
     const mutateAsync = vi.fn().mockRejectedValue(new Error('Grading failed'));
     const onGradeSuccess = vi.fn();
